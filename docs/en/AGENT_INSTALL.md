@@ -18,10 +18,12 @@ The prompt asks the Agent to download, inspect, install, scan, test, and load Ka
 
 | Agent | User-level location | Current session |
 | --- | --- | --- |
-| Codex | `~/.agents/skills/kacha-kacha` | Ask Codex to read `SKILL.md` immediately; later sessions discover it automatically |
-| Claude Code | `~/.claude/skills/kacha-kacha` | Existing skill directories may be discovered live; creating the top-level directory for the first time may require a restart |
+| Codex | `~/.codex/skills/kacha` | Ask Codex to read `SKILL.md` immediately; later sessions discover it automatically |
+| Claude Code | `~/.claude/skills/kacha` | Existing skill directories may be discovered live; creating the top-level directory for the first time may require a restart |
 
 Install a complete directory rather than a symbolic link. This avoids differences in file watching and indexing between clients.
+
+When migrating from the legacy `kacha-kacha` name, install and verify the complete `kacha` directory first, then archive the legacy entry. Do not leave both names in an auto-discovery directory indefinitely.
 
 ## Optional direct installer
 
@@ -67,13 +69,13 @@ Use Kacha to inspect these source files and give me a detailed editing proposal.
 Claude Code can also invoke:
 
 ```text
-/kacha-kacha
+/kacha
 ```
 
 In Codex, you can explicitly request:
 
 ```text
-Use $kacha-kacha for this video project.
+Use $kacha for this video project.
 ```
 
 If the client has not refreshed its skill list, ask the Agent to read the complete `SKILL.md` from the installation path before continuing.

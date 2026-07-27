@@ -4,6 +4,10 @@
   "plans": {
     "proposal": "./edit-proposal.json",
     "editPlan": "./edit-plan.json",
+    "localChange": {
+      "path": "./local-change-plan.json",
+      "mode": "template"
+    },
     "generatedShotPlans": [
       {
         "path": "./generated-shot-plan.json",

@@ -152,6 +152,8 @@ export function mediaSummary(file) {
     videoDuration: Number.isFinite(videoDuration) ? videoDuration : duration,
     audioDuration: Number.isFinite(audioDuration) ? audioDuration : duration,
     fps: rationalToNumber(video?.avg_frame_rate || video?.r_frame_rate),
+    averageFps: rationalToNumber(video?.avg_frame_rate),
+    declaredFps: rationalToNumber(video?.r_frame_rate),
     width: Number(video?.width),
     height: Number(video?.height),
     sampleRate: Number(audio?.sample_rate),

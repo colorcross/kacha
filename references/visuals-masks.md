@@ -65,7 +65,8 @@
 scripts/generate_vision_masks.swift SOURCE.mov MASK_DIR SOURCE_FPS accurate
 node scripts/build_mask_video.mjs MASK_DIR/manifest.json person MASK_DIR/person.mkv
 node scripts/build_mask_video.mjs MASK_DIR/manifest.json face MASK_DIR/face.mkv
-scripts/apply_mask_effect.sh SOURCE.mov MASK_DIR/face.mkv OUTPUT.mov face-light
+node scripts/build_mask_video.mjs MASK_DIR/manifest.json skin MASK_DIR/skin.mkv
+scripts/apply_mask_effect.sh SOURCE.mov MASK_DIR/skin.mkv OUTPUT.mov beauty-light
 scripts/compose_text_behind_person.sh SOURCE.mov MASK_DIR/person.mkv TEXT.mov OUTPUT.mov
 ```
 
@@ -78,7 +79,20 @@ scripts/compose_text_behind_person.sh SOURCE.mov MASK_DIR/person.mkv TEXT.mov OU
 - 蒙版视频、文字层和源视频的时长、帧率、起始 PTS 不匹配时直接失败；
 - 禁止末帧无限复制、`-shortest` 静默截短或低帧率预检蒙版进入 4K 正式渲染；
 - 逐段检查头发、眼镜、手指、肩部、遮挡、快速运动和边缘帧；
+- 皮肤蒙版必须保护眼睛、眉毛、嘴唇和眼镜附近；`beauty-plus` 只有同源同帧 A/B 通过后启用；
 - 漏抠、误抠、白边、黑边、抖动或跟踪丢失时减弱、局部禁用或回退。
+
+## 2.5D 与分层效果预检
+
+2.5D 只在前景、中景、背景能可靠分离时启用。正式进入时间线前必须生成短预览并检查：
+
+- 每层 alpha 非空且没有反相；
+- 源、各层和合成输出 PTS 从 0 开始并严格对齐；
+- 首帧、中间帧和尾帧无黑底、透明空洞、拉伸和边缘穿帮；
+- 人物与背景运动方向、速度差和景深差克制；
+- 进出段有完整 handle，不用失败合成硬接主画面。
+
+任何一项失败，回退为普通推拉、平移或静态信息卡；不在正式成片中试错。
 
 ## 人物后置文字
 

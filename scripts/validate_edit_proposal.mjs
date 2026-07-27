@@ -265,6 +265,44 @@ function validateDialogueSeparation(plan, errors) {
   }
 }
 
+function validateCreativeLock(plan, errors) {
+  const lock = plan.creativeLock;
+  requireFields(
+    lock,
+    [
+      "sourceAspectRatio",
+      "outputAspectRatio",
+      "preserveSourceFormat",
+      "primaryNarrativeRole",
+      "aiRole",
+      "frozenDecisions",
+      "changeRequiresReapproval",
+    ],
+    "creativeLock",
+    errors,
+  );
+  if (!lock || typeof lock !== "object") return;
+  if (typeof lock.preserveSourceFormat !== "boolean") {
+    errors.push("creativeLock.preserveSourceFormat 必须是 boolean");
+  }
+  if (!Array.isArray(lock.frozenDecisions) || lock.frozenDecisions.length === 0) {
+    errors.push("creativeLock.frozenDecisions 必须是非空数组");
+  }
+  if (lock.changeRequiresReapproval !== true) {
+    errors.push("creativeLock.changeRequiresReapproval 必须为 true");
+  }
+  const targetRatios = Array.isArray(plan.goal?.videoAspectRatios)
+    ? plan.goal.videoAspectRatios
+    : [];
+  if (
+    hasValue(lock.outputAspectRatio)
+    && targetRatios.length > 0
+    && !targetRatios.includes(lock.outputAspectRatio)
+  ) {
+    errors.push("creativeLock.outputAspectRatio 必须出现在 goal.videoAspectRatios");
+  }
+}
+
 function validateFlow(plan, errors) {
   const flow = plan.executionFlow;
   if (!Array.isArray(flow)) {
@@ -328,6 +366,7 @@ function validateProposal(plan, proposalFile) {
       "goal",
       "contentSpine",
       "editDecisions",
+      "creativeLock",
       "planModules",
       "executionFlow",
       "approvedScope",
@@ -348,6 +387,7 @@ function validateProposal(plan, proposalFile) {
 
   validateAuthorization(plan, errors);
   validateSources(plan, proposalFile, errors);
+  validateCreativeLock(plan, errors);
   requireFields(
     plan.goal,
     [

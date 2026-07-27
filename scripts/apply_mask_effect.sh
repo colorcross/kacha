@@ -9,6 +9,8 @@ Usage:
 MODE:
   face-light     Mild local face brightening and gamma lift
   skin-soften    Mild luma-only bilateral smoothing inside the mask
+  beauty-light   Natural skin smoothing, tone lift and texture recovery
+  beauty-plus    Visible but restrained beauty pass with texture recovery
   privacy-blur   Strong Gaussian blur inside the mask
 
 The mask must match the input duration, frame rate and start PTS within one
@@ -60,6 +62,14 @@ case "$mode" in
     ;;
   skin-soften)
     effect="bilateral=sigmaS=1.6:sigmaR=0.035:planes=1"
+    mask_blur="gblur=sigma=14"
+    ;;
+  beauty-light)
+    effect="bilateral=sigmaS=2.1:sigmaR=0.045:planes=1,eq=brightness=0.010:gamma=1.018:saturation=1.008,unsharp=5:5:0.16:3:3:0"
+    mask_blur="gblur=sigma=12"
+    ;;
+  beauty-plus)
+    effect="bilateral=sigmaS=3.0:sigmaR=0.065:planes=1,eq=brightness=0.016:gamma=1.030:saturation=1.012,unsharp=5:5:0.12:3:3:0"
     mask_blur="gblur=sigma=14"
     ;;
   privacy-blur)

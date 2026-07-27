@@ -14,6 +14,7 @@ struct FaceRecord: Codable {
     let y: Double
     let width: Double
     let height: Double
+    let landmarksAvailable: Bool
 }
 
 struct FrameRecord: Codable {
@@ -21,6 +22,7 @@ struct FrameRecord: Codable {
     let timeSeconds: Double
     let personMask: String?
     let faceMask: String?
+    let skinMask: String?
     let faces: [FaceRecord]
 }
 
@@ -53,6 +55,7 @@ func usage() -> Never {
     Generates:
       person_000001.png ...  Person segmentation masks
       face_000001.png ...    Soft face-region masks
+      skin_000001.png ...    Face skin masks with landmark protection
       manifest.json          Timing, dimensions and normalized face boxes
 
     For final rendering, use sample_fps equal to the source frame rate. Lower values
@@ -136,7 +139,7 @@ let personRequest = VNGeneratePersonSegmentationRequest()
 personRequest.qualityLevel = quality
 personRequest.outputPixelFormat = kCVPixelFormatType_OneComponent8
 
-let faceRequest = VNDetectFaceRectanglesRequest()
+let faceRequest = VNDetectFaceLandmarksRequest()
 let ciContext = CIContext(options: [.useSoftwareRenderer: false])
 let interval = 1.0 / sampleFPS
 var nextSampleTime = 0.0
@@ -200,6 +203,100 @@ func writeFaceMask(width: Int, height: Int, faces: [VNFaceObservation], to url: 
     try data.write(to: url)
 }
 
+func landmarkRect(
+    _ regions: [VNFaceLandmarkRegion2D?],
+    faceBox: CGRect,
+    width: Int,
+    height: Int,
+    expandX: Double,
+    expandY: Double
+) -> CGRect? {
+    let points = regions.compactMap { $0 }.flatMap { Array($0.normalizedPoints) }
+    guard !points.isEmpty else { return nil }
+    let xs = points.map { faceBox.minX + Double($0.x) * faceBox.width }
+    let ys = points.map { faceBox.minY + Double($0.y) * faceBox.height }
+    let minX = max(0, (xs.min() ?? faceBox.minX) - faceBox.width * expandX)
+    let maxX = min(1, (xs.max() ?? faceBox.maxX) + faceBox.width * expandX)
+    let minY = max(0, (ys.min() ?? faceBox.minY) - faceBox.height * expandY)
+    let maxY = min(1, (ys.max() ?? faceBox.maxY) + faceBox.height * expandY)
+    return CGRect(
+        x: minX * Double(width),
+        y: minY * Double(height),
+        width: (maxX - minX) * Double(width),
+        height: (maxY - minY) * Double(height)
+    )
+}
+
+func writeSkinMask(
+    width: Int,
+    height: Int,
+    faces: [VNFaceObservation],
+    to url: URL
+) throws {
+    let colorSpace = CGColorSpaceCreateDeviceGray()
+    guard let context = CGContext(
+        data: nil,
+        width: width,
+        height: height,
+        bitsPerComponent: 8,
+        bytesPerRow: width,
+        space: colorSpace,
+        bitmapInfo: CGImageAlphaInfo.none.rawValue
+    ) else {
+        throw NSError(domain: "KachaVision", code: 6, userInfo: [NSLocalizedDescriptionKey: "Could not create skin mask context"])
+    }
+
+    context.setFillColor(gray: 0, alpha: 1)
+    context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+
+    for face in faces {
+        let box = face.boundingBox
+        let startX = max(0, box.minX + box.width * 0.035)
+        let startY = max(0, box.minY + box.height * 0.015)
+        let skinRect = CGRect(
+            x: startX * Double(width),
+            y: startY * Double(height),
+            width: min(1 - startX, box.width * 0.93) * Double(width),
+            height: min(1 - startY, box.height * 0.97) * Double(height)
+        )
+        context.setBlendMode(.normal)
+        context.setFillColor(gray: 1, alpha: 1)
+        context.fillEllipse(in: skinRect)
+
+        guard let landmarks = face.landmarks else { continue }
+        context.setBlendMode(.clear)
+        if let eyeBand = landmarkRect(
+            [landmarks.leftEye, landmarks.rightEye, landmarks.leftEyebrow, landmarks.rightEyebrow],
+            faceBox: box,
+            width: width,
+            height: height,
+            expandX: 0.075,
+            expandY: 0.055
+        ) {
+            context.fillEllipse(in: eyeBand)
+        }
+        if let lips = landmarkRect(
+            [landmarks.outerLips, landmarks.innerLips],
+            faceBox: box,
+            width: width,
+            height: height,
+            expandX: 0.045,
+            expandY: 0.055
+        ) {
+            context.fillEllipse(in: lips)
+        }
+    }
+
+    guard let cgImage = context.makeImage() else {
+        throw NSError(domain: "KachaVision", code: 7, userInfo: [NSLocalizedDescriptionKey: "Could not create skin mask image"])
+    }
+    let bitmap = NSBitmapImageRep(cgImage: cgImage)
+    guard let data = bitmap.representation(using: .png, properties: [:]) else {
+        throw NSError(domain: "KachaVision", code: 8, userInfo: [NSLocalizedDescriptionKey: "Could not encode skin mask PNG"])
+    }
+    try data.write(to: url)
+}
+
 while reader.status == .reading, let sampleBuffer = output.copyNextSampleBuffer() {
     let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds
     if time + 0.0001 < nextSampleTime { continue }
@@ -221,6 +318,7 @@ while reader.status == .reading, let sampleBuffer = output.copyNextSampleBuffer(
     let sequence = String(format: "%06d", outputIndex)
     var personName: String?
     var faceName: String?
+    var skinName: String?
 
     if let observation = personRequest.results?.first {
         let buffer = observation.pixelBuffer
@@ -241,6 +339,15 @@ while reader.status == .reading, let sampleBuffer = output.copyNextSampleBuffer(
             to: outputURL.appendingPathComponent(name)
         )
         faceName = name
+
+        let skinMaskName = "skin_\(sequence).png"
+        try writeSkinMask(
+            width: maskWidth,
+            height: maskHeight,
+            faces: faces,
+            to: outputURL.appendingPathComponent(skinMaskName)
+        )
+        skinName = skinMaskName
     }
 
     let faceRecords = faces.map {
@@ -249,7 +356,8 @@ while reader.status == .reading, let sampleBuffer = output.copyNextSampleBuffer(
             x: $0.boundingBox.minX,
             y: $0.boundingBox.minY,
             width: $0.boundingBox.width,
-            height: $0.boundingBox.height
+            height: $0.boundingBox.height,
+            landmarksAvailable: $0.landmarks != nil
         )
     }
 
@@ -259,6 +367,7 @@ while reader.status == .reading, let sampleBuffer = output.copyNextSampleBuffer(
             timeSeconds: time,
             personMask: personName,
             faceMask: faceName,
+            skinMask: skinName,
             faces: faceRecords
         )
     )
@@ -284,8 +393,9 @@ let manifest = Manifest(
     frameCount: records.count,
     frames: records,
     limitations: [
-        "Face masks are soft elliptical regions, not semantic skin masks.",
-        "Person and face masks require visual validation at occlusions, fast motion, glasses, hands near the face and edge frames.",
+        "Skin masks use face geometry with landmark-protected eye, eyebrow and lip regions; they are not pixel-level semantic skin segmentation.",
+        "Person, face and skin masks require visual validation at occlusions, fast motion, glasses, hands near the face and edge frames.",
+        "Beauty masks do not change facial geometry and must not be presented as face slimming, eye enlargement or nose reshaping.",
         "This tool rejects sources that rely on rotation metadata; normalize orientation first."
     ]
 )

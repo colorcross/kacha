@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "1.0",
+  "taskPath": "local_optimization",
+  "baseVersion": {
+    "path": "/absolute/path/to/base-version.mov",
+    "sha256": "replace-with-real-sha256",
+    "durationSeconds": 207,
+    "fps": 25
+  },
+  "newVersion": {
+    "id": "v4",
+    "outputPath": "/absolute/path/to/new-version.mov",
+    "overwriteBase": false
+  },
+  "renderStrategy": "frozen_master_rebuild",
+  "outputDurationSeconds": 190.44,
+  "changes": [
+    {
+      "id": "replace-keyboard-sfx",
+      "type": "audio_asset_replace",
+      "changedLayers": [
+        "sfx"
+      ],
+      "frozenLayers": [
+        "visual",
+        "dialogue",
+        "bgm",
+        "subtitles",
+        "covers",
+        "metadata"
+      ],
+      "affectedIntervals": [
+        {
+          "startSeconds": 0,
+          "endSeconds": 2.6
+        }
+      ],
+      "asset": {
+        "manifestPath": "../assets/sfx/manifest.json",
+        "assetId": "typing-local-single-key",
+        "readySha256": "6edaa29238e0bb4769c3c0fea3014c561d89e83eacc15ce8ad5b30212496b9c2"
+      },
+      "eventTimesSeconds": [
+        0.12,
+        0.28,
+        0.44
+      ],
+      "reason": "使用用户明确指定的单击键盘音色，不改变既有字符落点",
+      "failureCondition": "错用其他音色、落点漂移、叠加削波或误改其他声音层",
+      "qcEvidence": [
+        "开场正常速度试听",
+        "音效事件清单和最终混音报告"
+      ]
+    },
+    {
+      "id": "remove-rejected-section",
+      "type": "remove_interval",
+      "changedLayers": [
+        "visual",
+        "dialogue",
+        "bgm",
+        "sfx",
+        "subtitles",
+        "metadata"
+      ],
+      "frozenLayers": [
+        "covers"
+      ],
+      "affectedIntervals": [
+        {
+          "startSeconds": 129.44,
+          "endSeconds": 146
+        }
+      ],
+      "sourceInterval": {
+        "startSeconds": 129.44,
+        "endSeconds": 146
+      },
+      "semanticJoin": {
+        "beforeText": "前一句完整落点",
+        "afterText": "后一句完整起点",
+        "boundaryEvidence": "最终音频词级时间码和25fps连接预览"
+      },
+      "remapAllTimelineLayers": true,
+      "subtitleExitLeadFrames": 1,
+      "reason": "完整移除用户明确拒绝的语义段",
+      "failureCondition": "残留口播、画面、字幕、音效或出现半句和闪帧",
+      "qcEvidence": [
+        "连接点正常速度预览",
+        "切前切后逐帧接触表"
+      ]
+    }
+  ],
+  "auditRegeneration": [
+    "proposal",
+    "editPlan",
+    "projectManifest",
+    "technicalQc",
+    "releaseReport"
+  ],
+  "qcPlan": {
+    "boundaryPreviews": [
+      "每个删段连接点前后至少2秒正常速度预览"
+    ],
+    "fullDecode": true,
+    "declaredAndAverageFps": true,
+    "audioVideoDrift": "不超过1帧",
+    "frozenRegression": [
+      "删段前代表区间",
+      "删段后按时间偏移映射的代表区间",
+      "开头与结尾"
+    ]
+  }
+}

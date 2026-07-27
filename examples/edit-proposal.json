@@ -82,6 +82,19 @@
       "所有拼接点的音画同步"
     ]
   },
+  "creativeLock": {
+    "sourceAspectRatio": "由真实源文件探测",
+    "outputAspectRatio": "9:16",
+    "preserveSourceFormat": false,
+    "primaryNarrativeRole": "真人口播是唯一前台叙事主体",
+    "aiRole": "behind_the_scenes",
+    "frozenDecisions": [
+      "真人承担前台表达",
+      "AI 只通过执行结果回应，不新增独立前台角色",
+      "输出保持 9:16"
+    ],
+    "changeRequiresReapproval": true
+  },
   "planModules": {
     "cutsAndShotScale": {
       "status": "enabled",

@@ -8,6 +8,15 @@
 
 - README 增加视频号、抖音和小红书二维码，引导用户查看实际剪辑演示。
 - 扩充独立英文 README，并增加英文的一句话安装、依赖、快速开始、架构与隐私安全文档。
+- 增加创意锁、局部优化计划、declared/average FPS 双检查和 MOV 时间基安全重封装。
+- 增加 Apple Vision 人脸关键点保护皮肤蒙版、`beauty-light` 与 `beauty-plus`。
+- 增加 12 个由行者大灰原创的音效、精确 title/ID/hash 验证和独立资产许可。
+- 增加生产流程加固文档，把打字、画中画、分屏、插镜、生成镜头和 2.5D 的失败条件写入门禁。
+
+### Changed
+
+- Skill 名称由 `kacha-kacha` / “咔嚓咔嚓”统一为 `kacha` / “咔嚓”。
+- Codex 默认安装目录改为 `~/.codex/skills/kacha`，并保留 Demucs 与媒体配置的旧路径读取兼容。
 
 ## [1.1.0] - 2026-07-27
 

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1.0",
+  "libraryRootEnvironmentVariable": "KACHA_SFX_LIBRARY",
+  "bundledManifest": "../assets/sfx/manifest.json",
+  "audioFilesIncludedInRepository": true,
+  "bundledOriginalAssetCount": 12,
+  "selectionPolicy": {
+    "order": [
+      "user_exact_request",
+      "preferred_local",
+      "primary",
+      "alternate",
+      "no_sfx"
+    ],
+    "onePrimaryEventPerSemanticBeat": true,
+    "timelineToleranceFrames": 2,
+    "voiceHasPriority": true,
+    "requireFinalPhoneAndHeadphoneReview": true
+  },
+  "rules": [
+    {
+      "trigger": "typing.single_key",
+      "meaning": "单个字符、按键或提交动作落位",
+      "exactRequestedTitle": "单击键盘",
+      "preferredAssetIdWhenAvailable": "typing-local-single-key",
+      "fallbackCategory": "typing",
+      "placement": "每次字符或按键真正可见的落位帧",
+      "doNotUseWhen": "画面没有输入动作，或连续敲击会覆盖口播辅音"
+    },
+    {
+      "trigger": "typing.continuous",
+      "meaning": "连续输入一段文字或代码",
+      "fallbackCategory": "typing",
+      "placement": "覆盖真实输入时段并在最后字符前后自然收尾",
+      "doNotUseWhen": "只是一次按键，或长循环会让声音机械重复"
+    }
+  ],
+  "distributionPolicy": {
+    "repositoryMayInclude": [
+      "schema",
+      "selection rules",
+      "validator",
+      "license notes",
+      "creator-owned audio explicitly licensed for Kacha distribution"
+    ],
+    "repositoryMustExclude": [
+      "third-party stock audio without redistribution rights",
+      "user-local audio without an explicit public license"
+    ]
+  }
+}

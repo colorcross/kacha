@@ -84,10 +84,17 @@ fi
 runner=()
 engine=""
 managed_data_root=${XDG_DATA_HOME:-"${HOME}/.local/share"}
-managed_demucs_bin=${KACHA_DEMUCS_BIN:-"$managed_data_root/kacha-kacha/demucs-venv/bin/demucs"}
+managed_demucs_bin=${KACHA_DEMUCS_BIN:-"$managed_data_root/kacha/demucs-venv/bin/demucs"}
+legacy_managed_demucs_bin="$managed_data_root/kacha-kacha/demucs-venv/bin/demucs"
 if [[ -x "$managed_demucs_bin" ]] && "$managed_demucs_bin" --help >/dev/null 2>&1; then
   runner=("$managed_demucs_bin")
   engine="kacha-managed-demucs"
+elif [[ -z "${KACHA_DEMUCS_BIN:-}" ]] \
+  && [[ -x "$legacy_managed_demucs_bin" ]] \
+  && "$legacy_managed_demucs_bin" --help >/dev/null 2>&1; then
+  runner=("$legacy_managed_demucs_bin")
+  managed_demucs_bin="$legacy_managed_demucs_bin"
+  engine="kacha-managed-demucs-legacy-path"
 elif command -v demucs >/dev/null 2>&1 && demucs --help >/dev/null 2>&1; then
   runner=(demucs)
   engine="demucs-command"

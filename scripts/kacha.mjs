@@ -94,6 +94,22 @@ function gatePlan() {
   invoke("validate_edit_proposal.mjs", [proposal]);
   invoke("validate_edit_plan.mjs", [editPlan]);
 
+  if (project.plans.localChange) {
+    const localChange = requireProjectPath(
+      projectFile,
+      project.plans.localChange,
+      "plans.localChange",
+    );
+    const argumentsList = [localChange];
+    if (
+      typeof project.plans.localChange === "object"
+      && project.plans.localChange.mode === "template"
+    ) {
+      argumentsList.push("--template");
+    }
+    invoke("validate_local_change_plan.mjs", argumentsList);
+  }
+
   for (const entry of project.plans.generatedShotPlans ?? []) {
     const plan = requireProjectPath(projectFile, entry, "generatedShotPlans");
     const argumentsList = [plan];

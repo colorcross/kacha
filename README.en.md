@@ -1,6 +1,6 @@
 # Kacha
 
-**Kacha** (`kacha-kacha`) is a local-first professional video workflow skill for **Codex** and **Claude Code**. It turns planning, editing, packaging, technical QC, and human review into explicit, auditable, fail-closed gates.
+**Kacha** (`kacha`) is a local-first professional video workflow skill for **Codex** and **Claude Code**. It turns planning, editing, packaging, technical QC, and human review into explicit, auditable, fail-closed gates.
 
 [中文说明](README.md) · [One-prompt install](docs/en/AGENT_INSTALL.md) · [Quick start](docs/en/QUICKSTART.md) · [Privacy and security](docs/en/PRIVACY_SECURITY.md)
 
@@ -40,6 +40,7 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Builds auditable edit proposals with source hashes, authorization boundaries, success criteria, and fallbacks.
 - Validates semantic cuts, shot motivation, continuity, reframing, masks, picture-in-picture, subtitles, covers, and visual packaging.
 - Coordinates dialogue preprocessing, voice enhancement, final mixing, and audio/video alignment.
+- Bundles 12 creator-produced sound effects with exact titles, IDs, hashes, and a dedicated asset license.
 - Records AI-generated shot plans with provider, model, capability snapshot, paid-call authorization, and QC targets.
 - Runs automated media checks and requires separate human-review evidence before local release.
 - Keeps uploads, publishing, purchases, and paid generation outside the default authorization boundary.
@@ -74,8 +75,8 @@ The installer refuses to overwrite an existing target. The default locations are
 
 | Agent | User-level skill directory |
 | --- | --- |
-| Codex | `~/.agents/skills/kacha-kacha` |
-| Claude Code | `~/.claude/skills/kacha-kacha` |
+| Codex | `~/.codex/skills/kacha` |
+| Claude Code | `~/.claude/skills/kacha` |
 
 The installer needs Python 3, `curl`, and `tar`. Node.js 20+ is required for the gates; FFmpeg, FFprobe, and `jq` are required for the full core workflow. Apple Vision mask generation is macOS-only. See [Installation and dependencies](docs/en/INSTALLATION.md).
 
@@ -85,8 +86,8 @@ The installer needs Python 3, `curl`, and `tar`. Node.js 20+ is required for the
 | --- | --- | --- |
 | `proposal_review` | You only want a reviewed editing proposal | Stop after `gate-plan` |
 | `source_edit` | You have source media and want an edited deliverable | Continue through render, QC, and review |
-| `script_to_video` | You are turning a script into a new video | Plan and verify every acquired or generated asset |
-| `re_edit` | You are restructuring an existing edited video | Preserve provenance and validate the new timeline |
+| `content_generation` | You are turning a script or source material into a new video | Plan and verify every acquired or generated asset |
+| `local_optimization` | You are changing a named layer or interval in an existing version | Freeze unaffected layers and rebuild current-version audit evidence |
 
 Planning is not authorization to modify files. Rendering is not QC. Automated technical QC is not human approval. Local release is not upload or publication.
 
@@ -130,6 +131,7 @@ SKILL.md           Agent entry point and routing rules
 references/        Detailed workflow, editing, audio, visual, and QC contracts
 scripts/           Gates, validators, probes, media helpers, and secret scanning
 examples/          Fictional contract templates
+assets/sfx/        12 original SFX, working copies, hashes, and asset license
 tests/             Regression and installer tests
 docs/              Chinese documentation
 docs/en/           English documentation
@@ -176,4 +178,4 @@ The scanner reduces risk but cannot prove that a repository contains no sensitiv
 
 ## License
 
-[MIT](LICENSE). Third-party media, fonts, models, templates, and platform content are not licensed by this repository.
+[MIT](LICENSE) for code and documentation. The bundled original SFX use the dedicated [asset license](assets/sfx/LICENSE.md). Third-party media, fonts, models, templates, and platform content are not licensed by this repository.

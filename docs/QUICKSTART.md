@@ -19,6 +19,7 @@ cp examples/project-manifest.json my-video-project/contracts/
 
 - `taskPath`；
 - 真实输入文件路径、角色、规格和 SHA-256；
+- `creativeLock` 中的源/输出画幅、格式、前台主体、AI 角色与冻结决定；
 - 平台、受众、语言、时长、视频与封面画幅；
 - 内容保留、删除、重排和待核验项；
 - 启用模块、成功条件、失败回退；
@@ -64,7 +65,7 @@ scripts/capability_probe.sh \
 node scripts/kacha.mjs gate-render my-video-project/contracts/project-manifest.json
 ```
 
-通过后，使用项目选定的 FFmpeg、NLE、Remotion、HyperFrames 或其他时间线引擎执行。咔嚓咔嚓负责合同和门禁，不会自动生成通用时间线。
+通过后，使用项目选定的 FFmpeg、NLE、Remotion、HyperFrames 或其他时间线引擎执行。咔嚓负责合同和门禁，不会自动生成通用时间线。
 
 ## 6. 执行 v2 阶段
 
@@ -93,6 +94,8 @@ node scripts/kacha.mjs qc my-video-project/contracts/project-manifest.json
 ```
 
 自动 QC 会输出技术报告并检查解码、轨道、尺寸、画幅、帧率、音频、A/V 时长差、响度和黑/冻/静音线索。`pass_with_review` 仍表示存在需要人工处置的线索。
+
+局部优化时另外复制 `examples/local-change-plan.json`，声明改动层、冻结层和影响区间；纯声音变化不要重编码画面。
 
 ## 8. 人工审片与 release gate
 

@@ -39,6 +39,7 @@ const GROUPS = {
   masks: [
     "framework:apple-vision",
     "filter:bilateral",
+    "filter:blend",
     "filter:gblur",
     "filter:maskedmerge",
     "filter:alphamerge",
@@ -82,11 +83,18 @@ const managedDataRoot = process.env.XDG_DATA_HOME
 const managedDemucsBin = process.env.KACHA_DEMUCS_BIN
   || path.join(
     managedDataRoot,
-    "kacha-kacha",
+    "kacha",
     "demucs-venv",
     "bin",
     "demucs",
   );
+const legacyManagedDemucsBin = path.join(
+  managedDataRoot,
+  "kacha-kacha",
+  "demucs-venv",
+  "bin",
+  "demucs",
+);
 
 function usage() {
   console.error(
@@ -165,14 +173,15 @@ function inspect(capability) {
     };
   }
   if (kind === "engine" && value === "dialogue-separation") {
-    const managed = run("/bin/test", ["-x", managedDemucsBin]);
-    if (managed.status === 0) {
-      const help = run(managedDemucsBin, ["--help"]);
+    const availableManagedBin = [managedDemucsBin, legacyManagedDemucsBin]
+      .find((candidate) => run("/bin/test", ["-x", candidate]).status === 0);
+    if (availableManagedBin) {
+      const help = run(availableManagedBin, ["--help"]);
       return {
         available: help.status === 0,
         evidence: help.status === 0
-          ? `managed Demucs CLI: ${managedDemucsBin}`
-          : `managed Demucs CLI failed: ${managedDemucsBin}`,
+          ? `managed Demucs CLI: ${availableManagedBin}`
+          : `managed Demucs CLI failed: ${availableManagedBin}`,
       };
     }
     if (commandExists("demucs")) {

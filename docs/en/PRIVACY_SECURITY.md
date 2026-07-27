@@ -9,7 +9,7 @@ Kacha is local-first. By default it does not upload, publish, purchase licenses,
 - API keys, tokens, cookies, passwords, or OAuth credentials
 - `.env`, `media.env`, or private shell configuration
 - SSH, PGP, or TLS private keys
-- Raw video, audio, portraits, subtitle drafts, or unpublished writing
+- Raw video, audio, portraits, subtitle drafts, or unpublished writing, except the 12 creator-owned SFX explicitly listed in `assets/sfx/manifest.json`
 - Client, interviewee, or internal project information
 - Model weights, download caches, render outputs, or capability snapshots
 - Absolute paths containing a local username
@@ -23,9 +23,10 @@ The scripts recognize these environment variable names:
 - `PIXABAY_API_KEY`
 - `PEXELS_API_KEY`
 - `KACHA_DEMUCS_BIN`
+- `KACHA_SFX_LIBRARY`
 - `XDG_DATA_HOME`
 
-The first two are sensitive credentials; the last two are local path settings. Never commit real values. Inject credentials through a local password manager, a CI secret store, or a permission-controlled shell environment.
+The first two are sensitive credentials; the last three are local path settings. Never commit real values. Inject credentials through a local password manager, a CI secret store, or a permission-controlled shell environment.
 
 ## Pre-publication checks
 

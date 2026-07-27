@@ -19,8 +19,8 @@ HOME="$test_home" "$root/scripts/install.sh" \
   --archive "$archive" \
   --ref main
 
-codex_skill="$test_home/.agents/skills/kacha-kacha"
-claude_skill="$test_home/.claude/skills/kacha-kacha"
+codex_skill="$test_home/.codex/skills/kacha"
+claude_skill="$test_home/.claude/skills/kacha"
 [[ -f "$codex_skill/SKILL.md" ]]
 [[ -f "$claude_skill/SKILL.md" ]]
 [[ -f "$codex_skill/.kacha-version" ]]

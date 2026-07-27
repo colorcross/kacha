@@ -24,6 +24,8 @@
 
 不能只写“优化节奏”“提升画面”或“加入合适素材”。每个启用模块都要有理由、动作和成功条件；不适用模块写 `not_applicable` 及理由。
 
+在任何粗剪、改画幅、生成素材或效果设计前，必须填写 `creativeLock`：源/输出画幅、是否保持源格式、前台主体、AI 角色、冻结决定和重新授权条件。偏离锁定项时停止执行并重新确认，不能在后续“尽量修回去”。
+
 先运行：
 
 ```bash
@@ -80,6 +82,14 @@ node scripts/kacha.mjs gate-release PROJECT.json
 - 同一轮反馈只生成一个新版本；
 - 先做最小预览，再完整渲染；
 - 修复一处同类缺陷后，对全片同类位置做规则化回归。
+
+使用 `examples/local-change-plan.json` 和：
+
+```bash
+node scripts/validate_local_change_plan.mjs local-change-plan.json
+```
+
+纯音频改动优先 stream-copy 原视频；删段必须让所有时间层共用帧边界；每个新版本必须重建审计文件，不能继承旧版本的 proposal、QC 或 release report。
 
 调整人声时使用同源、同响度 A/B；调整美颜时使用同源、同帧、同裁切脸部 A/B；字幕至少检查亮底、暗底和最长一条；画中画检查进入前、停留中和退出后。
 

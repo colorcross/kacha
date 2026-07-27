@@ -262,6 +262,10 @@ function validateEffects(effects, plan, errors) {
       if (!hasValue(effect.visualExit)) {
         errors.push(`${label}: 外部插镜必须提供 visualExit`);
       }
+      const exitLead = Number(effect.exitLeadFrames);
+      if (!Number.isInteger(exitLead) || exitLead < 1 || exitLead > 4) {
+        errors.push(`${label}: 外部插镜 exitLeadFrames 必须为 1 至 4`);
+      }
     }
 
     const isGeneratedInsert = techniqueIncludes(effect, [
@@ -270,8 +274,16 @@ function validateEffects(effects, plan, errors) {
       "seedance",
       "minimax",
     ]);
-    if (isGeneratedInsert && !hasValue(effect.generatedShotId)) {
-      errors.push(`${label}: AI 生成镜头缺少 generatedShotId`);
+    if (isGeneratedInsert) {
+      if (!hasValue(effect.generatedShotId)) {
+        errors.push(`${label}: AI 生成镜头缺少 generatedShotId`);
+      }
+      requireFields(
+        effect.continuityMatch,
+        ["entrance", "exit", "motionDirection", "subjectAppearance"],
+        `${label}.continuityMatch`,
+        errors,
+      );
     }
 
     const isPip = techniqueIncludes(effect, ["画中画", "picture-in-picture", "pip"]);
@@ -281,7 +293,41 @@ function validateEffects(effects, plan, errors) {
       }
       requireFields(
         effect,
-        ["boundaryQC", "duplicateSourcePolicy", "occlusionCheck"],
+        ["boundaryQC", "duplicateSourcePolicy", "occlusionCheck", "frameTreatment"],
+        label,
+        errors,
+      );
+    }
+
+    const isTypewriter = techniqueIncludes(effect, ["打字", "typewriter"]);
+    if (isTypewriter) {
+      requireFields(
+        effect,
+        ["characterTiming", "soundAsset"],
+        label,
+        errors,
+      );
+      if (effect.characterTiming?.mode !== "per_character") {
+        errors.push(`${label}: 打字效果必须逐字符出现`);
+      }
+      requireFields(
+        effect.soundAsset,
+        ["assetId", "title", "readySha256"],
+        `${label}.soundAsset`,
+        errors,
+      );
+    }
+
+    const isSplitScreen = techniqueIncludes(effect, ["分屏", "split-screen", "split screen"]);
+    if (isSplitScreen) {
+      requireFields(effect, ["subjectSafeArea"], label, errors);
+    }
+
+    const isParallax = techniqueIncludes(effect, ["2.5d", "视差", "parallax"]);
+    if (isParallax) {
+      requireFields(
+        effect,
+        ["layerManifest", "alphaAndPtsPreflight", "representativePreview", "fallback"],
         label,
         errors,
       );

@@ -112,9 +112,17 @@ if (summary.video) {
     const tolerance = Number(expected.fpsTolerance ?? 0.001);
     checks.push(
       check(
-        "fps",
-        Math.abs(summary.fps - expected.fps) <= tolerance,
-        summary.fps,
+        "declared_fps",
+        Math.abs(summary.declaredFps - expected.fps) <= tolerance,
+        summary.declaredFps,
+        `${expected.fps} ± ${tolerance}`,
+      ),
+    );
+    checks.push(
+      check(
+        "average_fps",
+        Math.abs(summary.averageFps - expected.fps) <= tolerance,
+        summary.averageFps,
         `${expected.fps} ± ${tolerance}`,
       ),
     );
@@ -284,6 +292,8 @@ const report = {
     width: summary.width,
     height: summary.height,
     fps: summary.fps,
+    declaredFps: summary.declaredFps,
+    averageFps: summary.averageFps,
     videoCodec: summary.video?.codec_name ?? null,
     pixelFormat: summary.video?.pix_fmt ?? null,
     colorSpace: summary.video?.color_space ?? null,

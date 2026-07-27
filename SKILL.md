@@ -1,10 +1,10 @@
 ---
-name: kacha-kacha
+name: kacha
 description: |
-  “咔嚓咔嚓”本地专业视频策划、精剪、包装与验收 Skill。适用于先制定并验证详细剪辑方案，再处理真人口播、文稿内容视频、字幕、音频、BGM/SFX、插镜、画中画、美颜、人物/局部蒙版、主体感知重构图、调色、Seedance/MiniMax 生成镜头、封面及完整 QC。强调语义完整、音画同切、切镜有信息/情绪/视角依据、效果有理论合同、生成与素材可追溯、能力按项目探测、自动技术检查和人工审片共同放行。默认本地处理，不上传、不发布。
+  “咔嚓”本地专业视频策划、精剪、包装与验收 Skill。适用于先制定并验证详细剪辑方案，再处理真人口播、文稿内容视频、字幕、音频、BGM/SFX、插镜、画中画、美颜、人物/局部蒙版、主体感知重构图、调色、Seedance/MiniMax 生成镜头、封面及完整 QC。强调语义完整、音画同切、切镜有信息/情绪/视角依据、效果有理论合同、生成与素材可追溯、能力按项目探测、自动技术检查和人工审片共同放行。默认本地处理，不上传、不发布。
 ---
 
-# 咔嚓咔嚓
+# 咔嚓
 
 把视频剪得更清楚、更顺、更像同一支作品。先解决内容、连接和同步，再做包装；不用转场或特效掩盖错误切点。
 
@@ -17,9 +17,9 @@ description: |
 主代理必须完整读完本文件，再按任务读取对应 reference：
 
 - 所有整支剪辑、跨版本重做或内容生成：
-  `references/project-workflow.md`、`references/editing-theory.md`、`references/qc-release.md`
+  `references/project-workflow.md`、`references/editing-theory.md`、`references/qc-release.md`；复盘生产缺陷或修改流程门禁时再读 `docs/PRODUCTION_HARDENING.md`
 - 人声、BGM、SFX、响度或同步：
-  `references/audio.md`
+  `references/audio.md`；使用本地音效库时再读 `references/sfx-library.md`
 - 插镜、画中画、美颜、蒙版、人物后文字、重构图、调色：
   `references/visuals-masks.md`
 - 字幕、封面、品牌、系列名、开头和结尾：
@@ -70,6 +70,7 @@ description: |
 - `examples/edit-plan.json`
 - `examples/project-manifest.json`
 - `examples/generated-shot-plan.json`
+- `examples/local-change-plan.json`
 - `examples/release-report.template.json`
 
 方案门禁：
@@ -123,17 +124,40 @@ node scripts/validate_edit_plan.mjs edit-plan.json
 - 不同主体相同景别不误杀；
 - 外部插镜、画中画、蒙版和生成镜头启用各自条件合同。
 
+### 局部优化
+
+```bash
+node scripts/validate_local_change_plan.mjs local-change-plan.json
+```
+
+- 每项修改必须显式列出 `changedLayers` 与 `frozenLayers`；
+- 纯音效替换必须复用原视频流，禁止无意义重编码画面；
+- 完整删段必须让画面、dialogue、BGM、SFX 与字幕共用帧边界；
+- 字幕和临时元素要在新连接点前 1–4 帧退出；
+- 新版本必须重建 proposal、edit plan、project manifest、technical QC 与 release report，禁止继承旧版本身份和证据。
+
+### 本地音效库
+
+```bash
+node scripts/validate_sfx_library.mjs \
+  "$KACHA_SFX_LIBRARY/manifest.json" \
+  --title "单击键盘"
+```
+
+用户点名音效时按 title、asset ID 和哈希精确命中，不能用“听起来差不多”的素材替代。音频文件是否可用于成片和是否允许随公开仓库再分发必须分开判断。
+
 ### 蒙版
 
 ```bash
 scripts/generate_vision_masks.swift SOURCE.mov MASK_DIR SOURCE_FPS accurate
 node scripts/build_mask_video.mjs MASK_DIR/manifest.json person MASK_DIR/person.mkv
 node scripts/build_mask_video.mjs MASK_DIR/manifest.json face MASK_DIR/face.mkv
-scripts/apply_mask_effect.sh SOURCE.mov MASK_DIR/face.mkv OUTPUT.mov face-light
+node scripts/build_mask_video.mjs MASK_DIR/manifest.json skin MASK_DIR/skin.mkv
+scripts/apply_mask_effect.sh SOURCE.mov MASK_DIR/skin.mkv OUTPUT.mov beauty-light
 scripts/compose_text_behind_person.sh SOURCE.mov MASK_DIR/person.mkv TEXT.mov OUTPUT.mov
 ```
 
-PNG 蒙版必须按 manifest 的 PTS 组装为无损视频。源、蒙版和文字层在时长、帧率或起始 PTS 上相差超过一帧时失败，禁止末帧复制和 `-shortest` 静默截短。
+PNG 蒙版必须按 manifest 的 PTS 组装为无损视频。源、蒙版和文字层在时长、帧率或起始 PTS 上相差超过一帧时失败，禁止末帧复制和 `-shortest` 静默截短。皮肤蒙版保护眼睛、眉毛、嘴唇和眼镜附近；`beauty-plus` 仅在同源、同帧、同裁切 A/B 通过时启用，不做脸型几何重塑。
 
 ### 人声
 
@@ -196,6 +220,7 @@ node scripts/kacha.mjs gate-release PROJECT.json
 - 基础重构图、几何蒙版、隐私遮挡、画中画、分屏和条件式人物后文字；
 - 基础稳定、SDR 调色和跨镜头匹配；
 - 单人口播降噪、人声整形、stem 混音、BGM 闪避、SFX 和响度 QC；
+- 12 个经作者确认的原创音效及精确 title/ID/hash 清单；
 - 单/双语字幕校准、封面、多画幅和技术 QC；
 - 有来源和许可记录的网络素材；
 - 经过当前能力快照、授权和 QC 的 MiniMax/Seedance 插镜。
@@ -212,6 +237,7 @@ node scripts/kacha.mjs gate-release PROJECT.json
 
 ### 不承诺
 
+- 瘦脸、大眼、改鼻形等人脸几何重塑；
 - 严重失焦、削波、滚动快门、运动模糊或低码率压缩的无损恢复；
 - 与剪映、Premiere、Resolve 等未公开商业模型在所有素材上的一键等价；
 - 无专业引擎的稳定 3D 跟踪、复杂长发转描和运动镜头物体移除；

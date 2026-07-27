@@ -53,7 +53,7 @@ See [One-prompt installation](AGENT_INSTALL.md) for the full prompt and safety b
 Default user-level directory:
 
 ```text
-~/.agents/skills/kacha-kacha
+~/.codex/skills/kacha
 ```
 
 Install:
@@ -68,7 +68,7 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 Default personal skills directory:
 
 ```text
-~/.claude/skills/kacha-kacha
+~/.claude/skills/kacha
 ```
 
 Install:
@@ -87,7 +87,7 @@ Both Agents use the same `SKILL.md` and supporting files; the project does not m
 Core capabilities:
 
 ```bash
-cd ~/.agents/skills/kacha-kacha
+cd ~/.codex/skills/kacha
 scripts/capability_probe.sh --profile core --output capabilities.json
 ```
 
@@ -110,9 +110,10 @@ The probe exits non-zero when a required capability is missing. Downgrade the pr
 Demucs can generate dialogue and residual candidates. Use an isolated virtual environment to avoid changing system Python. The scripts search in this order:
 
 1. `KACHA_DEMUCS_BIN`
-2. `$XDG_DATA_HOME/kacha-kacha/demucs-venv/bin/demucs`
-3. the `demucs` command
-4. `python3 -m demucs`
+2. `$XDG_DATA_HOME/kacha/demucs-venv/bin/demucs`
+3. `$XDG_DATA_HOME/kacha-kacha/demucs-venv/bin/demucs` during legacy migration
+4. the `demucs` command
+5. `python3 -m demucs`
 
 Source separation is lossy inference. A successful command does not prove that the result is usable; perform loudness-matched A/B review and check residual leakage.
 

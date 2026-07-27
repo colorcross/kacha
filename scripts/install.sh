@@ -16,8 +16,8 @@ Usage:
   install.sh --agent codex|claude|both [--ref REF] [--target DIR] [--dry-run]
 
 Default locations:
-  Codex       ~/.agents/skills/kacha-kacha
-  Claude Code ~/.claude/skills/kacha-kacha
+  Codex       ~/.codex/skills/kacha
+  Claude Code ~/.claude/skills/kacha
 
 Options:
   --agent NAME    Required: codex, claude, or both
@@ -113,8 +113,8 @@ if [[ -n "$custom_target" && "$agent" == "both" ]]; then
   exit 2
 fi
 
-codex_target=${KACHA_CODEX_SKILLS_DIR:-"$HOME/.agents/skills"}/kacha-kacha
-claude_target=${KACHA_CLAUDE_SKILLS_DIR:-"$HOME/.claude/skills"}/kacha-kacha
+codex_target=${KACHA_CODEX_SKILLS_DIR:-"$HOME/.codex/skills"}/kacha
+claude_target=${KACHA_CLAUDE_SKILLS_DIR:-"$HOME/.claude/skills"}/kacha
 
 resolve_target() {
   case "$1" in
@@ -134,7 +134,7 @@ validate_target() {
 prepare_source() {
   local work_root=$1
   local downloaded_archive="$work_root/kacha.tar.gz"
-  local candidate="$work_root/kacha-kacha"
+  local candidate="$work_root/kacha"
   local top_directory
   local version
 

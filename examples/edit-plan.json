@@ -120,7 +120,9 @@
         "startSeconds": 68.0,
         "endSeconds": 71.8
       },
+      "exitLeadFrames": 2,
       "visualExit": "71.8 秒前完成卡片、画中画和装饰层退场，下一帧恢复纯 A-roll",
+      "frameTreatment": "1.5 px 暖白边框、轻阴影和项目统一圆角；不得使用粗直播框",
       "boundaryQC": [
         "67.960 秒无画中画",
         "69.900 秒插镜与真人画中画内容正确",

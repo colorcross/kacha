@@ -115,7 +115,7 @@ node scripts/validate_generated_shot_plan.mjs PLAN.json --for-execution
 
 - 查询词包含对象、动作、构图、画幅、年代/地点和风格；
 - 每次 1–5 个候选，不囤库；
-- 凭据只从环境变量或 `~/.config/kacha-kacha/media.env` 读取；
+- 凭据只从环境变量或 `~/.config/kacha/media.env` 读取；
 - 下载使用临时文件和原子落盘；
 - 校验 Content-Type、非空文件、实际解码、尺寸、编码和 SHA-256；
 - 已存在文件和 manifest 不静默覆盖；

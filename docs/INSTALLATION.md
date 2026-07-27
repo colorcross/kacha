@@ -43,7 +43,7 @@ python3 --version
 把下面这句话发给当前 Codex 或 Claude Code：
 
 ```text
-请从 https://github.com/colorcross/kacha.git 安装“咔嚓咔嚓”skill。判断你当前是 Codex 还是 Claude Code，检查并运行 scripts/install.sh，完成隐私扫描和测试，然后立即读取安装后的 SKILL.md，让它在当前会话可直接使用。不要覆盖已有修改，不要上传我的本地文件。
+请从 https://github.com/colorcross/kacha.git 安装“咔嚓”skill。判断你当前是 Codex 还是 Claude Code，检查并运行 scripts/install.sh，完成隐私扫描和测试，然后立即读取安装后的 SKILL.md，让它在当前会话可直接使用。不要覆盖已有修改，不要上传我的本地文件。
 ```
 
 完整提示、安全行为和命令行方式见[一句话安装](AGENT_INSTALL.md)。
@@ -53,7 +53,7 @@ python3 --version
 当前用户级目录：
 
 ```text
-~/.agents/skills/kacha-kacha
+~/.codex/skills/kacha
 ```
 
 安装：
@@ -68,7 +68,7 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 个人 skills 目录：
 
 ```text
-~/.claude/skills/kacha-kacha
+~/.claude/skills/kacha
 ```
 
 安装：
@@ -87,7 +87,7 @@ Claude Code 会监控已经存在的 skills 目录；如果安装器首次创建
 核心能力：
 
 ```bash
-cd ~/.agents/skills/kacha-kacha
+cd ~/.codex/skills/kacha
 scripts/capability_probe.sh --profile core --output capabilities.json
 ```
 
@@ -110,9 +110,10 @@ scripts/capability_probe.sh --profile core --output capabilities.json
 用于生成 dialogue 与 residual 候选。建议使用独立虚拟环境，避免污染系统 Python。脚本按以下顺序查找：
 
 1. `KACHA_DEMUCS_BIN`；
-2. `$XDG_DATA_HOME/kacha-kacha/demucs-venv/bin/demucs`；
-3. `demucs` 命令；
-4. `python3 -m demucs`。
+2. `$XDG_DATA_HOME/kacha/demucs-venv/bin/demucs`；
+3. 旧版迁移期间的 `$XDG_DATA_HOME/kacha-kacha/demucs-venv/bin/demucs`；
+4. `demucs` 命令；
+5. `python3 -m demucs`。
 
 源分离属于有损推断，安装成功不等于结果可直接使用，仍需同响度 A/B 和 residual 泄漏检查。
 

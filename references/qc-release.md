@@ -79,6 +79,7 @@ node scripts/kacha.mjs gate-release PROJECT.json
 - 蒙版无漏抠、误抠、白边、黑边、抖动或身份切换；
 - 美颜自然，脸颈手连续，背景和眼镜没有一起变软；
 - 跨素材曝光、白平衡、肤色和运动语言一致。
+- 插镜、字幕、画中画和临时卡片在切回主画面前 1–4 帧完成退出；
 
 ### 字幕和文字
 
@@ -97,6 +98,7 @@ node scripts/kacha.mjs gate-release PROJECT.json
 - BGM 可感知但不抢人声；
 - 每个计划内 SFX 在最终成片可听；
 - 响度、true peak、声道和 48 kHz 合同通过；
+- declared FPS 与 average FPS 都符合项目合同；
 - 手机扬声器和耳机均已正常速度试听。
 
 ### 封面、开头和结尾

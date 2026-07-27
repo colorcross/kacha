@@ -41,7 +41,7 @@ def load_private_env(path: Path) -> dict[str, str]:
 
 
 def fetch_json(url: str, headers: dict[str, str] | None = None) -> dict:
-    request_headers = {"User-Agent": "kacha-kacha-local-media-fetcher/1.0", "Accept": "application/json"}
+    request_headers = {"User-Agent": "kacha-local-media-fetcher/1.0", "Accept": "application/json"}
     request_headers.update(headers or {})
     request = urllib.request.Request(url, headers=request_headers)
     with urllib.request.urlopen(request, timeout=30) as response:
@@ -86,7 +86,7 @@ def validate_media(path: Path, kind: str) -> dict:
 def download(url: str, target: Path, kind: str) -> tuple[str, str, int, dict]:
     if target.exists():
         raise RuntimeError(f"Refusing to overwrite existing asset: {target}")
-    request = urllib.request.Request(url, headers={"User-Agent": "kacha-kacha-local-media-fetcher/1.0"})
+    request = urllib.request.Request(url, headers={"User-Agent": "kacha-local-media-fetcher/1.0"})
     digest = hashlib.sha256()
     temporary_path: Path | None = None
     content_type = ""
@@ -202,6 +202,10 @@ def pexels_items(key: str, query: str, kind: str, orientation: str, limit: int) 
 
 
 def main() -> int:
+    default_config = Path.home() / ".config/kacha/media.env"
+    legacy_config = Path.home() / ".config/kacha-kacha/media.env"
+    if not default_config.is_file() and legacy_config.is_file():
+        default_config = legacy_config
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--provider", choices=("pixabay", "pexels"), required=True)
     parser.add_argument("--kind", choices=("photo", "video"), required=True)
@@ -209,7 +213,7 @@ def main() -> int:
     parser.add_argument("--orientation", choices=("landscape", "portrait", "square"), default="landscape")
     parser.add_argument("--limit", type=int, default=3, choices=range(1, 6))
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--config", type=Path, default=Path.home() / ".config/kacha-kacha/media.env")
+    parser.add_argument("--config", type=Path, default=default_config)
     args = parser.parse_args()
 
     private_env = load_private_env(args.config)
@@ -245,7 +249,7 @@ def main() -> int:
             "decoded_media": decoded,
         })
     manifest = {
-        "schema": "kacha-kacha.media-manifest.v1", "provider": args.provider,
+        "schema": "kacha.media-manifest.v1", "provider": args.provider,
         "license_url": LICENSES[args.provider], "items": manifest_items,
     }
     manifest_path = args.output_dir / (

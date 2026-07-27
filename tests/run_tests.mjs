@@ -104,6 +104,14 @@ await test("proposal rejects missing executable source", () => {
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
 });
 
+await test("proposal rejects an output ratio outside the creative lock", () => {
+  const proposal = readJson(path.join(temporary, "proposal-valid.json"));
+  proposal.creativeLock.outputAspectRatio = "16:9";
+  const file = path.join(temporary, "proposal-bad-creative-lock.json");
+  writeJson(file, proposal);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
+});
+
 await test("edit plan allows same scale for a different subject", () => {
   const plan = readJson(path.join(examples, "edit-plan.json"));
   plan.cuts[0].shotScaleAfter = "medium";
@@ -302,6 +310,32 @@ await test("aligned mask and text pipelines preserve base duration", () => {
   }
 });
 
+await test("beauty modes preserve duration and produce distinct outputs", () => {
+  const light = path.join(temporary, "beauty-light.mov");
+  const plus = path.join(temporary, "beauty-plus.mov");
+  execute(path.join(scripts, "apply_mask_effect.sh"), [
+    baseVideo,
+    exactMask,
+    light,
+    "beauty-light",
+  ]);
+  execute(path.join(scripts, "apply_mask_effect.sh"), [
+    baseVideo,
+    exactMask,
+    plus,
+    "beauty-plus",
+  ]);
+  const baseDuration = mediaSummary(baseVideo).duration;
+  for (const file of [light, plus]) {
+    if (Math.abs(mediaSummary(file).duration - baseDuration) > 1 / 25 + 0.0005) {
+      throw new Error(`${path.basename(file)} duration drifted`);
+    }
+  }
+  if (sha256File(light) === sha256File(plus)) {
+    throw new Error("beauty-light and beauty-plus unexpectedly produced identical files");
+  }
+});
+
 await test("mask PNG manifest builds an aligned lossless video", () => {
   const maskDirectory = path.join(temporary, "mask-frames");
   fs.mkdirSync(maskDirectory);
@@ -343,6 +377,92 @@ await test("mask PNG manifest builds an aligned lossless video", () => {
     || Math.abs(summary.duration - 2) > 1 / 25 + 0.0005
   ) {
     throw new Error(`unexpected mask video contract: ${JSON.stringify(summary)}`);
+  }
+});
+
+await test("skin mask PNG manifest builds an aligned lossless video", () => {
+  const maskDirectory = path.join(temporary, "skin-mask-frames");
+  fs.mkdirSync(maskDirectory);
+  const first = path.join(maskDirectory, "skin_000001.png");
+  const second = path.join(maskDirectory, "skin_000002.png");
+  for (const [file, color] of [[first, "white"], [second, "black"]]) {
+    execute("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-y",
+      "-f", "lavfi", "-i", `color=c=${color}:s=80x45:d=0.04:r=25`,
+      "-frames:v", "1", file,
+    ]);
+  }
+  const manifest = {
+    schemaVersion: "2.0",
+    input: baseVideo,
+    sourceFPS: 25,
+    sourceDuration: 2,
+    sourceWidth: 320,
+    sourceHeight: 180,
+    frames: [
+      { timeSeconds: 0, skinMask: "skin_000001.png" },
+      { timeSeconds: 1, skinMask: "skin_000002.png" },
+    ],
+  };
+  const manifestFile = path.join(maskDirectory, "manifest.json");
+  const output = path.join(maskDirectory, "skin.mkv");
+  writeJson(manifestFile, manifest);
+  execute(process.execPath, [
+    path.join(scripts, "build_mask_video.mjs"),
+    manifestFile,
+    "skin",
+    output,
+  ]);
+  if (Math.abs(mediaSummary(output).duration - 2) > 1 / 25 + 0.0005) {
+    throw new Error("skin mask duration drifted");
+  }
+});
+
+await test("bundled original SFX pass hash, format and distribution checks", () => {
+  const result = execute(process.execPath, [
+    path.join(scripts, "validate_sfx_library.mjs"),
+    path.join(skillDirectory, "assets", "sfx", "manifest.json"),
+    "--require-public-distribution",
+  ]);
+  const report = JSON.parse(result.stdout);
+  if (report.assets.length !== 12) {
+    throw new Error(`expected 12 original SFX, got ${report.assets.length}`);
+  }
+});
+
+await test("local change template passes and rejects an unsafe overwrite", () => {
+  execute(process.execPath, [
+    path.join(scripts, "validate_local_change_plan.mjs"),
+    path.join(examples, "local-change-plan.json"),
+    "--template",
+  ]);
+  const plan = readJson(path.join(examples, "local-change-plan.json"));
+  plan.newVersion.overwriteBase = true;
+  const file = path.join(temporary, "local-change-unsafe.json");
+  writeJson(file, plan);
+  expectFailure(process.execPath, [
+    path.join(scripts, "validate_local_change_plan.mjs"),
+    file,
+    "--template",
+  ]);
+});
+
+await test("MOV timing normalizer stream-copies and checks both FPS values", () => {
+  const output = path.join(temporary, "timing-normalized.mov");
+  execute(process.execPath, [
+    path.join(scripts, "normalize_mov_timing.mjs"),
+    baseVideo,
+    output,
+    "--fps",
+    "25",
+  ]);
+  const summary = mediaSummary(output);
+  if (Math.abs(summary.declaredFps - 25) > 0.001
+    || Math.abs(summary.averageFps - 25) > 0.001) {
+    throw new Error("declared or average FPS is not 25");
+  }
+  if (summary.video.codec_name !== mediaSummary(baseVideo).video.codec_name) {
+    throw new Error("video codec changed during timing normalization");
   }
 });
 
