@@ -32,14 +32,14 @@
 把下面这句话复制给你正在使用的 Codex 或 Claude Code：
 
 ```text
-请帮我安装“咔嚓咔嚓”skill：从 https://github.com/colorcross/kacha.git 获取最新版；先判断你当前是 Codex 还是 Claude Code，再运行仓库的 scripts/install.sh，安装到对应的用户级 skills 目录。不要覆盖已有修改，不要上传或提交我的任何本地文件、密钥和素材。安装后运行隐私扫描与回归测试，立即完整读取已安装的 SKILL.md 和任务所需 references，然后告诉我安装路径、版本、验证结果以及现在是否可以直接使用。
+请帮我安装“咔嚓咔嚓”skill：从 https://github.com/colorcross/kacha.git 获取最新版；先判断你当前是 Codex 还是 Claude Code，再检查并运行仓库的 scripts/install.sh，安装到对应的用户级 skills 目录。不要覆盖已有安装或修改，不要上传或提交我的任何本地文件、密钥和素材；如果目标已经存在，只报告现状，不做覆盖。安装后运行隐私扫描与回归测试，立即完整读取已安装的 SKILL.md 和任务所需 references，然后告诉我安装路径、版本、验证结果以及现在是否可以直接使用。
 ```
 
 Agent 会自动下载、安装、验证，并在当前会话直接读取 skill。完整说明见[一句话安装](docs/AGENT_INSTALL.md)。
 
 ## 命令行安装
 
-需要 Git 和 Node.js 20+。核心媒体检查还需要 FFmpeg；完整依赖见[安装说明](docs/INSTALLATION.md)。
+安装器只需要 `curl`、`tar` 和 Python 3；实际运行门禁需要 Node.js 20+，核心媒体检查还需要 FFmpeg。完整依赖见[安装说明](docs/INSTALLATION.md)。
 
 Codex：
 
@@ -106,6 +106,7 @@ node scripts/kacha.mjs gate-release PROJECT.json
 
 咔嚓咔嚓默认本地处理。仓库不需要、也不应提交任何真实密钥。
 
+- 安装器通过 GitHub 公开源码归档下载，不读取 Git 凭据；
 - API 凭据只通过环境变量或本机未跟踪配置提供；
 - `.env`、私钥、素材、模型、输出和本机能力快照已加入 `.gitignore`；
 - 发布前运行 `python3 scripts/scan_secrets.py`；

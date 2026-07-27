@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_url=${KACHA_REPO_URL:-https://github.com/colorcross/kacha.git}
 ref=${KACHA_REF:-main}
+archive_url=${KACHA_ARCHIVE_URL:-}
+archive_file=""
 agent=""
 custom_target=""
 dry_run=false
@@ -19,17 +20,17 @@ Default locations:
   Claude Code ~/.claude/skills/kacha-kacha
 
 Options:
-  --agent NAME   Required: codex, claude, or both
-  --ref REF      Git branch or tag; default: main
-  --target DIR   Custom target; only valid with one agent
-  --repo URL     Override repository URL, mainly for mirrors and tests
-  --dry-run      Print planned actions without changing files
-  -h, --help     Show this help
+  --agent NAME    Required: codex, claude, or both
+  --ref REF       GitHub branch or tag; default: main
+  --target DIR    Custom target; only valid with one agent
+  --archive FILE  Install from a local tar.gz archive
+  --dry-run       Print planned actions without changing files
+  -h, --help      Show this help
 
 Safety:
-  - Never overwrites a non-Git directory.
-  - Never updates an installation with uncommitted changes.
-  - Only fast-forward updates are allowed.
+  - Downloads the public source archive without Git credentials.
+  - Validates the skill and scans for secrets before installation.
+  - Never overwrites an existing target, including local modifications.
 EOF
 }
 
@@ -50,9 +51,9 @@ while [[ $# -gt 0 ]]; do
       custom_target=$2
       shift 2
       ;;
-    --repo)
+    --archive)
       [[ $# -ge 2 ]] || { usage >&2; exit 2; }
-      repo_url=$2
+      archive_file=$2
       shift 2
       ;;
     --dry-run)
@@ -80,23 +81,32 @@ case "$agent" in
     ;;
 esac
 
-[[ "$ref" != -* && -n "$ref" ]] || {
-  printf '%s\n' "Invalid Git ref" >&2
+[[ "$ref" =~ ^[A-Za-z0-9._/-]+$ && "$ref" != -* ]] || {
+  printf '%s\n' "Invalid GitHub ref" >&2
   exit 2
 }
 [[ -n "${HOME:-}" && "$HOME" = /* && "$HOME" != "/" ]] || {
   printf '%s\n' "HOME must be an absolute, non-root directory" >&2
   exit 2
 }
-command -v git >/dev/null 2>&1 || {
-  printf '%s\n' "git is required" >&2
-  exit 2
-}
-command -v python3 >/dev/null 2>&1 || {
-  printf '%s\n' "python3 is required" >&2
-  exit 2
-}
-export GIT_TERMINAL_PROMPT=0
+for command_name in python3 tar; do
+  command -v "$command_name" >/dev/null 2>&1 || {
+    printf '%s is required\n' "$command_name" >&2
+    exit 2
+  }
+done
+if [[ -z "$archive_file" ]]; then
+  command -v curl >/dev/null 2>&1 || {
+    printf '%s\n' "curl is required" >&2
+    exit 2
+  }
+  archive_url=${archive_url:-"https://api.github.com/repos/colorcross/kacha/tarball/$ref"}
+else
+  [[ -f "$archive_file" ]] || {
+    printf 'Archive not found: %s\n' "$archive_file" >&2
+    exit 2
+  }
+fi
 
 if [[ -n "$custom_target" && "$agent" == "both" ]]; then
   printf '%s\n' "--target cannot be combined with --agent both" >&2
@@ -121,78 +131,122 @@ validate_target() {
   }
 }
 
+prepare_source() {
+  local work_root=$1
+  local downloaded_archive="$work_root/kacha.tar.gz"
+  local candidate="$work_root/kacha-kacha"
+  local top_directory
+  local version
+
+  if [[ -n "$archive_file" ]]; then
+    downloaded_archive=$archive_file
+  else
+    curl \
+      --fail \
+      --location \
+      --silent \
+      --show-error \
+      --retry 3 \
+      --connect-timeout 10 \
+      --max-time 120 \
+      --output "$downloaded_archive" \
+      "$archive_url"
+  fi
+
+  python3 - "$downloaded_archive" <<'PY'
+import pathlib
+import sys
+import tarfile
+
+archive = pathlib.Path(sys.argv[1])
+with tarfile.open(archive, "r:gz") as handle:
+    members = handle.getmembers()
+    if not members:
+        raise SystemExit("Downloaded archive is empty")
+    for member in members:
+        path = pathlib.PurePosixPath(member.name)
+        if path.is_absolute() or ".." in path.parts:
+            raise SystemExit(f"Unsafe archive path: {member.name}")
+        if member.issym() or member.islnk():
+            raise SystemExit(f"Archive links are not allowed: {member.name}")
+PY
+
+  top_directory=$(tar -tzf "$downloaded_archive" | sed -n '1s#/.*##p')
+  [[ -n "$top_directory" ]] || {
+    printf '%s\n' "Downloaded archive is empty or invalid" >&2
+    return 1
+  }
+  mkdir -p "$candidate"
+  tar -xzf "$downloaded_archive" -C "$candidate" --strip-components=1
+  [[ -f "$candidate/SKILL.md" && -f "$candidate/scripts/kacha.mjs" ]] || {
+    printf '%s\n' "Downloaded archive is missing required skill files" >&2
+    return 1
+  }
+
+  python3 "$candidate/scripts/scan_secrets.py" >&2
+  version=${top_directory##*-}
+  printf 'ref=%s\nsource=%s\narchive=%s\n' \
+    "$ref" "$version" "${archive_url:-local}" > "$candidate/.kacha-version"
+  printf '%s\n' "$candidate"
+}
+
 install_one() {
   local agent_name=$1
+  local source=$2
   local target
   local parent
-  local temporary
-  local candidate
-  local origin
 
   target=$(resolve_target "$agent_name")
   validate_target "$target"
   parent=$(dirname "$target")
 
   if $dry_run; then
-    if [[ -e "$target" ]]; then
-      printf '[dry-run] update %s at %s from %s ref %s\n' \
-        "$agent_name" "$target" "$repo_url" "$ref"
-    else
-      printf '[dry-run] install %s at %s from %s ref %s\n' \
-        "$agent_name" "$target" "$repo_url" "$ref"
-    fi
+    printf '[dry-run] install %s at %s from ref %s\n' \
+      "$agent_name" "$target" "$ref"
     return
   fi
 
-  if [[ -e "$target" ]]; then
-    [[ ! -L "$target" ]] || {
-      printf 'Refusing to update a symlinked installation: %s\n' "$target" >&2
-      return 1
-    }
-    [[ -d "$target/.git" && -f "$target/SKILL.md" ]] || {
-      printf 'Refusing to overwrite existing non-Kacha directory: %s\n' "$target" >&2
-      return 1
-    }
-    [[ -z "$(git -C "$target" status --porcelain)" ]] || {
-      printf 'Refusing to update installation with local changes: %s\n' "$target" >&2
-      return 1
-    }
-    origin=$(git -C "$target" remote get-url origin)
-    [[ "$origin" == "$repo_url" ]] || {
-      printf 'Origin mismatch at %s\nExpected: %s\nActual:   %s\n' \
-        "$target" "$repo_url" "$origin" >&2
-      return 1
-    }
-    git -c credential.helper= -C "$target" fetch --depth 1 origin "$ref"
-    git -C "$target" merge --ff-only FETCH_HEAD
-  else
-    mkdir -p "$parent"
-    temporary=$(mktemp -d "$parent/.kacha-install.XXXXXX")
-    candidate="$temporary/kacha-kacha"
-    trap 'rm -rf "${temporary:-}"' RETURN
-    git -c credential.helper= clone --depth 1 --branch "$ref" "$repo_url" "$candidate"
-    [[ -f "$candidate/SKILL.md" && -f "$candidate/scripts/kacha.mjs" ]] || {
-      printf '%s\n' "Downloaded repository is missing required skill files" >&2
-      return 1
-    }
-    python3 "$candidate/scripts/scan_secrets.py"
-    mv "$candidate" "$target"
-    rm -rf "$temporary"
-    trap - RETURN
+  if [[ -e "$target" || -L "$target" ]]; then
+    if [[ -f "$target/SKILL.md" ]]; then
+      printf 'Already installed; left unchanged for %s: %s\n' \
+        "$agent_name" "$target"
+      return
+    fi
+    printf 'Refusing to overwrite existing directory: %s\n' "$target" >&2
+    return 1
   fi
 
+  mkdir -p "$parent"
+  mv "$source" "$target"
   printf 'Installed for %s: %s\n' "$agent_name" "$target"
-  printf 'Commit: %s\n' "$(git -C "$target" rev-parse --short=12 HEAD)"
+  printf 'Version: %s\n' "$(sed -n '2s/^source=//p' "$target/.kacha-version")"
 }
 
-case "$agent" in
-  codex) install_one codex ;;
-  claude) install_one claude ;;
-  both)
-    install_one codex
-    install_one claude
-    ;;
-esac
+if $dry_run; then
+  case "$agent" in
+    codex) install_one codex "" ;;
+    claude) install_one claude "" ;;
+    both)
+      install_one codex ""
+      install_one claude ""
+      ;;
+  esac
+else
+  work_root=$(mktemp -d "${TMPDIR:-/tmp}/kacha-install.XXXXXX")
+  trap 'rm -rf "${work_root:-}"' EXIT
+  source=$(prepare_source "$work_root")
+
+  case "$agent" in
+    codex) install_one codex "$source" ;;
+    claude) install_one claude "$source" ;;
+    both)
+      codex_source="$work_root/kacha-codex"
+      cp -R "$source" "$codex_source"
+      install_one codex "$codex_source"
+      install_one claude "$source"
+      ;;
+  esac
+fi
 
 printf '%s\n' "Installation complete."
 printf '%s\n' "Current Agent: read the installed SKILL.md now, then load the required references before use."

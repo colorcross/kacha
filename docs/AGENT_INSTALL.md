@@ -7,7 +7,7 @@
 ## 推荐：复制这句话给当前 Agent
 
 ```text
-请帮我安装“咔嚓咔嚓”skill：从 https://github.com/colorcross/kacha.git 获取最新版；先判断你当前是 Codex 还是 Claude Code，再运行仓库的 scripts/install.sh，安装到对应的用户级 skills 目录。不要覆盖已有修改，不要上传或提交我的任何本地文件、密钥和素材。安装后运行隐私扫描与回归测试，立即完整读取已安装的 SKILL.md 和任务所需 references，然后告诉我安装路径、版本、验证结果以及现在是否可以直接使用。
+请帮我安装“咔嚓咔嚓”skill：从 https://github.com/colorcross/kacha.git 获取最新版；先判断你当前是 Codex 还是 Claude Code，再检查并运行仓库的 scripts/install.sh，安装到对应的用户级 skills 目录。不要覆盖已有安装或修改，不要上传或提交我的任何本地文件、密钥和素材；如果目标已经存在，只报告现状，不做覆盖。安装后运行隐私扫描与回归测试，立即完整读取已安装的 SKILL.md 和任务所需 references，然后告诉我安装路径、版本、验证结果以及现在是否可以直接使用。
 ```
 
 这段话要求 Agent 完成下载、安装、隐私检查、测试和当前会话加载。即使客户端尚未刷新 skill 列表，Agent 也可以通过直接读取刚安装的 `SKILL.md` 在当前会话使用。
@@ -48,11 +48,9 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 
 ## 安装器的安全行为
 
-- 目标不存在时，先下载到同级临时目录，验证结构和隐私扫描后再原子移动；
-- 目标是非 Git 目录时拒绝覆盖；
-- 已安装目录存在未提交改动时拒绝更新；
-- origin 不匹配时拒绝更新；
-- 更新只允许 fast-forward；
+- 使用 GitHub 公开源码归档下载，不读取 Git 凭据；
+- 目标不存在时，先下载到临时目录，验证结构和隐私扫描后再移动；
+- 目标已存在时保持不变，不覆盖已有安装或本地修改；
 - 不读取、不复制、不上传用户项目、密钥、素材和现有其他 skills；
 - Codex 安装不会修改 Claude Code 目录，Claude Code 安装不会修改 Codex 目录。
 

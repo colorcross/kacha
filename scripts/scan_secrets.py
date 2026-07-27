@@ -69,7 +69,7 @@ ALLOW_LINE_MARKERS = (
 )
 
 
-def git_candidates() -> list[Path]:
+def candidates() -> list[Path]:
     result = subprocess.run(
         [
             "git",
@@ -81,13 +81,29 @@ def git_candidates() -> list[Path]:
             "--exclude-standard",
             "-z",
         ],
-        check=True,
+        check=False,
         capture_output=True,
     )
+    if result.returncode == 0:
+        return [
+            ROOT / item.decode("utf-8")
+            for item in result.stdout.split(b"\0")
+            if item
+        ]
+    ignored_parts = {
+        ".git",
+        "__pycache__",
+        "node_modules",
+        "models",
+        "outputs",
+        "renders",
+        "tmp",
+        "weights",
+    }
     return [
-        ROOT / item.decode("utf-8")
-        for item in result.stdout.split(b"\0")
-        if item
+        path
+        for path in ROOT.rglob("*")
+        if path.is_file() and not ignored_parts.intersection(path.parts)
     ]
 
 
@@ -102,7 +118,7 @@ def entropy(value: str) -> float:
 
 def main() -> int:
     findings: list[str] = []
-    for path in git_candidates():
+    for path in candidates():
         relative = path.relative_to(ROOT)
         if path.name in SENSITIVE_NAMES or path.suffix.lower() in {
             ".key",

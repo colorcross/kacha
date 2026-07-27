@@ -2,11 +2,16 @@
 
 ## 基础环境
 
-最低建议：
+安装器最低需要：
+
+- Python 3.10 或更高版本
+- `curl`
+- `tar`
+
+运行完整工作流建议：
 
 - Git
 - Node.js 20 或更高版本
-- Python 3.10 或更高版本
 - FFmpeg 与 FFprobe
 - `jq`
 
