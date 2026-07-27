@@ -1,0 +1,24 @@
+name: Feature request
+description: 建议新的工作流、门禁或条件能力
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: use-case
+    attributes:
+      label: 使用场景
+      description: 用户要解决什么问题？
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: 能力合同
+      description: 触发条件、机制、简单替代、失败条件和 QC 证据分别是什么？
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: 依赖与平台
+      description: 是否需要外部服务、付费调用、特定 OS、模型或许可？

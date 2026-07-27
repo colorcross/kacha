@@ -1,0 +1,31 @@
+name: Bug report
+description: 报告可复现的脚本、门禁或文档问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题
+      description: 发生了什么？预期行为是什么？
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 最小复现
+      description: 请使用虚构或脱敏数据，不要上传真实素材、密钥或个人信息。
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境
+      description: OS、Node、FFmpeg、相关 capability profile。
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 日志与证据
+      description: 请先删除用户名、绝对路径、token、任务 ID 和素材内容。

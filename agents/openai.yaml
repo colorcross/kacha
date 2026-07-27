@@ -1,0 +1,4 @@
+interface:
+  display_name: "咔嚓咔嚓"
+  short_description: "方案先行、失败即停、自动技术 QC 与人工审片共同放行的本地专业视频精剪"
+  default_prompt: "使用咔嚓咔嚓时完整读取 SKILL.md，并按任务读取对应 references。整支剪辑先建立 v2 editProposal、edit plan 和 project manifest，明确真实输入与哈希、内容骨架、保留/删除/重排、切镜景别、留存节奏、画面、字幕、dialogue 人声、final mix、调色、美颜蒙版、生成媒体、封面、输出、授权、fallback 和 13 阶段门禁。用户只要求方案时停止；已明确授权先方案后执行时，gate-plan 通过后按冻结范围连续推进。切镜以信息、情绪或视角变化为理由，只禁止同一主体相邻同景别，不误杀不同主体相同景别。效果必须有触发条件、机制、简单替代、失败条件和 QC 证据。音频分 dialogue_preprocess 与 final_mix；dialogue_preprocess 先生成并验收独立人声与非人声 residual，通过后剔除 residual，再做降噪和增强；原始参考与 residual 必须保留用于 A/B 和回退。蒙版 PNG 必须按 manifest PTS 组装成无损蒙版视频，源、蒙版和文字层不对齐时失败，禁止末帧复制和 shortest 截短。AI 镜头默认检查参考文件/哈希、能力时效、provider/model/transport、模式、时长、分辨率、画幅和付费授权。成片必须经过自动技术 QC、全部人工审片清单和 gate-release 后才能称为本地 QC 通过；上传和发布另需授权及平台复核。"

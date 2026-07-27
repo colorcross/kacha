@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "2.0",
+  "projectId": "replace-with-project-id",
+  "status": "not_reviewed",
+  "reviewedAt": "replace-after-full-playback",
+  "reviewer": "replace-with-reviewer",
+  "finalVideoSha256": "replace-after-render",
+  "limitations": [
+    "列出仍然存在且不会影响发布的已知限制；没有时明确写 none"
+  ],
+  "manualChecks": {
+    "contentIntegrity": {
+      "status": "pending",
+      "evidence": []
+    },
+    "connectionPlayback": {
+      "status": "pending",
+      "evidence": []
+    },
+    "subtitleAccuracy": {
+      "status": "pending",
+      "evidence": []
+    },
+    "subtitleLayout": {
+      "status": "pending",
+      "evidence": []
+    },
+    "visualContinuity": {
+      "status": "pending",
+      "evidence": []
+    },
+    "assetSemanticsAndLicenses": {
+      "status": "pending",
+      "evidence": []
+    },
+    "maskTrackingBeautyAndPip": {
+      "status": "pending",
+      "evidence": []
+    },
+    "audioStemAndDeviceListening": {
+      "status": "pending",
+      "evidence": []
+    },
+    "coverAndBrand": {
+      "status": "pending",
+      "evidence": []
+    },
+    "openingEndingAndFullPlayback": {
+      "status": "pending",
+      "evidence": []
+    },
+    "technicalFindingsDisposition": {
+      "status": "pending",
+      "evidence": []
+    }
+  }
+}

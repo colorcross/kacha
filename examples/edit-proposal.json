@@ -1,0 +1,342 @@
+{
+  "schemaVersion": "2.0",
+  "planVersion": "v1",
+  "requestSummary": "把一支单机位中文口播剪成可发布的竖版精修视频，并生成独立封面。",
+  "taskPath": "proposal_review",
+  "authorization": {
+    "mode": "proposal_only",
+    "canExecute": false,
+    "externalUploadAllowed": false,
+    "paidGenerationAllowed": false,
+    "evidence": "结构示例只用于方案 review；没有执行授权。"
+  },
+  "sourceInventory": [
+    {
+      "path": "./vision-manifest-reframe.json",
+      "role": "结构示例输入，不代表可执行视频原片",
+      "readOnly": true,
+      "probeEvidence": [
+        "ffprobe 规格记录",
+        "代表帧",
+        "音频波形和转写索引"
+      ],
+      "existsVerified": false,
+      "probedAt": "not_applicable_for_template"
+    }
+  ],
+  "goal": {
+    "audience": "关注长期成长和个人实验的短视频用户",
+    "platforms": [
+      "抖音",
+      "小红书",
+      "视频号"
+    ],
+    "outcome": "保留淡定幽默的人设，删去无效停顿和口误，提升理解、连续性与可看性。",
+    "targetDuration": "以完整表达为先，在诊断后给出预计区间",
+    "language": [
+      "zh-CN"
+    ],
+    "videoAspectRatios": [
+      "9:16"
+    ],
+    "coverAspectRatios": [
+      "3:4",
+      "4:3"
+    ],
+    "outputFormat": {
+      "container": "由真实原片和平台合同决定",
+      "videoCodec": "由真实原片和质量目标决定",
+      "audioCodec": "AAC 或项目要求的高质量音频",
+      "resolution": "9:16 原生目标分辨率",
+      "frameRate": "继承最终时间线",
+      "color": "继承并正确标记源色彩空间"
+    }
+  },
+  "contentSpine": {
+    "openingPromise": "前 1–3 秒提出一个具体问题，前 6 秒内说明这场长期实验为什么值得看。",
+    "coreQuestion": "一个至少玩二十年的游戏，如何既可执行又保持开放？",
+    "keyPoints": [
+      "目标提供路标",
+      "现实反馈负责校准",
+      "成长来自持续迭代"
+    ],
+    "payoff": "给观众一个能立即开始的小行动。",
+    "ending": "自然收束，不设置虚假悬念；若素材允许，再测试语义与声音都成立的循环版。"
+  },
+  "editDecisions": {
+    "keep": [
+      "完整核心判断",
+      "人物自然自嘲和必要停顿",
+      "关键数字与因果"
+    ],
+    "remove": [
+      "说错后废弃的版本",
+      "不承载情绪的长空闲",
+      "无信息增量的重复"
+    ],
+    "reorder": [
+      "把最清楚的问题与收益提前，但不改变事实因果"
+    ],
+    "verify": [
+      "数字、专名、否定和结尾最后半句",
+      "所有拼接点的音画同步"
+    ]
+  },
+  "planModules": {
+    "cutsAndShotScale": {
+      "status": "enabled",
+      "rationale": "单机位删减会产生跳切，需要用信息/情绪/视角和景别语法组织。",
+      "actions": [
+        "建立 cutSheet",
+        "中景、近景、特写按语义变化安排",
+        "必要处使用 J/L-cut、动作切或短插镜"
+      ],
+      "successCriteria": [
+        "无同景别无理由相接",
+        "无剪断词尾、表情或动作"
+      ]
+    },
+    "retentionAndRhythm": {
+      "status": "enabled",
+      "rationale": "短视频需要明确抓点和章节再聚焦，但不能机械快切。",
+      "actions": [
+        "建立 retentionMap",
+        "建立语音/动作/BGM 乐句 rhythmMap",
+        "对 2 个开头假设生成短预览"
+      ],
+      "successCriteria": [
+        "开头承诺在正文兑现",
+        "剪点不为对拍破坏语义"
+      ]
+    },
+    "visuals": {
+      "status": "enabled",
+      "rationale": "关键概念需要准确插镜和运动设计来降低理解成本。",
+      "actions": [
+        "只使用语义和风格匹配的插镜",
+        "按主体轨迹制作竖屏构图",
+        "关键画面保留真人画中画"
+      ],
+      "successCriteria": [
+        "插镜对象/动作/状态/角色逐项匹配",
+        "无主体、字幕和关键证据遮挡"
+      ]
+    },
+    "subtitles": {
+      "status": "enabled",
+      "rationale": "目标平台需要手机尺寸可读的单行中文字幕。",
+      "actions": [
+        "以最终音频生成时间码",
+        "文稿只做数字、专名和上下文校准",
+        "真实字体测宽并按语义拆卡"
+      ],
+      "successCriteria": [
+        "单行、无底板、零溢出",
+        "逻辑重音准确且不过量"
+      ]
+    },
+    "dialogueAudio": {
+      "status": "enabled",
+      "rationale": "先从原始混合音轨分离并验收独立人声，再清理和塑形，最终画面冻结后才决定音乐与音效。",
+      "actions": [
+        "生成 original_reference、dialogue_isolated 和 non_dialogue_residual",
+        "对分离候选做同响度 A/B，并抽听 residual 的语音泄漏",
+        "通过后剔除 residual，只让 dialogue_isolated 进入后续链路",
+        "轻度降噪和 natural 人声 A/B",
+        "保留未经最终混音的人声 stem",
+        "检查时长、声道与声纹"
+      ],
+      "successCriteria": [
+        "非人声 residual 未进入最终混音",
+        "residual 无可辨认完整词句",
+        "无金属声、抽吸和齿音损伤",
+        "人声时长与声道结构不被破坏"
+      ]
+    },
+    "finalMix": {
+      "status": "enabled",
+      "rationale": "BGM、SFX 和转场声音必须等视觉时序冻结后才能最终混音。",
+      "actions": [
+        "保留 voice/bgm/sfx stems",
+        "完成闪避、落点、两遍响度与设备试听"
+      ],
+      "successCriteria": [
+        "人声优先、BGM 克制、SFX 可感知",
+        "最终响度与 true peak 符合项目目标"
+      ]
+    },
+    "color": {
+      "status": "enabled",
+      "rationale": "A-roll 与插镜需要统一暖色明亮风格。",
+      "actions": [
+        "确认色彩空间和 range",
+        "匹配曝光、白平衡、肤色和饱和度"
+      ],
+      "successCriteria": [
+        "跨镜头亮度连续",
+        "手机端不发灰、不过饱和"
+      ]
+    },
+    "beautyAndMasks": {
+      "status": "enabled",
+      "rationale": "用户允许轻度自然美化，且人物蒙版可用于局部提亮和人物后文字。",
+      "actions": [
+        "先做低帧率脸部/人物蒙版预检",
+        "只在跟踪稳定段启用 light 美颜",
+        "逐段检查头发、眼镜和手遮脸"
+      ],
+      "successCriteria": [
+        "肤质自然、脸颈手连续",
+        "无边缘闪烁或五官糊化"
+      ]
+    },
+    "generatedMedia": {
+      "status": "not_applicable",
+      "rationale": "现有原片、图解和许可素材足以表达，且本次未授权付费生成。",
+      "successCriteria": [
+        "不提交任何付费生成任务"
+      ]
+    },
+    "cover": {
+      "status": "enabled",
+      "rationale": "需要独立适配平台裁切的明亮封面。",
+      "actions": [
+        "人物作为独立构图模块",
+        "分别排版 3:4 与 4:3",
+        "检查标题、品牌和人物安全框"
+      ],
+      "successCriteria": [
+        "手机缩略图可读",
+        "人物头顶和面部无遮挡"
+      ]
+    },
+    "output": {
+      "status": "enabled",
+      "rationale": "尽量保留源片清晰度与帧率，并交付可直接发布版本。",
+      "actions": [
+        "从最高质量源文件直接构建最终时间线",
+        "保持源帧率和 48 kHz 音频",
+        "最终只做一次高质量编码"
+      ],
+      "successCriteria": [
+        "9:16 像素比正确",
+        "编码、色彩元数据和清晰度符合合同"
+      ]
+    },
+    "qc": {
+      "status": "enabled",
+      "rationale": "成片必须以真实文件、完整解码和正常速度观看为准。",
+      "actions": [
+        "关键段预览",
+        "全片解码",
+        "连接、字幕、混音、代表帧和封面 QC"
+      ],
+      "successCriteria": [
+        "无音画错位、剪断、溢出和残帧",
+        "所有计划效果有对应 QC 证据"
+      ]
+    }
+  },
+  "executionFlow": [
+    {
+      "id": "inventory",
+      "deliverable": "素材清单、规格和风险基线",
+      "gate": "源文件可读且保持只读",
+      "status": "pending"
+    },
+    {
+      "id": "transcript_structure",
+      "deliverable": "校准转写、内容骨架和 retentionMap",
+      "gate": "关键数字、专名、否定和结论完成核验",
+      "status": "pending"
+    },
+    {
+      "id": "rough_cut",
+      "deliverable": "语义完整粗剪时间线",
+      "gate": "无半句、无废弃复述、目标内容完整",
+      "status": "pending"
+    },
+    {
+      "id": "dialogue_preprocess",
+      "deliverable": "原始参考、独立人声、非人声 residual、分离报告与人声清理候选",
+      "gate": "源分离和增强的同响度 A/B 均无损伤，residual 无语音泄漏，声道与时长检查通过",
+      "status": "pending"
+    },
+    {
+      "id": "connection_qc",
+      "deliverable": "全部连接点问题清单",
+      "gate": "正常速度试听通过且音画共用边界",
+      "status": "pending"
+    },
+    {
+      "id": "fine_cut",
+      "deliverable": "cutSheet、shotScalePlan 和 rhythmMap",
+      "gate": "每个切点有理由且同一主体相邻景别可感知变化",
+      "status": "pending"
+    },
+    {
+      "id": "visual_packaging",
+      "deliverable": "插镜、调色、蒙版、动效与跨画幅构图",
+      "gate": "语义、风格、跟踪和安全区通过",
+      "status": "pending"
+    },
+    {
+      "id": "subtitles",
+      "deliverable": "基于最终音频的字幕轨",
+      "gate": "校准、单行测宽和手机尺寸可读性通过",
+      "status": "pending"
+    },
+    {
+      "id": "final_mix",
+      "deliverable": "voice/bgm/sfx stems 与最终混音",
+      "gate": "设备试听、响度、true peak 和落点通过",
+      "status": "pending"
+    },
+    {
+      "id": "cover",
+      "deliverable": "3:4 与 4:3 封面",
+      "gate": "人物、标题、品牌和安全框通过",
+      "status": "pending"
+    },
+    {
+      "id": "preview_render",
+      "deliverable": "关键段、代表帧和 A/B 预览",
+      "gate": "局部方向确认且无明显副作用",
+      "status": "pending"
+    },
+    {
+      "id": "final_qc",
+      "deliverable": "正式成片、封面和 QC 记录",
+      "gate": "完整解码、全片 QC 与交付清单全部通过",
+      "status": "pending"
+    },
+    {
+      "id": "release_package",
+      "deliverable": "带哈希的本地交付包与发布门禁报告",
+      "gate": "自动技术 QC 和全部人工审片项有证据并通过",
+      "status": "pending"
+    }
+  ],
+  "approvedScope": [
+    "本示例仅用于方案结构 review",
+    "未经新的明确授权不执行剪辑、包装或渲染",
+    "不上传、不发布、不付费生成"
+  ],
+  "assumptions": [
+    "原始素材包含可用的完整口播音轨",
+    "未另行指定时沿用项目既有品牌系统"
+  ],
+  "riskFallbacks": [
+    "人物跟踪不稳定时回退手工关键帧或原画幅",
+    "外部插镜语义不完全匹配时改用准确图解或保留 A-roll",
+    "降噪损伤辅音时降低强度或关闭",
+    "光流变形时改回原帧率和干净切"
+  ],
+  "deliverables": [
+    "最终可发布视频",
+    "3:4 与 4:3 封面",
+    "字幕文件",
+    "剪辑方案与 QC 记录"
+  ],
+  "deviations": []
+}

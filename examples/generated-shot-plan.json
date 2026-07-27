@@ -1,0 +1,327 @@
+{
+  "schemaVersion": "2.0",
+  "template": true,
+  "executionAuthorization": {
+    "status": "not_authorized",
+    "evidence": "结构示例不构成付费调用授权",
+    "authorizedAt": "not_applicable"
+  },
+  "capabilitySnapshot": {
+    "verifiedAt": "2026-07-26",
+    "sources": [
+      "MiniMax official video-generation documentation",
+      "local mmx 1.0.16 video generate --help",
+      "ByteDance Seedance 2.0 official launch documentation"
+    ],
+    "providers": {
+      "minimax": {
+        "transport": "mmx-cli",
+        "runtimeEvidence": "mmx 1.0.16 video generate --help",
+        "models": [
+          "MiniMax-Hailuo-2.3"
+        ],
+        "supportedModes": [
+          "text_to_video",
+          "image_to_video",
+          "start_end_frame",
+          "subject_reference"
+        ],
+        "supportedDurations": [
+          6,
+          10
+        ],
+        "supportedResolutions": [
+          "768P",
+          "1080P"
+        ],
+        "supportedAspectRatios": [
+          "9:16",
+          "16:9"
+        ],
+        "exposedParameters": [
+          "prompt",
+          "model",
+          "firstFrame",
+          "lastFrame",
+          "subjectImage",
+          "async",
+          "download"
+        ],
+        "nativeAudio": false
+      },
+      "seedance": {
+        "transport": "active-official-entry",
+        "runtimeEvidence": "active official entry verified before use",
+        "models": [
+          "Seedance 2.0"
+        ],
+        "supportedModes": [
+          "text_to_video",
+          "image_to_video",
+          "start_end_frame",
+          "multimodal_reference"
+        ],
+        "supportedDurations": [
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "supportedResolutions": [
+          "platform-default"
+        ],
+        "supportedAspectRatios": [
+          "9:16",
+          "16:9",
+          "1:1"
+        ],
+        "exposedParameters": [
+          "prompt",
+          "references",
+          "duration",
+          "audio"
+        ],
+        "nativeAudio": true
+      }
+    }
+  },
+  "generatedShots": [
+    {
+      "id": "book-into-backpack-i2v",
+      "timelineInterval": {
+        "startSeconds": 68.0,
+        "endSeconds": 73.4
+      },
+      "sourceNarration": "我把一本书放进打开的书包。",
+      "purpose": "把动作关系具体化，并用可控竖版首帧匹配真人口播风格。",
+      "assetSemantics": {
+        "object": "一本硬壳书和一个已经打开的双肩书包",
+        "action": "成年男性的手把书完整放进书包",
+        "state": "书从包外移动到包内，最后稳定停住",
+        "role": "不强调身份的成年男性手部动作示意",
+        "tense": "与旁白同步发生"
+      },
+      "durationSeconds": 6,
+      "aspectRatio": "9:16",
+      "resolutionIntent": "1080P",
+      "mode": "image_to_video",
+      "referenceAssets": [
+        {
+          "id": "book-bag-first-frame",
+          "type": "image",
+          "role": "first_frame",
+          "localPath": "/project/references/generated/book-bag-first-frame.png",
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "source": "project-created reference frame",
+          "license": "project-owned"
+        }
+      ],
+      "actionBeats": [
+        {
+          "startSeconds": 0.0,
+          "endSeconds": 1.2,
+          "action": "成年男性的手扶稳已经打开的书包，书停在包口前。"
+        },
+        {
+          "startSeconds": 1.2,
+          "endSeconds": 4.6,
+          "action": "右手沿自然直线把一本硬壳书完整放进书包，书脊和包口保持清楚。"
+        },
+        {
+          "startSeconds": 4.6,
+          "endSeconds": 6.0,
+          "action": "手松开书并短暂停住，书稳定留在包内。"
+        }
+      ],
+      "camera": {
+        "shotScale": "手部与书包近景",
+        "position": "略高于桌面的侧前方机位",
+        "composition": "书包位于下半部中央，书的运动路径完整可见，右上角留出真人画中画安全区",
+        "focus": "书、包口和手的接触关系",
+        "movement": "[固定]，书进入包内后极轻微推进",
+        "stability": "无随机漂移、无突然变焦、无手持晃动"
+      },
+      "styleMatch": {
+        "referenceFrames": [
+          "A-roll opening representative frame",
+          "A-roll midpoint representative frame"
+        ],
+        "colorTemperature": "暖中性，接近书架口播的室内白平衡",
+        "exposureContrast": "中等对比，暗部不压死，桌面不过曝",
+        "saturation": "自然、克制",
+        "depthOfField": "轻微浅景深，但书与包口同时清楚",
+        "textureSharpness": "保留布料和纸张纹理，不做过度锐化",
+        "motionPace": "淡定、可看清的真实速度"
+      },
+      "continuityIn": "从真人右手向画面下方移动的动作切入；首帧主体稳定约0.3秒。",
+      "continuityOut": "书完全进入包内后稳定约0.4秒，通过声音桥切回真人近景。",
+      "audioPolicy": "local_post",
+      "negativeConstraints": [
+        "不要出现女性或儿童的手",
+        "不要把书替换成电脑、文件夹或手机",
+        "不要增加第二本书或第二个书包",
+        "不要出现手指融合、书穿过包体或包口突然闭合"
+      ],
+      "routing": {
+        "provider": "minimax",
+        "model": "MiniMax-Hailuo-2.3",
+        "transport": "mmx-cli",
+        "reason": "竖版首帧可锁定构图与风格，单一手部动作适合6秒I2V。",
+        "requestParameters": [
+          "prompt",
+          "model",
+          "firstFrame",
+          "async",
+          "download"
+        ]
+      },
+      "compiledPrompt": "画面从首帧自然开始。成年男性的手扶稳已经打开的双肩书包，一本硬壳书停在包口前；随后右手沿自然直线把书完整放入书包，书脊、包口和手的接触关系始终清楚；最后松手并稳定停住。[固定]，动作完成后极轻微推进。暖中性室内光，自然纸张和布料纹理，真实速度。不要出现女性或儿童的手，不要增加其他物体，不要手指融合、物体穿模、随机运镜或突然变焦。",
+      "paidCallPolicy": {
+        "requiresAuthorization": true,
+        "maxPaidAttempts": 2,
+        "changeOneVariable": true,
+        "fallback": "改用自制静态动作图加2.5D轻推拉，或拍摄真实手部动作。"
+      },
+      "qcTargets": [
+        "semantic",
+        "identity",
+        "continuity",
+        "geometry",
+        "physics",
+        "camera",
+        "temporal",
+        "style",
+        "framing",
+        "editHandles",
+        "audio",
+        "technical",
+        "traceability"
+      ]
+    },
+    {
+      "id": "long-term-road-multimodal",
+      "timelineInterval": {
+        "startSeconds": 142.0,
+        "endSeconds": 148.0
+      },
+      "sourceNarration": "二十年不是倒计时，而是一条允许变化的路。",
+      "purpose": "用一个克制的多模态隐喻镜头表现长期方向，同时保持与真人口播一致的明亮暖色。",
+      "assetSemantics": {
+        "object": "一条向远处延伸的真实步道和一个缓慢前行的背影",
+        "action": "人物沿步道平稳向前走，远处道路逐渐显现",
+        "state": "道路持续向前但没有终点倒计时或竞赛元素",
+        "role": "不对应具体真实人物的长期行动隐喻",
+        "tense": "概念性现在时"
+      },
+      "durationSeconds": 6,
+      "aspectRatio": "9:16",
+      "resolutionIntent": "platform-default",
+      "mode": "multimodal_reference",
+      "referenceAssets": [
+        {
+          "id": "warm-style-frame",
+          "type": "image",
+          "role": "style",
+          "localPath": "/project/references/generated/warm-style-frame.png",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "source": "A-roll-derived style reference",
+          "license": "project-owned derivative"
+        },
+        {
+          "id": "walking-camera-reference",
+          "type": "video",
+          "role": "camera",
+          "localPath": "/project/references/generated/walking-camera-reference.mp4",
+          "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "source": "project-owned camera reference",
+          "license": "project-owned"
+        }
+      ],
+      "actionBeats": [
+        {
+          "startSeconds": 0.0,
+          "endSeconds": 2.0,
+          "action": "以竖版中远景建立清晨步道和缓慢前行的背影。"
+        },
+        {
+          "startSeconds": 2.0,
+          "endSeconds": 5.0,
+          "action": "镜头平稳跟随，人物继续走，前方道路随轻雾散开而逐渐显现。"
+        },
+        {
+          "startSeconds": 5.0,
+          "endSeconds": 6.0,
+          "action": "人物保持前行，镜头短暂停稳，留下可切回真人的构图。"
+        }
+      ],
+      "camera": {
+        "shotScale": "中远景到中景",
+        "position": "人物背后略低的客观跟随视角",
+        "composition": "人物在下方三分之一，路径形成向上延伸的引导线，左下角保留字幕安全区",
+        "focus": "人物步伐和道路延伸关系",
+        "movement": "参考@walking-camera-reference的平稳跟随节奏，只参考运镜，不复制场景和人物",
+        "stability": "无航拍炫技、无快速环绕、无镜头呼吸"
+      },
+      "styleMatch": {
+        "referenceFrames": [
+          "@warm-style-frame"
+        ],
+        "colorTemperature": "明亮暖中性",
+        "exposureContrast": "柔和高光和自然中间调",
+        "saturation": "克制暖色，绿色不荧光",
+        "depthOfField": "环境可辨识，远景轻雾形成层次",
+        "textureSharpness": "真实摄影纹理，无塑料CG质感",
+        "motionPace": "从容、连续、没有宣传片式加速"
+      },
+      "continuityIn": "从真人中景的向前手势切入道路引导线，开头稳定约0.3秒。",
+      "continuityOut": "人物继续前行且镜头停稳约0.4秒，用L-cut回到真人近景。",
+      "audioPolicy": "local_post",
+      "negativeConstraints": [
+        "不要出现倒计时、奖牌、终点线或竞速元素",
+        "不要出现文字、标志、水印或宣传片光效",
+        "不要快速航拍、环绕、镜头抖动或道路突然变形"
+      ],
+      "routing": {
+        "provider": "seedance",
+        "model": "Seedance 2.0",
+        "transport": "active-official-entry",
+        "reason": "需要同时参考A-roll风格图和项目自有运镜视频。",
+        "requestParameters": [
+          "prompt",
+          "references",
+          "duration"
+        ]
+      },
+      "compiledPrompt": "@warm-style-frame只作为色温、曝光、对比、景深和真实摄影纹理参考；@walking-camera-reference只参考平稳跟随的运镜与节奏，不复制人物和场景。0-2秒：竖版中远景建立清晨步道，一个不对应具体真人的成年男性背影缓慢前行；2-5秒：镜头从背后平稳跟随，人物继续走，轻雾散开，前方道路逐渐显现；5-6秒：人物保持前行，镜头短暂停稳。明亮暖中性、自然摄影、从容克制。不要倒计时、奖牌、终点线、文字、标志、宣传片光效、快速航拍、环绕或道路变形。声音由后期本地制作。",
+      "paidCallPolicy": {
+        "requiresAuthorization": true,
+        "maxPaidAttempts": 2,
+        "changeOneVariable": true,
+        "fallback": "使用许可明确的真实步道B-roll，或将项目自有照片做2.5D视差。"
+      },
+      "qcTargets": [
+        "semantic",
+        "identity",
+        "continuity",
+        "geometry",
+        "physics",
+        "camera",
+        "temporal",
+        "style",
+        "framing",
+        "editHandles",
+        "audio",
+        "technical",
+        "traceability"
+      ]
+    }
+  ]
+}

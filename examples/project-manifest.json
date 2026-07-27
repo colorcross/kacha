@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "2.0",
+  "projectId": "replace-with-project-id",
+  "plans": {
+    "proposal": "./edit-proposal.json",
+    "editPlan": "./edit-plan.json",
+    "generatedShotPlans": [
+      {
+        "path": "./generated-shot-plan.json",
+        "mode": "template"
+      }
+    ]
+  },
+  "capabilityManifest": "./capabilities.json",
+  "requiredCapabilities": [
+    "command:ffmpeg",
+    "command:ffprobe",
+    "filter:overlay",
+    "filter:blackdetect",
+    "filter:freezedetect",
+    "filter:silencedetect"
+  ],
+  "expectedMedia": {
+    "width": 2160,
+    "height": 3840,
+    "aspectRatio": "9:16",
+    "fps": 25,
+    "fpsTolerance": 0.001,
+    "audioSampleRate": 48000,
+    "expectedChannels": 2,
+    "maxAvDriftFrames": 1,
+    "integratedLufsMin": -21.5,
+    "integratedLufsMax": -19.0,
+    "truePeakMax": -3.0
+  },
+  "requiredCoverAspectRatios": [
+    "3:4",
+    "4:3"
+  ],
+  "outputs": {
+    "finalVideo": {
+      "path": "./output/final.mov",
+      "sha256": "replace-after-render"
+    },
+    "covers": [
+      {
+        "aspectRatio": "3:4",
+        "path": "./output/cover-3x4.png",
+        "sha256": "replace-after-render"
+      },
+      {
+        "aspectRatio": "4:3",
+        "path": "./output/cover-4x3.png",
+        "sha256": "replace-after-render"
+      }
+    ],
+    "subtitles": [
+      {
+        "language": "zh-CN",
+        "path": "./output/subtitles.zh-CN.srt",
+        "sha256": "replace-after-render"
+      }
+    ],
+    "technicalQcReport": {
+      "path": "./output/technical-qc.json"
+    },
+    "releaseReport": {
+      "path": "./output/release-report.json"
+    }
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "schemaVersion": "2.0",
+  "timelineFPS": 25,
+  "timelineDurationSeconds": 100,
+  "cuts": [
+    {
+      "timeSeconds": 12.4,
+      "timecode": "00:00:12.400",
+      "shotScaleBefore": "medium",
+      "shotScaleAfter": "close",
+      "subjectBefore": "host",
+      "subjectAfter": "host",
+      "cutReason": [
+        "information"
+      ],
+      "change": "从人物完整动作切到手部细节",
+      "anchor": "手掌落到桌面的动作峰值",
+      "continuityTreatment": "动作切",
+      "failureCondition": "手部动作不连续或两侧景别差在手机尺寸不可感知",
+      "qcEvidence": [
+        "切前后帧对照",
+        "正常速度连接处试听"
+      ]
+    },
+    {
+      "timeSeconds": 26.8,
+      "timecode": "00:00:26.800",
+      "shotScaleBefore": "close",
+      "shotScaleAfter": "wide",
+      "subjectBefore": "host",
+      "subjectAfter": "host",
+      "cutReason": [
+        "emotion",
+        "perspective"
+      ],
+      "change": "从人物紧张反应切回客观空间，释放压力并重新定位环境",
+      "perspectiveBefore": "人物主观反应",
+      "perspectiveAfter": "客观环境观察",
+      "anchor": "人物呼气结束",
+      "continuityTreatment": "L-cut",
+      "failureCondition": "宽景没有形成情绪释放，或尾音与新画面关系不清",
+      "qcEvidence": [
+        "切前后帧对照",
+        "人声尾音与画面正常速度试听"
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "timeSeconds": 12.4,
+      "timecode": "00:00:12.400",
+      "technique": "低音量 tonal hit",
+      "trigger": "手掌落桌且关键结论完成",
+      "function": [
+        "attention"
+      ],
+      "mechanism": "视听同步与事件标点",
+      "beforeState": "语义铺垫",
+      "afterState": "结论落定",
+      "entryExit": "动作落点进入，150 ms 内衰减",
+      "simplerAlternative": "只做字幕强调；试听后落点仍偏弱，因此保留音效",
+      "failureCondition": "音效盖住尾字或脱离动作超过两帧",
+      "qcEvidence": [
+        "SFX stem",
+        "手机扬声器正常速度试听"
+      ]
+    },
+    {
+      "timeSeconds": 41.2,
+      "timecode": "00:00:41.200",
+      "technique": "人物后置文字",
+      "trigger": "章节核心判断第一次完整说出",
+      "function": [
+        "information",
+        "attention"
+      ],
+      "mechanism": "图形—背景分离与遮挡层级建立景深，让关键词与人物形成同一构图",
+      "beforeState": "稳定中景口播",
+      "afterState": "核心判断成为主视觉",
+      "entryExit": "文字按短语进入，完整落位后停留一个语义节拍，再淡出",
+      "simplerAlternative": "普通字幕强调；该句是章节题眼，且人物轮廓稳定，因此使用空间层级表达",
+      "failureCondition": "人物边缘穿帮、文字可读面积不足或与字幕安全区冲突",
+      "maskSource": "逐帧人物蒙版视频",
+      "maskAlignmentEvidence": "时长、帧率和起始 PTS 自动对齐报告",
+      "fallback": "边缘不稳时改用普通信息卡",
+      "qcEvidence": [
+        "人物蒙版首中尾帧",
+        "头发、眼镜和手部遮挡帧",
+        "手机尺寸代表帧"
+      ]
+    },
+    {
+      "timeSeconds": 68.0,
+      "timecode": "00:01:08.000",
+      "technique": "外部插镜 + 真人角落画中画",
+      "trigger": "旁白讲到把一本书放进打开的书包，需要把动作具体化并保留讲述者表情",
+      "function": [
+        "information",
+        "continuity"
+      ],
+      "mechanism": "动作插镜把抽象口述转成可见过程，真人画中画维持讲述者连续性",
+      "beforeState": "全屏真人中景",
+      "afterState": "动作特写为主画面，真人缩至右上角",
+      "entryExit": "插镜首帧开始进入，插镜末帧结束退出；下一帧恢复纯 A-roll",
+      "simplerAlternative": "只保留 A-roll；该动作关系容易被忽略，因此使用准确插镜",
+      "failureCondition": "素材没有同时出现书、打开的书包和放入动作，或插镜结束后仍残留重复 A-roll 画中画",
+      "assetSemantics": {
+        "object": "硬壳书和打开的书包",
+        "action": "手把书放入书包",
+        "state": "书正在进入包内",
+        "role": "不强调身份的手部动作示意",
+        "tense": "与旁白同步发生"
+      },
+      "semanticMatchEvidence": [
+        "对应旁白原句",
+        "候选素材代表帧",
+        "最终素材首中尾帧"
+      ],
+      "activeInterval": {
+        "startSeconds": 68.0,
+        "endSeconds": 71.8
+      },
+      "visualExit": "71.8 秒前完成卡片、画中画和装饰层退场，下一帧恢复纯 A-roll",
+      "boundaryQC": [
+        "67.960 秒无画中画",
+        "69.900 秒插镜与真人画中画内容正确",
+        "71.840 秒恢复纯 A-roll"
+      ],
+      "duplicateSourcePolicy": "画中画只在外部插镜有效区间出现；主画面恢复 A-roll 后禁止同源重复",
+      "occlusionCheck": "画中画不遮挡书、包口、字幕、来源和品牌",
+      "qcEvidence": [
+        "对象—动作—状态核验表",
+        "start-1帧 / midpoint / end+1帧代表帧",
+        "正常速度口型与退出动画检查"
+      ]
+    }
+  ]
+}

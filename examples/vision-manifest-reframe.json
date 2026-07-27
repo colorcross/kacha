@@ -1,0 +1,55 @@
+{
+  "input": "/absolute/path/source.mov",
+  "generatedAt": "2026-07-26T00:00:00Z",
+  "sampleFPS": 2,
+  "sourceFPS": 25,
+  "sourceDuration": 1.5,
+  "sourceWidth": 3840,
+  "sourceHeight": 2160,
+  "maskWidth": 960,
+  "maskHeight": 540,
+  "quality": "balanced",
+  "frameCount": 3,
+  "frames": [
+    {
+      "index": 1,
+      "timeSeconds": 0,
+      "personMask": "person_000001.png",
+      "faceMask": "face_000001.png",
+      "faces": [
+        {
+          "confidence": 0.98,
+          "x": 0.41,
+          "y": 0.54,
+          "width": 0.1,
+          "height": 0.18
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "timeSeconds": 0.5,
+      "personMask": "person_000002.png",
+      "faceMask": "face_000002.png",
+      "faces": [
+        {
+          "confidence": 0.97,
+          "x": 0.44,
+          "y": 0.54,
+          "width": 0.1,
+          "height": 0.18
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "timeSeconds": 1,
+      "personMask": "person_000003.png",
+      "faceMask": "face_000003.png",
+      "faces": []
+    }
+  ],
+  "limitations": [
+    "Example manifest for reframe planner regression only."
+  ]
+}

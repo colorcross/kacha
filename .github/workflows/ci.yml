@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install media dependencies
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg jq
+
+      - name: Check syntax
+        run: |
+          find scripts tests -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
+          find scripts -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
+          python3 -m py_compile scripts/*.py
+
+      - name: Scan repository for secrets
+        run: python3 scripts/scan_secrets.py
+
+      - name: Run regression tests
+        run: node tests/run_tests.mjs
