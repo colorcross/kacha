@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-27
+
+### Added
+
+- 支持通过一句自然语言提示让 Codex 或 Claude Code 自动安装、验证并在当前会话加载；
+- 增加安全、幂等的 `scripts/install.sh`；
+- 增加 Codex 与 Claude Code 双平台安装文档和安装器回归测试。
+
 ## [1.0.0] - 2026-07-27
 
 ### Added

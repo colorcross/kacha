@@ -33,29 +33,56 @@ jq --version
 python3 --version
 ```
 
-## 安装 skill
+## 推荐：让 Agent 自动安装
 
-Codex 默认示例：
+把下面这句话发给当前 Codex 或 Claude Code：
 
-```bash
-git clone https://github.com/colorcross/kacha.git ~/.codex/skills/kacha-kacha
+```text
+请从 https://github.com/colorcross/kacha.git 安装“咔嚓咔嚓”skill。判断你当前是 Codex 还是 Claude Code，检查并运行 scripts/install.sh，完成隐私扫描和测试，然后立即读取安装后的 SKILL.md，让它在当前会话可直接使用。不要覆盖已有修改，不要上传我的本地文件。
 ```
 
-若已经存在旧版本：
+完整提示、安全行为和命令行方式见[一句话安装](AGENT_INSTALL.md)。
 
-```bash
-cd ~/.codex/skills/kacha-kacha
-git pull --ff-only
+## Codex
+
+当前用户级目录：
+
+```text
+~/.agents/skills/kacha-kacha
 ```
 
-其他代理只需把仓库放进其可发现的 skill 目录，并确保仓库根目录的 `SKILL.md` 保持原位。
+安装：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
+  | bash -s -- --agent codex
+```
+
+## Claude Code
+
+个人 skills 目录：
+
+```text
+~/.claude/skills/kacha-kacha
+```
+
+安装：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
+  | bash -s -- --agent claude
+```
+
+Claude Code 会监控已经存在的 skills 目录；如果安装器首次创建了顶层 `~/.claude/skills`，可能需要重启 Claude Code 才能进入自动发现列表。当前会话仍可以让 Claude 直接读取安装后的 `SKILL.md` 并立即使用。
+
+两个 Agent 都读取同一个标准 `SKILL.md` 和 supporting files，不需要维护两套内容。
 
 ## 能力探测
 
 核心能力：
 
 ```bash
-cd ~/.codex/skills/kacha-kacha
+cd ~/.agents/skills/kacha-kacha
 scripts/capability_probe.sh --profile core --output capabilities.json
 ```
 
@@ -103,6 +130,7 @@ export PEXELS_API_KEY="在本机设置，不要写进仓库"
 
 ```bash
 node tests/run_tests.mjs
+bash tests/test_installer.sh
 python3 scripts/scan_secrets.py
 ```
 

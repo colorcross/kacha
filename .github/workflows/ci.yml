@@ -32,4 +32,6 @@ jobs:
         run: python3 scripts/scan_secrets.py
 
       - name: Run regression tests
-        run: node tests/run_tests.mjs
+        run: |
+          node tests/run_tests.mjs
+          bash tests/test_installer.sh

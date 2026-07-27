@@ -8,6 +8,10 @@ description: |
 
 把视频剪得更清楚、更顺、更像同一支作品。先解决内容、连接和同步，再做包装；不用转场或特效掩盖错误切点。
 
+## Agent 兼容性
+
+本 Skill 遵循 Agent Skills 的 `SKILL.md` 结构，同时支持 Codex 和 Claude Code。两者共用本文件、`references/`、`examples/`、`scripts/` 和测试；`agents/openai.yaml` 只提供 OpenAI/Codex 展示元数据，不改变核心工作流，也不影响 Claude Code 加载。
+
 ## 必须先读
 
 主代理必须完整读完本文件，再按任务读取对应 reference：

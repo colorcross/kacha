@@ -3,7 +3,7 @@
 [![CI](https://github.com/colorcross/kacha/actions/workflows/ci.yml/badge.svg)](https://github.com/colorcross/kacha/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-一个面向 AI 编程代理的本地专业视频工作流 skill。它不承诺“一键出片”，而是把视频策划、精剪、包装、技术检查和人工审片组织成可验证的流程。
+一个同时支持 **Codex** 和 **Claude Code** 的本地专业视频工作流 skill。它不承诺“一键出片”，而是把视频策划、精剪、包装、技术检查和人工审片组织成可验证的流程。
 
 核心原则很简单：先解决内容、连接和同步，再做包装；每个效果都要有理由；自动检查不能代替人工通看。
 
@@ -27,17 +27,35 @@
 - 不承诺流量、完播率或“爆款”；
 - 不包含音乐、字体、模板、模型权重、API 密钥或第三方素材。
 
-## 快速安装
+## 最简单的安装方法
+
+把下面这句话复制给你正在使用的 Codex 或 Claude Code：
+
+```text
+请帮我安装“咔嚓咔嚓”skill：从 https://github.com/colorcross/kacha.git 获取最新版；先判断你当前是 Codex 还是 Claude Code，再运行仓库的 scripts/install.sh，安装到对应的用户级 skills 目录。不要覆盖已有修改，不要上传或提交我的任何本地文件、密钥和素材。安装后运行隐私扫描与回归测试，立即完整读取已安装的 SKILL.md 和任务所需 references，然后告诉我安装路径、版本、验证结果以及现在是否可以直接使用。
+```
+
+Agent 会自动下载、安装、验证，并在当前会话直接读取 skill。完整说明见[一句话安装](docs/AGENT_INSTALL.md)。
+
+## 命令行安装
 
 需要 Git 和 Node.js 20+。核心媒体检查还需要 FFmpeg；完整依赖见[安装说明](docs/INSTALLATION.md)。
 
+Codex：
+
 ```bash
-git clone https://github.com/colorcross/kacha.git ~/.codex/skills/kacha-kacha
-cd ~/.codex/skills/kacha-kacha
-node tests/run_tests.mjs
+curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
+  | bash -s -- --agent codex
 ```
 
-如果你的代理使用其他 skill 目录，把仓库克隆到对应目录即可。仓库根目录的 `SKILL.md` 是入口。
+Claude Code：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
+  | bash -s -- --agent claude
+```
+
+安装位置分别为 `~/.agents/skills/kacha-kacha` 和 `~/.claude/skills/kacha-kacha`。仓库根目录的 `SKILL.md` 是两个 Agent 共用的入口。
 
 ## 最短使用路径
 
@@ -77,7 +95,7 @@ node scripts/kacha.mjs gate-release PROJECT.json
 ├── agents/openai.yaml       # OpenAI/Codex 展示配置
 ├── references/              # 按任务加载的详细合同
 ├── examples/                # v2 JSON 模板
-├── scripts/                 # 门禁、探测、媒体处理与 QC 工具
+├── scripts/                 # 安装、门禁、探测、媒体处理与 QC 工具
 ├── tests/run_tests.mjs      # 无第三方 npm 依赖的回归测试
 └── docs/                    # 安装、快速开始、架构和安全文档
 ```
@@ -100,6 +118,7 @@ node scripts/kacha.mjs gate-release PROJECT.json
 
 ```bash
 node tests/run_tests.mjs
+bash tests/test_installer.sh
 python3 scripts/scan_secrets.py
 ```
 
