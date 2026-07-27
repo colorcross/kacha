@@ -4,6 +4,35 @@ Kacha is a local-first professional video workflow skill for both **Codex** and 
 
 Kacha is not a universal renderer. It can coordinate FFmpeg, NLEs, Remotion, HyperFrames, or other verified engines, but the project remains responsible for the actual timeline implementation.
 
+## See Kacha in action
+
+Scan or open the full-size images to follow **行者大灰** and see editing demonstrations, before-and-after comparisons, and workflow examples.
+
+<table>
+  <tr>
+    <th align="center">WeChat Channels</th>
+    <th align="center">Douyin</th>
+    <th align="center">Xiaohongshu</th>
+  </tr>
+  <tr>
+    <td align="center" valign="top">
+      <a href="assets/social/wechat-channels.jpg">
+        <img src="assets/social/wechat-channels.jpg" alt="WeChat Channels QR code for 行者大灰" width="240">
+      </a>
+    </td>
+    <td align="center" valign="top">
+      <a href="assets/social/douyin.png">
+        <img src="assets/social/douyin.png" alt="Douyin QR code for 行者大灰" width="240">
+      </a>
+    </td>
+    <td align="center" valign="top">
+      <a href="assets/social/xiaohongshu.jpg">
+        <img src="assets/social/xiaohongshu.jpg" alt="Xiaohongshu QR code for 行者大灰" width="240">
+      </a>
+    </td>
+  </tr>
+</table>
+
 ## Highlights
 
 - Auditable edit proposals, source hashes, authorization boundaries, and fallbacks

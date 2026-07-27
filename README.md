@@ -9,6 +9,35 @@
 
 > 当前文档以中文为主。English overview: [README.en.md](README.en.md)
 
+## 看看实际剪辑效果
+
+扫码关注「行者大灰」，查看咔嚓咔嚓的视频剪辑效果、前后对比和工作流演示。点击图片可以打开原图扫码。
+
+<table>
+  <tr>
+    <th align="center">视频号</th>
+    <th align="center">抖音</th>
+    <th align="center">小红书</th>
+  </tr>
+  <tr>
+    <td align="center" valign="top">
+      <a href="assets/social/wechat-channels.jpg">
+        <img src="assets/social/wechat-channels.jpg" alt="行者大灰视频号二维码" width="240">
+      </a>
+    </td>
+    <td align="center" valign="top">
+      <a href="assets/social/douyin.png">
+        <img src="assets/social/douyin.png" alt="行者大灰抖音二维码" width="240">
+      </a>
+    </td>
+    <td align="center" valign="top">
+      <a href="assets/social/xiaohongshu.jpg">
+        <img src="assets/social/xiaohongshu.jpg" alt="行者大灰小红书二维码" width="240">
+      </a>
+    </td>
+  </tr>
+</table>
+
 ## 它能做什么
 
 - 在执行前建立可审计的剪辑方案、输入清单、授权边界和回退路径；
