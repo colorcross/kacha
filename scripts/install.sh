@@ -96,6 +96,7 @@ command -v python3 >/dev/null 2>&1 || {
   printf '%s\n' "python3 is required" >&2
   exit 2
 }
+export GIT_TERMINAL_PROMPT=0
 
 if [[ -n "$custom_target" && "$agent" == "both" ]]; then
   printf '%s\n' "--target cannot be combined with --agent both" >&2
@@ -162,14 +163,14 @@ install_one() {
         "$target" "$repo_url" "$origin" >&2
       return 1
     }
-    git -C "$target" fetch --depth 1 origin "$ref"
+    git -c credential.helper= -C "$target" fetch --depth 1 origin "$ref"
     git -C "$target" merge --ff-only FETCH_HEAD
   else
     mkdir -p "$parent"
     temporary=$(mktemp -d "$parent/.kacha-install.XXXXXX")
     candidate="$temporary/kacha-kacha"
     trap 'rm -rf "${temporary:-}"' RETURN
-    git clone --depth 1 --branch "$ref" "$repo_url" "$candidate"
+    git -c credential.helper= clone --depth 1 --branch "$ref" "$repo_url" "$candidate"
     [[ -f "$candidate/SKILL.md" && -f "$candidate/scripts/kacha.mjs" ]] || {
       printf '%s\n' "Downloaded repository is missing required skill files" >&2
       return 1
