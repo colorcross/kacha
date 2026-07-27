@@ -7,7 +7,7 @@
 
 核心原则很简单：先解决内容、连接和同步，再做包装；每个效果都要有理由；自动检查不能代替人工通看。
 
-> 当前文档以中文为主。English overview: [README.en.md](README.en.md)
+> English documentation starts at [README.en.md](README.en.md).
 
 ## 看看实际剪辑效果
 
