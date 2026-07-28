@@ -44,6 +44,10 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Gives lower-capability models a deterministic `prepare → next` protocol,
   stable error codes, and compiled change recipes instead of relying on
   high-reasoning improvisation.
+- Merges versioned parameters, user/project editing defaults, and local
+  credentials through one validated configuration system. Editing defaults
+  accept structured parameters and natural language without leaking keys into
+  project artifacts.
 - Produces local, machine-readable keyframe, face, person, OCR, luminance, and
   timestamp evidence for Claude Code. MiniMax may enrich a few frames only
   after external-upload, paid-service, and explicit command authorization;
@@ -95,6 +99,27 @@ The installer refuses to overwrite an existing target. The default locations are
 | Claude Code | `~/.claude/skills/kacha` |
 
 The installer needs Python 3, `curl`, and `tar`. Node.js 20+ is required for the gates; FFmpeg, FFprobe, and `jq` are required for the full core workflow. Apple Vision mask generation is macOS-only. See [Installation and dependencies](docs/en/INSTALLATION.md).
+
+## Configure editing defaults
+
+```bash
+node scripts/kacha.mjs config init --scope user
+node scripts/kacha.mjs config show --anchor /path/to/project
+```
+
+User defaults live in `~/.config/kacha/config.json`. A project may commit
+`kacha.config.json` and keep machine-only overrides in the ignored
+`kacha.local.json`. `editingDefaults` supports structured `parameters`,
+natural-language `instructions`, and incremental `recipeParameters`.
+
+MiniMax, Pixabay, and Pexels keys may live in the `0600`
+`~/.config/kacha/secrets.json`. Environment variables and the existing `mmx`
+credential store remain supported. Configuration never grants upload, paid
+call, publishing, overwrite, or gate-bypass authorization. Auto-discovered
+project config cannot redirect providers, credential environment names, or
+machine-local tools; those settings require user config or explicit
+`--config`. See
+[Configuration](docs/en/CONFIGURATION.md).
 
 ## Choose the correct task path
 
@@ -196,6 +221,7 @@ release.
 SKILL.md           Agent entry point and routing rules
 references/        Detailed workflow, editing, audio, visual, and QC contracts
 scripts/           State machine, visual evidence, gates, media helpers, and scanning
+config/            Public, credential-free runtime defaults
 examples/          Fictional v2 full-edit and v3 incremental templates
 assets/sfx/        12 original SFX, working copies, hashes, and asset license
 tests/             Regression and installer tests
@@ -242,6 +268,7 @@ The scanner reduces risk but cannot prove that a repository contains no sensitiv
 - [One-prompt Agent installation](docs/en/AGENT_INSTALL.md)
 - [Installation and dependencies](docs/en/INSTALLATION.md)
 - [Quick start](docs/en/QUICKSTART.md)
+- [Configuration and credentials](docs/en/CONFIGURATION.md)
 - [Architecture and design boundaries](docs/en/ARCHITECTURE.md)
 - [Privacy and security](docs/en/PRIVACY_SECURITY.md)
 - [Contributing](CONTRIBUTING.md)

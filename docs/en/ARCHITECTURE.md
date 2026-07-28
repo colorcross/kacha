@@ -110,6 +110,18 @@ Six stable commands reduce model-reasoning dependence:
 human review. See `references/agent-execution.md` and
 `references/visual-evidence.md`.
 
+## Configuration boundary
+
+`scripts/kacha_config.mjs` merges built-in, user, project, machine-local, and
+explicit layers into one schema- and range-validated safe snapshot.
+`prepare`, `compile-change`, visual evidence, MiniMax, QC, audio, and media
+helpers record only its credential-free digest.
+
+Credentials come from a separate secrets file or environment. Values remain
+non-serializable internal state and are injected only into the required child
+process. Editing defaults enter the execution contract but cannot override
+project authorization or non-negotiable gates.
+
 ## Fail closed
 
 - Missing input or hash mismatch: stop.

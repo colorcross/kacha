@@ -72,6 +72,28 @@ node scripts/kacha.mjs visual-evidence INPUT.mov \
 阻止 reference 超过所选模型档位预算。详细配方、错误码和授权见对应
 reference。
 
+## 统一配置与默认剪辑要求
+
+运行参数、用户偏好和密钥使用分层配置，不再散落在命令或文档中：
+
+```bash
+node scripts/kacha.mjs config validate
+node scripts/kacha.mjs config show --anchor PROJECT_DIR
+node scripts/kacha.mjs config init --scope user
+```
+
+优先级为：内置默认值 < 用户配置 < 项目 `kacha.config.json` <
+本机 `kacha.local.json` < `--config` < 命令行。`editingDefaults` 同时支持
+结构化 `parameters`、自然语言 `instructions` 和增量配方
+`recipeParameters`；`prepare` 与 `compile-change` 会把适用要求编入当前合同。
+
+密钥单独放在权限为 `0600` 的 `~/.config/kacha/secrets.json`，也可继续使用
+环境变量和 mmx 自身凭证库。密钥值不得进入 agent packet、QC、缓存、日志或
+Git。默认要求只表示偏好，不构成上传、付费、发布、覆盖源文件或跳过门禁的
+授权。自动发现的项目配置不得设置 provider、凭证入口或本机工具路径；这些
+敏感项只接受用户配置或显式 `--config`。完整说明见
+`docs/CONFIGURATION.md`。
+
 ## 不可降低的合同
 
 - 源素材只读；新版本独立输出，不覆盖基线。

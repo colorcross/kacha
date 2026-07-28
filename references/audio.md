@@ -17,6 +17,9 @@
 scripts/separate_dialogue.sh INPUT.wav SEPARATION_DIR
 ```
 
+Demucs model、device、时长容差和可选二进制路径默认从咔嚓配置读取；当前命令
+的显式参数与 `KACHA_DEMUCS_BIN` 优先。
+
 标准产物：
 
 - `original_reference.wav`：对齐后的原始参考，只用于同响度 A/B 和回退；
@@ -74,6 +77,9 @@ scripts/enhance_voice.sh INPUT.wav OUTPUT.wav \
   --true-peak -3.5 \
   --channel-mode preserve
 ```
+
+preset、降噪、declick、目标响度、true peak 和声道策略均可放入
+`execution.voiceEnhancement`；命令行参数用于当前项目覆盖。
 
 默认 `natural + light denoise`，但 A/B 出现金属声、抽吸声、辅音损失、齿音变形或呼吸断裂时必须减弱或关闭。
 

@@ -12,10 +12,15 @@ import {
   sha256File,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
+import {
+  firstPositional,
+  loadKachaConfig,
+} from "./kacha_config.mjs";
 
 function usage() {
   console.error(
-    "用法：qc_media.mjs <project-manifest.json> [--output technical-qc.json]",
+    "用法：qc_media.mjs <project-manifest.json> "
+      + "[--output technical-qc.json] [--config FILE]",
   );
 }
 
@@ -49,7 +54,7 @@ function parseLoudnorm(stderr) {
 }
 
 const args = process.argv.slice(2);
-const input = args.find((argument) => !argument.startsWith("--"));
+const input = firstPositional(args, ["--output", "--config", "--secrets"]);
 const outputIndex = args.indexOf("--output");
 if (!input || (outputIndex >= 0 && !args[outputIndex + 1])) {
   usage();
@@ -57,6 +62,18 @@ if (!input || (outputIndex >= 0 && !args[outputIndex + 1])) {
 }
 
 const projectFile = path.resolve(input);
+let loadedConfig;
+try {
+  loadedConfig = loadKachaConfig({
+    args,
+    anchorPath: projectFile,
+    includeSecrets: false,
+  });
+} catch (error) {
+  console.error(`配置无效：${error.message}`);
+  process.exit(2);
+}
+const qcConfig = loadedConfig.config.execution.qualityControl;
 let project;
 try {
   project = readJson(projectFile);
@@ -177,14 +194,17 @@ const detectorArguments = [
 if (summary.video) {
   detectorArguments.push(
     "-vf",
-    "blackdetect=d=0.08:pix_th=0.10,freezedetect=n=-60dB:d=0.5",
+    `blackdetect=d=${qcConfig.blackDurationSeconds}:pix_th=${qcConfig.blackPixelThreshold},`
+      + `freezedetect=n=${qcConfig.freezeNoiseDb}dB:d=${qcConfig.freezeDurationSeconds}`,
   );
 }
 if (summary.audio) {
   detectorArguments.push(
     "-af",
-    "silencedetect=n=-50dB:d=0.5,"
-      + "loudnorm=I=-20:TP=-2:LRA=7:print_format=json",
+    `silencedetect=n=${qcConfig.silenceNoiseDb}dB:d=${qcConfig.silenceDurationSeconds},`
+      + `loudnorm=I=${qcConfig.measurementTargetLufs}:`
+      + `TP=${qcConfig.measurementTruePeakDbtp}:`
+      + `LRA=${qcConfig.measurementLoudnessRange}:print_format=json`,
   );
 }
 detectorArguments.push("-f", "null", "-");
@@ -290,6 +310,11 @@ const report = {
   loudness,
   automaticChecks: checks,
   detectorFindings: findings,
+  configuration: {
+    digest: loadedConfig.digest,
+    sources: loadedConfig.sources,
+    detectorParameters: qcConfig,
+  },
   manualReviewRequired: [
     "所有切点正常速度试听与完整语义检查",
     "字幕全文、真实字体、单行宽度、碰撞和平台安全区检查",

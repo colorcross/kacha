@@ -91,6 +91,10 @@ const report = {
     routedApproximateTokens:
       agentPacket?.contextBudget?.approximateInputTokens ?? null,
     modelTier,
+    configurationDigest:
+      agentPacket?.configuration?.digest
+      ?? qc?.configuration?.digest
+      ?? null,
   },
   change: {
     impactLevel: plan.impact.level,

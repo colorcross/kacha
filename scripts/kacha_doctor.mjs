@@ -10,6 +10,10 @@ import {
   sha256File,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
+import {
+  loadKachaConfig,
+  providerEnvironment,
+} from "./kacha_config.mjs";
 import { diagnostic } from "./kacha_error_catalog.mjs";
 
 const skillRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -29,10 +33,30 @@ if (!["core", "claude-vision", "full"].includes(profile)) {
   process.exit(2);
 }
 const inspectVisualSemantic = profile !== "core";
+let loadedConfig = null;
+let configError = null;
+try {
+  loadedConfig = loadKachaConfig({
+    args,
+    anchorPath: skillRoot,
+  });
+} catch (error) {
+  configError = error.message;
+}
+const configCheck = {
+  id: "config:effective",
+  required: true,
+  available: Boolean(loadedConfig),
+  evidence: loadedConfig
+    ? `validated ${loadedConfig.sources.length} configuration layer(s); secrets redacted`
+    : configError,
+};
 
 const requiredFiles = [
   "SKILL.md",
   "scripts/kacha.mjs",
+  "scripts/kacha_config.mjs",
+  "config/defaults.json",
   "scripts/capability_probe.mjs",
   "scripts/route_references.mjs",
   "scripts/prepare_agent_packet.mjs",
@@ -124,8 +148,24 @@ let mmxAuth = {
 };
 let mmxRuntime = null;
 if (inspectVisualSemantic && commandExists("mmx")) {
+  const providerRuntime = loadedConfig
+    ? providerEnvironment(loadedConfig, "minimax")
+    : { environment: process.env };
+  const minimaxProvider = loadedConfig?.config.providers.minimax ?? {
+    region: "cn",
+    baseUrl: null,
+  };
+  const providerFlags = [
+    "--region",
+    minimaxProvider.region,
+    ...(minimaxProvider.baseUrl
+      ? ["--base-url", minimaxProvider.baseUrl]
+      : []),
+  ];
   const version = run("mmx", ["--version"]);
-  const help = run("mmx", ["vision", "describe", "--help"]);
+  const help = run("mmx", ["vision", "describe", "--help", ...providerFlags], {
+    env: providerRuntime.environment,
+  });
   const auth = run("mmx", [
     "auth",
     "status",
@@ -133,7 +173,10 @@ if (inspectVisualSemantic && commandExists("mmx")) {
     "json",
     "--quiet",
     "--non-interactive",
-  ]);
+    ...providerFlags,
+  ], {
+    env: providerRuntime.environment,
+  });
   const config = run("mmx", [
     "config",
     "show",
@@ -141,7 +184,10 @@ if (inspectVisualSemantic && commandExists("mmx")) {
     "json",
     "--quiet",
     "--non-interactive",
-  ]);
+    ...providerFlags,
+  ], {
+    env: providerRuntime.environment,
+  });
   let safeConfig = {};
   try {
     const parsed = JSON.parse(config.stdout);
@@ -198,6 +244,8 @@ if (profile === "full") {
       "full",
       "--output",
       manifestFile,
+      ...(option("--config") ? ["--config", path.resolve(option("--config"))] : []),
+      ...(option("--secrets") ? ["--secrets", path.resolve(option("--secrets"))] : []),
     ]);
     let missing = [];
     if (fs.existsSync(manifestFile)) {
@@ -223,6 +271,7 @@ if (profile === "full") {
   }
 }
 const checks = [
+  configCheck,
   ...fileChecks,
   ...commandChecks,
   ...filterChecks,
@@ -254,6 +303,16 @@ const report = {
     ffmpeg: ffmpegVersion,
     mmx: mmxRuntime,
   },
+  configuration: loadedConfig
+    ? {
+        digest: loadedConfig.digest,
+        sources: loadedConfig.sources,
+        secrets: loadedConfig.secrets,
+      }
+    : {
+        status: "invalid",
+        error: configError,
+      },
   skill: {
     root: skillRoot,
     installedVersionFile: fs.existsSync(versionFile)

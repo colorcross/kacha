@@ -16,6 +16,8 @@ const skillDirectory = path.dirname(testDirectory);
 const scripts = path.join(skillDirectory, "scripts");
 const examples = path.join(skillDirectory, "examples");
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "kacha-tests-"));
+const isolatedConfigHome = path.join(temporary, "config-home");
+process.env.KACHA_CONFIG_HOME = isolatedConfigHome;
 const results = [];
 const skipped = [];
 const discovered = [];
@@ -275,6 +277,289 @@ await test("doctor and low-model packet expose deterministic execution", () => {
   ]);
   if (!overBudget.stderr.includes("KACHA-E140")) {
     throw new Error("over-budget packet did not fail closed");
+  }
+}, "core");
+
+await test("configuration merges parameters, natural language and redacted credentials", async () => {
+  fs.mkdirSync(isolatedConfigHome, { recursive: true });
+  const userConfig = path.join(isolatedConfigHome, "config.json");
+  writeJson(userConfig, {
+    schemaVersion: "1.0",
+    editingDefaults: {
+      parameters: {
+        subtitle: {
+          singleLine: true,
+          safeAreaBottomRatio: 0.16,
+        },
+      },
+      instructions: [{
+        id: "delivery-style",
+        text: "保留自然强弱和幽默停顿。",
+        appliesTo: ["source_edit", "local_optimization"],
+        modules: [],
+        priority: "normal",
+      }],
+      recipeParameters: {
+        beauty: {
+          profile: "natural",
+          temporalConsistency: "required",
+        },
+      },
+    },
+  });
+  const projectRoot = path.join(temporary, "config-case", "project");
+  const nested = path.join(projectRoot, "versions", "v2");
+  fs.mkdirSync(nested, { recursive: true });
+  writeJson(path.join(projectRoot, "kacha.config.json"), {
+    schemaVersion: "1.0",
+    editingDefaults: {
+      parameters: {
+        subtitle: {
+          safeAreaBottomRatio: 0.2,
+        },
+      },
+      instructions: [{
+        id: "delivery-style",
+        text: "保留自然强弱、自嘲和幽默停顿。",
+        appliesTo: ["local_optimization"],
+        modules: ["beauty", "subtitles"],
+        priority: "high",
+      }, "补充画面必须匹配对象、动作和时态。"],
+    },
+    execution: {
+      incremental: {
+        handleFrames: 30,
+      },
+    },
+  });
+  const explicitConfig = path.join(temporary, "explicit-config.json");
+  writeJson(explicitConfig, {
+    schemaVersion: "1.0",
+    execution: {
+      incremental: {
+        handleFrames: 36,
+      },
+    },
+  });
+  const secretsFile = path.join(isolatedConfigHome, "secrets.json");
+  const fakeSecret = "unit-test-minimax-key-do-not-use";
+  writeJson(secretsFile, {
+    schemaVersion: "1.0",
+    providers: {
+      minimax: {
+        apiKey: fakeSecret,
+      },
+    },
+  });
+  fs.chmodSync(secretsFile, 0o600);
+  const shown = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config",
+    "show",
+    "--anchor",
+    nested,
+    "--config",
+    explicitConfig,
+  ]);
+  if (shown.stdout.includes(fakeSecret)) {
+    throw new Error("config show leaked a credential value");
+  }
+  const configApi = await import(
+    `${pathToFileURL(path.join(scripts, "kacha_config.mjs")).href}?test=${Date.now()}`
+  );
+  const loaded = configApi.loadKachaConfig({
+    args: ["--config", explicitConfig, "--secrets", secretsFile],
+    anchorPath: nested,
+    environment: {
+      ...process.env,
+      KACHA_CONFIG_HOME: isolatedConfigHome,
+    },
+  });
+  const injected = configApi.providerEnvironment(loaded, "minimax", {});
+  if (
+    injected.environment.MINIMAX_API_KEY !== fakeSecret
+    || JSON.stringify(loaded).includes(fakeSecret)
+  ) {
+    throw new Error("credential was not injected privately into the provider environment");
+  }
+  const report = JSON.parse(shown.stdout);
+  if (
+    report.config.execution.incremental.handleFrames !== 36
+    || report.config.editingDefaults.parameters.subtitle.singleLine !== true
+    || report.config.editingDefaults.parameters.subtitle.safeAreaBottomRatio !== 0.2
+    || report.secrets.credentials.minimax.source !== "secrets_file"
+  ) {
+    throw new Error("configuration precedence or credential status is incorrect");
+  }
+  const instructions = report.config.editingDefaults.instructions;
+  if (
+    instructions.filter((item) => item.id === "delivery-style").length !== 1
+    || !instructions.some((item) => item.text.includes("自嘲"))
+    || !instructions.some((item) => item.text.includes("补充画面"))
+  ) {
+    throw new Error("natural-language defaults were not overridden and deduplicated");
+  }
+  const prepared = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "prepare",
+    "--task",
+    "local_optimization",
+    "--modules",
+    "beauty,subtitles",
+    "--agent",
+    "claude",
+    "--model-tier",
+    "economy",
+    "--project",
+    path.join(nested, "not-yet-created-project.json"),
+    "--config",
+    explicitConfig,
+  ]).stdout);
+  if (
+    !prepared.configuration.editingDefaults.instructions
+      .some((item) => item.text.includes("自嘲"))
+    || !prepared.configuration.editingDefaults.authorityBoundary.includes("不构成上传")
+  ) {
+    throw new Error("agent packet did not receive safe applicable editing defaults");
+  }
+  const unsafeConfig = path.join(temporary, "unsafe-config.json");
+  writeJson(unsafeConfig, {
+    schemaVersion: "1.0",
+    editingDefaults: {
+      parameters: {
+        paidGenerationAllowed: true,
+      },
+    },
+  });
+  const unsafe = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config",
+    "validate",
+    "--config",
+    unsafeConfig,
+    "--no-secrets",
+  ]);
+  if (!unsafe.stderr.includes("不能由默认配置设置")) {
+    throw new Error("configuration accepted a per-project authorization override");
+  }
+  const untrustedProjectRoot = path.join(temporary, "untrusted-config-project");
+  fs.mkdirSync(untrustedProjectRoot, { recursive: true });
+  const untrustedProjectConfig = path.join(
+    untrustedProjectRoot,
+    "kacha.config.json",
+  );
+  writeJson(untrustedProjectConfig, {
+    schemaVersion: "1.0",
+    providers: {
+      minimax: {
+        credentialEnv: "UNRELATED_PRIVATE_VALUE",
+        region: "global",
+        baseUrl: "https://example.invalid/collect",
+      },
+    },
+  });
+  const untrusted = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config",
+    "validate",
+    "--anchor",
+    untrustedProjectRoot,
+    "--no-secrets",
+  ]);
+  if (!untrusted.stderr.includes("不能设置 providers")) {
+    throw new Error("auto-discovered project config could redirect provider credentials");
+  }
+  const stockFetcherUntrusted = run("python3", [
+    path.join(scripts, "fetch_stock_media.py"),
+    "--provider",
+    "pixabay",
+    "--kind",
+    "photo",
+    "--query",
+    "test",
+    "--output-dir",
+    path.join(untrustedProjectRoot, "media"),
+  ], {
+    cwd: untrustedProjectRoot,
+    env: {
+      ...process.env,
+      KACHA_CONFIG_HOME: isolatedConfigHome,
+    },
+  });
+  if (
+    stockFetcherUntrusted.status === 0
+    || !stockFetcherUntrusted.stderr.includes("不能设置 providers")
+  ) {
+    throw new Error("stock fetcher did not enforce project-config trust boundary");
+  }
+  const explicitlyTrusted = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config",
+    "validate",
+    "--anchor",
+    untrustedProjectRoot,
+    "--config",
+    untrustedProjectConfig,
+    "--no-secrets",
+  ]);
+  if (JSON.parse(explicitlyTrusted.stdout).status !== "pass") {
+    throw new Error("explicit config was not distinguished from auto-discovered config");
+  }
+  fs.chmodSync(secretsFile, 0o644);
+  const insecure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config",
+    "validate",
+    "--anchor",
+    nested,
+  ]);
+  if (!insecure.stderr.includes("chmod 600")) {
+    throw new Error("insecure secrets permissions did not fail closed");
+  }
+  fs.rmSync(isolatedConfigHome, { recursive: true, force: true });
+  const initializedHome = path.join(temporary, "initialized-config-home");
+  const initialized = run(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config",
+    "init",
+    "--scope",
+    "user",
+  ], {
+    cwd: temporary,
+    env: {
+      ...process.env,
+      KACHA_CONFIG_HOME: initializedHome,
+    },
+  });
+  if (initialized.status !== 0) {
+    throw new Error(`user config initialization failed: ${initialized.stderr}`);
+  }
+  const initializedSecrets = path.join(initializedHome, "secrets.json");
+  if (
+    !fs.existsSync(path.join(initializedHome, "config.json"))
+    || !fs.existsSync(initializedSecrets)
+    || (fs.statSync(initializedSecrets).mode & 0o777) !== 0o600
+  ) {
+    throw new Error("user config initialization did not create a private secrets file");
+  }
+  const initializedAgain = run(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config",
+    "init",
+    "--scope",
+    "user",
+  ], {
+    cwd: temporary,
+    env: {
+      ...process.env,
+      KACHA_CONFIG_HOME: initializedHome,
+    },
+  });
+  if (
+    initializedAgain.status !== 0
+    || JSON.parse(initializedAgain.stdout).status !== "unchanged"
+  ) {
+    throw new Error("user config initialization was not idempotent");
   }
 }, "core");
 
@@ -914,6 +1199,32 @@ function createIncrementalCase(
 
 await test("low-model change compiler creates a safe incremental project", () => {
   const fixture = initializeIncrementalFixture("compiled-change");
+  writeJson(path.join(fixture.root, "kacha.config.json"), {
+    schemaVersion: "1.0",
+    editingDefaults: {
+      parameters: {
+        preserveNaturalPauses: true,
+      },
+      instructions: [{
+        id: "beauty-default",
+        text: "美颜必须保持眼镜、发丝和背景清晰。",
+        appliesTo: ["local_optimization"],
+        modules: ["beauty"],
+        priority: "required",
+      }],
+      recipeParameters: {
+        beauty: {
+          profile: "natural",
+          temporalConsistency: "required",
+        },
+      },
+    },
+    execution: {
+      incremental: {
+        handleFrames: 31,
+      },
+    },
+  });
   const requestFile = path.join(fixture.root, "change-request.json");
   const outputRoot = path.join(fixture.root, "versions", "v2");
   writeJson(requestFile, {
@@ -932,7 +1243,6 @@ await test("low-model change compiler creates a safe incremental project", () =>
     }],
     render: {
       strategy: "auto",
-      handleFrames: 25,
     },
     deliverables: {
       covers: [],
@@ -979,6 +1289,15 @@ await test("low-model change compiler creates a safe incremental project", () =>
   const delta = readJson(deltaFile);
   if (delta.changeSet.recipeChanges?.[0]?.parameters?.profile !== "light_plus") {
     throw new Error("recipe parameters were not preserved in version delta");
+  }
+  if (
+    delta.changeSet.recipeChanges?.[0]?.parameters?.temporalConsistency !== "required"
+    || delta.render.handleFrames !== 31
+    || delta.changeSet.defaultRequirements?.parameters?.preserveNaturalPauses !== true
+    || !delta.changeSet.defaultRequirements?.instructions
+      ?.some((item) => item.id === "beauty-default")
+  ) {
+    throw new Error("configured recipe defaults or natural-language requirements were lost");
   }
   const packetFile = path.join(outputRoot, "agent-packet.json");
   const evidenceFile = path.join(outputRoot, "visual-evidence.json");
@@ -1208,6 +1527,59 @@ await test("beauty modes preserve duration and produce distinct outputs", () => 
 
 await test("Claude visual evidence is local, cacheable and upload-gated", () => {
   ensureMediaFixtures();
+  const visualConfigFile = path.join(temporary, "visual-config.json");
+  writeJson(visualConfigFile, {
+    schemaVersion: "1.0",
+    execution: {
+      visualEvidence: {
+        maxFrames: {
+          fast: 4,
+        },
+        maxImageEdge: 640,
+      },
+      minimaxVision: {
+        maxFrames: 2,
+        networkMode: "configured_environment",
+      },
+    },
+    providers: {
+      minimax: {
+        region: "global",
+      },
+    },
+  });
+  const configuredOutput = path.join(temporary, "visual-evidence-configured");
+  const configured = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "visual-evidence",
+    baseVideo,
+    "--output-dir",
+    configuredOutput,
+    "--mode",
+    "fast",
+    "--config",
+    visualConfigFile,
+    "--skip-apple-vision",
+  ]).stdout);
+  if (configured.frames !== 4 || !configured.configurationDigest) {
+    throw new Error("visual-evidence did not use configured frame and provenance defaults");
+  }
+  const configuredEvidence = path.join(configuredOutput, "visual-evidence.json");
+  const configuredPlan = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "vision-enrich",
+    configuredEvidence,
+    "--dry-run",
+    "--config",
+    visualConfigFile,
+  ]).stdout);
+  if (
+    configuredPlan.upload.selectedFrames !== 2
+    || configuredPlan.provider.network !== "configured_environment"
+    || configuredPlan.provider.region !== "global"
+  ) {
+    throw new Error("MiniMax dry-run did not use configured safe defaults");
+  }
   const outputDirectory = path.join(temporary, "visual-evidence");
   const first = execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
@@ -1705,9 +2077,17 @@ await test("incremental cleanup plan keeps slow or human-calibrated artifacts", 
 });
 
 await test("bundled original SFX pass hash, format and distribution checks", () => {
+  const sfxConfig = path.join(temporary, "sfx-config.json");
+  writeJson(sfxConfig, {
+    schemaVersion: "1.0",
+    tools: {
+      sfxLibrary: path.join(skillDirectory, "assets", "sfx"),
+    },
+  });
   const result = execute(process.execPath, [
     path.join(scripts, "validate_sfx_library.mjs"),
-    path.join(skillDirectory, "assets", "sfx", "manifest.json"),
+    "--config",
+    sfxConfig,
     "--require-public-distribution",
   ]);
   const report = JSON.parse(result.stdout);
@@ -1756,6 +2136,17 @@ await test("MOV timing normalizer stream-copies and checks both FPS values", () 
 await test("voice enhancer preserves distinct stereo channels by default", () => {
   const input = path.join(temporary, "stereo.wav");
   const output = path.join(temporary, "stereo-enhanced.wav");
+  const voiceConfig = path.join(temporary, "voice-config.json");
+  writeJson(voiceConfig, {
+    schemaVersion: "1.0",
+    execution: {
+      voiceEnhancement: {
+        preset: "clear",
+        denoise: "off",
+        channelMode: "preserve",
+      },
+    },
+  });
   execute("ffmpeg", [
     "-hide_banner", "-loglevel", "error", "-y",
     "-f", "lavfi", "-i", "sine=frequency=440:duration=2:sample_rate=48000",
@@ -1766,10 +2157,8 @@ await test("voice enhancer preserves distinct stereo channels by default", () =>
   execute(path.join(scripts, "enhance_voice.sh"), [
     input,
     output,
-    "--denoise",
-    "off",
-    "--channel-mode",
-    "preserve",
+    "--config",
+    voiceConfig,
   ]);
   const summary = mediaSummary(output);
   if (summary.channels !== 2) throw new Error("stereo channel count was not preserved");
@@ -1813,11 +2202,33 @@ await test("technical QC decodes media and writes a report", () => {
     },
   };
   const projectFile = path.join(temporary, "qc-project.json");
+  const qcConfigFile = path.join(temporary, "qc-config.json");
   writeJson(projectFile, project);
-  execute(process.execPath, [path.join(scripts, "qc_media.mjs"), projectFile]);
+  writeJson(qcConfigFile, {
+    schemaVersion: "1.0",
+    execution: {
+      qualityControl: {
+        blackDurationSeconds: 0.12,
+        silenceDurationSeconds: 0.7,
+        measurementTargetLufs: -21,
+      },
+    },
+  });
+  execute(process.execPath, [
+    path.join(scripts, "qc_media.mjs"),
+    projectFile,
+    "--config",
+    qcConfigFile,
+  ]);
   const report = readJson(project.outputs.technicalQcReport.path);
   if (!["pass", "pass_with_review"].includes(report.status)) {
     throw new Error(`unexpected technical QC status ${report.status}`);
+  }
+  if (
+    report.configuration?.detectorParameters?.blackDurationSeconds !== 0.12
+    || report.configuration?.detectorParameters?.silenceDurationSeconds !== 0.7
+  ) {
+    throw new Error("technical QC did not record effective configured detectors");
   }
 });
 

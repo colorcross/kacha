@@ -9,24 +9,33 @@ import {
   sha256File,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
+import {
+  firstPositional,
+  loadKachaConfig,
+} from "./kacha_config.mjs";
 
 function usage() {
   console.error(
-    "用法：validate_sfx_library.mjs <manifest.json> "
+    "用法：validate_sfx_library.mjs [manifest.json] "
       + "[--asset-id ID | --title TITLE] [--output selection.json] "
-      + "[--require-public-distribution]",
+      + "[--require-public-distribution] [--config FILE]",
   );
 }
 
 const args = process.argv.slice(2);
-const input = args.find((argument) => !argument.startsWith("--"));
+const input = firstPositional(args, [
+  "--asset-id",
+  "--title",
+  "--output",
+  "--config",
+  "--secrets",
+]);
 const assetIdIndex = args.indexOf("--asset-id");
 const titleIndex = args.indexOf("--title");
 const outputIndex = args.indexOf("--output");
 const requirePublicDistribution = args.includes("--require-public-distribution");
 if (
-  !input
-  || (assetIdIndex >= 0 && !args[assetIdIndex + 1])
+  (assetIdIndex >= 0 && !args[assetIdIndex + 1])
   || (titleIndex >= 0 && !args[titleIndex + 1])
   || (outputIndex >= 0 && !args[outputIndex + 1])
   || (assetIdIndex >= 0 && titleIndex >= 0)
@@ -35,7 +44,30 @@ if (
   process.exit(2);
 }
 
-const manifestFile = path.resolve(input);
+let loadedConfig;
+try {
+  loadedConfig = loadKachaConfig({
+    args,
+    anchorPath: input || process.cwd(),
+    includeSecrets: false,
+  });
+} catch (error) {
+  console.error(`配置无效：${error.message}`);
+  process.exit(2);
+}
+const configuredLibrary = loadedConfig.config.tools.sfxLibrary;
+const manifestInput = input || (
+  configuredLibrary
+    ? fs.existsSync(configuredLibrary) && fs.statSync(configuredLibrary).isDirectory()
+      ? path.join(configuredLibrary, "manifest.json")
+      : configuredLibrary
+    : null
+);
+if (!manifestInput) {
+  usage();
+  process.exit(2);
+}
+const manifestFile = path.resolve(manifestInput);
 let manifest;
 try {
   manifest = readJson(manifestFile);
@@ -172,6 +204,10 @@ const report = {
       ? { title: requestedTitle }
       : { all: true },
   assets: records,
+  configuration: {
+    digest: loadedConfig.digest,
+    sources: loadedConfig.sources,
+  },
   publicDistributionRequested: requirePublicDistribution,
   errors,
 };

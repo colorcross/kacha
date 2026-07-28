@@ -11,11 +11,17 @@ import {
   run,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
+import {
+  applicableEditingDefaults,
+  deepMerge,
+  firstPositional,
+  loadKachaConfig,
+} from "./kacha_config.mjs";
 import { diagnostic } from "./kacha_error_catalog.mjs";
 
 const scriptsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
-const input = args.find((item) => !item.startsWith("--"));
+const input = firstPositional(args, ["--output-dir", "--config", "--secrets"]);
 
 function option(name, fallback = null) {
   const index = args.indexOf(name);
@@ -181,6 +187,20 @@ if (!VERSION_ID.test(request.newVersion.id)) {
 if (!Array.isArray(request.changes) || request.changes.length === 0) {
   fail("KACHA-E140", "request.changes 必须是非空数组");
 }
+let loadedConfig;
+try {
+  loadedConfig = loadKachaConfig({
+    args,
+    anchorPath: requestFile,
+    includeSecrets: false,
+  });
+} catch (error) {
+  fail("KACHA-E140", `配置无效：${error.message}`);
+}
+const editingDefaults = applicableEditingDefaults(loadedConfig, {
+  task: "local_optimization",
+  modules: request.changes.map((change) => change?.recipe).filter(Boolean),
+});
 
 const contextFile = resolveFrom(requestFile, request.projectContext);
 if (!contextFile || !fs.existsSync(contextFile)) {
@@ -214,13 +234,26 @@ const normalizedChanges = request.changes.map((change, index) => {
       fail("KACHA-E140", `changes[${index}].intervals[${position}] 无效`);
     }
   }
+  if (
+    change.parameters !== undefined
+    && (
+      change.parameters === null
+      || typeof change.parameters !== "object"
+      || Array.isArray(change.parameters)
+    )
+  ) {
+    fail("KACHA-E140", `changes[${index}].parameters 必须是 object`);
+  }
   return {
     recipe: change.recipe,
     type: recipe.type,
     layers: recipe.layers,
     reason: change.reason || `按 ${change.recipe} 稳定配方修改当前基线。`,
     intervals,
-    parameters: change.parameters ?? {},
+    parameters: deepMerge(
+      editingDefaults.recipeParameters[change.recipe] ?? {},
+      change.parameters ?? {},
+    ),
     acceptanceCriteria: Array.isArray(change.acceptanceCriteria)
       && change.acceptanceCriteria.length > 0
       ? change.acceptanceCriteria
@@ -327,7 +360,10 @@ const deltaArgs = [
   "--strategy",
   request.render?.strategy || "auto",
   "--handle-frames",
-  String(request.render?.handleFrames ?? 25),
+  String(
+    request.render?.handleFrames
+      ?? loadedConfig.config.execution.incremental.handleFrames,
+  ),
 ];
 if (durationChange) deltaArgs.push("--duration-change");
 if (outputVideo) deltaArgs.push("--output-video", outputVideo);
@@ -353,6 +389,15 @@ const preview = {
   newVersionId,
   intent,
   recipes: normalizedChanges,
+  configuration: {
+    digest: loadedConfig.digest,
+    sources: loadedConfig.sources,
+    editingDefaults: {
+      parameters: editingDefaults.parameters,
+      instructions: editingDefaults.instructions,
+      authorityBoundary: editingDefaults.authorityBoundary,
+    },
+  },
   derived: {
     types,
     layers,
@@ -399,10 +444,17 @@ delta.changeSet.recipeChanges = normalizedChanges.map((item) => ({
   parameters: item.parameters,
   acceptanceCriteria: item.acceptanceCriteria,
 }));
+delta.changeSet.defaultRequirements = {
+  parameters: editingDefaults.parameters,
+  instructions: editingDefaults.instructions,
+  authorityBoundary: editingDefaults.authorityBoundary,
+};
 delta.compiledFrom = {
   requestPath: requestFile,
   compiler: "compile_change_request.mjs",
   schemaVersion: "1.0",
+  configurationDigest: loadedConfig.digest,
+  configurationSources: loadedConfig.sources,
 };
 writeJsonAtomic(deltaFile, delta);
 

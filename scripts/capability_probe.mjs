@@ -8,6 +8,10 @@ import {
   run,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
+import {
+  loadKachaConfig,
+  providerEnvironment,
+} from "./kacha_config.mjs";
 
 const GROUPS = {
   core: [
@@ -85,28 +89,11 @@ const OPTIONAL = [
   "mmx-auth:active",
 ];
 
-const managedDataRoot = process.env.XDG_DATA_HOME
-  || path.join(os.homedir(), ".local", "share");
-const managedDemucsBin = process.env.KACHA_DEMUCS_BIN
-  || path.join(
-    managedDataRoot,
-    "kacha",
-    "demucs-venv",
-    "bin",
-    "demucs",
-  );
-const legacyManagedDemucsBin = path.join(
-  managedDataRoot,
-  "kacha-kacha",
-  "demucs-venv",
-  "bin",
-  "demucs",
-);
-
 function usage() {
   console.error(
     "用法：capability_probe.sh [--profile core|voice|masks|motion|geometry|hdr|ai-video|claude-vision|full] "
-      + "[--require CAPABILITY] [--output manifest.json]",
+      + "[--require CAPABILITY] [--output manifest.json] "
+      + "[--config FILE] [--secrets FILE]",
   );
 }
 
@@ -125,6 +112,8 @@ for (let index = 0; index < args.length; index += 1) {
   } else if (argument === "--output") {
     output = args[index + 1];
     index += 1;
+  } else if (argument === "--config" || argument === "--secrets") {
+    index += 1;
   } else if (argument === "-h" || argument === "--help") {
     usage();
     process.exit(0);
@@ -138,6 +127,44 @@ if (!GROUPS[profile] && profile !== "full") {
   usage();
   process.exit(2);
 }
+
+let loadedConfig;
+try {
+  loadedConfig = loadKachaConfig({
+    args,
+    anchorPath: output || process.cwd(),
+  });
+} catch (error) {
+  console.error(`配置无效：${error.message}`);
+  process.exit(2);
+}
+const managedDataRoot = process.env.XDG_DATA_HOME
+  || path.join(os.homedir(), ".local", "share");
+const managedDemucsBin = process.env.KACHA_DEMUCS_BIN
+  || loadedConfig.config.tools.demucsBin
+  || path.join(
+    managedDataRoot,
+    "kacha",
+    "demucs-venv",
+    "bin",
+    "demucs",
+  );
+const legacyManagedDemucsBin = path.join(
+  managedDataRoot,
+  "kacha-kacha",
+  "demucs-venv",
+  "bin",
+  "demucs",
+);
+const minimaxProvider = loadedConfig.config.providers.minimax;
+const minimaxRuntime = providerEnvironment(loadedConfig, "minimax");
+const minimaxFlags = [
+  "--region",
+  minimaxProvider.region,
+  ...(minimaxProvider.baseUrl
+    ? ["--base-url", minimaxProvider.baseUrl]
+    : []),
+];
 
 const required = new Set(
   profile === "full"
@@ -165,9 +192,13 @@ let mmxAuthenticated = false;
 if (commandExists("mmx")) {
   const version = run("mmx", ["--version"]);
   mmxVersion = (version.stdout || version.stderr).trim() || "unknown";
-  const help = run("mmx", ["video", "generate", "--help"]);
+  const help = run("mmx", ["video", "generate", "--help", ...minimaxFlags], {
+    env: minimaxRuntime.environment,
+  });
   mmxHelp = `${help.stdout}\n${help.stderr}`;
-  const visionHelp = run("mmx", ["vision", "describe", "--help"]);
+  const visionHelp = run("mmx", ["vision", "describe", "--help", ...minimaxFlags], {
+    env: minimaxRuntime.environment,
+  });
   mmxVisionHelp = `${visionHelp.stdout}\n${visionHelp.stderr}`;
   const auth = run("mmx", [
     "auth",
@@ -176,7 +207,10 @@ if (commandExists("mmx")) {
     "json",
     "--quiet",
     "--non-interactive",
-  ]);
+    ...minimaxFlags,
+  ], {
+    env: minimaxRuntime.environment,
+  });
   mmxAuthenticated = auth.status === 0;
 }
 
@@ -314,6 +348,11 @@ const manifest = {
       ? (run("ffmpeg", ["-version"]).stdout.split("\n")[0] || null)
       : null,
     mmx: mmxVersion,
+  },
+  configuration: {
+    digest: loadedConfig.digest,
+    sources: loadedConfig.sources,
+    secrets: loadedConfig.secrets,
   },
   summary: {
     required: required.size,

@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "1.0",
+  "editingDefaults": {
+    "parameters": {
+      "subtitle": {
+        "singleLine": true,
+        "safeAreaBottomRatio": 0.18
+      },
+      "audio": {
+        "backgroundMusicRelativeDb": -24,
+        "soundEffectRelativeDb": -14
+      }
+    },
+    "instructions": [
+      {
+        "id": "calm-humorous-delivery",
+        "text": "保留淡定、幽默、娓娓道来的表达，不要把所有自然停顿都剪掉。",
+        "appliesTo": [
+          "source_edit",
+          "local_optimization"
+        ],
+        "modules": [
+          "dialogue",
+          "bgm",
+          "sfx"
+        ],
+        "priority": "high"
+      },
+      "外加画面必须匹配当前视频的对象、动作、角色、时态和整体视觉风格。"
+    ],
+    "recipeParameters": {
+      "beauty": {
+        "profile": "natural",
+        "temporalConsistency": "required"
+      },
+      "subtitles": {
+        "singleLine": true,
+        "allowOverflow": false
+      }
+    }
+  },
+  "execution": {
+    "modelTier": "balanced",
+    "incremental": {
+      "handleFrames": 30
+    },
+    "visualEvidence": {
+      "maxFrames": {
+        "review": 18
+      }
+    }
+  }
+}

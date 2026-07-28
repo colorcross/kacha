@@ -82,6 +82,16 @@ Claude Code 会监控已经存在的 skills 目录；如果安装器首次创建
 
 两个 Agent 都读取同一个标准 `SKILL.md` 和 supporting files，不需要维护两套内容。
 
+用户配置和密钥不放在 Skill 安装目录，所以更新 Codex/Claude 安装不会覆盖：
+
+```text
+~/.config/kacha/config.json
+~/.config/kacha/secrets.json
+```
+
+安装后可运行 `node scripts/kacha.mjs config validate`。字段与初始化方式见
+[配置说明](CONFIGURATION.md)。
+
 ## 能力探测
 
 核心能力：
@@ -112,10 +122,11 @@ scripts/capability_probe.sh --profile core --output capabilities.json
 用于生成 dialogue 与 residual 候选。建议使用独立虚拟环境，避免污染系统 Python。脚本按以下顺序查找：
 
 1. `KACHA_DEMUCS_BIN`；
-2. `$XDG_DATA_HOME/kacha/demucs-venv/bin/demucs`；
-3. 旧版迁移期间的 `$XDG_DATA_HOME/kacha-kacha/demucs-venv/bin/demucs`；
-4. `demucs` 命令；
-5. `python3 -m demucs`。
+2. 配置中的 `tools.demucsBin`；
+3. `$XDG_DATA_HOME/kacha/demucs-venv/bin/demucs`；
+4. 旧版迁移期间的 `$XDG_DATA_HOME/kacha-kacha/demucs-venv/bin/demucs`；
+5. `demucs` 命令；
+6. `python3 -m demucs`。
 
 源分离属于有损推断，安装成功不等于结果可直接使用，仍需同响度 A/B 和 residual 泄漏检查。
 
@@ -125,7 +136,8 @@ scripts/capability_probe.sh --profile core --output capabilities.json
 
 ### 素材平台
 
-`scripts/fetch_stock_media.py` 支持 Pixabay/Pexels。凭据只从环境变量读取：
+`scripts/fetch_stock_media.py` 支持 Pixabay/Pexels。凭据优先从环境变量读取，
+也可放入权限为 `0600` 的 `~/.config/kacha/secrets.json`：
 
 ```bash
 export PIXABAY_API_KEY="在本机设置，不要写进仓库"

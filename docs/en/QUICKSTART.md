@@ -2,6 +2,11 @@
 
 This walkthrough creates a local `source_edit` project from the fictional templates. The templates are not authorization for a real project; replace every placeholder with verified project data.
 
+To reuse subtitle, audio, beauty, or pacing preferences, create a user or
+project configuration first. `prepare` will carry applicable structured and
+natural-language defaults into the current packet. See
+[Configuration](CONFIGURATION.md).
+
 ## 0. Put the Agent into deterministic mode
 
 For a lower-capability model, lower reasoning effort, or Claude Code:

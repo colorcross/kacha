@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "1.0",
+  "editingDefaults": {
+    "parameters": {
+      "preserveSourceDimensions": true,
+      "preserveSourceAspectRatio": true,
+      "preserveEffectiveFrameRate": true,
+      "subtitle": {
+        "sourceOfTruth": "final_audio",
+        "singleLine": true,
+        "stayInsideFrame": true,
+        "avoidPlatformUi": true
+      },
+      "audio": {
+        "dialogueFirst": true,
+        "keepResidualMuted": true
+      },
+      "cleanup": {
+        "automatic": false
+      }
+    },
+    "instructions": [],
+    "recipeParameters": {}
+  },
+  "execution": {
+    "modelTier": "balanced",
+    "referenceTokenLimits": {
+      "economy": 28000,
+      "balanced": 56000,
+      "frontier": 112000
+    },
+    "incremental": {
+      "handleFrames": 25
+    },
+    "visualEvidence": {
+      "defaultMode": "fast",
+      "maxFrames": {
+        "fast": 8,
+        "review": 16,
+        "release": 16
+      },
+      "sceneThreshold": 0.34,
+      "workers": 4,
+      "maxImageEdge": 1280
+    },
+    "minimaxVision": {
+      "maxFrames": 6,
+      "hardMaxFrames": 12,
+      "timeoutSeconds": 120,
+      "maxImageBytes": 20971520,
+      "networkMode": "direct_no_proxy"
+    },
+    "qualityControl": {
+      "blackDurationSeconds": 0.08,
+      "blackPixelThreshold": 0.1,
+      "freezeNoiseDb": -60,
+      "freezeDurationSeconds": 0.5,
+      "silenceNoiseDb": -50,
+      "silenceDurationSeconds": 0.5,
+      "measurementTargetLufs": -20,
+      "measurementTruePeakDbtp": -2,
+      "measurementLoudnessRange": 7
+    },
+    "sourceSeparation": {
+      "model": "htdemucs",
+      "device": "auto",
+      "maxDurationDiffSeconds": 0.04
+    },
+    "voiceEnhancement": {
+      "preset": "natural",
+      "denoise": "light",
+      "declick": false,
+      "targetLufs": -20.5,
+      "truePeakDbtp": -3.5,
+      "channelMode": "preserve"
+    },
+    "stockMedia": {
+      "defaultLimit": 3,
+      "maximumLimit": 5,
+      "searchTimeoutSeconds": 30,
+      "downloadTimeoutSeconds": 90
+    }
+  },
+  "tools": {
+    "demucsBin": null,
+    "sfxLibrary": null
+  },
+  "providers": {
+    "minimax": {
+      "credentialEnv": "MINIMAX_API_KEY",
+      "region": "cn",
+      "baseUrl": null
+    },
+    "pixabay": {
+      "credentialEnv": "PIXABAY_API_KEY"
+    },
+    "pexels": {
+      "credentialEnv": "PEXELS_API_KEY"
+    }
+  }
+}

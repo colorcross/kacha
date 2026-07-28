@@ -81,6 +81,9 @@ node scripts/validate_generated_shot_plan.mjs PLAN.json --for-execution
 - Fast 模型只做方向预览，不能自动成为正式素材；
 - transport 未暴露的时长、分辨率或 prompt optimizer 不得声称已生效；
 - 默认中国区无代理直连；
+- provider 区域、base URL、超时和密钥来源由咔嚓配置解析；环境变量优先，
+  其次是权限受控的 `secrets.json`，再使用 mmx 自身凭证库；
+- 密钥只通过子进程环境注入，不写进命令行、计划、缓存或报告；
 - 提交后网络失败先查询任务状态，状态不明不得自动重提。
 
 ## Seedance
@@ -115,7 +118,8 @@ node scripts/validate_generated_shot_plan.mjs PLAN.json --for-execution
 
 - 查询词包含对象、动作、构图、画幅、年代/地点和风格；
 - 每次 1–5 个候选，不囤库；
-- 凭据只从环境变量或 `~/.config/kacha/media.env` 读取；
+- 凭据优先从环境变量或 `~/.config/kacha/secrets.json` 读取，旧
+  `~/.config/kacha/media.env` 只作兼容；
 - 下载使用临时文件和原子落盘；
 - 校验 Content-Type、非空文件、实际解码、尺寸、编码和 SHA-256；
 - 已存在文件和 manifest 不静默覆盖；

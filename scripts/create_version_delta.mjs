@@ -7,6 +7,11 @@ import {
   sha256File,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
+import {
+  applicableEditingDefaults,
+  firstPositional,
+  loadKachaConfig,
+} from "./kacha_config.mjs";
 
 const LAYERS_BY_TYPE = {
   metadata_rewrap: ["metadata"],
@@ -39,7 +44,37 @@ function repeated(args, name) {
 }
 
 const args = process.argv.slice(2);
-const contextInput = args.find((item) => !item.startsWith("--"));
+const contextInput = firstPositional(args, [
+  "--write",
+  "--new-version",
+  "--intent",
+  "--type",
+  "--layers",
+  "--scope",
+  "--output-video",
+  "--reason",
+  "--strategy",
+  "--handle-frames",
+  "--interval",
+  "--cover",
+  "--subtitle",
+  "--accept",
+  "--reuse",
+  "--output-duration",
+  "--config",
+  "--secrets",
+]);
+let loadedConfig;
+try {
+  loadedConfig = loadKachaConfig({
+    args,
+    anchorPath: contextInput || process.cwd(),
+    includeSecrets: false,
+  });
+} catch (error) {
+  console.error(`配置无效：${error.message}`);
+  process.exit(2);
+}
 const writeInput = option(args, "--write");
 const newVersionId = option(args, "--new-version");
 const intent = option(args, "--intent", "candidate");
@@ -61,7 +96,11 @@ const scopeKind = option(
 const outputVideo = option(args, "--output-video");
 const reason = option(args, "--reason", "用户要求对现有基线进行局部优化。");
 const strategy = option(args, "--strategy", "auto");
-const handleFrames = Number(option(args, "--handle-frames", "25"));
+const handleFrames = Number(option(
+  args,
+  "--handle-frames",
+  String(loadedConfig.config.execution.incremental.handleFrames),
+));
 const durationChange = args.includes("--duration-change");
 const intervals = repeated(args, "--interval").map((value) => {
   const [startSeconds, endSeconds] = value.split(":").map(Number);
@@ -99,7 +138,7 @@ if (!contextInput || !writeInput || !newVersionId || types.length === 0) {
       + "[--interval START:END] [--output-video FILE] "
       + "[--cover 3:4=FILE] [--subtitle zh-CN=FILE] "
       + "[--reuse ARTIFACT_ID=FINGERPRINT] "
-      + "[--duration-change] [--reason TEXT] [--accept TEXT]",
+      + "[--duration-change] [--reason TEXT] [--accept TEXT] [--config FILE]",
   );
   process.exit(2);
 }
@@ -138,6 +177,10 @@ try {
 const changedLayers = explicitLayers.length > 0
   ? [...new Set(explicitLayers)]
   : [...new Set(types.flatMap((type) => LAYERS_BY_TYPE[type]))];
+const editingDefaults = applicableEditingDefaults(loadedConfig, {
+  task: "local_optimization",
+  modules: [...types, ...changedLayers],
+});
 const outputDurationSeconds = Number(
   option(
     args,
@@ -181,6 +224,7 @@ const delta = {
     acceptanceCriteria: acceptanceCriteria.length > 0
       ? acceptanceCriteria
       : ["本轮变化符合用户要求，冻结层通过哈希不变性检查。"],
+    defaultRequirements: editingDefaults,
   },
   render: {
     requestedStrategy: strategy,
@@ -197,6 +241,10 @@ const delta = {
     "output",
     "incremental-review.json",
   ),
+  configuration: {
+    digest: loadedConfig.digest,
+    sources: loadedConfig.sources,
+  },
 };
 
 writeJsonAtomic(deltaFile, delta);
@@ -212,6 +260,7 @@ console.log(
       types,
       changedLayers,
       videoDeliverable,
+      configurationDigest: loadedConfig.digest,
     },
     null,
     2,

@@ -27,6 +27,95 @@ LICENSES = {
 }
 
 
+def config_root() -> Path:
+    explicit = os.environ.get("KACHA_CONFIG_HOME")
+    if explicit:
+        return Path(explicit).expanduser().resolve()
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    if xdg:
+        return (Path(xdg).expanduser().resolve() / "kacha")
+    return Path.home() / ".config/kacha"
+
+
+def read_json_object(path: Path, *, required: bool = False) -> dict:
+    if not path.is_file():
+        if required:
+            raise SystemExit(f"Config file not found: {path}")
+        return {}
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"Could not read JSON config {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise SystemExit(f"JSON config must be an object: {path}")
+    return value
+
+
+def load_kacha_config(explicit: Path | None) -> tuple[dict, list[str], str]:
+    config_cli = Path(__file__).resolve().parent / "kacha_config.mjs"
+    command = [
+        "node",
+        str(config_cli),
+        "show",
+        "--anchor",
+        str(Path.cwd().resolve()),
+        "--no-secrets",
+    ]
+    if explicit:
+        command.extend(["--config", str(explicit.expanduser().resolve())])
+    try:
+        result = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except FileNotFoundError as exc:
+        raise SystemExit("Node.js is required to load and validate Kacha config") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise SystemExit("Kacha configuration validation timed out") from exc
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip() or "unknown error"
+        try:
+            parsed = json.loads(detail)
+            detail = parsed.get("error") or detail
+        except json.JSONDecodeError:
+            pass
+        raise SystemExit(f"Kacha configuration failed: {detail}")
+    try:
+        report = json.loads(result.stdout)
+        config = report["config"]
+        digest = report["digest"]
+        sources = [item["path"] for item in report.get("sources", [])]
+    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise SystemExit("Kacha configuration returned an invalid report") from exc
+    return config, sources, digest
+
+
+def load_kacha_secrets(explicit: Path | None) -> tuple[dict, Path]:
+    path = (
+        explicit.expanduser().resolve()
+        if explicit
+        else Path(os.environ.get("KACHA_SECRETS_FILE", config_root() / "secrets.json"))
+        .expanduser()
+        .resolve()
+    )
+    if not path.is_file():
+        if explicit:
+            raise SystemExit(f"Secrets file not found: {path}")
+        return {}, path
+    if os.name != "nt" and path.stat().st_mode & 0o077:
+        raise SystemExit(f"Secrets file permissions are too broad: {path}; run chmod 600")
+    value = read_json_object(path, required=True)
+    if value.get("schemaVersion") != "1.0":
+        raise SystemExit("secrets.json must use schemaVersion 1.0")
+    providers = value.get("providers", {})
+    if not isinstance(providers, dict):
+        raise SystemExit("secrets.providers must be an object")
+    return providers, path
+
+
 def load_private_env(path: Path) -> dict[str, str]:
     values: dict[str, str] = {}
     if not path.is_file():
@@ -40,11 +129,15 @@ def load_private_env(path: Path) -> dict[str, str]:
     return values
 
 
-def fetch_json(url: str, headers: dict[str, str] | None = None) -> dict:
+def fetch_json(
+    url: str,
+    headers: dict[str, str] | None = None,
+    timeout: int = 30,
+) -> dict:
     request_headers = {"User-Agent": "kacha-local-media-fetcher/1.0", "Accept": "application/json"}
     request_headers.update(headers or {})
     request = urllib.request.Request(url, headers=request_headers)
-    with urllib.request.urlopen(request, timeout=30) as response:
+    with urllib.request.urlopen(request, timeout=timeout) as response:
         return json.load(response)
 
 
@@ -83,7 +176,12 @@ def validate_media(path: Path, kind: str) -> dict:
     }
 
 
-def download(url: str, target: Path, kind: str) -> tuple[str, str, int, dict]:
+def download(
+    url: str,
+    target: Path,
+    kind: str,
+    timeout: int = 90,
+) -> tuple[str, str, int, dict]:
     if target.exists():
         raise RuntimeError(f"Refusing to overwrite existing asset: {target}")
     request = urllib.request.Request(url, headers={"User-Agent": "kacha-local-media-fetcher/1.0"})
@@ -99,7 +197,7 @@ def download(url: str, target: Path, kind: str) -> tuple[str, str, int, dict]:
             delete=False,
         ) as output:
             temporary_path = Path(output.name)
-            with urllib.request.urlopen(request, timeout=90) as response:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
                 content_type = (response.headers.get_content_type() or "").lower()
                 expected_prefix = "video/" if kind == "video" else "image/"
                 if not content_type.startswith(expected_prefix):
@@ -131,12 +229,19 @@ def suffix_for(url: str, fallback: str) -> str:
     return suffix if suffix in {".jpg", ".jpeg", ".png", ".mp4"} else fallback
 
 
-def pixabay_items(key: str, query: str, kind: str, orientation: str, limit: int) -> list[dict]:
+def pixabay_items(
+    key: str,
+    query: str,
+    kind: str,
+    orientation: str,
+    limit: int,
+    timeout: int,
+) -> list[dict]:
     endpoint = "https://pixabay.com/api/videos/" if kind == "video" else "https://pixabay.com/api/"
     params = {"key": key, "q": query, "per_page": str(max(limit * 3, 10)), "safesearch": "true"}
     if kind == "photo":
         params.update({"image_type": "photo", "orientation": orientation})
-    response = fetch_json(f"{endpoint}?{urllib.parse.urlencode(params)}")
+    response = fetch_json(f"{endpoint}?{urllib.parse.urlencode(params)}", timeout=timeout)
     selected: list[dict] = []
     for hit in response.get("hits", []):
         if kind == "video":
@@ -162,13 +267,24 @@ def pixabay_items(key: str, query: str, kind: str, orientation: str, limit: int)
     return selected
 
 
-def pexels_items(key: str, query: str, kind: str, orientation: str, limit: int) -> list[dict]:
+def pexels_items(
+    key: str,
+    query: str,
+    kind: str,
+    orientation: str,
+    limit: int,
+    timeout: int,
+) -> list[dict]:
     if kind == "video":
         endpoint = "https://api.pexels.com/v1/videos/search"
     else:
         endpoint = "https://api.pexels.com/v1/search"
     params = {"query": query, "per_page": str(max(limit * 3, 10)), "orientation": orientation}
-    response = fetch_json(f"{endpoint}?{urllib.parse.urlencode(params)}", {"Authorization": key})
+    response = fetch_json(
+        f"{endpoint}?{urllib.parse.urlencode(params)}",
+        {"Authorization": key},
+        timeout=timeout,
+    )
     hits = response.get("videos" if kind == "video" else "photos", [])
     selected: list[dict] = []
     for hit in hits:
@@ -202,31 +318,64 @@ def pexels_items(key: str, query: str, kind: str, orientation: str, limit: int) 
 
 
 def main() -> int:
-    default_config = Path.home() / ".config/kacha/media.env"
+    default_legacy_env = Path.home() / ".config/kacha/media.env"
     legacy_config = Path.home() / ".config/kacha-kacha/media.env"
-    if not default_config.is_file() and legacy_config.is_file():
-        default_config = legacy_config
+    if not default_legacy_env.is_file() and legacy_config.is_file():
+        default_legacy_env = legacy_config
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--provider", choices=("pixabay", "pexels"), required=True)
     parser.add_argument("--kind", choices=("photo", "video"), required=True)
     parser.add_argument("--query", required=True, help="Concrete visual subject, not a generic mood word.")
     parser.add_argument("--orientation", choices=("landscape", "portrait", "square"), default="landscape")
-    parser.add_argument("--limit", type=int, default=3, choices=range(1, 6))
+    parser.add_argument("--limit", type=int)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--config", type=Path, default=default_config)
+    parser.add_argument(
+        "--config",
+        type=Path,
+        help="Kacha JSON config. A .env path is accepted as a legacy compatibility input.",
+    )
+    parser.add_argument("--secrets", type=Path, help="Private Kacha secrets.json")
+    parser.add_argument("--legacy-env", type=Path, default=default_legacy_env)
     args = parser.parse_args()
 
-    private_env = load_private_env(args.config)
-    key_name = "PIXABAY_API_KEY" if args.provider == "pixabay" else "PEXELS_API_KEY"
-    key = os.environ.get(key_name) or private_env.get(key_name)
+    explicit_json_config = args.config
+    legacy_env = args.legacy_env
+    if args.config and args.config.suffix.lower() == ".env":
+        explicit_json_config = None
+        legacy_env = args.config
+    config, config_sources, config_digest = load_kacha_config(explicit_json_config)
+    providers = config.get("providers", {})
+    provider_config = providers.get(args.provider, {})
+    key_name = provider_config.get(
+        "credentialEnv",
+        "PIXABAY_API_KEY" if args.provider == "pixabay" else "PEXELS_API_KEY",
+    )
+    secrets, secrets_path = load_kacha_secrets(args.secrets)
+    secret_value = (secrets.get(args.provider) or {}).get("apiKey")
+    private_env = load_private_env(legacy_env)
+    key = os.environ.get(key_name) or secret_value or private_env.get(key_name)
     if not key:
-        raise SystemExit(f"Missing {key_name}. Add it to {args.config} or the environment.")
+        raise SystemExit(
+            f"Missing {key_name}. Set the environment variable, add it to "
+            f"{secrets_path}, or use the legacy env file {legacy_env}."
+        )
+    stock_config = config.get("execution", {}).get("stockMedia", {})
+    maximum_limit = int(stock_config.get("maximumLimit", 5))
+    limit = args.limit if args.limit is not None else int(stock_config.get("defaultLimit", 3))
+    if limit < 1 or limit > maximum_limit:
+        raise SystemExit(f"--limit must be between 1 and configured maximum {maximum_limit}")
+    search_timeout = int(stock_config.get("searchTimeoutSeconds", 30))
+    download_timeout = int(stock_config.get("downloadTimeoutSeconds", 90))
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     if args.provider == "pixabay":
-        items = pixabay_items(key, args.query, args.kind, args.orientation, args.limit)
+        items = pixabay_items(
+            key, args.query, args.kind, args.orientation, limit, search_timeout
+        )
     else:
-        items = pexels_items(key, args.query, args.kind, args.orientation, args.limit)
+        items = pexels_items(
+            key, args.query, args.kind, args.orientation, limit, search_timeout
+        )
     if not items:
         raise SystemExit("No downloadable candidates returned. Refine the query or use the other provider.")
 
@@ -238,7 +387,7 @@ def main() -> int:
         filename = f"{args.provider}-{args.kind}-{item['id']}-{index}{suffix}"
         local_path = args.output_dir / filename
         checksum, content_type, byte_count, decoded = download(
-            item["download_url"], local_path, args.kind
+            item["download_url"], local_path, args.kind, timeout=download_timeout
         )
         manifest_items.append({
             "local_path": str(local_path.resolve()), "provider": args.provider, "asset_id": item["id"],
@@ -250,7 +399,20 @@ def main() -> int:
         })
     manifest = {
         "schema": "kacha.media-manifest.v1", "provider": args.provider,
-        "license_url": LICENSES[args.provider], "items": manifest_items,
+        "license_url": LICENSES[args.provider],
+        "configuration": {
+            "sources": config_sources,
+            "digest": config_digest,
+            "credential_env": key_name,
+            "credential_source": (
+                "environment"
+                if os.environ.get(key_name)
+                else "secrets_file"
+                if secret_value
+                else "legacy_env"
+            ),
+        },
+        "items": manifest_items,
     }
     manifest_path = args.output_dir / (
         f"manifest.{args.provider}.{args.kind}.{retrieved.strftime('%Y%m%dT%H%M%SZ')}.json"

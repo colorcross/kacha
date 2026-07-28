@@ -20,13 +20,25 @@ Kacha is local-first. By default it does not upload, publish, purchase licenses,
 
 The scripts recognize these environment variable names:
 
+- `MINIMAX_API_KEY`
 - `PIXABAY_API_KEY`
 - `PEXELS_API_KEY`
 - `KACHA_DEMUCS_BIN`
 - `KACHA_SFX_LIBRARY`
 - `XDG_DATA_HOME`
 
-The first two are sensitive credentials; the last three are local path settings. Never commit real values. Inject credentials through a local password manager, a CI secret store, or a permission-controlled shell environment.
+The three API keys are sensitive credentials; the remaining values configure
+local paths. Real keys may also be stored in the `0600`
+`~/.config/kacha/secrets.json`; MiniMax may continue using the existing `mmx`
+OAuth/API-key credential store.
+
+`kacha.config.json` and `~/.config/kacha/config.json` may contain only
+non-secret parameters, environment-variable names, and editing defaults.
+Credential values are injected only into the child process that needs them and
+are never written into command lines, agent packets, QC reports, caches, or
+logs. Auto-discovered project config cannot set `providers` or `tools`, so it
+cannot redirect user-level credentials, the MiniMax endpoint, or a local
+executable. See [Configuration](CONFIGURATION.md).
 
 ## Pre-publication checks
 

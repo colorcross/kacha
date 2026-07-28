@@ -7,14 +7,15 @@ Usage:
   enhance_voice.sh INPUT OUTPUT.wav [options]
 
 Options:
-  --preset natural|warm|clear    Voice tone preset (default: natural)
-  --denoise off|light|medium     Spectral denoise strength (default: light)
+  --preset natural|warm|clear    Voice tone preset (default: Kacha config)
+  --denoise off|light|medium     Spectral denoise strength (default: Kacha config)
   --declick                      Enable conservative click/mouth-noise repair
   --neural-model PATH            Optional trusted FFmpeg arnndn model
-  --target-lufs NUMBER           Integrated loudness target (default: -20.5)
-  --true-peak NUMBER             True-peak ceiling in dBTP (default: -3.5)
+  --target-lufs NUMBER           Integrated loudness target (default: Kacha config)
+  --true-peak NUMBER             True-peak ceiling in dBTP (default: Kacha config)
   --channel-mode preserve|mono|stereo
                                   Preserve source channels by default
+  --config FILE                   Explicit Kacha config; user/project config by default
 
   The output is 48 kHz, 24-bit PCM WAV. Channel layout is preserved unless
   --channel-mode explicitly requests mono or stereo. This script is for a
@@ -32,13 +33,14 @@ input=$1
 output=$2
 shift 2
 
-preset="natural"
-denoise="light"
-declick="false"
+preset=""
+denoise=""
+declick=""
 neural_model=""
-target_lufs="-20.5"
-true_peak="-3.5"
-channel_mode="preserve"
+target_lufs=""
+true_peak=""
+channel_mode=""
+config_file=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -70,6 +72,10 @@ while [[ $# -gt 0 ]]; do
       channel_mode=${2:?missing channel mode}
       shift 2
       ;;
+    --config)
+      config_file=${2:?missing config path}
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -88,6 +94,28 @@ command -v ffmpeg >/dev/null || { printf 'ffmpeg is required\n' >&2; exit 2; }
 command -v ffprobe >/dev/null || { printf 'ffprobe is required\n' >&2; exit 2; }
 command -v jq >/dev/null || { printf 'jq is required\n' >&2; exit 2; }
 command -v node >/dev/null || { printf 'node is required\n' >&2; exit 2; }
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+config_args=(
+  "$script_dir/kacha_config.mjs"
+  get
+  --key execution.voiceEnhancement
+  --anchor "$input"
+  --output json
+  --no-secrets
+)
+if [[ -n "$config_file" ]]; then
+  config_args+=(--config "$config_file")
+fi
+if ! voice_config=$(node "${config_args[@]}"); then
+  printf '%s\n' "Could not load Kacha voice configuration" >&2
+  exit 2
+fi
+preset=${preset:-$(printf '%s' "$voice_config" | jq -er '.preset')}
+denoise=${denoise:-$(printf '%s' "$voice_config" | jq -er '.denoise')}
+declick=${declick:-$(printf '%s' "$voice_config" | jq -r '.declick')}
+target_lufs=${target_lufs:-$(printf '%s' "$voice_config" | jq -er '.targetLufs')}
+true_peak=${true_peak:-$(printf '%s' "$voice_config" | jq -er '.truePeakDbtp')}
+channel_mode=${channel_mode:-$(printf '%s' "$voice_config" | jq -er '.channelMode')}
 input_resolved=$(node -e 'console.log(require("node:path").resolve(process.argv[1]))' "$input")
 output_resolved=$(node -e 'console.log(require("node:path").resolve(process.argv[1]))' "$output")
 [[ "$input_resolved" != "$output_resolved" ]] || {

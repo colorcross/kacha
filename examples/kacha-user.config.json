@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0",
+  "editingDefaults": {
+    "parameters": {},
+    "instructions": [],
+    "recipeParameters": {}
+  },
+  "tools": {
+    "demucsBin": null,
+    "sfxLibrary": null
+  },
+  "providers": {
+    "minimax": {
+      "credentialEnv": "MINIMAX_API_KEY",
+      "region": "cn",
+      "baseUrl": null
+    },
+    "pixabay": {
+      "credentialEnv": "PIXABAY_API_KEY"
+    },
+    "pexels": {
+      "credentialEnv": "PEXELS_API_KEY"
+    }
+  }
+}

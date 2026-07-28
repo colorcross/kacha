@@ -17,6 +17,7 @@ function usage() {
   console.error(
     "用法：\n"
       + "  kacha.mjs doctor [--profile core|claude-vision|full]\n"
+      + "  kacha.mjs config show|validate|get|init [options]\n"
       + "  kacha.mjs prepare --task TASK [--modules a,b] [--agent codex|claude]\n"
       + "  kacha.mjs next <project-manifest.json>\n"
       + "  kacha.mjs compile-change <change-request.json> [--output-dir DIR]\n"
@@ -62,6 +63,7 @@ function invoke(script, args) {
 const [, , command, projectInput, ...remainingArguments] = process.argv;
 const delegatedCommands = {
   doctor: "kacha_doctor.mjs",
+  config: "kacha_config.mjs",
   prepare: "prepare_agent_packet.mjs",
   next: "next_action.mjs",
   "compile-change": "compile_change_request.mjs",
@@ -269,9 +271,9 @@ if (command === "gate-plan") {
 } else if (command === "qc") {
   if (project.schemaVersion === "3.0") {
     gatePlanV3();
-    invoke("qc_incremental.mjs", [projectFile]);
+    invoke("qc_incremental.mjs", [projectFile, ...remainingArguments]);
   } else {
-    invoke("qc_media.mjs", [projectFile]);
+    invoke("qc_media.mjs", [projectFile, ...remainingArguments]);
   }
 } else if (command === "gate-candidate") {
   if (project.schemaVersion !== "3.0") {

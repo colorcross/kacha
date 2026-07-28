@@ -7,9 +7,10 @@ usage() {
   separate_dialogue.sh INPUT OUTPUT_DIR [选项]
 
 选项：
-  --model NAME                 Demucs 模型，默认 htdemucs
-  --device DEVICE              auto/cpu/cuda/mps，默认 auto
-  --max-duration-diff SECONDS  分离前后允许的最大时长差，默认 0.04
+  --model NAME                 Demucs 模型，默认读取咔嚓配置
+  --device DEVICE              auto/cpu/cuda/mps，默认读取咔嚓配置
+  --max-duration-diff SECONDS  分离前后允许的最大时长差，默认读取咔嚓配置
+  --config FILE                显式咔嚓配置；默认读取用户/项目配置
   -h, --help
 
 输出：
@@ -39,9 +40,10 @@ input=$1
 output_dir=$2
 shift 2
 
-model="htdemucs"
-device="auto"
-max_duration_diff="0.04"
+model=""
+device=""
+max_duration_diff=""
+config_file=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -57,6 +59,10 @@ while [[ $# -gt 0 ]]; do
       max_duration_diff=${2:?--max-duration-diff 缺少参数}
       shift 2
       ;;
+    --config)
+      config_file=${2:?--config 缺少参数}
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -69,7 +75,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-for command_name in ffmpeg ffprobe jq shasum; do
+for command_name in node ffmpeg ffprobe jq shasum; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "缺少必需命令：$command_name" >&2
     exit 3
@@ -81,10 +87,41 @@ if [[ ! -f "$input" ]]; then
   exit 4
 fi
 
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+config_args=(
+  "$script_dir/kacha_config.mjs"
+  get
+  --key execution.sourceSeparation
+  --anchor "$input"
+  --output json
+  --no-secrets
+)
+if [[ -n "$config_file" ]]; then
+  config_args+=(--config "$config_file")
+fi
+if ! separation_config=$(node "${config_args[@]}"); then
+  echo "无法读取咔嚓人声分离配置。" >&2
+  exit 2
+fi
+model=${model:-$(printf '%s' "$separation_config" | jq -er '.model')}
+device=${device:-$(printf '%s' "$separation_config" | jq -er '.device')}
+max_duration_diff=${max_duration_diff:-$(printf '%s' "$separation_config" | jq -er '.maxDurationDiffSeconds')}
+
 runner=()
 engine=""
 managed_data_root=${XDG_DATA_HOME:-"${HOME}/.local/share"}
-managed_demucs_bin=${KACHA_DEMUCS_BIN:-"$managed_data_root/kacha/demucs-venv/bin/demucs"}
+tool_config_args=(
+  "$script_dir/kacha_config.mjs"
+  get
+  --key tools.demucsBin
+  --anchor "$input"
+  --no-secrets
+)
+if [[ -n "$config_file" ]]; then
+  tool_config_args+=(--config "$config_file")
+fi
+configured_demucs_bin=$(node "${tool_config_args[@]}" 2>/dev/null || true)
+managed_demucs_bin=${KACHA_DEMUCS_BIN:-${configured_demucs_bin:-"$managed_data_root/kacha/demucs-venv/bin/demucs"}}
 legacy_managed_demucs_bin="$managed_data_root/kacha-kacha/demucs-venv/bin/demucs"
 if [[ -x "$managed_demucs_bin" ]] && "$managed_demucs_bin" --help >/dev/null 2>&1; then
   runner=("$managed_demucs_bin")

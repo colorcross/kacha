@@ -16,11 +16,24 @@ import {
   sha256Value,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
+import {
+  firstPositional,
+  loadKachaConfig,
+} from "./kacha_config.mjs";
 import { diagnostic } from "./kacha_error_catalog.mjs";
 
 const scriptsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
-const input = args.find((item) => !item.startsWith("--"));
+const input = firstPositional(args, [
+  "--output-dir",
+  "--mode",
+  "--max-frames",
+  "--timestamp",
+  "--scene-threshold",
+  "--workers",
+  "--config",
+  "--secrets",
+]);
 
 function option(name, fallback = null) {
   const index = args.indexOf(name);
@@ -44,17 +57,35 @@ function fail(code, detail, exitCode = 1) {
   process.exit(exitCode);
 }
 
+let loadedConfig;
+try {
+  loadedConfig = loadKachaConfig({
+    args,
+    anchorPath: input || process.cwd(),
+    includeSecrets: false,
+  });
+} catch (error) {
+  fail("KACHA-E140", `配置无效：${error.message}`);
+}
+const visualConfig = loadedConfig.config.execution.visualEvidence;
 const outputDirectoryArgument = option("--output-dir");
-const mode = option("--mode", "fast");
-const maxFrames = Number(option("--max-frames", mode === "fast" ? "8" : "16"));
-const sceneThreshold = Number(option("--scene-threshold", "0.34"));
+const mode = option("--mode", visualConfig.defaultMode);
+const maxFrames = Number(option(
+  "--max-frames",
+  String(visualConfig.maxFrames[mode] ?? visualConfig.maxFrames.fast),
+));
+const sceneThreshold = Number(option(
+  "--scene-threshold",
+  String(visualConfig.sceneThreshold),
+));
 const force = args.includes("--force");
 const skipAppleVision = args.includes("--skip-apple-vision");
 const explicitTimestamps = repeated("--timestamp").map(Number);
 const requestedWorkers = Number(
-  option("--workers", String(Math.min(4, os.cpus().length))),
+  option("--workers", String(Math.min(visualConfig.workers, os.cpus().length))),
 );
 const concurrency = Math.max(1, Math.min(8, requestedWorkers));
+const maxImageEdge = visualConfig.maxImageEdge;
 
 if (
   !input
@@ -70,7 +101,8 @@ if (
     "用法：kacha.mjs visual-evidence VIDEO --output-dir DIR "
       + "[--mode fast|review|release] [--max-frames 8..48] "
       + "[--timestamp SEC] [--scene-threshold 0.34] "
-      + "[--workers 1..8] [--skip-apple-vision] [--force]",
+      + "[--workers 1..8] [--config FILE] "
+      + "[--skip-apple-vision] [--force]",
     2,
   );
 }
@@ -108,6 +140,7 @@ const optionsIdentity = {
   sceneThreshold,
   explicitTimestamps,
   skipAppleVision,
+  maxImageEdge,
   scriptVersion: "1.0.0",
 };
 const cacheKey = sha256Value({
@@ -277,7 +310,7 @@ try {
       "-frames:v",
       "1",
       "-vf",
-      "scale=1280:1280:force_original_aspect_ratio=decrease:flags=lanczos",
+      `scale=${maxImageEdge}:${maxImageEdge}:force_original_aspect_ratio=decrease:flags=lanczos`,
       "-q:v",
       "2",
       "-y",
@@ -531,6 +564,8 @@ const report = {
   provenance: {
     tool: "build_visual_evidence.mjs",
     version: optionsIdentity.scriptVersion,
+    configurationDigest: loadedConfig.digest,
+    configurationSources: loadedConfig.sources,
     externalUpload: false,
     wholeVideoUploaded: false,
   },
@@ -632,6 +667,7 @@ console.log(JSON.stringify({
   frames: report.frames.length,
   findings: report.findings.length,
   localSemantic: report.analysis.localSemantic,
+  configurationDigest: loadedConfig.digest,
 }, null, 2));
 releaseLock?.();
 releaseLock = null;

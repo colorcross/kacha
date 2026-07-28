@@ -14,6 +14,10 @@ import {
   streamSha256,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
+import {
+  firstPositional,
+  loadKachaConfig,
+} from "./kacha_config.mjs";
 
 function check(id, pass, actual, expected, severity = "error") {
   return {
@@ -50,13 +54,28 @@ function resolveOutput(projectFile, project, delta, field) {
   return null;
 }
 
-const [, , input] = process.argv;
+const args = process.argv.slice(2);
+const input = firstPositional(args, ["--config", "--secrets"]);
 if (!input) {
-  console.error("用法：qc_incremental.mjs <incremental-project.json>");
+  console.error(
+    "用法：qc_incremental.mjs <incremental-project.json> [--config FILE]",
+  );
   process.exit(2);
 }
 
 const projectFile = path.resolve(input);
+let loadedConfig;
+try {
+  loadedConfig = loadKachaConfig({
+    args,
+    anchorPath: projectFile,
+    includeSecrets: false,
+  });
+} catch (error) {
+  console.error(`配置无效：${error.message}`);
+  process.exit(2);
+}
+const qcConfig = loadedConfig.config.execution.qualityControl;
 let project;
 let context;
 let delta;
@@ -199,14 +218,17 @@ if (delta.deliverables.video) {
   if (videoChanged) {
     analysisArguments.push(
       "-vf",
-      "blackdetect=d=0.08:pix_th=0.10,freezedetect=n=-60dB:d=0.5",
+      `blackdetect=d=${qcConfig.blackDurationSeconds}:pix_th=${qcConfig.blackPixelThreshold},`
+        + `freezedetect=n=${qcConfig.freezeNoiseDb}dB:d=${qcConfig.freezeDurationSeconds}`,
     );
   }
   if (audioChanged && summary.audio) {
     analysisArguments.push(
       "-af",
-      "silencedetect=n=-50dB:d=0.5,"
-        + "loudnorm=I=-20:TP=-2:LRA=7:print_format=json",
+      `silencedetect=n=${qcConfig.silenceNoiseDb}dB:d=${qcConfig.silenceDurationSeconds},`
+        + `loudnorm=I=${qcConfig.measurementTargetLufs}:`
+        + `TP=${qcConfig.measurementTruePeakDbtp}:`
+        + `LRA=${qcConfig.measurementLoudnessRange}:print_format=json`,
     );
   }
   analysisArguments.push("-f", "null", "-");
@@ -457,6 +479,11 @@ const report = {
   deliverableDigest: sha256Value(deliverableEvidence),
   loudness,
   detectorFindings,
+  configuration: {
+    digest: loadedConfig.digest,
+    sources: loadedConfig.sources,
+    detectorParameters: qcConfig,
+  },
   manualReviewRequired: plan.qcProfile.manualChecks,
 };
 writeJsonAtomic(outputFile, report);

@@ -82,6 +82,17 @@ Claude Code watches existing skill directories. If the installer creates the top
 
 Both Agents use the same `SKILL.md` and supporting files; the project does not maintain separate implementations.
 
+User configuration and credentials live outside the installed skill, so an
+update does not overwrite them:
+
+```text
+~/.config/kacha/config.json
+~/.config/kacha/secrets.json
+```
+
+Run `node scripts/kacha.mjs config validate` after installation. See
+[Configuration](CONFIGURATION.md).
+
 ## Capability probing
 
 Core capabilities:
@@ -112,10 +123,11 @@ The probe exits non-zero when a required capability is missing. Downgrade the pr
 Demucs can generate dialogue and residual candidates. Use an isolated virtual environment to avoid changing system Python. The scripts search in this order:
 
 1. `KACHA_DEMUCS_BIN`
-2. `$XDG_DATA_HOME/kacha/demucs-venv/bin/demucs`
-3. `$XDG_DATA_HOME/kacha-kacha/demucs-venv/bin/demucs` during legacy migration
-4. the `demucs` command
-5. `python3 -m demucs`
+2. `tools.demucsBin` from Kacha configuration
+3. `$XDG_DATA_HOME/kacha/demucs-venv/bin/demucs`
+4. `$XDG_DATA_HOME/kacha-kacha/demucs-venv/bin/demucs` during legacy migration
+5. the `demucs` command
+6. `python3 -m demucs`
 
 Source separation is lossy inference. A successful command does not prove that the result is usable; perform loudness-matched A/B review and check residual leakage.
 
@@ -125,7 +137,9 @@ Source separation is lossy inference. A successful command does not prove that t
 
 ### Stock-media providers
 
-`scripts/fetch_stock_media.py` supports Pixabay and Pexels. Credentials are read only from environment variables:
+`scripts/fetch_stock_media.py` supports Pixabay and Pexels. Credentials prefer
+environment variables and may also be stored in the `0600`
+`~/.config/kacha/secrets.json`:
 
 ```bash
 export PIXABAY_API_KEY="set-locally-never-commit"

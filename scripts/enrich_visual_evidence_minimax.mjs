@@ -12,10 +12,23 @@ import {
   sha256Value,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
+import {
+  firstPositional,
+  loadKachaConfig,
+  providerEnvironment,
+} from "./kacha_config.mjs";
 import { diagnostic } from "./kacha_error_catalog.mjs";
 
 const args = process.argv.slice(2);
-const input = args.find((item) => !item.startsWith("--"));
+const input = firstPositional(args, [
+  "--context",
+  "--output",
+  "--max-frames",
+  "--prompt",
+  "--frame-id",
+  "--config",
+  "--secrets",
+]);
 
 function option(name, fallback = null) {
   const index = args.indexOf(name);
@@ -41,23 +54,47 @@ function fail(code, detail, exitCode = 1) {
 
 const contextInput = option("--context");
 const outputInput = option("--output");
-const maxFrames = Number(option("--max-frames", "6"));
 const promptOverride = option("--prompt");
 const selectedIds = repeated("--frame-id");
 const dryRun = args.includes("--dry-run");
 const allowUpload = args.includes("--allow-external-upload");
-const useConfiguredNetwork = args.includes("--use-configured-network");
+let loadedConfig;
+try {
+  loadedConfig = loadKachaConfig({
+    args,
+    anchorPath: input || contextInput || process.cwd(),
+    includeSecrets: !dryRun,
+  });
+} catch (error) {
+  fail("KACHA-E140", `配置无效：${error.message}`);
+}
+const minimaxConfig = loadedConfig.config.execution.minimaxVision;
+const providerConfig = loadedConfig.config.providers.minimax;
+const maxFrames = Number(option("--max-frames", String(minimaxConfig.maxFrames)));
+const hardMaxFrames = minimaxConfig.hardMaxFrames;
+const timeoutSeconds = minimaxConfig.timeoutSeconds;
+const maximumImageBytes = minimaxConfig.maxImageBytes;
+const useConfiguredNetwork = args.includes("--use-configured-network")
+  || (
+    !args.includes("--direct-no-proxy")
+    && minimaxConfig.networkMode === "configured_environment"
+  );
 
 if (
   !input
-  || !(Number.isInteger(maxFrames) && maxFrames >= 1 && maxFrames <= 12)
+  || (
+    args.includes("--use-configured-network")
+    && args.includes("--direct-no-proxy")
+  )
+  || !(Number.isInteger(maxFrames) && maxFrames >= 1 && maxFrames <= hardMaxFrames)
 ) {
   fail(
     "KACHA-E140",
     "用法：kacha.mjs vision-enrich visual-evidence.json "
       + "--context project-context.json --allow-external-upload "
       + "[--frame-id frame-001] [--max-frames 6] [--output FILE] "
-      + "[--prompt TEXT] [--dry-run] [--use-configured-network]",
+      + "[--prompt TEXT] [--config FILE] [--secrets FILE] "
+      + "[--dry-run] [--use-configured-network|--direct-no-proxy]",
     2,
   );
 }
@@ -152,8 +189,11 @@ for (const frame of frames) {
   if (!fs.existsSync(frame.path) || !fs.statSync(frame.path).isFile()) {
     fail("KACHA-E100", `关键帧不存在：${frame.path}`);
   }
-  if (fs.statSync(frame.path).size > 20 * 1024 * 1024) {
-    fail("KACHA-E140", `关键帧超过 MiniMax 20MB 限制：${frame.path}`);
+  if (fs.statSync(frame.path).size > maximumImageBytes) {
+    fail(
+      "KACHA-E140",
+      `关键帧超过配置的 MiniMax ${maximumImageBytes} bytes 限制：${frame.path}`,
+    );
   }
   if (!/^[a-f0-9]{64}$/i.test(frame.sha256 ?? "")) {
     fail("KACHA-E110", `关键帧缺少有效 SHA-256：${frame.id}`);
@@ -211,9 +251,13 @@ const plan = {
   provider: {
     name: "MiniMax",
     transport: "mmx vision describe",
+    region: providerConfig.region,
+    baseUrl: providerConfig.baseUrl,
     network: useConfiguredNetwork ? "configured_environment" : "direct_no_proxy",
+    credential: loadedConfig.secrets.credentials.minimax,
   },
   promptSha256,
+  configurationDigest: loadedConfig.digest,
 };
 if (dryRun) {
   console.log(JSON.stringify(plan, null, 2));
@@ -233,8 +277,10 @@ try {
 }
 process.on("exit", () => releaseLock?.());
 
+const providerRuntime = providerEnvironment(loadedConfig, "minimax");
+
 function safeNetworkEnvironment() {
-  const environment = { ...process.env };
+  const environment = { ...providerRuntime.environment };
   if (useConfiguredNetwork) return environment;
   for (const key of [
     "HTTP_PROXY",
@@ -328,6 +374,9 @@ for (const frame of frames) {
     promptSha256,
     mmxVersion,
     transport: "vision-describe",
+    region: providerConfig.region,
+    baseUrl: providerConfig.baseUrl,
+    network: plan.provider.network,
   });
   const cacheFile = path.join(cacheDirectory, `${cacheKey}.json`);
   if (fs.existsSync(cacheFile)) {
@@ -351,7 +400,12 @@ for (const frame of frames) {
     "--quiet",
     "--non-interactive",
     "--timeout",
-    "120",
+    String(timeoutSeconds),
+    "--region",
+    providerConfig.region,
+    ...(providerConfig.baseUrl
+      ? ["--base-url", providerConfig.baseUrl]
+      : []),
   ], {
     env: safeNetworkEnvironment(),
   });
@@ -418,6 +472,7 @@ const enriched = {
     },
     provider: plan.provider,
     promptSha256,
+    configurationDigest: loadedConfig.digest,
     results,
   },
   provenance: {
@@ -438,6 +493,7 @@ console.log(JSON.stringify({
   cacheHits: results.filter((item) => item.cache === "hit").length,
   cacheMisses: results.filter((item) => item.cache === "miss").length,
   wholeVideoUploaded: false,
+  configurationDigest: loadedConfig.digest,
 }, null, 2));
 releaseLock?.();
 releaseLock = null;

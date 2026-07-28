@@ -108,6 +108,16 @@ editProposal + editPlan + inputs
 冒充渲染、自动 QC 冒充审片。详细合同见
 `references/agent-execution.md` 和 `references/visual-evidence.md`。
 
+## 配置边界
+
+`scripts/kacha_config.mjs` 把内置、用户、项目、本机和显式配置合并成一份
+经过 schema/range 校验的安全快照。`prepare`、`compile-change`、视觉证据、
+MiniMax、QC、音频和素材工具只读取这份快照，并记录无密钥 digest。
+
+密钥由独立 `secrets.json` 或环境变量提供，值通过非枚举内部状态和子进程环境
+传递，不能进入序列化报告。默认要求进入执行合同，但不能覆盖项目
+authorization 或不可降低的安全门禁。
+
 ## 失败即停
 
 - 输入缺失或哈希不符：停止；

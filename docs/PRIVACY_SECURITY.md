@@ -18,15 +18,27 @@
 
 ## 凭据使用
 
-脚本只读取环境变量名：
+脚本支持以下环境变量名：
 
+- `MINIMAX_API_KEY`
 - `PIXABAY_API_KEY`
 - `PEXELS_API_KEY`
 - `KACHA_DEMUCS_BIN`
 - `KACHA_SFX_LIBRARY`
 - `XDG_DATA_HOME`
 
-前两项是敏感凭据；后三项是本机路径配置。不要把真实值写入仓库。推荐在本机密码管理器、CI secret store 或权限受控的 shell 环境中注入。
+前三项 API key 是敏感凭据；后三项是本机路径配置。真实 key 也可放在权限为
+`0600` 的 `~/.config/kacha/secrets.json`。MiniMax 可继续使用 mmx 自身的
+OAuth/API-key 凭证库。
+
+`kacha.config.json` 和 `~/.config/kacha/config.json` 只允许保存非敏感参数、
+环境变量名称和默认剪辑要求；配置校验器拒绝把授权字段放进默认参数。密钥值
+只注入需要它的子进程，不写入命令行、agent packet、QC、缓存或日志。
+自动发现的项目配置不能设置 `providers` 或 `tools`，避免项目文件改变用户级
+凭证入口、MiniMax 地址或本机可执行程序；这些项只接受用户配置或显式配置。
+
+不要把真实值写入仓库。推荐使用本机密码管理器、CI secret store、权限受控的
+shell 环境或 `secrets.json`。
 
 ## 发布前检查
 

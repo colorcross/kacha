@@ -6,10 +6,13 @@ import { fileURLToPath } from "node:url";
 import {
   fileIdentity,
   mediaSummary,
-  readJson,
   run,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
+import {
+  applicableEditingDefaults,
+  loadKachaConfig,
+} from "./kacha_config.mjs";
 import { diagnostic } from "./kacha_error_catalog.mjs";
 
 const scriptsDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -29,12 +32,22 @@ const agent = option("--agent", "codex");
 const source = option("--source");
 const project = option("--project");
 const output = option("--output");
-const modelTier = option("--model-tier", "balanced");
-const MODEL_TOKEN_LIMITS = {
-  economy: 28_000,
-  balanced: 56_000,
-  frontier: 112_000,
-};
+let loadedConfig;
+try {
+  loadedConfig = loadKachaConfig({
+    args,
+    anchorPath: project || source || output || process.cwd(),
+    includeSecrets: false,
+  });
+} catch (error) {
+  console.error(JSON.stringify({
+    status: "blocked",
+    diagnostics: [diagnostic("KACHA-E140", `配置无效：${error.message}`)],
+  }, null, 2));
+  process.exit(1);
+}
+const modelTier = option("--model-tier", loadedConfig.config.execution.modelTier);
+const MODEL_TOKEN_LIMITS = loadedConfig.config.execution.referenceTokenLimits;
 const explicitTokenLimit = option("--max-reference-tokens");
 const referenceTokenLimit = explicitTokenLimit === null
   ? MODEL_TOKEN_LIMITS[modelTier]
@@ -54,6 +67,7 @@ if (
       + "[--modules audio,beauty,...] [--agent codex|claude] "
       + "[--model-tier economy|balanced|frontier] [--max-reference-tokens N] "
       + "[--source FILE] [--project PROJECT.json] [--release] [--full-hash] "
+      + "[--config FILE] [--secrets FILE] "
       + "[--output packet.json]",
   );
   process.exit(2);
@@ -82,6 +96,10 @@ const routedModules = new Set(modules);
 if (modelTier === "economy") routedModules.add("low_model");
 if (agent === "claude" && needsVisualEvidence) routedModules.add("claude_visual");
 const supportModules = [...routedModules].filter((item) => !modules.includes(item));
+const editingDefaults = applicableEditingDefaults(loadedConfig, {
+  task,
+  modules,
+});
 
 const route = run(process.execPath, [
   path.join(scriptsDirectory, "route_references.mjs"),
@@ -235,6 +253,11 @@ const packet = {
   sourceEvidence,
   projectState,
   artifactProtocol,
+  configuration: {
+    digest: loadedConfig.digest,
+    sources: loadedConfig.sources,
+    editingDefaults,
+  },
   decisionBoundary: {
     modelOwns: [
       "用户意图、内容结构、创意理由、配方选择、样式帧比较和证据解释",
@@ -272,6 +295,7 @@ const packet = {
               path.resolve(path.dirname(output || process.cwd()), "visual-evidence"),
               "--mode",
               task === "proposal_review" ? "fast" : "review",
+              ...(option("--config") ? ["--config", path.resolve(option("--config"))] : []),
             ].map((item) => JSON.stringify(item)).join(" ")
           : null,
         claudePolicy: agent === "claude"

@@ -45,6 +45,8 @@
   受影响层，并用冻结流哈希证明无关层没有变化；
 - 为较低能力模型提供 `prepare → next` 确定性执行协议和稳定错误码，避免依赖
   高推理强度临场拼合同、猜状态；
+- 统一管理可版本化参数、用户/项目默认剪辑要求和本机密钥；默认要求同时支持
+  结构化参数与自然语言，密钥值不进入工程产物或日志；
 - 为 Claude Code 生成本地关键帧、人物、人脸、OCR、亮度和时间码证据；只有
   外传、付费服务和显式命令均获授权后，才用 MiniMax 增强少量关键帧语义，
   不上传整段视频；
@@ -99,6 +101,24 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 ```
 
 安装位置分别为 `~/.codex/skills/kacha` 和 `~/.claude/skills/kacha`。仓库根目录的 `SKILL.md` 是两个 Agent 共用的入口。
+
+## 配置默认剪辑要求
+
+```bash
+node scripts/kacha.mjs config init --scope user
+node scripts/kacha.mjs config show --anchor /path/to/project
+```
+
+用户配置位于 `~/.config/kacha/config.json`，项目可提交
+`kacha.config.json`，本机覆盖使用已忽略的 `kacha.local.json`。默认剪辑要求
+同时支持结构化 `parameters`、自然语言 `instructions` 和增量配方
+`recipeParameters`。MiniMax、Pixabay 和 Pexels 密钥放在权限为 `0600` 的
+`~/.config/kacha/secrets.json`，环境变量和现有 mmx 凭证仍可继续使用。
+自动发现的项目配置不能改写 provider 地址、凭证环境名或本机工具路径；这些
+敏感连接项只接受用户配置或显式 `--config`。
+
+配置不能授予上传、付费、发布或跳过门禁的权限。完整字段、优先级和示例见
+[配置说明](docs/CONFIGURATION.md)。
 
 ## 最短使用路径
 
@@ -189,6 +209,7 @@ node scripts/kacha.mjs gate-candidate /path/to/project/v2-project.json
 ├── agents/openai.yaml       # OpenAI/Codex 展示配置
 ├── references/              # 按任务加载的详细合同
 ├── assets/sfx/              # 12 个原创音效、工作副本、哈希与资产许可
+├── config/                  # 无密钥的内置运行默认值
 ├── examples/                # v2 首剪与 v3 增量 JSON 模板
 ├── scripts/                 # 确定性状态机、视觉证据、门禁、媒体处理与 QC
 ├── tests/run_tests.mjs      # 无第三方 npm 依赖的回归测试
@@ -202,13 +223,14 @@ node scripts/kacha.mjs gate-candidate /path/to/project/v2-project.json
 咔嚓默认本地处理。仓库不需要、也不应提交任何真实密钥。
 
 - 安装器通过 GitHub 公开源码归档下载，不读取 Git 凭据；
-- API 凭据只通过环境变量或本机未跟踪配置提供；
+- API 凭据只通过环境变量、mmx 凭证库或权限受控的本机密钥文件提供；
 - `.env`、私钥、素材、模型、输出和本机能力快照已加入 `.gitignore`；
 - 发布前运行 `python3 scripts/scan_secrets.py`；
 - 示例中的 `PIXABAY_API_KEY`、`PEXELS_API_KEY` 只是变量名，不是密钥值；
 - 生成、上传、购买授权和发布仍需单独授权。
 
-详见[隐私与安全](docs/PRIVACY_SECURITY.md)和[安全政策](SECURITY.md)。
+详见[配置说明](docs/CONFIGURATION.md)、[隐私与安全](docs/PRIVACY_SECURITY.md)
+和[安全政策](SECURITY.md)。
 
 ## 测试
 

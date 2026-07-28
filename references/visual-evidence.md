@@ -33,6 +33,8 @@ node scripts/kacha.mjs visual-evidence INPUT.mov \
 相同源 SHA、模式和参数会复用证据。源身份变化、采样策略变化或显式
 `--force` 才重建。`fast` 不扫全片场景变化；`review/release` 会做低分辨率
 场景检测，但仍需把真实 cutSheet 时间码通过 `--timestamp` 补入。
+模式帧数、场景阈值、并发数和输出图片边长可由咔嚓配置提供；命令行参数
+优先，实际生效值和配置 digest 会进入证据 provenance。
 
 ## Claude Code 消费顺序
 
