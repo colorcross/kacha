@@ -24,6 +24,38 @@ node scripts/kacha.mjs gate-release incremental-project.json
 `project-context.delivery` 是稳定交付授权。delta 不能临时增加未声明的视频、
 封面画幅或字幕语言；需要扩展交付范围时先重新锁定 context。
 
+## 反馈归一化与同类扫描
+
+每轮先把自然语言反馈归并为稳定配方，再创建 delta：
+
+- `style`：统一字体、色板、弹窗、卡片、PIP、品牌、封面或运动风格；
+- `timing_sync`：视觉动作或 SFX 与口播触发词/可见动作错位；
+- `popup_layout`：弹窗遮头、字幕、品牌或平台 UI；
+- `connections`：硬跳、双切点、短残片或不自然连接；
+- 原有 `subtitles / bgm / sfx / beauty / color / insert_replace` 等配方继续使用。
+
+这些配方会写入 `regressionScans`。修复一个实例后，必须以同一问题签名扫描
+全片；不能只修用户点名的时间点，等待下一轮再次暴露同类问题。
+
+风格由 `styleId + styleDigest` 标识。只改 token 时不重复转写、人声分离、
+字幕校准或无关生成素材；但凡依赖旧 style digest 的视觉层、字幕层或封面必须
+失效。完整 style 变化覆盖全片时使用 `full_rebuild`，不能误用局部 segment
+渲染。
+
+## 低成本返工顺序
+
+1. 用反馈分类器确定配方、变化层和同类扫描签名；
+2. 先生成 1–3 个最小代表性样例，只带必要 handle；
+3. 参数批准后冻结 style/effect digest；
+4. 只渲染失效层或区间，复用哈希一致的高成本产物；
+5. 自动执行同类全片扫描；
+6. `candidate` 只检查变化层、连接 handle 和冻结流证明；
+7. 用户确定最终版本后才升级 `release_candidate` 并做完整 QC。
+
+这样把“探索参数”和“整片渲染”分开，避免每次反馈都重新加载全部 reference、
+重新分析全片和重编码冻结层。节省时间不能降低当前版本连接点、变化层和最终
+发布门禁。
+
 ## 文件角色
 
 - `project-context.json`：项目和基线的稳定事实；

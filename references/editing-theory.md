@@ -106,6 +106,32 @@ node scripts/validate_edit_plan.mjs edit-plan.json
 `previewEvidence`。风格化转场还必须保留真实前后 handle；方向型转场要记录
 `motionDirection`。先做干净切 A/B，复杂方案没有明显改善就使用干净切。
 
+剪完停顿、口误或废句以后，必须从最终拼接时间线重新枚举全部真实连接点，
+不能只检查方案中记得的几个效果切点。顶层 `connectionAudit` 记录检测方法、
+连接点总数、逐项 ID、已检查数量、未解决项和正常速度证据；检测数量必须与
+`cutSheet` 一致，未解决项非空时停止渲染。
+
+可先生成连接候选：
+
+```bash
+node scripts/kacha.mjs connections CANDIDATE.mov \
+  --cut-list final-cuts.json \
+  --output connection-candidates.json
+```
+
+脚本合并编辑时间线切点与 FFmpeg 场景变化候选，并为每个点生成前后 handle。
+像素扫描可能漏掉低差异跳切，也可能把动效误判为剪点；它只用于防漏，不能
+替代最终时间线边界或正常速度审片。若本机有 PySceneDetect，报告会记录其
+可用性，快速运动较多时可再用 AdaptiveDetector 交叉检查。
+
+连接处理优先级：
+
+1. 语义、动作和口型连续时用干净切、J/L-cut 或声音桥；
+2. 固定机位删段产生姿态跳变时，用可感知景别变化或准确插镜；
+3. 章节、时间、空间或图形关系真实变化时才使用有 handle 的转场；
+4. 双切点、2–4 帧残片或短暂姿态抖动必须删除、重选切点或用有方向依据的局部运动吸收；
+5. 每个新增转场重新匹配音效功能和峰值，不能无声套模板，也不能所有连接共用一个 whoosh。
+
 ## 节奏与运动
 
 `rhythmMap` 分别记录语音重音、呼吸、动作峰值、音乐乐句、SFX 落点和章节转换。剪点先服从语义和动作，音乐只强化已成立的切点。

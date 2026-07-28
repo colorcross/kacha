@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "opening",
+  "effects": [
+    {
+      "id": "editorial_label_reveal",
+      "label": "编辑部标签揭示",
+      "engine": "svg_sequence",
+      "status": "production",
+      "durationFrames": 42,
+      "useWhen": ["知识口播", "工具分享", "需要建立栏目与本期主题"],
+      "avoidWhen": ["必须从强动作直接开始"],
+      "audioFunction": "label_whoosh_plus_tick",
+      "implementation": {"template": "editorial_label_reveal", "startOnSpeech": true}
+    },
+    {
+      "id": "kinetic_word_stack",
+      "label": "关键词分层落位",
+      "engine": "svg_sequence",
+      "status": "production",
+      "durationFrames": 48,
+      "useWhen": ["开头有三组以内短关键词", "需要快速建立矛盾或收益"],
+      "avoidWhen": ["长句", "字幕已经承担大量阅读"],
+      "audioFunction": "staggered_ticks_with_final_hit",
+      "implementation": {"template": "kinetic_word_stack", "maxGroups": 3}
+    },
+    {
+      "id": "typewriter_command",
+      "label": "命令行逐字输入",
+      "engine": "svg_sequence",
+      "status": "production",
+      "durationFrames": 50,
+      "useWhen": ["命令、搜索、消息、AI输入本身是叙事动作"],
+      "avoidWhen": ["普通标题", "整段长文"],
+      "audioFunction": "single_key_per_visible_character",
+      "implementation": {"template": "typewriter_command", "perCharacter": true}
+    },
+    {
+      "id": "statement_punch",
+      "label": "结论冲击开场",
+      "engine": "svg_sequence",
+      "status": "production",
+      "durationFrames": 34,
+      "useWhen": ["首句是强判断、强反差或明确承诺"],
+      "avoidWhen": ["平静叙事", "严肃内容不适合夸张冲击"],
+      "audioFunction": "short_impact",
+      "implementation": {"template": "statement_punch", "maxOvershoot": 0.06}
+    },
+    {
+      "id": "cold_open_marker",
+      "label": "首帧即说的冷开场标记",
+      "engine": "svg_sequence",
+      "status": "production",
+      "durationFrames": 28,
+      "useWhen": ["必须从第一句开始", "不允许静态封面和静音片头"],
+      "avoidWhen": ["需要先交代复杂背景"],
+      "audioFunction": "light_marker_tick",
+      "implementation": {"template": "cold_open_marker", "startOnSpeech": true}
+    }
+  ]
+}

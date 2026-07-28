@@ -22,6 +22,10 @@
     "instructions": [],
     "recipeParameters": {}
   },
+  "style": {
+    "profile": "warm-editorial",
+    "overrides": {}
+  },
   "execution": {
     "modelTier": "balanced",
     "referenceTokenLimits": {

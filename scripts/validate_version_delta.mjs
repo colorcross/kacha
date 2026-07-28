@@ -45,6 +45,10 @@ const CHANGE_LAYER_REQUIREMENTS = {
   remove_interval: TIMED_LAYERS,
   reorder: TIMED_LAYERS,
   geometry_change: ["visual", "metadata"],
+  style_change: ["visual", "subtitles"],
+  timing_sync: ["visual", "sfx"],
+  popup_layout: ["visual"],
+  connection_repair: ["visual", "sfx"],
 };
 const STRUCTURAL_TYPES = new Set([
   "remove_interval",

@@ -47,6 +47,10 @@
   高推理强度临场拼合同、猜状态；
 - 统一管理可版本化参数、用户/项目默认剪辑要求和本机密钥；默认要求同时支持
   结构化参数与自然语言，密钥值不进入工程产物或日志；
+- 通过一份可切换的 style profile 统一字幕、字体、色板、弹窗、信息卡、
+  画中画边框、品牌和运动语言，默认提供明亮克制的暖色编辑风格；
+- 内置可执行的开场与转场效果库，每个效果都带适用理由、handle、声音功能、
+  fallback 和真实本地预览，不把“酷炫”当作使用理由；
 - 为 Claude Code 生成本地关键帧、人物、人脸、OCR、亮度和时间码证据；只有
   外传、付费服务和显式命令均获授权后，才用 MiniMax 增强少量关键帧语义，
   不上传整段视频；
@@ -107,6 +111,8 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 ```bash
 node scripts/kacha.mjs config init --scope user
 node scripts/kacha.mjs config show --anchor /path/to/project
+node scripts/kacha.mjs effects validate
+node scripts/kacha.mjs effects list --kind transition
 ```
 
 用户配置位于 `~/.config/kacha/config.json`，项目可提交
@@ -116,6 +122,11 @@ node scripts/kacha.mjs config show --anchor /path/to/project
 `~/.config/kacha/secrets.json`，环境变量和现有 mmx 凭证仍可继续使用。
 自动发现的项目配置不能改写 provider 地址、凭证环境名或本机工具路径；这些
 敏感连接项只接受用户配置或显式 `--config`。
+
+视觉风格使用 `style.profile + style.overrides`。默认 profile 是
+`warm-editorial`；解析后的 digest 会进入设计和增量返工合同，变更后只让
+依赖旧 digest 的视觉产物失效。开场/转场列表与本地预览见
+`references/style-effects-library.md`。
 
 配置不能授予上传、付费、发布或跳过门禁的权限。完整字段、优先级和示例见
 [配置说明](docs/CONFIGURATION.md)。
@@ -185,6 +196,15 @@ node scripts/kacha.mjs gate-candidate /path/to/project/v2-project.json
 不能冒充最终版，只有 `release_candidate` 完成全量人工审片后才能通过
 `gate-release`。完整说明见
 [v3 增量工作流](docs/INCREMENTAL_WORKFLOW_V3.md)。
+
+用户反馈涉及风格不统一、动效抢跑、弹窗遮挡或连接生硬时，优先用
+`compile-change` 的 `style`、`timing_sync`、`popup_layout`、`connections`
+配方。配方会要求扫描全片同类问题；连接候选还可以先用：
+
+```bash
+node scripts/kacha.mjs connections FINAL.mov \
+  --output connection-candidates.json --cut-list timeline-cuts.json
+```
 
 完整示例见[快速开始](docs/QUICKSTART.md)。
 

@@ -25,6 +25,7 @@ const STRUCTURAL_TYPES = new Set([
   "reorder",
   "geometry_change",
 ]);
+const FULL_REBUILD_TYPES = new Set(["style_change"]);
 const FULL_MANUAL_CHECKS = [
   "contentIntegrity",
   "connectionPlayback",
@@ -78,6 +79,17 @@ const INVALIDATION_BY_TYPE = {
     "cover",
     "video_master",
   ],
+  style_change: [
+    "style_profile",
+    "layout",
+    "visual_segment",
+    "subtitle_overlay",
+    "cover",
+    "video_master",
+  ],
+  timing_sync: ["visual_segment", "sfx_stem", "final_mix", "video_master"],
+  popup_layout: ["layout", "visual_segment", "video_master"],
+  connection_repair: ["timeline", "visual_segment", "sfx_stem", "final_mix", "video_master"],
 };
 
 function usage() {
@@ -107,6 +119,9 @@ function defaultRenderStrategy(delta, impact) {
   const videoChanged = [...changed].some((layer) => VIDEO_LAYERS.has(layer));
   if (changed.size === 1 && changed.has("covers")) return "no_video_render";
   if (impact === "L0") return "metadata_rewrap";
+  if (delta.changeSet.types.some((type) => FULL_REBUILD_TYPES.has(type))) {
+    return "full_rebuild";
+  }
   if (impact === "L3") return "full_rebuild";
   if (impact === "L2") return "segment_rebuild";
   if (audioChanged && !videoChanged) return "stream_copy_video";
@@ -116,6 +131,9 @@ function defaultRenderStrategy(delta, impact) {
 
 function strategyAllowed(requested, delta, impact) {
   if (requested === "auto" || requested === "full_rebuild") return true;
+  if (delta.changeSet.types.some((type) => FULL_REBUILD_TYPES.has(type))) {
+    return false;
+  }
   const changed = new Set(delta.changeSet.changedLayers);
   const audioChanged = [...changed].some((layer) => AUDIO_LAYERS.has(layer));
   const videoChanged = [...changed].some((layer) => VIDEO_LAYERS.has(layer));
@@ -311,6 +329,9 @@ if (changed.has("subtitles")) automaticChecks.push("subtitle_files_and_hashes");
 
 let manualChecks = ["changedLayerReview", "frozenLayerProof"];
 if (impact === "L2" || impact === "L3") manualChecks.push("boundaryPlayback");
+if ((delta.changeSet.regressionScans ?? []).length > 0) {
+  manualChecks.push("sameSignatureRegressionScan");
+}
 if (changed.has("visual")) manualChecks.push("visualContinuity");
 if (
   delta.changeSet.types.some((type) => ["beauty_adjust"].includes(type))

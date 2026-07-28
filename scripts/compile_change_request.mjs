@@ -143,6 +143,43 @@ const RECIPES = {
       "全片重构图无主体跳变、误裁或清晰度异常。",
     ],
   },
+  style: {
+    type: "style_change",
+    layers: ["visual", "subtitles"],
+    regressionClass: "style_consistency",
+    defaultAcceptance: [
+      "成片、弹窗、信息卡、画中画、字幕、品牌和封面均来自同一解析后 style profile。",
+      "亮底/暗底、人物安全区、手机尺寸和多画幅代表帧全部通过。",
+    ],
+  },
+  timing_sync: {
+    type: "timing_sync",
+    layers: ["visual", "sfx"],
+    regressionClass: "effect_audio_sync",
+    defaultAcceptance: [
+      "每个动作按实际口播触发词或可见动作落点对齐，不使用未经验证的统一全局偏移。",
+      "视觉停稳与音效峰值误差不超过 1–2 帧，同类事件已完成整片扫描。",
+    ],
+  },
+  popup_layout: {
+    type: "popup_layout",
+    layers: ["visual"],
+    requiresIntervals: true,
+    regressionClass: "layout_collision",
+    defaultAcceptance: [
+      "弹窗完整边界含阴影和装饰，不与头脸、字幕、品牌和平台 UI 安全区相交。",
+      "同类弹窗已完成整片碰撞回归，进入、信息最满和退出三态均通过。",
+    ],
+  },
+  connections: {
+    type: "connection_repair",
+    layers: ["visual", "sfx"],
+    regressionClass: "timeline_connections",
+    defaultAcceptance: [
+      "重新枚举最终时间线全部连接点，正常速度检查数与检测数一致，未解决项为零。",
+      "每个连接优先使用有理论依据的切镜、J/L-cut、声音桥或有 handle 的转场。",
+    ],
+  },
 };
 const VERSION_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 
@@ -260,6 +297,7 @@ const normalizedChanges = request.changes.map((change, index) => {
       : recipe.defaultAcceptance,
     noTimeline: Boolean(recipe.noTimeline),
     durationChange: Boolean(recipe.durationChange),
+    regressionClass: recipe.regressionClass ?? null,
   };
 });
 
@@ -395,6 +433,7 @@ const preview = {
     editingDefaults: {
       parameters: editingDefaults.parameters,
       instructions: editingDefaults.instructions,
+      style: editingDefaults.style,
       authorityBoundary: editingDefaults.authorityBoundary,
     },
   },
@@ -443,10 +482,20 @@ delta.changeSet.recipeChanges = normalizedChanges.map((item) => ({
   intervals: item.intervals,
   parameters: item.parameters,
   acceptanceCriteria: item.acceptanceCriteria,
+  regressionClass: item.regressionClass,
 }));
+delta.changeSet.regressionScans = normalizedChanges
+  .filter((item) => item.regressionClass)
+  .map((item) => ({
+    class: item.regressionClass,
+    scope: "full_timeline_same_signature",
+    required: true,
+    reason: "修复一个实例后扫描全片同类问题，避免局部返工后重复暴露。",
+  }));
 delta.changeSet.defaultRequirements = {
   parameters: editingDefaults.parameters,
   instructions: editingDefaults.instructions,
+  style: editingDefaults.style,
   authorityBoundary: editingDefaults.authorityBoundary,
 };
 delta.compiledFrom = {

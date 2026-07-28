@@ -2,6 +2,20 @@
   "schemaVersion": "2.0",
   "timelineFPS": 25,
   "timelineDurationSeconds": 100,
+  "connectionAudit": {
+    "detectionMethod": "按实际拼接边界导出切前后帧，并以正常速度逐点回放",
+    "detectedJoinCount": 2,
+    "auditedJoinCount": 2,
+    "joinIds": [
+      "join-00:00:12.400",
+      "join-00:00:41.200"
+    ],
+    "unresolvedJoinIds": [],
+    "normalSpeedEvidence": [
+      "全部连接点前后各 0.5 秒正常速度回放",
+      "手机尺寸观看并同时试听连续人声、环境和音效"
+    ]
+  },
   "cuts": [
     {
       "timeSeconds": 12.4,
@@ -228,6 +242,50 @@
       "exitLeadFrames": 2,
       "visualExit": "71.8 秒前完成卡片、画中画和装饰层退场，下一帧恢复纯 A-roll",
       "frameTreatment": "1.5 px 暖白边框、轻阴影和项目统一圆角；不得使用粗直播框",
+      "pipContentSpec": {
+        "sourceComposition": "full_frame_fit",
+        "fitMode": "contain",
+        "subjectAnchor": {
+          "x": 0.5,
+          "y": 0.43
+        },
+        "headTopMarginRatio": 0.06,
+        "gestureVisibilityPolicy": "保留完整头顶、下巴、肩部和把书放入书包时的关键手势",
+        "stateFrames": [
+          "进入后首个稳定帧",
+          "停稳中段帧",
+          "退出前最后稳定帧"
+        ]
+      },
+      "pipBorderSpec": {
+        "shape": "rounded_rectangle",
+        "strokes": [
+          {
+            "color": "#FFF4DF",
+            "widthRatio": 0.006
+          },
+          {
+            "color": "#D8A22E",
+            "widthRatio": 0.004
+          }
+        ],
+        "cornerRadius": "与内容裁切半径一致，约画中画短边的 6%",
+        "shadow": {
+          "opacity": 0.28,
+          "blur": "画中画短边的 4%",
+          "offset": "向下 1.5%"
+        },
+        "boundsIncluded": true,
+        "stateFrames": [
+          "进入后首个稳定帧",
+          "停稳中段帧",
+          "退出前最后稳定帧"
+        ],
+        "collisionEvidence": [
+          "边框和阴影外接矩形未进入字幕、品牌和书包动作区"
+        ],
+        "rationale": "暖白与暖金双层细框继承项目色系，并在书架和书包素材上保持稳定分离"
+      },
       "boundaryQC": [
         "67.960 秒无画中画",
         "69.900 秒插镜与真人画中画内容正确",

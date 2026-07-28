@@ -1,0 +1,168 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "transition",
+  "effects": [
+    {
+      "id": "clean_cut",
+      "label": "干净切",
+      "engine": "cut",
+      "status": "production",
+      "durationFrames": 0,
+      "minHandleFrames": 0,
+      "useWhen": ["新语义", "新主体", "新视角", "动作或声音本身已经连续"],
+      "avoidWhen": ["固定机位删段后姿态明显跳变"],
+      "motionBasis": "none",
+      "audioFunction": "optional_j_l_cut_or_sound_bridge",
+      "fallback": null
+    },
+    {
+      "id": "soft_dissolve",
+      "label": "克制溶解",
+      "engine": "ffmpeg_xfade",
+      "status": "production",
+      "durationFrames": 8,
+      "minHandleFrames": 8,
+      "useWhen": ["时间缓慢变化", "空间或情绪柔和过渡"],
+      "avoidWhen": ["说话嘴型", "动作需要精确连续"],
+      "motionBasis": "temporal_or_emotional",
+      "audioFunction": "short_crossfade",
+      "fallback": "clean_cut",
+      "implementation": {"transition": "dissolve"}
+    },
+    {
+      "id": "directional_smooth",
+      "label": "方向柔推",
+      "engine": "ffmpeg_xfade",
+      "status": "production",
+      "durationFrames": 7,
+      "minHandleFrames": 7,
+      "useWhen": ["前后镜头存在明确同向运动", "章节向前推进"],
+      "avoidWhen": ["没有方向依据", "人物脸部快速横移"],
+      "motionBasis": "direction",
+      "directions": ["left", "right", "up", "down"],
+      "audioFunction": "short_directional_whoosh",
+      "fallback": "clean_cut",
+      "implementation": {
+        "left": "smoothleft",
+        "right": "smoothright",
+        "up": "smoothup",
+        "down": "smoothdown"
+      }
+    },
+    {
+      "id": "push_slide",
+      "label": "推屏换页",
+      "engine": "ffmpeg_xfade",
+      "status": "production",
+      "durationFrames": 9,
+      "minHandleFrames": 9,
+      "useWhen": ["信息页切换", "同层级模块换页", "明确左右或上下关系"],
+      "avoidWhen": ["口型特写", "没有空间关系"],
+      "motionBasis": "spatial",
+      "directions": ["left", "right", "up", "down"],
+      "audioFunction": "paper_or_ui_whoosh",
+      "fallback": "directional_smooth",
+      "implementation": {
+        "left": "slideleft",
+        "right": "slideright",
+        "up": "slideup",
+        "down": "slidedown"
+      }
+    },
+    {
+      "id": "iris_reveal",
+      "label": "光圈揭示",
+      "engine": "ffmpeg_xfade",
+      "status": "production",
+      "durationFrames": 10,
+      "minHandleFrames": 10,
+      "useWhen": ["从局部细节进入完整场景", "镜头主题位于画面中心"],
+      "avoidWhen": ["主体偏离中心", "严肃纪实段落"],
+      "motionBasis": "shape",
+      "audioFunction": "soft_tonal_rise",
+      "fallback": "soft_dissolve",
+      "implementation": {"transition": "circleopen"}
+    },
+    {
+      "id": "radial_clock",
+      "label": "径向时间切换",
+      "engine": "ffmpeg_xfade",
+      "status": "production",
+      "durationFrames": 10,
+      "minHandleFrames": 10,
+      "useWhen": ["时间、步骤或循环发生变化"],
+      "avoidWhen": ["普通句间连接", "人物口型连续"],
+      "motionBasis": "time_or_cycle",
+      "audioFunction": "clock_tick_or_tonal_sweep",
+      "fallback": "soft_dissolve",
+      "implementation": {"transition": "radial"}
+    },
+    {
+      "id": "focus_blur",
+      "label": "焦点模糊切换",
+      "engine": "ffmpeg_xfade",
+      "status": "production",
+      "durationFrames": 7,
+      "minHandleFrames": 7,
+      "useWhen": ["视角或注意对象切换", "前后景深语言一致"],
+      "avoidWhen": ["文字证据需要全程清晰", "画面本身已经模糊"],
+      "motionBasis": "focus",
+      "audioFunction": "soft_air_whoosh",
+      "fallback": "clean_cut",
+      "implementation": {"transition": "hblur"}
+    },
+    {
+      "id": "zoom_punch",
+      "label": "推近冲击",
+      "engine": "ffmpeg_xfade",
+      "status": "production",
+      "durationFrames": 6,
+      "minHandleFrames": 6,
+      "useWhen": ["结论落点", "尺度明显变化", "喜剧性夸张"],
+      "avoidWhen": ["连续口型", "频繁重复", "原素材清晰度不足"],
+      "motionBasis": "scale",
+      "audioFunction": "short_impact_with_air",
+      "fallback": "clean_cut",
+      "implementation": {"transition": "zoomin"}
+    },
+    {
+      "id": "diagonal_reveal",
+      "label": "斜向揭幕",
+      "engine": "ffmpeg_xfade",
+      "status": "production",
+      "durationFrames": 8,
+      "minHandleFrames": 8,
+      "useWhen": ["构图具有斜线或视线方向", "轻快章节切换"],
+      "avoidWhen": ["没有斜向构图依据", "严肃结论段"],
+      "motionBasis": "graphic_direction",
+      "directions": ["top_left", "top_right", "bottom_left", "bottom_right"],
+      "audioFunction": "directional_whoosh",
+      "fallback": "directional_smooth",
+      "implementation": {
+        "top_left": "diagtl",
+        "top_right": "diagtr",
+        "bottom_left": "diagbl",
+        "bottom_right": "diagbr"
+      }
+    },
+    {
+      "id": "narrow_band_wipe",
+      "label": "窄带遮切",
+      "engine": "overlay_at_cut",
+      "status": "production",
+      "durationFrames": 6,
+      "minHandleFrames": 3,
+      "useWhen": ["固定机位微跳", "双切点需要局部吸收", "不希望整屏闪烁"],
+      "avoidWhen": ["大幅动作不连续", "窄带会遮住关键证据"],
+      "motionBasis": "local_direction",
+      "audioFunction": "short_directional_whoosh",
+      "fallback": "shot_scale_change",
+      "implementation": {
+        "bandWidthRatio": 0.2,
+        "edgeSoftnessRatio": 0.018,
+        "preserveTimelineDuration": true,
+        "fullScreenFlash": false
+      }
+    }
+  ]
+}

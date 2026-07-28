@@ -27,6 +27,10 @@ const LAYERS_BY_TYPE = {
   remove_interval: ["visual", "dialogue", "bgm", "sfx", "subtitles"],
   reorder: ["visual", "dialogue", "bgm", "sfx", "subtitles"],
   geometry_change: ["visual", "metadata"],
+  style_change: ["visual", "subtitles"],
+  timing_sync: ["visual", "sfx"],
+  popup_layout: ["visual"],
+  connection_repair: ["visual", "sfx"],
 };
 const VERSION_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 

@@ -18,6 +18,8 @@ function usage() {
     "用法：\n"
       + "  kacha.mjs doctor [--profile core|claude-vision|full]\n"
       + "  kacha.mjs config show|validate|get|init [options]\n"
+      + "  kacha.mjs effects list|show|validate|preview [options]\n"
+      + "  kacha.mjs connections VIDEO --output connection-candidates.json\n"
       + "  kacha.mjs prepare --task TASK [--modules a,b] [--agent codex|claude]\n"
       + "  kacha.mjs next <project-manifest.json>\n"
       + "  kacha.mjs compile-change <change-request.json> [--output-dir DIR]\n"
@@ -64,6 +66,8 @@ const [, , command, projectInput, ...remainingArguments] = process.argv;
 const delegatedCommands = {
   doctor: "kacha_doctor.mjs",
   config: "kacha_config.mjs",
+  effects: "kacha_effects.mjs",
+  connections: "scan_connections.mjs",
   prepare: "prepare_agent_packet.mjs",
   next: "next_action.mjs",
   "compile-change": "compile_change_request.mjs",

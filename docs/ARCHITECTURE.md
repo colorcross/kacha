@@ -94,12 +94,14 @@ editProposal + editPlan + inputs
 
 ## V4 确定性执行层
 
-模型不再直接控制状态机，而是通过六个稳定入口工作：
+模型不再直接控制状态机，而是通过八个稳定入口工作：
 
 - `doctor`：运行环境和视觉补偿能力；
 - `prepare`：按任务/模型档位生成受预算约束的执行包与 readOrder；
 - `next`：从真实文件和哈希推导唯一下一步；
 - `compile-change`：把常见返工小合同编译成 v3 delta/manifest/plan；
+- `effects`：校验、枚举和真实预览统一风格下的开场/转场；
+- `connections`：合并最终时间线切点与场景变化候选，生成逐点复核 handle；
 - `visual-evidence`：本地关键帧、人物、OCR 和技术证据；
 - `vision-enrich`：外传、付费服务和显式命令授权后，以 MiniMax 增强有限
   关键帧语义。
@@ -117,6 +119,16 @@ MiniMax、QC、音频和素材工具只读取这份快照，并记录无密钥 d
 密钥由独立 `secrets.json` 或环境变量提供，值通过非枚举内部状态和子进程环境
 传递，不能进入序列化报告。默认要求进入执行合同，但不能覆盖项目
 authorization 或不可降低的安全门禁。
+
+### 风格与效果边界
+
+`config/styles/` 保存统一 style profile，`config/effects/` 保存开场和转场
+注册表。项目时间区间只引用 style/effect ID 与 digest，不复制字体、颜色、
+阴影、边框和缓动。效果注册表定义实现、handle、声音功能、失败条件与
+fallback；具体是否使用仍由内容、情绪、视角和连续性判断。
+
+FFmpeg/SVG 预览证明实现可运行，不证明效果适合当前内容。正式渲染前仍需用
+真实前后片段和真实声音做最小 A/B。
 
 ## 失败即停
 

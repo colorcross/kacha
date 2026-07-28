@@ -41,10 +41,14 @@ const MODULE_REFERENCES = {
   popup: [
     "references/visuals-masks.md",
     "references/visual-design-preflight.md",
+    "references/style-effects-library.md",
   ],
+  style: ["references/style-effects-library.md"],
+  opening: ["references/style-effects-library.md"],
   transition: [
     "references/editing-theory.md",
     "references/visual-design-preflight.md",
+    "references/style-effects-library.md",
   ],
   text_behind: [
     "references/visuals-masks.md",

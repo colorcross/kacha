@@ -9,6 +9,7 @@ import {
   readJson,
   sha256Value,
 } from "./kacha_utils.mjs";
+import { loadStyleProfile } from "./style_profile.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(scriptDirectory, "..");
@@ -35,10 +36,15 @@ const RECIPE_NAMES = new Set([
   "remove",
   "reorder",
   "geometry",
+  "style",
+  "timing_sync",
+  "popup_layout",
+  "connections",
 ]);
 const TOP_LEVEL_KEYS = new Set([
   "schemaVersion",
   "editingDefaults",
+  "style",
   "execution",
   "tools",
   "providers",
@@ -55,6 +61,7 @@ const EXECUTION_KEYS = new Set([
   "stockMedia",
 ]);
 const EDITING_KEYS = new Set(["parameters", "instructions", "recipeParameters"]);
+const STYLE_KEYS = new Set(["profile", "overrides"]);
 const TOOLS_KEYS = new Set(["demucsBin", "sfxLibrary"]);
 const PROVIDER_KEYS = {
   minimax: new Set(["credentialEnv", "region", "baseUrl"]),
@@ -268,6 +275,18 @@ function validateConfigLayer(value, label) {
       }
     }
   }
+  if (value.style !== undefined) {
+    rejectUnknownKeys(value.style, STYLE_KEYS, `${label}.style`);
+    if (value.style.profile !== undefined) {
+      assertString(value.style.profile, `${label}.style.profile`, {
+        pattern: /^[a-z0-9][a-z0-9-]{0,63}$/,
+      });
+    }
+    if (value.style.overrides !== undefined) {
+      assertPlainObject(value.style.overrides, `${label}.style.overrides`);
+      assertNoAuthorityOverride(value.style.overrides, `${label}.style.overrides`);
+    }
+  }
   if (value.execution !== undefined) {
     rejectUnknownKeys(value.execution, EXECUTION_KEYS, `${label}.execution`);
   }
@@ -305,6 +324,7 @@ function validateLayerTrust(value, scope) {
 
 function validateEffectiveConfig(config) {
   validateConfigLayer(config, "effectiveConfig");
+  loadStyleProfile(config.style.profile, config.style.overrides);
   if (!["economy", "balanced", "frontier"].includes(config.execution.modelTier)) {
     throw new Error("execution.modelTier 必须为 economy、balanced 或 frontier");
   }
@@ -840,6 +860,14 @@ export function applicableEditingDefaults(
     parameters: deepClone(loaded.config.editingDefaults.parameters),
     instructions: deepClone(instructions),
     recipeParameters: deepClone(loaded.config.editingDefaults.recipeParameters),
+    style: {
+      id: loaded.config.style.profile,
+      overrides: deepClone(loaded.config.style.overrides),
+      digest: loadStyleProfile(
+        loaded.config.style.profile,
+        loaded.config.style.overrides,
+      ).digest,
+    },
     authorityBoundary:
       "默认要求是偏好与实施输入，不构成上传、付费、发布、覆盖源文件或跳过门禁的授权。",
   };
@@ -860,6 +888,10 @@ function valueAtPath(value, keyPath) {
 function userConfigTemplate() {
   return {
     schemaVersion: "1.0",
+    style: {
+      profile: "warm-editorial",
+      overrides: {},
+    },
     editingDefaults: {
       parameters: {},
       instructions: [],
@@ -871,6 +903,9 @@ function userConfigTemplate() {
 function projectConfigTemplate() {
   return {
     schemaVersion: "1.0",
+    style: {
+      overrides: {},
+    },
     editingDefaults: {
       parameters: {},
       instructions: [],
@@ -1041,12 +1076,22 @@ async function main() {
     }
     return;
   }
+  const resolvedStyle = loadStyleProfile(
+    loaded.config.style.profile,
+    loaded.config.style.overrides,
+  );
   const report = {
     schemaVersion: "1.0",
     status: "pass",
     digest: loaded.digest,
     sources: loaded.sources,
     secrets: loaded.secrets,
+    style: {
+      id: resolvedStyle.profile.id,
+      digest: resolvedStyle.digest,
+      source: resolvedStyle.source,
+      ...(action === "show" ? { profile: resolvedStyle.profile } : {}),
+    },
     ...(action === "show" ? { config: loaded.config } : {}),
   };
   console.log(JSON.stringify(report, null, 2));

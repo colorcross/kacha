@@ -53,6 +53,7 @@ const HEAD_FRAMING = new Set([
   "not_applicable",
 ]);
 const INFORMATION_LAYOUT_MODES = new Set(["full_screen", "subject_safe"]);
+const PROGRESSIVE_UPDATE_MODES = new Set(["local_highlight", "local_reveal"]);
 const DESIGN_ARTIFACT_MODES = new Set(["local_styleframe", "figma"]);
 const SCALE_ALIASES = new Map([
   ["extreme_wide", "extreme_wide"],
@@ -531,6 +532,47 @@ function validateCuts(cuts, plan, errors) {
   });
 }
 
+function validateConnectionAudit(cuts, plan, errors) {
+  if (cuts.length === 0) return;
+  const audit = plan.connectionAudit;
+  if (!audit || typeof audit !== "object") {
+    errors.push("connectionAudit: 有切点时必须提供完整连接点审计");
+    return;
+  }
+  requireFields(
+    audit,
+    [
+      "detectionMethod",
+      "detectedJoinCount",
+      "auditedJoinCount",
+      "joinIds",
+      "normalSpeedEvidence",
+    ],
+    "connectionAudit",
+    errors,
+  );
+  const detected = Number(audit.detectedJoinCount);
+  const audited = Number(audit.auditedJoinCount);
+  const joinIds = asArray(audit.joinIds);
+  if (!Number.isInteger(detected) || detected !== cuts.length) {
+    errors.push("connectionAudit.detectedJoinCount 必须等于 cuts/cutSheet 的真实连接点数量");
+  }
+  if (!Number.isInteger(audited) || audited !== detected) {
+    errors.push("connectionAudit.auditedJoinCount 必须覆盖全部检测到的连接点");
+  }
+  if (joinIds.length !== cuts.length || new Set(joinIds).size !== joinIds.length) {
+    errors.push("connectionAudit.joinIds 必须唯一并逐项覆盖 cuts/cutSheet");
+  }
+  if (!Array.isArray(audit.unresolvedJoinIds)) {
+    errors.push("connectionAudit.unresolvedJoinIds 必须显式提供数组");
+  } else if (audit.unresolvedJoinIds.length > 0) {
+    errors.push("connectionAudit.unresolvedJoinIds 必须为空；未解决连接点不得进入渲染");
+  }
+  if (!Array.isArray(audit.normalSpeedEvidence) || audit.normalSpeedEvidence.length === 0) {
+    errors.push("connectionAudit.normalSpeedEvidence 必须提供正常速度试听/观看证据");
+  }
+}
+
 function validateEffects(effects, plan, errors) {
   const fps = Number(plan.timelineFPS);
   const duration = Number(plan.timelineDurationSeconds);
@@ -651,10 +693,102 @@ function validateEffects(effects, plan, errors) {
       }
       requireFields(
         effect,
-        ["boundaryQC", "duplicateSourcePolicy", "occlusionCheck", "frameTreatment"],
+        [
+          "boundaryQC",
+          "duplicateSourcePolicy",
+          "occlusionCheck",
+          "frameTreatment",
+          "pipContentSpec",
+          "pipBorderSpec",
+        ],
         label,
         errors,
       );
+      const content = effect.pipContentSpec;
+      if (content && typeof content === "object") {
+        requireFields(
+          content,
+          [
+            "sourceComposition",
+            "fitMode",
+            "subjectAnchor",
+            "headTopMarginRatio",
+            "gestureVisibilityPolicy",
+            "stateFrames",
+          ],
+          `${label}.pipContentSpec`,
+          errors,
+        );
+        if (content.sourceComposition !== "full_frame_fit") {
+          errors.push(`${label}.pipContentSpec.sourceComposition 默认必须为 full_frame_fit`);
+        }
+        if (content.fitMode !== "contain") {
+          errors.push(`${label}.pipContentSpec.fitMode 默认必须为 contain`);
+        }
+        const anchorX = Number(content.subjectAnchor?.x);
+        const anchorY = Number(content.subjectAnchor?.y);
+        if (
+          !Number.isFinite(anchorX)
+          || !Number.isFinite(anchorY)
+          || anchorX < 0
+          || anchorX > 1
+          || anchorY < 0
+          || anchorY > 1
+        ) {
+          errors.push(`${label}.pipContentSpec.subjectAnchor 必须是 0 至 1 的归一化坐标`);
+        }
+        const headTopMarginRatio = Number(content.headTopMarginRatio);
+        if (!Number.isFinite(headTopMarginRatio) || headTopMarginRatio < 0.04) {
+          errors.push(`${label}.pipContentSpec.headTopMarginRatio 不得小于 0.04`);
+        }
+        if (!Array.isArray(content.stateFrames) || content.stateFrames.length < 3) {
+          errors.push(`${label}.pipContentSpec.stateFrames 至少包含进入、停稳和退出`);
+        }
+      }
+      const border = effect.pipBorderSpec;
+      if (border && typeof border === "object") {
+        requireFields(
+          border,
+          [
+            "shape",
+            "strokes",
+            "cornerRadius",
+            "shadow",
+            "boundsIncluded",
+            "stateFrames",
+            "collisionEvidence",
+            "rationale",
+          ],
+          `${label}.pipBorderSpec`,
+          errors,
+        );
+        const strokes = asArray(border.strokes);
+        if (strokes.length < 1 || strokes.length > 2) {
+          errors.push(`${label}.pipBorderSpec: strokes 必须为 1 至 2 层`);
+        }
+        strokes.forEach((stroke, strokeIndex) => {
+          const widthRatio = Number(stroke?.widthRatio);
+          if (!hasValue(stroke?.color) || !Number.isFinite(widthRatio)
+            || widthRatio < 0.004 || widthRatio > 0.012) {
+            errors.push(
+              `${label}.pipBorderSpec.strokes[${strokeIndex}]: 必须提供颜色，widthRatio 必须为 0.004 至 0.012`,
+            );
+          }
+        });
+        const shadowOpacity = Number(border.shadow?.opacity);
+        if (!Number.isFinite(shadowOpacity) || shadowOpacity < 0.2 || shadowOpacity > 0.35) {
+          errors.push(`${label}.pipBorderSpec.shadow.opacity 必须为 0.20 至 0.35`);
+        }
+        if (border.boundsIncluded !== true) {
+          errors.push(`${label}.pipBorderSpec.boundsIncluded 必须为 true`);
+        }
+        if (!Array.isArray(border.stateFrames) || border.stateFrames.length < 3) {
+          errors.push(`${label}.pipBorderSpec.stateFrames 至少包含进入、停稳和退出`);
+        }
+        if (!Array.isArray(border.collisionEvidence) || border.collisionEvidence.length === 0) {
+          errors.push(`${label}.pipBorderSpec.collisionEvidence 不得为空`);
+        }
+      }
     }
 
     const isTypewriter = techniqueIncludes(effect, ["打字", "typewriter"]);
@@ -696,7 +830,49 @@ function validateEffects(effects, plan, errors) {
 
     const isSplitScreen = techniqueIncludes(effect, ["分屏", "split-screen", "split screen"]);
     if (isSplitScreen) {
-      requireFields(effect, ["subjectSafeArea"], label, errors);
+      requireFields(effect, ["subjectSafeArea", "paneCompositionSpecs"], label, errors);
+      const panes = asArray(effect.paneCompositionSpecs);
+      if (panes.length < 2) {
+        errors.push(`${label}.paneCompositionSpecs 至少包含两个窗格`);
+      }
+      panes.forEach((pane, paneIndex) => {
+        requireFields(
+          pane,
+          [
+            "sourceComposition",
+            "fitMode",
+            "subjectAnchor",
+            "verticalSubjectPosition",
+            "headTopMarginRatio",
+            "gestureVisibilityPolicy",
+            "stateFrames",
+          ],
+          `${label}.paneCompositionSpecs[${paneIndex}]`,
+          errors,
+        );
+        if (pane?.sourceComposition !== "subject_aware_reframe") {
+          errors.push(`${label}.paneCompositionSpecs[${paneIndex}].sourceComposition 必须为 subject_aware_reframe`);
+        }
+        if (!["contain", "subject_aware_crop"].includes(pane?.fitMode)) {
+          errors.push(`${label}.paneCompositionSpecs[${paneIndex}].fitMode 必须为 contain 或 subject_aware_crop`);
+        }
+        const x = Number(pane?.subjectAnchor?.x);
+        const y = Number(pane?.subjectAnchor?.y);
+        if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || x > 1 || y < 0 || y > 1) {
+          errors.push(`${label}.paneCompositionSpecs[${paneIndex}].subjectAnchor 必须是归一化坐标`);
+        }
+        const vertical = Number(pane?.verticalSubjectPosition);
+        if (!Number.isFinite(vertical) || vertical < 0.45 || vertical > 0.55) {
+          errors.push(`${label}.paneCompositionSpecs[${paneIndex}].verticalSubjectPosition 必须为 0.45 至 0.55`);
+        }
+        const margin = Number(pane?.headTopMarginRatio);
+        if (!Number.isFinite(margin) || margin < 0.04) {
+          errors.push(`${label}.paneCompositionSpecs[${paneIndex}].headTopMarginRatio 不得小于 0.04`);
+        }
+        if (!Array.isArray(pane?.stateFrames) || pane.stateFrames.length < 3) {
+          errors.push(`${label}.paneCompositionSpecs[${paneIndex}].stateFrames 至少包含进入、停稳和退出`);
+        }
+      });
     }
 
     const isInformationModule = techniqueIncludes(effect, [
@@ -750,6 +926,55 @@ function validateEffects(effects, plan, errors) {
             errors.push(`${label}: 信息模块与人物头像安全区发生遮盖`);
           }
         });
+      }
+
+      const isProgressiveModule = techniqueIncludes(effect, [
+        "流程图",
+        "flowchart",
+        "workflow",
+        "逐项点亮",
+        "音频清理",
+        "audio cleanup",
+      ]);
+      if (isProgressiveModule) {
+        const progressive = effect.progressiveStateSpec;
+        requireFields(
+          progressive,
+          [
+            "persistentBase",
+            "updateMode",
+            "activeRegionBounds",
+            "screenFlashPolicy",
+            "stateBoundaryQC",
+          ],
+          `${label}.progressiveStateSpec`,
+          errors,
+        );
+        if (progressive?.persistentBase !== true) {
+          errors.push(`${label}.progressiveStateSpec: persistentBase 必须为 true`);
+        }
+        if (!PROGRESSIVE_UPDATE_MODES.has(progressive?.updateMode)) {
+          errors.push(`${label}.progressiveStateSpec: updateMode 必须为 local_highlight 或 local_reveal`);
+        }
+        if (progressive?.screenFlashPolicy !== "forbid_full_frame_fade") {
+          errors.push(`${label}.progressiveStateSpec: 必须禁止节点切换时整屏淡入淡出`);
+        }
+        const regions = asArray(progressive?.activeRegionBounds);
+        if (regions.length === 0) {
+          errors.push(`${label}.progressiveStateSpec: activeRegionBounds 不得为空`);
+        }
+        regions.forEach((region, regionIndex) => {
+          const rect = normalizedRect(region);
+          if (!rect || rect.width * rect.height >= 0.9) {
+            errors.push(
+              `${label}.progressiveStateSpec.activeRegionBounds[${regionIndex}]: 必须是小于全屏 90% 的有效局部区域`,
+            );
+          }
+        });
+        if (!Array.isArray(progressive?.stateBoundaryQC)
+          || progressive.stateBoundaryQC.length === 0) {
+          errors.push(`${label}.progressiveStateSpec: stateBoundaryQC 不得为空`);
+        }
       }
     }
 
@@ -935,6 +1160,7 @@ if (!Array.isArray(plan.effects) && !Array.isArray(plan.effectPlan)) {
 }
 
 validateCuts(cuts, plan, errors);
+validateConnectionAudit(cuts, plan, errors);
 validateEffects(effects, plan, errors);
 validateSfxPlan(plan, effects, errors);
 
@@ -959,12 +1185,15 @@ console.log(
         sameScale: "forbidden only for the same subject",
         headIntegrity: "required for every human shot except intentional extreme close-ups",
         transitionDecision: "required and continuity-motivated",
+        connectionAudit: "every detected join must be listed, treated and reviewed at normal speed",
         timecodeOrder: "validated",
         effectRationaleContract: "required",
         externalInsertSemanticContract: "conditional",
         maskAlignmentContract: "conditional",
-        pipBoundaryContract: "conditional",
+        pipBoundaryContract: "full-frame fit, active interval, duplicate-source policy, designed border and collision evidence required",
+        splitScreenComposition: "each pane requires subject-aware centering and complete head visibility",
         informationModuleLayout: "full-screen replacement or verified subject-head avoidance",
+        progressiveStateUpdates: "persistent base with local highlight/reveal; full-frame state flashing forbidden",
         textBehindDesign: "font, scale, bounds, contrast, visibility and SFX sync required",
         visualDesignPreflight: "required before implementation for information modules, stylized transitions and masks",
         sfxDiversity: "whole-timeline palette, event mapping and repetition audit required",

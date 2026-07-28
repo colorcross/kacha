@@ -24,6 +24,10 @@
 覆盖低层。命令行参数始终优先，例如 `--model-tier`、`--max-frames` 和
 `--handle-frames`。
 
+`style.profile` 选择内置风格，`style.overrides` 只覆盖需要变化的风格令牌。
+默认是 `warm-editorial`。风格令牌统一控制字幕、字体、弹窗、信息卡、画中画、
+品牌、封面、开场、转场和运动参数，不再散落到时间区间实现中。
+
 `KACHA_CONFIG_HOME` 可以改变用户配置目录；`XDG_CONFIG_HOME` 也受支持。
 测试或隔离运行可设置 `KACHA_DISABLE_USER_CONFIG=1`。
 
@@ -119,6 +123,40 @@ chmod 600 ~/.config/kacha/secrets.json
 `prepare` 把适用于当前任务/模块的要求写入 `agent-packet.json`。
 `compile-change` 把配方默认参数、自然语言要求和配置摘要写入当前 delta，
 因此较弱模型和长任务续跑不需要重新从对话中猜测用户习惯。
+
+## 风格配置
+
+项目可统一换色、字体或动效参数：
+
+```json
+{
+  "schemaVersion": "1.0",
+  "style": {
+    "profile": "warm-editorial",
+    "overrides": {
+      "palette": {
+        "accent": "#E9A92F"
+      },
+      "motion": {
+        "standardFrames": 12
+      }
+    }
+  }
+}
+```
+
+检查解析结果和效果库：
+
+```bash
+node scripts/kacha.mjs config validate --anchor PROJECT_DIR
+node scripts/kacha.mjs effects validate --anchor PROJECT_DIR
+node scripts/kacha.mjs effects show --kind opening \
+  --id editorial_label_reveal --anchor PROJECT_DIR
+```
+
+`style.overrides` 不能写授权或绕过门禁字段。解析后的 style digest 会进入返工
+合同和 artifact fingerprint；digest 变化时依赖旧风格的产物不能继续复用。
+完整字段与默认效果见 `references/style-effects-library.md`。
 
 完整结构示例见
 [`examples/kacha.config.json`](../examples/kacha.config.json)。用户级敏感连接项

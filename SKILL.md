@@ -34,6 +34,7 @@ description: |
   `references/sfx-library.md`
 - 插镜/PIP/美颜/蒙版/人物后文字/调色：`references/visuals-masks.md`
 - 信息卡/流程图/弹窗/复杂动效：`references/visual-design-preflight.md`
+- 统一风格、开场和转场库：`references/style-effects-library.md`
 - 字幕/封面/品牌/系列：`references/subtitles-covers-brand.md`
 - MiniMax/Seedance/网络素材：`references/generated-media-assets.md`
 - 较弱模型/低推理强度/长任务续跑：`references/agent-execution.md`
@@ -80,6 +81,8 @@ reference。
 node scripts/kacha.mjs config validate
 node scripts/kacha.mjs config show --anchor PROJECT_DIR
 node scripts/kacha.mjs config init --scope user
+node scripts/kacha.mjs effects validate
+node scripts/kacha.mjs effects list --kind transition
 ```
 
 优先级为：内置默认值 < 用户配置 < 项目 `kacha.config.json` <
@@ -94,6 +97,11 @@ Git。默认要求只表示偏好，不构成上传、付费、发布、覆盖�
 敏感项只接受用户配置或显式 `--config`。完整说明见
 `docs/CONFIGURATION.md`。
 
+视觉风格必须从 `style.profile + style.overrides` 解析，默认使用
+`warm-editorial`。字幕、弹窗、信息卡、画中画、品牌、封面、开场和转场只读取
+解析后的风格令牌与 digest，不在时间区间实现中写死字体、颜色、圆角、阴影、
+边框或缓动。更换风格走 `style` 增量配方并按依赖失效重建。
+
 ## 不可降低的合同
 
 - 源素材只读；新版本独立输出，不覆盖基线。
@@ -106,6 +114,8 @@ Git。默认要求只表示偏好，不构成上传、付费、发布、覆盖�
   最简替代、失败条件与 QC 证据；不能用特效掩盖错误切点。
 - 信息卡/流程图/弹窗要么全屏，要么避开人物头脸与字幕安全区；高影响模块
   先做样式帧、进入/停稳/退出和声音设计。
+- 真人画中画默认把原始完整画面按比例缩小后再套形状和边框，不得先用固定
+  矩形硬裁人物；双屏的每个窗格必须按人物锚点居中并保留完整头顶。
 - 插镜同时匹配对象、动作、角色、状态、时态、方向和全片风格。
 - 含口播且需要音频处理时，先做人声/非人声分离；只有验收通过的 dialogue
   stem 可进入降噪、美化和混音，residual 不回混。

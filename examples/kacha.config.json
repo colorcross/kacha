@@ -1,5 +1,9 @@
 {
   "schemaVersion": "1.0",
+  "style": {
+    "profile": "warm-editorial",
+    "overrides": {}
+  },
   "editingDefaults": {
     "parameters": {
       "subtitle": {

@@ -68,7 +68,7 @@ function inferSuite(name) {
   if (/SFX|sound effect/i.test(name)) return "sfx";
   if (/technical QC|release gate|timing normalizer/i.test(name)) return "qc";
   if (
-    /mask|beauty|text-behind|reframe|information card|visual design|cropped head/i
+    /mask|beauty|text-behind|reframe|information card|visual design|cropped head|style profile|transition|opening|connection scanner/i
       .test(name)
   ) {
     return "visual";
@@ -387,6 +387,7 @@ await test("configuration merges parameters, natural language and redacted crede
     report.config.execution.incremental.handleFrames !== 36
     || report.config.editingDefaults.parameters.subtitle.singleLine !== true
     || report.config.editingDefaults.parameters.subtitle.safeAreaBottomRatio !== 0.2
+    || report.config.style.profile !== "warm-editorial"
     || report.secrets.credentials.minimax.source !== "secrets_file"
   ) {
     throw new Error("configuration precedence or credential status is incorrect");
@@ -562,6 +563,143 @@ await test("configuration merges parameters, natural language and redacted crede
     throw new Error("user config initialization was not idempotent");
   }
 }, "core");
+
+await test("style profile and effect registries validate and render executable previews", () => {
+  const validation = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "effects",
+    "validate",
+  ]).stdout);
+  if (
+    validation.style.id !== "warm-editorial"
+    || validation.registries.find((item) => item.kind === "transition")?.count < 8
+    || validation.registries.find((item) => item.kind === "opening")?.count < 4
+  ) {
+    throw new Error("style profile or effect registry inventory is incomplete");
+  }
+
+  const transitionPreview = path.join(temporary, "transition-preview.mp4");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "effects",
+    "preview",
+    "--kind",
+    "transition",
+    "--id",
+    "directional_smooth",
+    "--direction",
+    "left",
+    "--width",
+    "160",
+    "--height",
+    "90",
+    "--fps",
+    "8",
+    "--duration",
+    "0.25",
+    "--output",
+    transitionPreview,
+  ]);
+  const transitionMedia = mediaSummary(transitionPreview);
+  if (transitionMedia.video?.codec_name !== "h264" || transitionMedia.width !== 160) {
+    throw new Error("transition preview was not rendered as a real H.264 video");
+  }
+
+  const openingPreview = path.join(temporary, "opening-preview.mp4");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "effects",
+    "preview",
+    "--kind",
+    "opening",
+    "--id",
+    "typewriter_command",
+    "--title",
+    "AI EDITS",
+    "--width",
+    "160",
+    "--height",
+    "90",
+    "--fps",
+    "8",
+    "--frames",
+    "8",
+    "--output",
+    openingPreview,
+  ]);
+  const openingMedia = mediaSummary(openingPreview);
+  if (openingMedia.video?.codec_name !== "h264" || openingMedia.width !== 160) {
+    throw new Error("opening preview was not rendered as a real H.264 video");
+  }
+
+  const projectStyle = path.join(temporary, "style-overrides-only.json");
+  writeJson(projectStyle, {
+    schemaVersion: "1.0",
+    style: {
+      overrides: {
+        popups: {
+          maxWidthRatio: 0.6,
+        },
+      },
+    },
+  });
+  const styleReport = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config",
+    "show",
+    "--config",
+    projectStyle,
+    "--no-secrets",
+  ]).stdout);
+  if (
+    styleReport.style.profile.id !== "warm-editorial"
+    || styleReport.style.profile.popups.maxWidthRatio !== 0.6
+    || !styleReport.style.digest
+  ) {
+    throw new Error("style-only override did not inherit and resolve the default profile");
+  }
+}, "visual");
+
+await test("connection scanner finds edit joins and emits review handles", () => {
+  const first = path.join(temporary, "connection-first.mp4");
+  const second = path.join(temporary, "connection-second.mp4");
+  const joined = path.join(temporary, "connection-joined.mp4");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error",
+    "-f", "lavfi", "-i", "color=c=0x8A4B2A:s=160x90:r=12:d=1",
+    "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-y", first,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error",
+    "-f", "lavfi", "-i", "color=c=0xF4D58D:s=160x90:r=12:d=1",
+    "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-y", second,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error",
+    "-i", first, "-i", second,
+    "-filter_complex", "[0:v][1:v]concat=n=2:v=1:a=0,format=yuv420p[v]",
+    "-map", "[v]", "-an", "-c:v", "libx264", "-y", joined,
+  ]);
+  const output = path.join(temporary, "connection-candidates.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "connections",
+    joined,
+    "--output",
+    output,
+    "--threshold",
+    "0.2",
+  ]);
+  const report = readJson(output);
+  if (
+    report.count < 1
+    || report.candidates[0].sources.includes("ffmpeg_scene_score") !== true
+    || !(report.candidates[0].handleEndSeconds > report.candidates[0].handleStartSeconds)
+    || report.candidates[0].reviewRequired !== true
+  ) {
+    throw new Error("connection scanner did not produce an auditable join candidate");
+  }
+}, "visual");
 
 await test("proposal executable source, hash and authorization pass", () => {
   execute(process.execPath, [
@@ -865,12 +1003,63 @@ await test("edit plan accepts a designed full-screen information module", () => 
     subjectVisibilityPolicy: "replace_a_roll",
     fullScreenCoverage: 0.98,
     layoutEvidence: ["A-roll 已完全替换", "手机尺寸阅读预览"],
+    progressiveStateSpec: {
+      persistentBase: true,
+      updateMode: "local_highlight",
+      activeRegionBounds: [
+        { x: 0.08, y: 0.2, width: 0.84, height: 0.62 },
+      ],
+      screenFlashPolicy: "forbid_full_frame_fade",
+      stateBoundaryQC: ["逐节点切换前后各 2 帧差分，只允许当前节点区域变化"],
+    },
     designPreflight: localDesignPreflight("full-screen-flowchart"),
   });
   const file = path.join(temporary, "edit-plan-fullscreen-flowchart.json");
   writeJson(file, plan);
   execute(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
 });
+
+await test("edit plan rejects full-screen flashing between progressive module states", () => {
+  const plan = readJson(path.join(examples, "edit-plan.json"));
+  plan.effects.push({
+    timeSeconds: 90,
+    timecode: "00:01:30.000",
+    technique: "全屏流程图",
+    trigger: "口播开始解释工作流程",
+    function: ["information"],
+    mechanism: "逐节点点亮",
+    beforeState: "人物口播",
+    afterState: "全屏流程图",
+    entryExit: "章节进入和退出",
+    simplerAlternative: "干净切",
+    failureCondition: "节点切换时整屏闪烁",
+    qcEvidence: ["状态边界差分帧"],
+    layoutMode: "full_screen",
+    subjectVisibilityPolicy: "replace_a_roll",
+    fullScreenCoverage: 0.98,
+    layoutEvidence: ["手机尺寸预览"],
+    progressiveStateSpec: {
+      persistentBase: false,
+      updateMode: "local_highlight",
+      activeRegionBounds: [{ x: 0.1, y: 0.2, width: 0.8, height: 0.6 }],
+      screenFlashPolicy: "allow_full_frame_fade",
+      stateBoundaryQC: ["边界帧"],
+    },
+    designPreflight: localDesignPreflight("flashing-flowchart"),
+  });
+  const file = path.join(temporary, "edit-plan-flashing-flowchart.json");
+  writeJson(file, plan);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
+}, "visual");
+
+await test("edit plan rejects incomplete connection audit", () => {
+  const plan = readJson(path.join(examples, "edit-plan.json"));
+  plan.connectionAudit.auditedJoinCount = 1;
+  plan.connectionAudit.unresolvedJoinIds = ["join-00:00:41.200"];
+  const file = path.join(temporary, "edit-plan-incomplete-connection-audit.json");
+  writeJson(file, plan);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
+}, "visual");
 
 await test("edit plan rejects an information card covering the head safe zone", () => {
   const plan = readJson(path.join(examples, "edit-plan.json"));
@@ -906,6 +1095,73 @@ await test("edit plan rejects implementation before visual design approval", () 
   writeJson(file, plan);
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
 });
+
+await test("edit plan rejects PIP without a designed border contract", () => {
+  const plan = readJson(path.join(examples, "edit-plan.json"));
+  const pip = plan.effects.find((effect) => /画中画|picture-in-picture|pip/i.test(effect.technique));
+  delete pip.pipBorderSpec;
+  const file = path.join(temporary, "edit-plan-pip-missing-border.json");
+  writeJson(file, plan);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
+}, "visual");
+
+await test("edit plan accepts a project-consistent PIP border contract", () => {
+  const file = path.join(examples, "edit-plan.json");
+  execute(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
+}, "visual");
+
+await test("edit plan rejects PIP that hard-crops the source instead of full-frame fit", () => {
+  const plan = readJson(path.join(examples, "edit-plan.json"));
+  const pip = plan.effects.find((effect) => /画中画|picture-in-picture|pip/i.test(effect.technique));
+  pip.pipContentSpec.sourceComposition = "fixed_pixel_crop";
+  pip.pipContentSpec.fitMode = "cover";
+  pip.pipContentSpec.headTopMarginRatio = 0.01;
+  const file = path.join(temporary, "edit-plan-pip-hard-crop.json");
+  writeJson(file, plan);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
+}, "visual");
+
+await test("edit plan rejects split-screen panes without centered subject-aware composition", () => {
+  const plan = readJson(path.join(examples, "edit-plan.json"));
+  plan.effects.push({
+    timeSeconds: 80,
+    timecode: "00:01:20.000",
+    technique: "上下分屏",
+    trigger: "同时比较两个时刻",
+    function: ["comparison"],
+    mechanism: "两个真实时间源分别进入上下窗格",
+    beforeState: "单人中景",
+    afterState: "上下双屏",
+    entryExit: "句首进入，比较完成后退出",
+    simplerAlternative: "交替切镜",
+    failureCondition: "人物裁头或贴边",
+    qcEvidence: ["双屏进入、停稳、退出代表帧"],
+    subjectSafeArea: "字幕和品牌安全区之外",
+    paneCompositionSpecs: [
+      {
+        sourceComposition: "fixed_top_crop",
+        fitMode: "subject_aware_crop",
+        subjectAnchor: { x: 0.5, y: 0.3 },
+        verticalSubjectPosition: 0.3,
+        headTopMarginRatio: 0.01,
+        gestureVisibilityPolicy: "保留手势",
+        stateFrames: ["进入", "停稳", "退出"],
+      },
+      {
+        sourceComposition: "subject_aware_reframe",
+        fitMode: "subject_aware_crop",
+        subjectAnchor: { x: 0.5, y: 0.5 },
+        verticalSubjectPosition: 0.5,
+        headTopMarginRatio: 0.06,
+        gestureVisibilityPolicy: "保留手势",
+        stateFrames: ["进入", "停稳", "退出"],
+      },
+    ],
+  });
+  const file = path.join(temporary, "edit-plan-split-cropped-head.json");
+  writeJson(file, plan);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
+}, "visual");
 
 await test("edit plan accepts a varied whole-timeline SFX palette", () => {
   const plan = readJson(path.join(examples, "edit-plan.json"));
@@ -1388,6 +1644,93 @@ await test("low-model change compiler creates a safe incremental project", () =>
   ]);
   if (JSON.parse(recovered.stdout).status !== "dry_run" || fs.existsSync(recoveredLock)) {
     throw new Error("dead same-host operation lock was not safely recovered");
+  }
+}, "incremental");
+
+await test("style and timing feedback compile to correct rebuild and regression scope", () => {
+  const fixture = initializeIncrementalFixture("style-timing-change");
+  const styleRequest = path.join(fixture.root, "style-change-request.json");
+  const styleOutput = path.join(fixture.root, "versions", "style-v2");
+  writeJson(styleRequest, {
+    schemaVersion: "1.0",
+    projectContext: fixture.context,
+    newVersion: {
+      id: "style-v2",
+      intent: "candidate",
+    },
+    changes: [{
+      recipe: "style",
+      reason: "unify all visible design tokens",
+      parameters: {
+        profile: "warm-editorial",
+      },
+    }],
+    render: {
+      strategy: "auto",
+    },
+    deliverables: {
+      covers: [],
+      subtitles: [],
+    },
+  });
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "compile-change",
+    styleRequest,
+    "--output-dir",
+    styleOutput,
+  ]);
+  const styleDelta = readJson(path.join(styleOutput, "version-delta.json"));
+  const stylePlan = readJson(path.join(styleOutput, "output", "incremental-plan.json"));
+  if (
+    stylePlan.renderPlan.strategy !== "full_rebuild"
+    || !stylePlan.artifactPlan.invalidatedTypes.includes("style_profile")
+    || styleDelta.changeSet.regressionScans?.[0]?.class !== "style_consistency"
+    || !stylePlan.qcProfile.manualChecks.includes("sameSignatureRegressionScan")
+  ) {
+    throw new Error("style change did not invalidate the full visual system safely");
+  }
+
+  const timingRequest = path.join(fixture.root, "timing-change-request.json");
+  const timingOutput = path.join(fixture.root, "versions", "timing-v2");
+  writeJson(timingRequest, {
+    schemaVersion: "1.0",
+    projectContext: fixture.context,
+    newVersion: {
+      id: "timing-v2",
+      intent: "candidate",
+    },
+    changes: [{
+      recipe: "timing_sync",
+      reason: "visible actions precede their spoken trigger words",
+      parameters: {
+        toleranceFrames: 2,
+      },
+    }],
+    render: {
+      strategy: "auto",
+    },
+    deliverables: {
+      covers: [],
+      subtitles: [],
+    },
+  });
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "compile-change",
+    timingRequest,
+    "--output-dir",
+    timingOutput,
+  ]);
+  const timingDelta = readJson(path.join(timingOutput, "version-delta.json"));
+  const timingPlan = readJson(path.join(timingOutput, "output", "incremental-plan.json"));
+  if (
+    timingDelta.changeSet.regressionScans?.[0]?.scope
+      !== "full_timeline_same_signature"
+    || !timingPlan.qcProfile.manualChecks.includes("sameSignatureRegressionScan")
+    || timingPlan.renderPlan.strategy === "full_rebuild"
+  ) {
+    throw new Error("timing feedback did not stay incremental with full-class regression");
   }
 }, "incremental");
 
