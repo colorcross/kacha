@@ -288,7 +288,7 @@ node tests/run_tests.mjs --suite visual
 node tests/run_tests.mjs
 bash tests/test_installer.sh
 python3 scripts/scan_secrets.py
-cd website && npm run lint && npm run typecheck && npm test
+cd website && npm run lint && npm run typecheck && npm test && npm audit --audit-level=high
 ```
 
 分层测试只生成当前套件需要的媒体夹具；全量测试不会读取或修改你的真实项目

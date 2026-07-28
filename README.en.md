@@ -286,7 +286,7 @@ node tests/run_tests.mjs --suite visual
 node tests/run_tests.mjs
 bash tests/test_installer.sh
 python3 scripts/scan_secrets.py
-cd website && npm run lint && npm run typecheck && npm test
+cd website && npm run lint && npm run typecheck && npm test && npm audit --audit-level=high
 ```
 
 Scoped suites generate only the media fixtures they need. Passing repository

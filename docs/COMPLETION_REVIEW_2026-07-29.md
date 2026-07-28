@@ -101,6 +101,8 @@ production build：通过
 server-rendered routes：/ 和 /en 通过
 页面/资产回归：4/4 通过
 本地客户端加载：中英文无 hydration 错误
+生产依赖审计：0 vulnerabilities
+完整开发依赖审计：0 vulnerabilities
 ```
 
 ## 4. 仓库与分发
@@ -115,7 +117,9 @@ Beauty 真实样本技术链：通过并要求人工审片
 ```
 
 `website/` 被明确排除在用户级 skill bundle 之外，避免把官网依赖和构建产物
-复制进 Codex/Claude 安装目录；README、核心文档和运行时仍会正常同步。
+复制进 Codex/Claude 安装目录；本地同步器和 GitHub 归档安装器使用同一边界，
+安装器回归会分别核验 Codex/Claude 目标中不存在 `website/`。README、核心
+文档和运行时仍会正常同步。
 
 ## 5. 剩余边界
 

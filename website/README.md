@@ -22,11 +22,13 @@ npm run dev
 npm run lint
 npm run typecheck
 npm test
+npm audit --audit-level=high
 ```
 
 `npm test` 会重新构建并验证中英文服务端渲染内容、Logo 和社交分享图。官网
 通过不代表咔嚓 skill 本体通过；正式提交仍需在仓库根目录运行完整回归、安装器
-测试与隐私扫描。
+测试与隐私扫描。当前 lint 使用 Oxlint；生产依赖与完整开发依赖都必须保持
+`0 vulnerabilities`。
 
 ## 目录
 

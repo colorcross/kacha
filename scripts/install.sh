@@ -178,6 +178,11 @@ PY
   }
   mkdir -p "$candidate"
   tar -xzf "$downloaded_archive" -C "$candidate" --strip-components=1
+  # The public repository also hosts the product website. It is not part of
+  # the runtime skill bundle and would only add unrelated build dependencies.
+  if [[ -d "$candidate/website" ]]; then
+    rm -rf -- "$candidate/website"
+  fi
   [[ -f "$candidate/SKILL.md" && -f "$candidate/scripts/kacha.mjs" ]] || {
     printf '%s\n' "Downloaded archive is missing required skill files" >&2
     return 1

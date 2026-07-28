@@ -33,7 +33,12 @@ The site passes lint, type checking, production build, and four rendered-page
 and asset tests. Both language routes load locally without hydration errors.
 During review, the vinext `next/image` shim produced a client React hook
 conflict; Kacha now serves its local logo directly and includes a regression
-test for that boundary.
+test for that boundary. Production and full development dependency audits both
+report zero vulnerabilities.
+
+The GitHub archive installer now removes `website/` before installing the
+runtime skill, matching the local Codex/Claude sync boundary. Installer tests
+assert that neither target contains the website tree.
 
 ## Remaining boundaries
 

@@ -11,7 +11,14 @@ archive="$temporary/kacha.tar.gz"
 mkdir -p "$test_home"
 
 mkdir -p "$source_clone/kacha-fixture"
-tar --exclude=.git -cf - -C "$root" . | tar -xf - -C "$source_clone/kacha-fixture"
+git -C "$root" ls-files --cached --others --exclude-standard -z \
+  | while IFS= read -r -d '' path; do
+      if [[ -e "$root/$path" || -L "$root/$path" ]]; then
+        printf '%s\0' "$path"
+      fi
+    done \
+  | tar -cf - -C "$root" --null -T - \
+  | tar -xf - -C "$source_clone/kacha-fixture"
 tar -czf "$archive" -C "$source_clone" kacha-fixture
 
 HOME="$test_home" "$root/scripts/install.sh" \
@@ -25,6 +32,8 @@ claude_skill="$test_home/.claude/skills/kacha"
 [[ -f "$claude_skill/SKILL.md" ]]
 [[ -f "$codex_skill/.kacha-version" ]]
 [[ -f "$claude_skill/.kacha-version" ]]
+[[ ! -e "$codex_skill/website" ]]
+[[ ! -e "$claude_skill/website" ]]
 
 HOME="$test_home" "$root/scripts/install.sh" \
   --agent codex \
