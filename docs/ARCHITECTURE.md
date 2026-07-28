@@ -30,13 +30,21 @@
 
 描述生成镜头的参考素材、哈希、provider/model/transport、能力快照、动作节拍、规格、授权和 QC 目标。
 
-### `localChangePlan`
+### v3 `projectContext + versionDelta + artifactIndex`
 
-描述基础版本哈希、独立新版本、改动层、冻结层、影响区间、渲染策略和必须重建的审计证据。它阻止局部修复误改整支画面或沿用旧版本 QC。
+`projectContext` 保存项目与基线的稳定事实；`versionDelta` 只记录本轮变化；
+`artifactIndex` 保存产物内容指纹、依赖和重建成本。三者生成
+`incrementalPlan`，推导 L0–L3 风险、失效/复用产物、最小渲染范围和动态 QC。
+旧 `localChangePlan` 只服务尚未迁移的 v2 项目。
 
 ### `releaseReport`
 
 记录最终文件哈希、限制和人工审片证据。自动报告不能自行生成“人工通过”。
+
+### `deltaQc + incrementalReview`
+
+`deltaQc` 记录变化层检查与冻结流 SHA-256；`incrementalReview` 记录当前候选
+版本的动态人工检查。候选报告不能冒充最终 `releaseReport`。
 
 ## 门禁
 
@@ -78,6 +86,12 @@ editProposal + editPlan + inputs
 
 核对最终视频、封面、字幕、技术报告、SHA-256 和人工检查证据。
 
+### `gate-candidate`
+
+只用于 v3。核对当前输出、增量技术报告、冻结层证明和变化层人工证据。
+`candidate` 通过后仍可返工；只有 `release_candidate` 能进入
+`gate-release`。
+
 ## 失败即停
 
 - 输入缺失或哈希不符：停止；
@@ -88,6 +102,8 @@ editProposal + editPlan + inputs
 - declared FPS 与 average FPS 不一致或不符合合同：先安全重封装或回到时间线修复；
 - 自动 QC 有线索：人工处置后再继续；
 - 人工审片证据缺失：不得 release。
+- 显式缓存请求与依赖失效冲突：拒绝复用；
+- `candidate` 试图进入最终发布：停止；
 
 ## 扩展方式
 

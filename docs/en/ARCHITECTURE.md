@@ -30,9 +30,23 @@ Connects the proposal, plan, capability snapshot, inputs, outputs, and QC report
 
 Records reference assets and hashes, provider/model/transport, capability snapshot, action beats, specifications, authorization, and QC targets for generated shots.
 
+### v3 `projectContext + versionDelta + artifactIndex`
+
+`projectContext` stores stable project and baseline facts. `versionDelta`
+records only the current feedback. `artifactIndex` stores content fingerprints,
+dependencies, and regeneration cost. Together they generate an
+`incrementalPlan` with L0-L3 risk, invalidation/reuse, minimum render scope, and
+dynamic QC.
+
 ### `releaseReport`
 
 Records final-file hashes, limitations, and human-review evidence. An automated report must never generate a false claim of human approval.
+
+### `deltaQc + incrementalReview`
+
+`deltaQc` records checks for changed layers and elementary-stream hashes for
+frozen layers. `incrementalReview` stores candidate-specific human evidence; it
+cannot impersonate a final release report.
 
 ## Gates
 
@@ -74,6 +88,12 @@ Runs automated technical analysis on the final media and writes a traceable repo
 
 Checks the final video, cover, subtitles, technical report, SHA-256 hashes, and human-review evidence.
 
+### `gate-candidate`
+
+For v3 only. It checks the current deliverable, incremental technical evidence,
+frozen-layer proof, and the dynamic human checklist. A passing `candidate`
+remains editable; only a `release_candidate` may enter `gate-release`.
+
 ## Fail closed
 
 - Missing input or hash mismatch: stop.
@@ -83,6 +103,8 @@ Checks the final video, cover, subtitles, technical report, SHA-256 hashes, and 
 - Generated task state unknown: query it; do not automatically resubmit.
 - Automated QC finds clues: resolve them through human review before continuing.
 - Human-review evidence missing: do not release.
+- Explicit cache reuse conflicts with dependency invalidation: reject it.
+- A `candidate` attempts to pass final release: stop.
 
 ## Extending Kacha
 

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "3.0",
+  "workflow": "incremental",
+  "projectId": "replace-with-project-id",
+  "context": "./project-context.json",
+  "delta": "./version-delta.json",
+  "artifactIndex": "./artifact-index.json",
+  "capabilityManifest": "./capabilities.json",
+  "requiredCapabilities": [],
+  "outputs": {
+    "incrementalPlan": "./output/incremental-plan.json",
+    "deltaQcReport": "./output/delta-qc.json",
+    "reviewReport": "./output/incremental-review.json"
+  }
+}

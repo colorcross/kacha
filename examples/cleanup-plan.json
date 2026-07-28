@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "1.0",
+  "projectRoot": "./example-project",
+  "mode": "routine",
+  "authorization": {
+    "routineCleanupAllowed": true,
+    "finalCleanupConfirmed": false,
+    "noFurtherEdits": false,
+    "evidence": "例行清理只处理可重建且不参与返工的缓存。",
+    "confirmedAt": "not_applicable"
+  },
+  "protectedPaths": [
+    "source",
+    "output/final.mov",
+    "output/cover.png",
+    "plans",
+    "project",
+    "qc"
+  ],
+  "candidates": [
+    {
+      "path": "work/render-scratch",
+      "category": "render_scratch",
+      "reproducible": true,
+      "requiredForIteration": false,
+      "userNeeds": false,
+      "regeneration": {
+        "verified": true,
+        "speed": "fast",
+        "estimatedSeconds": 45,
+        "method": "从冻结时间线重新渲染对应短分片"
+      },
+      "finalDispositionApproved": false,
+      "reason": "渲染完成后可由冻结时间线重新生成。"
+    },
+    {
+      "path": "work/rejected-preview",
+      "category": "rejected_test_render",
+      "reproducible": true,
+      "requiredForIteration": false,
+      "userNeeds": false,
+      "regeneration": {
+        "verified": true,
+        "speed": "fast",
+        "estimatedSeconds": 20,
+        "method": "从已保存的预览参数重新导出"
+      },
+      "finalDispositionApproved": false,
+      "reason": "已被当前版本替代且不再作为比较基线。"
+    }
+  ],
+  "reportPath": "qc/cleanup-report.json"
+}

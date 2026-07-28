@@ -95,7 +95,7 @@ node scripts/kacha.mjs qc my-video-project/contracts/project-manifest.json
 
 自动 QC 会输出技术报告并检查解码、轨道、尺寸、画幅、帧率、音频、A/V 时长差、响度和黑/冻/静音线索。`pass_with_review` 仍表示存在需要人工处置的线索。
 
-局部优化时另外复制 `examples/local-change-plan.json`，声明改动层、冻结层和影响区间；纯声音变化不要重编码画面。
+已有可验证基线的局部优化不要复制整套 v2 方案，改用下面的 v3 增量路径。
 
 ## 8. 人工审片与 release gate
 
@@ -106,3 +106,40 @@ node scripts/kacha.mjs gate-release my-video-project/contracts/project-manifest.
 ```
 
 只有真实文件、哈希、自动技术 QC 和全部人工检查同时通过，才可称为“本地完整 QC 通过”。上传和平台发布是另一个授权与验证阶段。
+
+## 9. v3 局部返工
+
+初始化一次：
+
+```bash
+node scripts/init_incremental_project.mjs /path/to/base.mov \
+  --project-id my-video --output-dir my-video-project/incremental
+```
+
+每轮反馈建立 delta 与统一入口：
+
+```bash
+node scripts/create_version_delta.mjs \
+  my-video-project/incremental/project-context.json \
+  --write my-video-project/incremental/v2-delta.json \
+  --new-version v2 --type sfx_adjust \
+  --output-video my-video-project/incremental/v2.mov
+
+node scripts/create_incremental_manifest.mjs \
+  my-video-project/incremental/project-context.json \
+  my-video-project/incremental/v2-delta.json \
+  my-video-project/incremental/artifact-index.json \
+  --output my-video-project/incremental/v2-project.json
+
+node scripts/kacha.mjs gate-plan my-video-project/incremental/v2-project.json
+# 使用计划中的 stream-copy / layer / segment 策略实际生成 v2.mov
+node scripts/kacha.mjs qc my-video-project/incremental/v2-project.json
+node scripts/create_incremental_review.mjs \
+  my-video-project/incremental/v2-project.json
+node scripts/kacha.mjs gate-candidate \
+  my-video-project/incremental/v2-project.json
+```
+
+纯声音修改应保留原视频流，纯画面修改应保留原音频流；QC 会比较对应
+elementary-stream SHA-256。需要最终交付时新建 intent 为
+`release_candidate` 的 delta，完成完整人工清单后再运行 `gate-release`。

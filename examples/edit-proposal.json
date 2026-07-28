@@ -50,7 +50,9 @@
       "resolution": "9:16 原生目标分辨率",
       "frameRate": "继承最终时间线",
       "color": "继承并正确标记源色彩空间"
-    }
+    },
+    "hasSpokenDialogue": true,
+    "audioProcessingRequired": true
   },
   "contentSpine": {
     "openingPromise": "前 1–3 秒提出一个具体问题，前 6 秒内说明这场长期实验为什么值得看。",
@@ -83,9 +85,16 @@
     ]
   },
   "creativeLock": {
-    "sourceAspectRatio": "由真实源文件探测",
+    "sourceAspectRatio": "9:16",
     "outputAspectRatio": "9:16",
-    "preserveSourceFormat": false,
+    "sourceWidth": "proposal_only 阶段待探测",
+    "sourceHeight": "proposal_only 阶段待探测",
+    "outputWidth": "继承 sourceWidth",
+    "outputHeight": "继承 sourceHeight",
+    "outputGeometryUserSpecified": false,
+    "preserveSourceDimensions": true,
+    "preserveSourceAspectRatio": true,
+    "preserveSourceFormat": true,
     "primaryNarrativeRole": "真人口播是唯一前台叙事主体",
     "aiRole": "behind_the_scenes",
     "frozenDecisions": [
@@ -94,6 +103,31 @@
       "输出保持 9:16"
     ],
     "changeRequiresReapproval": true
+  },
+  "seriesIdentity": {
+    "status": "detected",
+    "seriesTitle": "长期成长实验",
+    "detectionEvidence": [
+      "项目目录中的既有同系列成片和封面使用同一系列标题",
+      "本方案将系列身份作为封面与视频共同视觉资产"
+    ],
+    "videoMark": {
+      "enabled": true,
+      "placement": "人物、字幕和平台 UI 之外的稳定安全区",
+      "interval": "按项目品牌规范覆盖全片或指定章节",
+      "styleVariant": "随亮底/暗底切换颜色，不改变字形层级",
+      "safeAreaEvidence": [
+        "开头、中段、信息卡和结尾代表帧"
+      ]
+    },
+    "coverMark": {
+      "enabled": true,
+      "placement": "封面独立系列安全框",
+      "styleVariant": "比主标题低一级并继承同系列规范",
+      "safeAreaEvidence": [
+        "3:4 与 4:3 手机缩略图"
+      ]
+    }
   },
   "planModules": {
     "cutsAndShotScale": {
@@ -151,6 +185,14 @@
     "dialogueAudio": {
       "status": "enabled",
       "rationale": "先从原始混合音轨分离并验收独立人声，再清理和塑形，最终画面冻结后才决定音乐与音效。",
+      "sourceSeparation": {
+        "required": true,
+        "finalDialogueSource": "dialogue_isolated",
+        "keepOriginalReference": true,
+        "keepResidualForAudit": true,
+        "mixResidualIntoFinal": false,
+        "cleanAmbienceOnly": true
+      },
       "actions": [
         "生成 original_reference、dialogue_isolated 和 non_dialogue_residual",
         "对分离候选做同响度 A/B，并抽听 residual 的语音泄漏",

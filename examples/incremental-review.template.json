@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "3.0",
+  "projectId": "replace-with-project-id",
+  "versionId": "replace-with-version-id",
+  "intent": "candidate",
+  "status": "not_reviewed",
+  "reviewedAt": "replace-after-review",
+  "reviewer": "replace-with-reviewer",
+  "outputSha256": "replace-after-render",
+  "limitations": [
+    "列出当前候选仍存在的限制；没有时明确写 none。"
+  ],
+  "manualChecks": {
+    "changedLayerReview": {
+      "status": "pending",
+      "evidence": []
+    },
+    "boundaryPlayback": {
+      "status": "pending",
+      "evidence": []
+    },
+    "frozenLayerProof": {
+      "status": "pending",
+      "evidence": []
+    }
+  }
+}

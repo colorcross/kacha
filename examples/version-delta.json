@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "3.0",
+  "projectContext": "./project-context.json",
+  "contextSha256": "replace-with-real-sha256",
+  "baseVersionId": "v1",
+  "newVersion": {
+    "id": "v2",
+    "intent": "candidate",
+    "outputPath": "/absolute/path/to/new-version.mov",
+    "overwriteBase": false
+  },
+  "changeSet": {
+    "summary": "只调整人物美颜，冻结声音、字幕、封面和内容时间线。",
+    "types": [
+      "beauty_adjust"
+    ],
+    "changedLayers": [
+      "visual"
+    ],
+    "scope": {
+      "kind": "full",
+      "intervals": []
+    },
+    "durationChange": false,
+    "outputDurationSeconds": 207,
+    "reason": "用户要求在现有成片上加强自然匀肤。",
+    "acceptanceCriteria": [
+      "人物皮肤更均匀，眼睛、眉毛、嘴唇、眼镜和背景保持清晰。",
+      "音频 elementary stream 与基线一致。"
+    ]
+  },
+  "render": {
+    "requestedStrategy": "auto",
+    "handleFrames": 25
+  },
+  "reuseRequests": [],
+  "deliverables": {
+    "video": true,
+    "covers": [],
+    "subtitles": []
+  },
+  "reviewReportPath": "./output/incremental-review.json"
+}

@@ -17,6 +17,68 @@ const scripts = path.join(skillDirectory, "scripts");
 const examples = path.join(skillDirectory, "examples");
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "kacha-tests-"));
 const results = [];
+const skipped = [];
+const discovered = [];
+const commandLine = process.argv.slice(2);
+
+function option(name, fallback = null) {
+  const index = commandLine.indexOf(name);
+  return index >= 0 ? commandLine[index + 1] : fallback;
+}
+
+const requestedSuites = new Set(
+  option("--suite", "all")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean),
+);
+const nameMatch = option("--match", "");
+const listOnly = commandLine.includes("--list");
+const knownSuites = new Set([
+  "all",
+  "core",
+  "proposal",
+  "cleanup",
+  "generated",
+  "visual",
+  "audio",
+  "sfx",
+  "qc",
+  "incremental",
+]);
+for (const suite of requestedSuites) {
+  if (!knownSuites.has(suite)) {
+    console.error(
+      `未知测试套件：${suite}；可用值：${[...knownSuites].join(", ")}`,
+    );
+    process.exit(2);
+  }
+}
+
+function inferSuite(name) {
+  if (/incremental|version delta|artifact index|project context/i.test(name)) {
+    return "incremental";
+  }
+  if (/cleanup/i.test(name)) return "cleanup";
+  if (/proposal/i.test(name)) return "proposal";
+  if (/generated|generation|reference assets/i.test(name)) return "generated";
+  if (/voice|audio|dialogue|loudness/i.test(name)) return "audio";
+  if (/SFX|sound effect/i.test(name)) return "sfx";
+  if (/technical QC|release gate|timing normalizer/i.test(name)) return "qc";
+  if (
+    /mask|beauty|text-behind|reframe|information card|visual design|cropped head/i
+      .test(name)
+  ) {
+    return "visual";
+  }
+  return "core";
+}
+
+function shouldRun(name, suite) {
+  if (listOnly) return false;
+  if (!requestedSuites.has("all") && !requestedSuites.has(suite)) return false;
+  return !nameMatch || name.toLowerCase().includes(nameMatch.toLowerCase());
+}
 
 function writeJson(file, value) {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
@@ -55,21 +117,29 @@ function localDesignPreflight(name) {
   };
 }
 
-async function test(name, callback) {
+async function test(name, callback, explicitSuite = null) {
+  const suite = explicitSuite ?? inferSuite(name);
+  discovered.push({ name, suite });
+  if (!shouldRun(name, suite)) {
+    skipped.push({ name, suite });
+    return;
+  }
   try {
     await callback();
-    results.push({ name, status: "pass" });
-    console.log(`PASS ${name}`);
+    results.push({ name, suite, status: "pass" });
+    console.log(`PASS [${suite}] ${name}`);
   } catch (error) {
-    results.push({ name, status: "fail", error: error.message });
-    console.error(`FAIL ${name}\n${error.message}`);
+    results.push({ name, suite, status: "fail", error: error.message });
+    console.error(`FAIL [${suite}] ${name}\n${error.message}`);
   }
 }
 
 const sourceFile = path.join(temporary, "source-input.txt");
 fs.writeFileSync(sourceFile, "immutable source fixture\n");
+let validProposalFixture = null;
 
-await test("proposal executable source, hash and authorization pass", () => {
+function ensureValidProposalFixture() {
+  if (validProposalFixture) return validProposalFixture;
   const proposal = readJson(path.join(examples, "edit-proposal.json"));
   proposal.taskPath = "source_edit";
   proposal.authorization = {
@@ -88,14 +158,54 @@ await test("proposal executable source, hash and authorization pass", () => {
     probedAt: new Date().toISOString(),
     sha256: sha256File(sourceFile),
   }];
-  proposal.approvedScope = ["local source edit and QC", "no upload", "no paid generation"];
-  const file = path.join(temporary, "proposal-valid.json");
-  writeJson(file, proposal);
-  execute(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
+  proposal.creativeLock.sourceWidth = 2160;
+  proposal.creativeLock.sourceHeight = 3840;
+  proposal.creativeLock.outputWidth = 2160;
+  proposal.creativeLock.outputHeight = 3840;
+  proposal.approvedScope = [
+    "local source edit and QC",
+    "no upload",
+    "no paid generation",
+  ];
+  validProposalFixture = path.join(temporary, "proposal-valid.json");
+  writeJson(validProposalFixture, proposal);
+  return validProposalFixture;
+}
+
+await test("reference router loads only task-relevant context", () => {
+  const result = execute(process.execPath, [
+    path.join(scripts, "route_references.mjs"),
+    "--task", "local_optimization",
+    "--modules", "audio,beauty,covers",
+  ]);
+  const report = JSON.parse(result.stdout);
+  const files = new Set(report.files.map((item) => item.path));
+  for (const required of [
+    "SKILL.md",
+    "references/incremental-workflow.md",
+    "references/audio.md",
+    "references/visuals-masks.md",
+    "references/subtitles-covers-brand.md",
+  ]) {
+    if (!files.has(required)) throw new Error(`missing routed reference ${required}`);
+  }
+  if (
+    files.has("references/project-workflow.md")
+    || files.has("references/generated-media-assets.md")
+  ) {
+    throw new Error("local optimization loaded unrelated full-workflow context");
+  }
+});
+
+await test("proposal executable source, hash and authorization pass", () => {
+  execute(process.execPath, [
+    path.join(scripts, "validate_edit_proposal.mjs"),
+    ensureValidProposalFixture(),
+  ]);
 });
 
 await test("proposal rejects invalid stage status", () => {
-  const proposal = readJson(path.join(temporary, "proposal-valid.json"));
+  const proposal = readJson(ensureValidProposalFixture());
   proposal.executionFlow[0].status = "banana";
   const file = path.join(temporary, "proposal-bad-status.json");
   writeJson(file, proposal);
@@ -103,7 +213,7 @@ await test("proposal rejects invalid stage status", () => {
 });
 
 await test("proposal rejects task and authorization mismatch", () => {
-  const proposal = readJson(path.join(temporary, "proposal-valid.json"));
+  const proposal = readJson(ensureValidProposalFixture());
   proposal.taskPath = "proposal_review";
   const file = path.join(temporary, "proposal-bad-auth.json");
   writeJson(file, proposal);
@@ -111,7 +221,7 @@ await test("proposal rejects task and authorization mismatch", () => {
 });
 
 await test("proposal rejects missing executable source", () => {
-  const proposal = readJson(path.join(temporary, "proposal-valid.json"));
+  const proposal = readJson(ensureValidProposalFixture());
   proposal.sourceInventory[0].path = path.join(temporary, "missing.mov");
   const file = path.join(temporary, "proposal-missing-source.json");
   writeJson(file, proposal);
@@ -119,11 +229,219 @@ await test("proposal rejects missing executable source", () => {
 });
 
 await test("proposal rejects an output ratio outside the creative lock", () => {
-  const proposal = readJson(path.join(temporary, "proposal-valid.json"));
+  const proposal = readJson(ensureValidProposalFixture());
   proposal.creativeLock.outputAspectRatio = "16:9";
   const file = path.join(temporary, "proposal-bad-creative-lock.json");
   writeJson(file, proposal);
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
+});
+
+await test("proposal rejects unrequested source geometry changes", () => {
+  const proposal = readJson(ensureValidProposalFixture());
+  proposal.creativeLock.outputWidth = 1080;
+  proposal.creativeLock.outputHeight = 1920;
+  const file = path.join(temporary, "proposal-unrequested-geometry-change.json");
+  writeJson(file, proposal);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
+});
+
+await test("proposal accepts an explicitly authorized geometry change", () => {
+  const proposal = readJson(ensureValidProposalFixture());
+  proposal.goal.videoAspectRatios = ["16:9"];
+  proposal.creativeLock.outputGeometryUserSpecified = true;
+  proposal.creativeLock.preserveSourceDimensions = false;
+  proposal.creativeLock.preserveSourceAspectRatio = false;
+  proposal.creativeLock.outputWidth = 3840;
+  proposal.creativeLock.outputHeight = 2160;
+  proposal.creativeLock.outputAspectRatio = "16:9";
+  proposal.creativeLock.outputGeometryAuthorizationEvidence =
+    "test user explicitly requested 3840x2160 16:9";
+  const file = path.join(temporary, "proposal-authorized-geometry-change.json");
+  writeJson(file, proposal);
+  execute(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
+});
+
+await test("proposal rejects spoken-word processing without source separation", () => {
+  const proposal = readJson(ensureValidProposalFixture());
+  proposal.planModules.dialogueAudio.sourceSeparation.required = false;
+  proposal.planModules.dialogueAudio.sourceSeparation.mixResidualIntoFinal = true;
+  const file = path.join(temporary, "proposal-no-dialogue-separation.json");
+  writeJson(file, proposal);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
+});
+
+await test("proposal rejects a detected series missing the video mark", () => {
+  const proposal = readJson(ensureValidProposalFixture());
+  proposal.seriesIdentity.videoMark.enabled = false;
+  const file = path.join(temporary, "proposal-series-video-mark-missing.json");
+  writeJson(file, proposal);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
+});
+
+await test("proposal rejects an undetermined series identity before execution", () => {
+  const proposal = readJson(ensureValidProposalFixture());
+  proposal.seriesIdentity.status = "undetermined";
+  proposal.seriesIdentity.videoMark.enabled = false;
+  proposal.seriesIdentity.coverMark.enabled = false;
+  const file = path.join(temporary, "proposal-series-undetermined.json");
+  writeJson(file, proposal);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
+});
+
+await test("routine cleanup dry-run keeps fast regenerable cache", () => {
+  const root = path.join(temporary, "cleanup-routine");
+  const cache = path.join(root, "work", "render-scratch");
+  fs.mkdirSync(cache, { recursive: true });
+  fs.mkdirSync(path.join(root, "source"), { recursive: true });
+  fs.mkdirSync(path.join(root, "output"), { recursive: true });
+  fs.writeFileSync(path.join(cache, "chunk.bin"), "temporary render chunk");
+  fs.writeFileSync(path.join(root, "source", "original.mov"), "protected source");
+  fs.writeFileSync(path.join(root, "output", "final.mov"), "protected final");
+  const plan = {
+    schemaVersion: "1.0",
+    projectRoot: root,
+    mode: "routine",
+    authorization: {
+      routineCleanupAllowed: true,
+      finalCleanupConfirmed: false,
+      noFurtherEdits: false,
+      evidence: "test routine cleanup",
+      confirmedAt: "not_applicable",
+    },
+    protectedPaths: ["source", "output/final.mov"],
+    candidates: [{
+      path: "work/render-scratch",
+      category: "render_scratch",
+      reproducible: true,
+      requiredForIteration: false,
+      userNeeds: false,
+      regeneration: {
+        verified: true,
+        speed: "fast",
+        estimatedSeconds: 10,
+        method: "rerender test chunk",
+      },
+      finalDispositionApproved: false,
+      reason: "test cache is fast to rebuild",
+    }],
+    reportPath: "qc/cleanup-report.json",
+  };
+  const file = path.join(temporary, "cleanup-routine.json");
+  writeJson(file, plan);
+  execute(process.execPath, [path.join(scripts, "cleanup_project.mjs"), file]);
+  if (!fs.existsSync(cache)) throw new Error("dry-run unexpectedly deleted cache");
+  const report = readJson(path.join(root, "qc", "cleanup-report.json"));
+  if (report.status !== "dry_run" || report.totals.bytesPlanned <= 0) {
+    throw new Error("dry-run report is incomplete");
+  }
+});
+
+await test("routine cleanup applies only the approved cache list", () => {
+  const root = path.join(temporary, "cleanup-routine");
+  const planFile = path.join(temporary, "cleanup-routine.json");
+  execute(process.execPath, [
+    path.join(scripts, "cleanup_project.mjs"),
+    planFile,
+    "--apply",
+  ]);
+  if (fs.existsSync(path.join(root, "work", "render-scratch"))) {
+    throw new Error("approved cache still exists after cleanup");
+  }
+  for (const protectedPath of [
+    path.join(root, "source", "original.mov"),
+    path.join(root, "output", "final.mov"),
+  ]) {
+    if (!fs.existsSync(protectedPath)) {
+      throw new Error(`protected path was removed: ${protectedPath}`);
+    }
+  }
+});
+
+await test("routine cleanup rejects user-needed or slow-to-regenerate cache", () => {
+  const root = path.join(temporary, "cleanup-routine-rejected");
+  fs.mkdirSync(path.join(root, "work", "mask-cache"), { recursive: true });
+  const plan = {
+    schemaVersion: "1.0",
+    projectRoot: root,
+    mode: "routine",
+    authorization: {
+      routineCleanupAllowed: true,
+      finalCleanupConfirmed: false,
+      noFurtherEdits: false,
+      evidence: "test rejection",
+      confirmedAt: "not_applicable",
+    },
+    protectedPaths: ["protected"],
+    candidates: [{
+      path: "work/mask-cache",
+      category: "cache",
+      reproducible: true,
+      requiredForIteration: false,
+      userNeeds: true,
+      regeneration: {
+        verified: true,
+        speed: "slow",
+        estimatedSeconds: 3600,
+        method: "rerun expensive mask generation",
+      },
+      finalDispositionApproved: false,
+      reason: "must be retained",
+    }],
+    reportPath: "qc/cleanup-report.json",
+  };
+  const file = path.join(temporary, "cleanup-routine-rejected.json");
+  writeJson(file, plan);
+  expectFailure(process.execPath, [path.join(scripts, "cleanup_project.mjs"), file, "--apply"]);
+  if (!fs.existsSync(path.join(root, "work", "mask-cache"))) {
+    throw new Error("rejected cache was deleted");
+  }
+});
+
+await test("final cleanup requires explicit no-more-edits confirmation", () => {
+  const root = path.join(temporary, "cleanup-final");
+  fs.mkdirSync(path.join(root, "work", "proxy"), { recursive: true });
+  fs.writeFileSync(path.join(root, "work", "proxy", "proxy.mov"), "proxy");
+  const plan = {
+    schemaVersion: "1.0",
+    projectRoot: root,
+    mode: "final",
+    authorization: {
+      routineCleanupAllowed: true,
+      finalCleanupConfirmed: false,
+      noFurtherEdits: false,
+      evidence: "",
+      confirmedAt: "",
+    },
+    protectedPaths: ["output/final.mov"],
+    candidates: [{
+      path: "work/proxy",
+      category: "proxy",
+      reproducible: true,
+      requiredForIteration: true,
+      userNeeds: false,
+      regeneration: {
+        verified: true,
+        speed: "slow",
+        estimatedSeconds: 900,
+        method: "regenerate proxy from protected source",
+      },
+      finalDispositionApproved: true,
+      reason: "final-only heavy intermediate",
+    }],
+    reportPath: "qc/cleanup-report.json",
+  };
+  const file = path.join(temporary, "cleanup-final.json");
+  writeJson(file, plan);
+  expectFailure(process.execPath, [path.join(scripts, "cleanup_project.mjs"), file, "--apply"]);
+  plan.authorization.finalCleanupConfirmed = true;
+  plan.authorization.noFurtherEdits = true;
+  plan.authorization.evidence = "user explicitly confirmed project completion";
+  plan.authorization.confirmedAt = new Date().toISOString();
+  writeJson(file, plan);
+  execute(process.execPath, [path.join(scripts, "cleanup_project.mjs"), file, "--apply"]);
+  if (fs.existsSync(path.join(root, "work", "proxy"))) {
+    throw new Error("final-only proxy still exists after confirmed cleanup");
+  }
 });
 
 await test("edit plan allows same scale for a different subject", () => {
@@ -370,30 +688,134 @@ const baseVideo = path.join(temporary, "base.mov");
 const shortMask = path.join(temporary, "mask-short.mkv");
 const exactMask = path.join(temporary, "mask-exact.mkv");
 const exactText = path.join(temporary, "text-exact.mov");
-execute("ffmpeg", [
-  "-hide_banner", "-loglevel", "error", "-y",
-  "-f", "lavfi", "-i", "testsrc2=s=320x180:d=2:r=25",
-  "-f", "lavfi", "-i", "sine=frequency=440:duration=2:sample_rate=48000",
-  "-c:v", "prores_ks", "-profile:v", "3", "-pix_fmt", "yuv422p10le",
-  "-c:a", "pcm_s24le", baseVideo,
-]);
-execute("ffmpeg", [
-  "-hide_banner", "-loglevel", "error", "-y",
-  "-f", "lavfi", "-i", "color=c=white:s=320x180:d=1:r=25",
-  "-c:v", "ffv1", "-pix_fmt", "gray", shortMask,
-]);
-execute("ffmpeg", [
-  "-hide_banner", "-loglevel", "error", "-y",
-  "-f", "lavfi", "-i", "color=c=white:s=320x180:d=2:r=25",
-  "-c:v", "ffv1", "-pix_fmt", "gray", exactMask,
-]);
-execute("ffmpeg", [
-  "-hide_banner", "-loglevel", "error", "-y",
-  "-f", "lavfi", "-i", "color=c=red@0.7:s=320x180:d=2:r=25,format=rgba",
-  "-c:v", "qtrle", exactText,
-]);
+let mediaFixturesReady = false;
+function ensureMediaFixtures() {
+  if (mediaFixturesReady) return;
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "testsrc2=s=320x180:d=2:r=25",
+    "-f", "lavfi", "-i", "sine=frequency=440:duration=2:sample_rate=48000",
+    "-c:v", "prores_ks", "-profile:v", "3", "-pix_fmt", "yuv422p10le",
+    "-c:a", "pcm_s24le", baseVideo,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "color=c=white:s=320x180:d=1:r=25",
+    "-c:v", "ffv1", "-pix_fmt", "gray", shortMask,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "color=c=white:s=320x180:d=2:r=25",
+    "-c:v", "ffv1", "-pix_fmt", "gray", exactMask,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "color=c=red@0.7:s=320x180:d=2:r=25,format=rgba",
+    "-c:v", "qtrle", exactText,
+  ]);
+  mediaFixturesReady = true;
+}
+
+function initializeIncrementalFixture(name, options = {}) {
+  ensureMediaFixtures();
+  const root = path.join(temporary, `incremental-${name}`);
+  fs.mkdirSync(root, { recursive: true });
+  const args = [
+    path.join(scripts, "init_incremental_project.mjs"),
+    baseVideo,
+    "--project-id",
+    `incremental-${name}`,
+    "--output-dir",
+    root,
+  ];
+  if (options.delivery) args.push("--delivery", options.delivery);
+  if (options.coverRatios) args.push("--cover-ratios", options.coverRatios);
+  execute(process.execPath, args);
+  return {
+    root,
+    context: path.join(root, "project-context.json"),
+    index: path.join(root, "artifact-index.json"),
+    baseline: baseVideo,
+  };
+}
+
+function createIncrementalCase(
+  fixture,
+  {
+    versionId,
+    type,
+    intent = "candidate",
+    strategy = "auto",
+    outputVideo = null,
+    extraDeltaArgs = [],
+  },
+) {
+  const delta = path.join(fixture.root, `${versionId}-delta.json`);
+  const project = path.join(fixture.root, `${versionId}-project.json`);
+  const deltaArgs = [
+    path.join(scripts, "create_version_delta.mjs"),
+    fixture.context,
+    "--write",
+    delta,
+    "--new-version",
+    versionId,
+    "--type",
+    type,
+    "--intent",
+    intent,
+    "--strategy",
+    strategy,
+    ...extraDeltaArgs,
+  ];
+  if (outputVideo) deltaArgs.push("--output-video", outputVideo);
+  execute(process.execPath, deltaArgs);
+  execute(process.execPath, [
+    path.join(scripts, "create_incremental_manifest.mjs"),
+    fixture.context,
+    delta,
+    fixture.index,
+    "--output",
+    project,
+  ]);
+  return {
+    ...fixture,
+    versionId,
+    delta,
+    project,
+    outputVideo,
+    plan: path.join(fixture.root, "output", "incremental-plan.json"),
+    qc: path.join(fixture.root, "output", "delta-qc.json"),
+    review: path.join(fixture.root, "output", "incremental-review.json"),
+  };
+}
+
+function renderVisualOnlyCandidate(base, output) {
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-i", base,
+    "-map", "0:v:0", "-map", "0:a:0",
+    "-vf", "eq=brightness=0.015:saturation=1.01",
+    "-c:v", "prores_ks", "-profile:v", "3", "-pix_fmt", "yuv422p10le",
+    "-c:a", "copy",
+    output,
+  ]);
+}
+
+function approveIncrementalReview(reviewFile, status) {
+  const review = readJson(reviewFile);
+  review.status = status;
+  review.reviewedAt = new Date().toISOString();
+  review.reviewer = "synthetic incremental regression";
+  review.limitations = ["none"];
+  for (const item of Object.values(review.manualChecks)) {
+    item.status = "pass";
+    item.evidence = ["synthetic review evidence"];
+  }
+  writeJson(reviewFile, review);
+}
 
 await test("mask effect rejects shorter mask instead of repeating last frame", () => {
+  ensureMediaFixtures();
   expectFailure(path.join(scripts, "apply_mask_effect.sh"), [
     baseVideo,
     shortMask,
@@ -403,6 +825,7 @@ await test("mask effect rejects shorter mask instead of repeating last frame", (
 });
 
 await test("text-behind rejects shorter layer instead of truncating base", () => {
+  ensureMediaFixtures();
   expectFailure(path.join(scripts, "compose_text_behind_person.sh"), [
     baseVideo,
     exactMask,
@@ -412,6 +835,7 @@ await test("text-behind rejects shorter layer instead of truncating base", () =>
 });
 
 await test("aligned mask and text pipelines preserve base duration", () => {
+  ensureMediaFixtures();
   const masked = path.join(temporary, "masked.mov");
   const composed = path.join(temporary, "composed.mov");
   execute(path.join(scripts, "apply_mask_effect.sh"), [
@@ -436,6 +860,7 @@ await test("aligned mask and text pipelines preserve base duration", () => {
 });
 
 await test("beauty modes preserve duration and produce distinct outputs", () => {
+  ensureMediaFixtures();
   const light = path.join(temporary, "beauty-light.mov");
   const plus = path.join(temporary, "beauty-plus.mov");
   execute(path.join(scripts, "apply_mask_effect.sh"), [
@@ -462,6 +887,7 @@ await test("beauty modes preserve duration and produce distinct outputs", () => 
 });
 
 await test("mask PNG manifest builds an aligned lossless video", () => {
+  ensureMediaFixtures();
   const maskDirectory = path.join(temporary, "mask-frames");
   fs.mkdirSync(maskDirectory);
   const first = path.join(maskDirectory, "person_000001.png");
@@ -506,6 +932,7 @@ await test("mask PNG manifest builds an aligned lossless video", () => {
 });
 
 await test("skin mask PNG manifest builds an aligned lossless video", () => {
+  ensureMediaFixtures();
   const maskDirectory = path.join(temporary, "skin-mask-frames");
   fs.mkdirSync(maskDirectory);
   const first = path.join(maskDirectory, "skin_000001.png");
@@ -543,6 +970,278 @@ await test("skin mask PNG manifest builds an aligned lossless video", () => {
   }
 });
 
+await test("incremental v3 templates validate without loading project media", () => {
+  execute(process.execPath, [
+    path.join(scripts, "validate_project_context.mjs"),
+    path.join(examples, "project-context.json"),
+    "--template",
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "validate_artifact_index.mjs"),
+    path.join(examples, "artifact-index.json"),
+    "--template",
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "validate_version_delta.mjs"),
+    path.join(examples, "version-delta.json"),
+    "--template",
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "validate_incremental_project.mjs"),
+    path.join(examples, "incremental-project.json"),
+    "--template",
+  ]);
+});
+
+await test("incremental visual-only QC proves inherited audio and candidate gate", () => {
+  const fixture = initializeIncrementalFixture("visual-only");
+  const output = path.join(fixture.root, "v2.mov");
+  const project = createIncrementalCase(fixture, {
+    versionId: "v2",
+    type: "beauty_adjust",
+    outputVideo: output,
+  });
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "gate-plan", project.project]);
+  const plan = readJson(project.plan);
+  if (
+    plan.impact.level !== "L1"
+    || plan.renderPlan.strategy !== "layer_rebuild"
+    || !plan.qcProfile.inheritedChecks.includes("audio_elementary_stream_sha256")
+  ) {
+    throw new Error(`unexpected visual-only plan: ${JSON.stringify(plan)}`);
+  }
+  renderVisualOnlyCandidate(fixture.baseline, output);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "qc", project.project]);
+  const qc = readJson(project.qc);
+  if (
+    !["pass", "pass_with_review"].includes(qc.status)
+    || qc.inheritedEvidence.find((item) => item.layer === "audio")?.inherited !== true
+  ) {
+    throw new Error("visual-only QC did not prove inherited audio");
+  }
+  execute(process.execPath, [
+    path.join(scripts, "create_incremental_review.mjs"),
+    project.project,
+  ]);
+  approveIncrementalReview(project.review, "approved_candidate");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "gate-candidate",
+    project.project,
+  ]);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "gate-release",
+    project.project,
+  ]);
+  const changedIndex = readJson(project.index);
+  changedIndex.generatedAt = new Date(Date.now() + 1000).toISOString();
+  writeJson(project.index, changedIndex);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "gate-candidate",
+    project.project,
+  ]);
+});
+
+await test("incremental release candidate requires full manual evidence and full hashes", () => {
+  const fixture = initializeIncrementalFixture("release-candidate");
+  const output = path.join(fixture.root, "v2.mov");
+  const project = createIncrementalCase(fixture, {
+    versionId: "v2",
+    type: "color_adjust",
+    intent: "release_candidate",
+    outputVideo: output,
+  });
+  renderVisualOnlyCandidate(fixture.baseline, output);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "qc", project.project]);
+  execute(process.execPath, [
+    path.join(scripts, "create_incremental_review.mjs"),
+    project.project,
+  ]);
+  const review = readJson(project.review);
+  if (Object.keys(review.manualChecks).length !== 11) {
+    throw new Error("release candidate did not require the full manual review set");
+  }
+  approveIncrementalReview(project.review, "approved_local_release");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "gate-release",
+    project.project,
+  ]);
+});
+
+await test("incremental audio-only QC proves inherited video without lowering geometry", () => {
+  const fixture = initializeIncrementalFixture("audio-only");
+  const output = path.join(fixture.root, "v2.mov");
+  const project = createIncrementalCase(fixture, {
+    versionId: "v2",
+    type: "dialogue_adjust",
+    outputVideo: output,
+  });
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-i", fixture.baseline,
+    "-map", "0:v:0", "-map", "0:a:0",
+    "-c:v", "copy",
+    "-af", "volume=-1dB",
+    "-c:a", "pcm_s24le",
+    output,
+  ]);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "qc", project.project]);
+  const plan = readJson(project.plan);
+  const qc = readJson(project.qc);
+  if (
+    plan.renderPlan.strategy !== "stream_copy_video"
+    || qc.inheritedEvidence.find((item) => item.layer === "video")?.inherited !== true
+    || qc.output.width !== 320
+    || qc.output.height !== 180
+  ) {
+    throw new Error("audio-only delta failed stream-copy video proof");
+  }
+});
+
+await test("incremental cover-only change skips video render and checks exact ratio", () => {
+  const fixture = initializeIncrementalFixture("cover-only", {
+    delivery: "video,covers",
+    coverRatios: "3:4",
+  });
+  const cover = path.join(fixture.root, "cover-3x4.png");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "color=c=#f3d6a4:s=300x400:d=0.04:r=25",
+    "-frames:v", "1",
+    cover,
+  ]);
+  const project = createIncrementalCase(fixture, {
+    versionId: "v2",
+    type: "cover_only",
+    extraDeltaArgs: ["--cover", `3:4=${cover}`],
+  });
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "qc", project.project]);
+  const plan = readJson(project.plan);
+  const qc = readJson(project.qc);
+  if (
+    plan.renderPlan.strategy !== "no_video_render"
+    || qc.output !== null
+    || qc.deliverableEvidence[0]?.type !== "cover"
+  ) {
+    throw new Error("cover-only delta unexpectedly required a video render");
+  }
+});
+
+await test("incremental structural change cannot request a stream-copy shortcut", () => {
+  const fixture = initializeIncrementalFixture("structural");
+  const output = path.join(fixture.root, "v2.mov");
+  const project = createIncrementalCase(fixture, {
+    versionId: "v2",
+    type: "remove_interval",
+    strategy: "stream_copy_audio",
+    outputVideo: output,
+    extraDeltaArgs: [
+      "--duration-change",
+      "--output-duration",
+      "1.5",
+    ],
+  });
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "gate-plan",
+    project.project,
+  ]);
+});
+
+await test("incremental cache reuse requires exact fingerprint and cannot bypass invalidation", () => {
+  const fixture = initializeIncrementalFixture("cache-reuse");
+  const cacheFile = path.join(fixture.root, "person-mask-cache.bin");
+  fs.writeFileSync(cacheFile, "deterministic reusable person mask cache");
+  execute(process.execPath, [
+    path.join(scripts, "register_artifact.mjs"),
+    fixture.index,
+    "--id", "person-mask-v1",
+    "--type", "mask_cache",
+    "--version", "v1",
+    "--path", cacheFile,
+    "--regeneration-verified",
+    "--regeneration-speed", "fast",
+    "--regeneration-seconds", "2",
+  ]);
+  const fingerprint = readJson(fixture.index).artifacts
+    .find((item) => item.id === "person-mask-v1").fingerprint;
+  const validOutput = path.join(fixture.root, "v2.mov");
+  const valid = createIncrementalCase(fixture, {
+    versionId: "v2",
+    type: "beauty_adjust",
+    outputVideo: validOutput,
+    extraDeltaArgs: ["--reuse", `person-mask-v1=${fingerprint}`],
+  });
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "gate-plan",
+    valid.project,
+  ]);
+  if (!readJson(valid.plan).artifactPlan.explicitReuse.includes("person-mask-v1")) {
+    throw new Error("exact reusable cache was not accepted");
+  }
+
+  const mismatch = createIncrementalCase(fixture, {
+    versionId: "v3",
+    type: "beauty_adjust",
+    outputVideo: path.join(fixture.root, "v3.mov"),
+    extraDeltaArgs: ["--reuse", `person-mask-v1=${"0".repeat(64)}`],
+  });
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "gate-plan",
+    mismatch.project,
+  ]);
+});
+
+await test("incremental cleanup plan keeps slow or human-calibrated artifacts", () => {
+  const fixture = initializeIncrementalFixture("cleanup");
+  const fastCache = path.join(fixture.root, "fast-cache.bin");
+  const slowCache = path.join(fixture.root, "slow-cache.bin");
+  fs.writeFileSync(fastCache, "fast cache");
+  fs.writeFileSync(slowCache, "slow calibrated cache");
+  execute(process.execPath, [
+    path.join(scripts, "register_artifact.mjs"),
+    fixture.index,
+    "--id", "fast-cache",
+    "--type", "cache",
+    "--version", "v1",
+    "--path", fastCache,
+    "--regeneration-verified",
+    "--regeneration-speed", "fast",
+    "--regeneration-seconds", "3",
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "register_artifact.mjs"),
+    fixture.index,
+    "--id", "slow-cache",
+    "--type", "cache",
+    "--version", "v1",
+    "--path", slowCache,
+    "--human-calibrated",
+    "--regeneration-speed", "slow",
+    "--regeneration-seconds", "120",
+  ]);
+  const cleanup = path.join(fixture.root, "cleanup-plan.json");
+  execute(process.execPath, [
+    path.join(scripts, "generate_cleanup_plan.mjs"),
+    fixture.context,
+    fixture.index,
+    "--output",
+    cleanup,
+  ]);
+  const candidates = readJson(cleanup).candidates.map((item) => item.path);
+  if (
+    !candidates.includes(path.basename(fastCache))
+    || candidates.includes(path.basename(slowCache))
+  ) {
+    throw new Error(`unexpected cleanup candidates: ${JSON.stringify(candidates)}`);
+  }
+});
+
 await test("bundled original SFX pass hash, format and distribution checks", () => {
   const result = execute(process.execPath, [
     path.join(scripts, "validate_sfx_library.mjs"),
@@ -573,6 +1272,7 @@ await test("local change template passes and rejects an unsafe overwrite", () =>
 });
 
 await test("MOV timing normalizer stream-copies and checks both FPS values", () => {
+  ensureMediaFixtures();
   const output = path.join(temporary, "timing-normalized.mov");
   execute(process.execPath, [
     path.join(scripts, "normalize_mov_timing.mjs"),
@@ -626,6 +1326,7 @@ await test("voice enhancer preserves distinct stereo channels by default", () =>
 });
 
 await test("technical QC decodes media and writes a report", () => {
+  ensureMediaFixtures();
   const project = {
     schemaVersion: "2.0",
     projectId: "synthetic-qc",
@@ -659,6 +1360,7 @@ await test("technical QC decodes media and writes a report", () => {
 });
 
 await test("release gate verifies hashes, cover ratios and manual evidence", () => {
+  ensureMediaFixtures();
   const outputDirectory = path.join(temporary, "release-output");
   fs.mkdirSync(outputDirectory);
   const cover34 = path.join(outputDirectory, "cover-3x4.png");
@@ -684,7 +1386,7 @@ await test("release gate verifies hashes, cover ratios and manual evidence", () 
     schemaVersion: "2.0",
     projectId: "synthetic-release",
     plans: {
-      proposal: path.join(temporary, "proposal-valid.json"),
+      proposal: ensureValidProposalFixture(),
       editPlan: path.join(examples, "edit-plan.json"),
       generatedShotPlans: [],
     },
@@ -751,12 +1453,29 @@ await test("release gate verifies hashes, cover ratios and manual evidence", () 
 });
 
 try {
+  if (listOnly) {
+    console.log(
+      JSON.stringify(
+        {
+          status: "listed",
+          tests: discovered,
+        },
+        null,
+        2,
+      ),
+    );
+    process.exitCode = 0;
+  } else {
   const failed = results.filter((result) => result.status === "fail");
   console.log(
     JSON.stringify(
       {
         status: failed.length === 0 ? "pass" : "fail",
+        suites: [...requestedSuites],
+        match: nameMatch || null,
+        discovered: discovered.length,
         tests: results.length,
+        skipped: skipped.length,
         passed: results.length - failed.length,
         failed,
       },
@@ -765,6 +1484,7 @@ try {
     ),
   );
   process.exitCode = failed.length === 0 ? 0 : 1;
+  }
 } finally {
   fs.rmSync(temporary, { recursive: true, force: true });
 }

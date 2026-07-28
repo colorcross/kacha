@@ -1,274 +1,197 @@
 ---
 name: kacha
 description: |
-  “咔嚓”本地专业视频策划、精剪、包装与验收 Skill。适用于先制定并验证详细剪辑方案，再处理真人口播、文稿内容视频、字幕、音频、BGM/SFX、插镜、画中画、美颜、人物/局部蒙版、主体感知重构图、调色、Seedance/MiniMax 生成镜头、封面及完整 QC。强调语义完整、音画同切、切镜有信息/情绪/视角依据、效果有理论合同、生成与素材可追溯、能力按项目探测、自动技术检查和人工审片共同放行。默认本地处理，不上传、不发布。
+  “咔嚓”本地专业视频策划、精剪、包装、增量返工与验收 Skill。用于真人口播、字幕、音频、BGM/SFX、插镜、画中画、美颜、蒙版、信息图、生成镜头、封面和完整 QC。先锁定内容与输出合同，再按变化范围渲染和验收；默认本地处理，不上传、不发布。
 ---
 
 # 咔嚓
 
-把视频剪得更清楚、更顺、更像同一支作品。先解决内容、连接和同步，再做包装；不用转场或特效掩盖错误切点。
+先把内容、切点和同步做对，再做视觉包装。首剪使用完整工作流；已有基线的
+局部返工使用增量工作流，只重做受影响层，但最终发布仍必须完整验收。
 
-## Agent 兼容性
-
-本 Skill 遵循 Agent Skills 的 `SKILL.md` 结构，同时支持 Codex 和 Claude Code。两者共用本文件、`references/`、`examples/`、`scripts/` 和测试；`agents/openai.yaml` 只提供 OpenAI/Codex 展示元数据，不改变核心工作流，也不影响 Claude Code 加载。
-
-## 必须先读
-
-主代理必须完整读完本文件，再按任务读取对应 reference：
-
-- 所有整支剪辑、跨版本重做或内容生成：
-  `references/project-workflow.md`、`references/editing-theory.md`、`references/qc-release.md`；复盘生产缺陷或修改流程门禁时再读 `docs/PRODUCTION_HARDENING.md`
-- 人声、BGM、SFX、响度或同步：
-  `references/audio.md`；使用本地音效库时再读 `references/sfx-library.md`
-- 插镜、画中画、美颜、蒙版、人物后文字、重构图、调色：
-  `references/visuals-masks.md`
-- 信息卡、流程图、弹窗、风格化转场、人物后文字或其他蒙版：
-  还必须读 `references/visual-design-preflight.md`
-- 字幕、封面、品牌、系列名、开头和结尾：
-  `references/subtitles-covers-brand.md`
-- MiniMax、Seedance、网络素材、图标或 Lottie：
-  `references/generated-media-assets.md`
-
-不要只读主文件后凭印象执行条件模块。reference 中的具体合同优先于简要说明。
-
-## 任务路径
+## 先选路径
 
 只选一条主路径：
 
-1. `proposal_review`：只给方案或 review；未获授权不修改文件。
-2. `source_edit`：精剪现有音视频。
+1. `proposal_review`：只分析或给方案；不改文件。
+2. `source_edit`：从原素材完成整支精剪。
 3. `content_generation`：从文稿、书籍、笔记或主题生成内容。
-4. `local_optimization`：只改用户指定的字幕、声音、封面、插镜或版本。
+4. `local_optimization`：在已批准基线上局部返工。
 
-双语、书籍编号、AI 镜头、第三方素材、专用人像模型、归档、上传和发布都是按需模块，不自动启用。
+首剪、结构重排、改时长、改画幅或跨版本重做走 v2 完整流程。已有基线上的
+字幕、声音、封面、美颜、调色、插镜或局部效果调整优先走 v3 增量流程。
 
-## 不可降低的原则
+## 按需读取
 
-- 原始素材只读；输出进入独立版本目录，不静默覆盖正式成片。
-- 句子、数字、专名、否定、条件、因果和结论必须完整。
-- 音频和视频使用同一组帧边界、时间线和 PTS；不能分别剪完再对齐。
-- 每个切点至少由信息、情绪或视角变化中的一项驱动。
-- 同一主体、同一连续语义段的相邻镜头必须形成手机尺寸可感知的景别变化；不同主体或不同视角可以保持相同景别。
-- 每个切点都要显式选择干净切、动作切、J/L-cut、声音桥或有连续性依据的转场；随机缩放、模板擦除和无 handle 的转场不进入正式时间线。
-- 有人物的普通镜头在切前、切后都必须保留完整头发和可见头顶余量；只有明确设计的特写/大特写可以有意裁切头部。
-- 每个蒙版、SFX、字幕强调、转场、画中画、插镜和运镜都要有触发条件、机制、简单替代方案、失败条件和 QC 证据。
-- 信息卡、流程图和弹窗要么全屏替换 A-roll，要么经过头像安全区几何检查；禁止半透明模块直接压在人物头脸上。
-- 人物后文字必须提交字体、字号比例、位置、颜色、对比度、可见面积、语义分组和音效同步设计；不能只写“放大加粗”。
-- 高影响视觉模块必须先通过展示效果、动效、音效和实现交接的设计预检，再进入正式时间线；复杂、多状态、多画幅或品牌级模块可条件使用 Figma，本地样式帧始终是可用回退。
-- 插镜同时满足对象、动作、状态、角色、时态和整片视觉风格。
-- 人声自然、清楚、不过响；BGM 克制；SFX 可感知但不盖人声。音效按动作、信息和运动功能建立整片调色板，禁止整片反复套用一个音效。
-- 真实文件、完整解码、自动技术 QC 和人工审片全部通过后，才能称为本地成片完成。
-- 上传、发布、付费生成、购买授权和不可逆操作必须在明确授权范围内。
+主代理必须完整读本文件，并按任务读取以下 reference；不要一次加载全部：
 
-## 先方案、后执行
+- 首剪/结构重做：`references/project-workflow.md`、
+  `references/editing-theory.md`、`references/qc-release.md`
+- 局部返工：`references/incremental-workflow.md`；涉及最终交付时再读
+  `references/qc-release.md`
+- 人声/BGM/SFX/同步：`references/audio.md`；本地音效库另读
+  `references/sfx-library.md`
+- 插镜/PIP/美颜/蒙版/人物后文字/调色：`references/visuals-masks.md`
+- 信息卡/流程图/弹窗/复杂动效：`references/visual-design-preflight.md`
+- 字幕/封面/品牌/系列：`references/subtitles-covers-brand.md`
+- MiniMax/Seedance/网络素材：`references/generated-media-assets.md`
+- 缓存与清理：`references/cleanup-retention.md`
+- 复盘生产缺陷或改门禁：`docs/PRODUCTION_HARDENING.md`
 
-除纯问答外，整支剪辑和跨版本重做必须先建立 `editProposal`，不能边试剪边临时决定结构。方案至少包含：
-
-- 真实输入清单、规格、哈希和诊断证据；
-- 受众、平台、语言、时长、视频画幅、封面画幅和输出格式；
-- 内容主问题、开头承诺、必要论点、回报点和结尾；
-- 具体保留、删除、重排和待核验项；
-- 切镜/景别、留存/节奏、画面、字幕、dialogue、人声后期、最终混音、调色、美颜/蒙版、生成媒体、封面、输出和 QC；
-- 授权、冻结范围、假设、风险回退、交付物和偏差。
-
-使用 v2 示例：
-
-- `examples/edit-proposal.json`
-- `examples/edit-plan.json`
-- `examples/project-manifest.json`
-- `examples/generated-shot-plan.json`
-- `examples/local-change-plan.json`
-- `examples/release-report.template.json`
-
-方案门禁：
+不确定应加载哪些文件时先运行：
 
 ```bash
-node scripts/kacha.mjs gate-plan PROJECT.json
+node scripts/route_references.mjs \
+  --task local_optimization --modules audio,beauty,covers
 ```
 
-`proposal_only` 到此停止。可执行方案会额外验证源文件存在、SHA-256、任务路径和授权模式，不接受占位路径或互相矛盾的授权。
+如果本机存在私有能力 reference，只有任务实际使用该能力时才读取；私有
+overlay 缺失或探测失败时必须失败或明确降级，不能悄悄换算法后声称等效。
 
-## v2 执行顺序
+## 不可降低的合同
 
-1. `inventory`
-2. `transcript_structure`
-3. `rough_cut`
-4. `dialogue_preprocess`
-5. `connection_qc`
-6. `fine_cut`
-7. `visual_packaging`（先过 `designPreflight`，再实施）
-8. `subtitles`
-9. `final_mix`
-10. `cover`
-11. `preview_render`
-12. `final_qc`
-13. `release_package`
+- 源素材只读；新版本独立输出，不覆盖基线。
+- 用户未明确要求时，视频保持源像素尺寸、宽高比、有效帧率和色彩合同。
+- 半句话、数字、专名、否定、条件、因果和结论不得被切断或改义。
+- 画面、dialogue、BGM、SFX、字幕共用同一组帧边界和 PTS。
+- 切镜必须由信息、情绪或视角变化驱动；同一主体相邻镜头形成可感知景别
+  变化，普通人物镜头不得切掉头顶。
+- 转场、字幕强调、SFX、插镜、PIP、蒙版和人物后文字都必须有触发理由、
+  最简替代、失败条件与 QC 证据；不能用特效掩盖错误切点。
+- 信息卡/流程图/弹窗要么全屏，要么避开人物头脸与字幕安全区；高影响模块
+  先做样式帧、进入/停稳/退出和声音设计。
+- 插镜同时匹配对象、动作、角色、状态、时态、方向和全片风格。
+- 含口播且需要音频处理时，先做人声/非人声分离；只有验收通过的 dialogue
+  stem 可进入降噪、美化和混音，residual 不回混。
+- SFX 按功能建立调色板并与事件逐一映射；禁止整片反复套一个声音。
+- 检测到系列时，视频和封面使用同一系列标识、层级和安全区。
+- 自动技术 QC、当前版本人工审片和对应门禁全部通过前，不能称为可发布成片。
+- 上传、发布、付费生成、购买授权与不可逆删除必须在明确授权内。
 
-音频拆成前期 dialogue 分离/清理和后期 final mix。`dialogue_preprocess` 默认先从粗剪后的原始音轨生成独立人声候选，验收通过后剔除非人声 residual，再做降噪和人声增强。BGM/SFX 必须等视觉时序冻结后完成，避免重复处理人声或让音效错位。
+## v2：首剪与结构重做
 
-执行前：
+先建立真实 `editProposal`，至少锁定：
+
+- 输入路径、媒体规格、哈希、只读状态和授权；
+- 平台、受众、语言、时长、输出几何、格式、系列身份和交付物；
+- 内容骨架、保留/删除/重排、切镜与连接策略；
+- dialogue、字幕、视觉、BGM/SFX、封面、生成媒体、fallback 和 QC。
+
+使用：
 
 ```bash
+node scripts/kacha.mjs gate-plan project-manifest.json
 scripts/capability_probe.sh --profile core --output capabilities.json
-node scripts/kacha.mjs gate-render PROJECT.json
+node scripts/kacha.mjs gate-render project-manifest.json
 ```
 
-项目使用蒙版、HDR、AI 视频或其他条件能力时，在能力探测中明确 `--profile` 或 `--require`。所需能力缺失时脚本返回非零状态，方案必须降级，不能只打印提示后继续。
+十三阶段为：`inventory → transcript_structure → rough_cut →
+dialogue_preprocess → connection_qc → fine_cut → visual_packaging →
+subtitles → final_mix → cover → preview_render → final_qc →
+release_package`。前一阶段没有证据，不得把后一阶段写成完成。
 
-`gate-render` 表示具备渲染条件，不是通用渲染器，也不表示已经产生视频。实际时间线可由项目现有 FFmpeg、NLE、HyperFrames、Remotion 或其他已验证引擎实现，但必须遵守同一项目合同。
+方案模板见 `examples/edit-proposal.json`、`examples/edit-plan.json` 和
+`examples/project-manifest.json`。具体合同以 `references/project-workflow.md`
+为准。
 
-## 核心检查
+## v3：增量返工
 
-### 切镜和效果
+第一次进入增量模式时初始化稳定 context 和 artifact index：
 
 ```bash
-node scripts/validate_edit_plan.mjs edit-plan.json
+node scripts/init_incremental_project.mjs BASE.mov \
+  --project-id PROJECT --output-dir PROJECT_DIR
 ```
 
-- timecode 与秒数会交叉验证；
-- 切点必须严格递增；
-- 同一主体相邻同景别被拒绝；
-- 不同主体相同景别不误杀；
-- 普通人物镜头裁掉头发、头顶余量不足或把非特写伪装成特写理由会被拒绝；
-- 每个切点缺少切法决策、连续性依据或风格化转场 handle 会被拒绝；
-- 信息卡/流程图/弹窗不满足全屏替换或头像安全区避让会被拒绝；
-- 人物后文字缺少字体、字号、布局、对比度、可见面积或 SFX 同步参数会被拒绝；
-- 信息模块、风格化转场和蒙版没有已批准设计预检会被拒绝；
-- 使用音效却没有整片 `sfxPlan`、事件映射或多样性审计会被拒绝；
-- 外部插镜、画中画、蒙版和生成镜头启用各自条件合同。
-
-### 局部优化
+每轮反馈只创建一个 `version-delta.json`，记录版本意图、变化类型、变化层、
+区间、验收条件和输出；冻结层由脚本推导，不复制整套旧方案：
 
 ```bash
-node scripts/validate_local_change_plan.mjs local-change-plan.json
+node scripts/create_version_delta.mjs PROJECT_DIR/project-context.json \
+  --write PROJECT_DIR/v2-delta.json --new-version v2 \
+  --type beauty_adjust --output-video PROJECT_DIR/v2.mov
+
+node scripts/create_incremental_manifest.mjs \
+  PROJECT_DIR/project-context.json PROJECT_DIR/v2-delta.json \
+  PROJECT_DIR/artifact-index.json --output PROJECT_DIR/v2-project.json
+
+node scripts/kacha.mjs gate-plan PROJECT_DIR/v2-project.json
+node scripts/kacha.mjs gate-render PROJECT_DIR/v2-project.json
 ```
 
-- 每项修改必须显式列出 `changedLayers` 与 `frozenLayers`；
-- 纯音效替换必须复用原视频流，禁止无意义重编码画面；
-- 完整删段必须让画面、dialogue、BGM、SFX 与字幕共用帧边界；
-- 字幕和临时元素要在新连接点前 1–4 帧退出；
-- 新版本必须重建 proposal、edit plan、project manifest、technical QC 与 release report，禁止继承旧版本身份和证据。
+影响级别由脚本推导，只能升级不能手工降级：
 
-### 本地音效库
+- `L0`：元数据/容器；
+- `L1`：单层变化；
+- `L2`：局部多层、切点或连接变化；
+- `L3`：结构、顺序、时长或几何变化。
+
+缓存复用必须同时匹配 artifact ID、内容指纹和依赖；显式复用请求不能绕过
+本轮失效规则。`preview` 只用于样例，`candidate` 用于返工验收，
+`release_candidate` 才能进入最终发布门禁。
+
+## 最小实现与验证闭环
+
+1. 先做最小代表性预览：样式帧、1–2 秒跟踪片段、含 handle 的连接点或
+   同源同响度音频 A/B。
+2. 用户反馈参数冻结后再渲染受影响层；冻结层优先 stream-copy 或复用已验证
+   artifact，禁止无意义重编码。
+3. 完整候选视频始终检查存在性、哈希、完整解码、几何、FPS、时长和
+   A/V 漂移。
+4. 只改画面时比较基线与候选的音频 elementary-stream SHA-256；只改音频
+   时比较视频流 SHA-256。哈希不一致就重新检查，不能继承旧结论。
+5. 变化层执行专项探测和人工检查；L2 检查全部连接点及前后 handle；
+   L3 执行完整重建与完整 QC。
 
 ```bash
-node scripts/validate_sfx_library.mjs \
-  "$KACHA_SFX_LIBRARY/manifest.json" \
-  --title "单击键盘"
+node scripts/kacha.mjs qc PROJECT_DIR/v2-project.json
+node scripts/create_incremental_review.mjs PROJECT_DIR/v2-project.json
+node scripts/kacha.mjs gate-candidate PROJECT_DIR/v2-project.json
 ```
 
-用户点名音效时按 title、asset ID 和哈希精确命中，不能用“听起来差不多”的素材替代。音频文件是否可用于成片和是否允许随公开仓库再分发必须分开判断。
-
-所有使用音效的 edit plan 还必须提供顶层 `sfxPlan`：候选调色板、逐事件映射、声音功能、同步目标、相对人声音量、重复策略和设备试听证据。4 个及以上事件至少使用 3 个不同音效，单个音效不得超过事件总数的 50%，同一音效不得连续使用超过两次；确属逐字打字等单一连续动作时记录 `patternException`，但不能把例外扩展到整片。
-
-### 蒙版
+最终版本必须把 intent 设为 `release_candidate`，完成十一项当前版本人工证据：
 
 ```bash
-scripts/generate_vision_masks.swift SOURCE.mov MASK_DIR SOURCE_FPS accurate
-node scripts/build_mask_video.mjs MASK_DIR/manifest.json person MASK_DIR/person.mkv
-node scripts/build_mask_video.mjs MASK_DIR/manifest.json face MASK_DIR/face.mkv
-node scripts/build_mask_video.mjs MASK_DIR/manifest.json skin MASK_DIR/skin.mkv
-scripts/apply_mask_effect.sh SOURCE.mov MASK_DIR/skin.mkv OUTPUT.mov beauty-light
-scripts/compose_text_behind_person.sh SOURCE.mov MASK_DIR/person.mkv TEXT.mov OUTPUT.mov
+node scripts/kacha.mjs gate-release PROJECT_DIR/final-project.json
 ```
 
-PNG 蒙版必须按 manifest 的 PTS 组装为无损视频。源、蒙版和文字层在时长、帧率或起始 PTS 上相差超过一帧时失败，禁止末帧复制和 `-shortest` 静默截短。皮肤蒙版保护眼睛、眉毛、嘴唇和眼镜附近；`beauty-plus` 仅在同源、同帧、同裁切 A/B 通过时启用，不做脸型几何重塑。
+自动报告中的 `pass_with_review` 不是全片通过；预览、候选、已渲染、自动 QC、
+本地完整 QC、已上传和已发布必须分别表述。
 
-### 人声
+## 缓存、指标与清理
+
+高价值返工资产（校准字幕、dialogue stem、蒙版/跟踪、设计预检、付费生成）
+进入 `artifact-index.json`。每轮可写运行指标：
 
 ```bash
-scripts/separate_dialogue.sh INPUT.wav SEPARATION_DIR
-
-scripts/enhance_voice.sh INPUT.wav OUTPUT.wav \
-  --preset natural --denoise light --channel-mode preserve
+node scripts/write_run_metrics.mjs PROJECT_DIR/v2-project.json \
+  --output PROJECT_DIR/output/run-metrics.json
 ```
 
-先运行人声分离，保留原始参考、独立人声候选、非人声 residual 和报告；只有同响度 A/B 无吞字、金属声、抽吸、呼吸断裂或明显语音漏入 residual 时，才把独立人声候选作为 dialogue stem，并在最终混音中排除 residual。分离失败或损伤人声时不得强行使用，必须回退原始参考并记录原因。
-
-人声增强脚本默认保留输入 dialogue stem 的声道和时长。不能对完整 voice/BGM/SFX 母带执行人声增强，也不能把真立体声无条件压成伪立体声。
-
-### 主体重构图
+清理只先生成 dry-run：
 
 ```bash
-node scripts/plan_subject_reframe.mjs manifest.json 9:16 reframe.json
+node scripts/generate_cleanup_plan.mjs \
+  PROJECT_DIR/project-context.json PROJECT_DIR/artifact-index.json \
+  --output PROJECT_DIR/cleanup-plan.json
+node scripts/cleanup_project.mjs PROJECT_DIR/cleanup-plan.json
 ```
 
-脚本锁定并关联主体，不逐帧追逐最大人脸。多人未指定主体、关联含糊、身份跳变或长时间丢失时，自动结果降级为手工关键帧或安全 fallback。
+例行清理只允许处理“用户不需要、当前无引用、已验证可快速重建”的产物。
+最终清理还要用户明确确认项目完成且不再修改。源素材、基线/最终成片、工程、
+方案、许可、QC/release 证据和批准 stem 始终保护。
 
-### AI 生成
+## 分层回归
+
+开发或修改 Skill 时先跑受影响套件，再跑全量：
 
 ```bash
-node scripts/validate_generated_shot_plan.mjs PLAN.json
-node scripts/validate_generated_shot_plan.mjs PLAN.json --for-execution
+node tests/run_tests.mjs --suite incremental
+node tests/run_tests.mjs --suite audio
+node tests/run_tests.mjs --suite visual
+node tests/run_tests.mjs
 ```
 
-默认检查真实参考文件和哈希、能力快照时效、model、transport、模式、时长、分辨率和画幅。付费执行还要求明确授权。网络失败发生在提交后时先查询任务状态，禁止状态不明自动重提。
-
-### 自动技术 QC 与发布门禁
-
-```bash
-node scripts/kacha.mjs qc PROJECT.json
-node scripts/kacha.mjs gate-release PROJECT.json
-```
-
-自动 QC 检查解码、轨道、尺寸、画幅、帧率、采样率、声道、A/V 时长差、响度、true peak，以及 black/freeze/silence 线索。内容、字幕、插镜、蒙版、美颜、设备试听和全片通看必须记录在 release report 中，不能被自动脚本替代。
-
-## 项目默认值
-
-这些是可覆盖 profile，不是全局强制常量：
-
-- 真人口播人声：`natural + light denoise`，A/B 损伤时减弱或关闭；
-- 原始或来源不明的混合音轨：先生成 `dialogue_isolated` 与 `non_dialogue_residual`，分离候选通过听审后只让 `dialogue_isolated` 进入降噪/增强；残余轨保留用于审计但不混回成片；
-- 人物美化：默认只尝试 `light`；`light_plus` 需用户明确要求和同源同帧 A/B；
-- 竖版短视频字幕：每种语言单行、无底板、主动上移、真实字体测宽；
-- 创作者字幕 profile：项目字体 Regular、无描边、60% 柔和阴影；
-- 创作者封面 profile：竖版 3:4、横版 4:3、明亮暖色、人物独立构图；
-- 品牌层由 `brand.enabled/name/interval` 控制；可以关闭、替换或只在指定区间出现；
-- 知识口播响度可从约 -18 LUFS 开始；用户要求平台适配后再低一点时可从约 -20 至 -21 LUFS 开始，再以设备试听校准；
-- BGM 调整只改 BGM stem；SFX 调整只改 SFX stem；冻结其他层。
-
-## 能力成熟度
-
-### 稳定本地
-
-- 方案、内容骨架、语义完整剪切、J/L-cut、声音桥、动作切和景别变化；
-- 基础重构图、几何蒙版、隐私遮挡、画中画、分屏和条件式人物后文字；
-- 基础稳定、SDR 调色和跨镜头匹配；
-- 单人口播降噪、人声整形、stem 混音、BGM 闪避、SFX 和响度 QC；
-- 12 个经作者确认的原创音效及精确 title/ID/hash 清单；
-- 单/双语字幕校准、封面、多画幅和技术 QC；
-- 有来源和许可记录的网络素材；
-- 经过当前能力快照、授权和 QC 的 MiniMax/Seedance 插镜。
-
-### 有条件
-
-- 基于 Demucs 或其他经验证模型的人声/非人声源分离；必须先通过 `voice` capability probe 和短段 A/B，不能把 FFmpeg `dialoguenhance` 或普通降噪冒充人声分离；
-- 多人或遮挡下的主体跟踪、美颜和发丝级抠像；
-- 光流慢动作、平面跟踪、屏幕替换和复杂物体移除；
-- 专用语义祛纹、去混响、多人分离和 Dialogue Match；
-- 生成式补帧、延展和复杂多模态视频。
-
-必须在相应引擎、模型、许可、隐私和短段预检真实通过时启用。
-
-### 不承诺
-
-- 瘦脸、大眼、改鼻形等人脸几何重塑；
-- 严重失焦、削波、滚动快门、运动模糊或低码率压缩的无损恢复；
-- 与剪映、Premiere、Resolve 等未公开商业模型在所有素材上的一键等价；
-- 无专业引擎的稳定 3D 跟踪、复杂长发转描和运动镜头物体移除；
-- 未授权字体、模板、音乐、素材和平台专有滤镜；
-- 仅凭剪辑保证流量、完播或爆款。
-
-## 完成表述
-
-最终回复必须明确区分：
-
-- 已分析/已给方案；
-- 已修改但未渲染；
-- 已渲染但未完整 QC；
-- 自动技术 QC 通过或 `pass_with_review`；
-- 本地完整 QC 和 release gate 通过；
-- 已上传；
-- 已发布且平台端复核。
-
-存在人工未试听、未通看、平台未验证或外部任务状态不明时，直接写明，不把前一阶段冒充后一阶段。
+可用套件见 `node tests/run_tests.mjs --list`；也可用 `--match 关键词`。
+公开 core 与机器专属 overlay 必须分别测试，组合通过后再原子同步到 Codex
+和 Claude，不能直接覆盖当前可用安装。

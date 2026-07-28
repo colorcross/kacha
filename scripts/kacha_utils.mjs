@@ -53,6 +53,75 @@ export function sha256File(file) {
   return digest.digest("hex");
 }
 
+export function stableStringify(value) {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+  if (value !== null && typeof value === "object") {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+export function sha256Value(value) {
+  return crypto.createHash("sha256").update(stableStringify(value)).digest("hex");
+}
+
+export function fileIdentity(file, { includeHash = true } = {}) {
+  const resolved = path.resolve(file);
+  const stat = fs.statSync(resolved);
+  return {
+    path: resolved,
+    sizeBytes: stat.size,
+    mtimeMs: Math.trunc(stat.mtimeMs),
+    ...(includeHash ? { sha256: sha256File(resolved) } : {}),
+  };
+}
+
+export function fastIdentityMatches(file, identity) {
+  if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return false;
+  const stat = fs.statSync(file);
+  return Number(identity?.sizeBytes) === stat.size
+    && Math.abs(Number(identity?.mtimeMs) - Math.trunc(stat.mtimeMs)) <= 1;
+}
+
+export function streamSha256(file, kind) {
+  if (!["video", "audio"].includes(kind)) {
+    throw new Error(`Unsupported stream kind: ${kind}`);
+  }
+  const map = kind === "video" ? "0:v:0" : "0:a:0";
+  const result = run("ffmpeg", [
+    "-hide_banner",
+    "-v",
+    "error",
+    "-nostdin",
+    "-i",
+    file,
+    "-map",
+    map,
+    "-c",
+    "copy",
+    "-f",
+    "hash",
+    "-hash",
+    "sha256",
+    "-",
+  ]);
+  if (result.status !== 0) {
+    throw new Error(
+      result.stderr.trim() || `Could not hash ${kind} stream for ${file}`,
+    );
+  }
+  const match = /SHA256=([a-f0-9]{64})/i.exec(result.stdout);
+  if (!match) {
+    throw new Error(`FFmpeg returned no SHA-256 for ${kind} stream: ${file}`);
+  }
+  return match[1].toLowerCase();
+}
+
 export function parseTimecode(value, fps = null) {
   if (typeof value !== "string") return null;
   const text = value.trim();

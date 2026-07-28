@@ -101,3 +101,41 @@ node scripts/kacha.mjs gate-release my-video-project/contracts/project-manifest.
 ```
 
 Only when the real files, hashes, automated QC, and every required human check pass may you claim that local full QC passed. Uploading and publishing require separate authorization and platform-side verification.
+
+## 9. Use v3 for a local change on a verified baseline
+
+Initialize stable project context once:
+
+```bash
+node scripts/init_incremental_project.mjs /path/to/base.mov \
+  --project-id my-video --output-dir my-video-project/incremental
+```
+
+Create one delta and one manifest per feedback round:
+
+```bash
+node scripts/create_version_delta.mjs \
+  my-video-project/incremental/project-context.json \
+  --write my-video-project/incremental/v2-delta.json \
+  --new-version v2 --type sfx_adjust \
+  --output-video my-video-project/incremental/v2.mov
+
+node scripts/create_incremental_manifest.mjs \
+  my-video-project/incremental/project-context.json \
+  my-video-project/incremental/v2-delta.json \
+  my-video-project/incremental/artifact-index.json \
+  --output my-video-project/incremental/v2-project.json
+
+node scripts/kacha.mjs gate-plan my-video-project/incremental/v2-project.json
+# Render with the generated stream-copy/layer/segment strategy.
+node scripts/kacha.mjs qc my-video-project/incremental/v2-project.json
+node scripts/create_incremental_review.mjs \
+  my-video-project/incremental/v2-project.json
+node scripts/kacha.mjs gate-candidate \
+  my-video-project/incremental/v2-project.json
+```
+
+An audio-only change should preserve the original video stream; a visual-only
+change should preserve the original audio stream. QC proves this with
+elementary-stream SHA-256. Use a new `release_candidate` delta and the full
+manual checklist before `gate-release`.

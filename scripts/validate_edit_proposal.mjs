@@ -22,6 +22,7 @@ const AUTHORIZATION_MODES = new Set([
   "local_change",
 ]);
 const MODULE_STATUSES = new Set(["enabled", "not_applicable"]);
+const SERIES_STATUSES = new Set(["detected", "not_series", "undetermined"]);
 const STAGE_STATUSES = new Set([
   "pending",
   "in_progress",
@@ -221,7 +222,63 @@ function validateModules(plan, errors) {
 
 function validateDialogueSeparation(plan, errors) {
   const module = plan.planModules?.dialogueAudio;
-  if (!module || module.status !== "enabled") return;
+  const goal = plan.goal ?? {};
+  if (typeof goal.hasSpokenDialogue !== "boolean") {
+    errors.push("goal.hasSpokenDialogue 必须是 boolean");
+  }
+  if (typeof goal.audioProcessingRequired !== "boolean") {
+    errors.push("goal.audioProcessingRequired 必须是 boolean");
+  }
+  if (
+    goal.hasSpokenDialogue === true
+    && ["source_edit", "content_generation"].includes(plan.taskPath)
+    && goal.audioProcessingRequired !== true
+  ) {
+    errors.push("含口播的整支剪辑默认必须设置 goal.audioProcessingRequired=true");
+  }
+  if (goal.audioProcessingRequired !== true) return;
+  if (goal.hasSpokenDialogue !== true) {
+    errors.push("启用音频处理时 goal.hasSpokenDialogue 必须为 true");
+  }
+  if (!module || module.status !== "enabled") {
+    errors.push("需要处理口播音频时 planModules.dialogueAudio 必须启用");
+    return;
+  }
+
+  const separation = module.sourceSeparation;
+  requireFields(
+    separation,
+    [
+      "required",
+      "finalDialogueSource",
+      "keepOriginalReference",
+      "keepResidualForAudit",
+      "mixResidualIntoFinal",
+      "cleanAmbienceOnly",
+    ],
+    "planModules.dialogueAudio.sourceSeparation",
+    errors,
+  );
+  if (separation && typeof separation === "object") {
+    if (separation.required !== true) {
+      errors.push("人声预处理必须先执行真实源分离");
+    }
+    if (separation.finalDialogueSource !== "dialogue_isolated") {
+      errors.push("最终 dialogue stem 必须来自已验收的 dialogue_isolated");
+    }
+    if (separation.keepOriginalReference !== true) {
+      errors.push("必须保留 original_reference 用于同响度 A/B");
+    }
+    if (separation.keepResidualForAudit !== true) {
+      errors.push("必须保留 non_dialogue_residual 供审计和回退");
+    }
+    if (separation.mixResidualIntoFinal !== false) {
+      errors.push("non_dialogue_residual 不得混入最终成片");
+    }
+    if (separation.cleanAmbienceOnly !== true) {
+      errors.push("需要环境氛围时只能使用独立、干净且无语音泄漏的 ambience stem");
+    }
+  }
 
   const actions = Array.isArray(module.actions) ? module.actions : [];
   const successCriteria = Array.isArray(module.successCriteria)
@@ -272,6 +329,13 @@ function validateCreativeLock(plan, errors) {
     [
       "sourceAspectRatio",
       "outputAspectRatio",
+      "sourceWidth",
+      "sourceHeight",
+      "outputWidth",
+      "outputHeight",
+      "outputGeometryUserSpecified",
+      "preserveSourceDimensions",
+      "preserveSourceAspectRatio",
       "preserveSourceFormat",
       "primaryNarrativeRole",
       "aiRole",
@@ -284,6 +348,15 @@ function validateCreativeLock(plan, errors) {
   if (!lock || typeof lock !== "object") return;
   if (typeof lock.preserveSourceFormat !== "boolean") {
     errors.push("creativeLock.preserveSourceFormat 必须是 boolean");
+  }
+  for (const field of [
+    "outputGeometryUserSpecified",
+    "preserveSourceDimensions",
+    "preserveSourceAspectRatio",
+  ]) {
+    if (typeof lock[field] !== "boolean") {
+      errors.push(`creativeLock.${field} 必须是 boolean`);
+    }
   }
   if (!Array.isArray(lock.frozenDecisions) || lock.frozenDecisions.length === 0) {
     errors.push("creativeLock.frozenDecisions 必须是非空数组");
@@ -300,6 +373,118 @@ function validateCreativeLock(plan, errors) {
     && !targetRatios.includes(lock.outputAspectRatio)
   ) {
     errors.push("creativeLock.outputAspectRatio 必须出现在 goal.videoAspectRatios");
+  }
+
+  const geometryFields = [
+    "sourceWidth",
+    "sourceHeight",
+    "outputWidth",
+    "outputHeight",
+  ];
+  if (plan.authorization?.canExecute === true) {
+    for (const field of geometryFields) {
+      if (!Number.isFinite(lock[field]) || lock[field] <= 0) {
+        errors.push(`执行方案 creativeLock.${field} 必须是探测得到的正数`);
+      }
+    }
+  }
+
+  if (lock.outputGeometryUserSpecified === false) {
+    if (lock.preserveSourceDimensions !== true) {
+      errors.push("用户未指定新尺寸时必须保持原视频尺寸");
+    }
+    if (lock.preserveSourceAspectRatio !== true) {
+      errors.push("用户未指定新画幅时必须保持原视频宽高比");
+    }
+    if (
+      Number.isFinite(lock.sourceWidth)
+      && Number.isFinite(lock.outputWidth)
+      && lock.sourceWidth !== lock.outputWidth
+    ) {
+      errors.push("用户未指定新尺寸时 outputWidth 必须等于 sourceWidth");
+    }
+    if (
+      Number.isFinite(lock.sourceHeight)
+      && Number.isFinite(lock.outputHeight)
+      && lock.sourceHeight !== lock.outputHeight
+    ) {
+      errors.push("用户未指定新尺寸时 outputHeight 必须等于 sourceHeight");
+    }
+    if (
+      hasValue(lock.sourceAspectRatio)
+      && hasValue(lock.outputAspectRatio)
+      && lock.sourceAspectRatio !== lock.outputAspectRatio
+    ) {
+      errors.push("用户未指定新画幅时 outputAspectRatio 必须等于 sourceAspectRatio");
+    }
+  } else if (!hasValue(lock.outputGeometryAuthorizationEvidence)) {
+    errors.push("用户指定新尺寸或画幅时必须记录 outputGeometryAuthorizationEvidence");
+  }
+}
+
+function validateSeriesIdentity(plan, errors) {
+  const series = plan.seriesIdentity;
+  requireFields(
+    series,
+    ["status", "detectionEvidence", "videoMark", "coverMark"],
+    "seriesIdentity",
+    errors,
+  );
+  if (!series || typeof series !== "object") return;
+  if (!SERIES_STATUSES.has(series.status)) {
+    errors.push(`seriesIdentity.status 无效：${series.status}`);
+  }
+  if (
+    !Array.isArray(series.detectionEvidence)
+    || series.detectionEvidence.length === 0
+  ) {
+    errors.push("seriesIdentity.detectionEvidence 必须记录项目目录、既有成片或用户说明等证据");
+  }
+  if (series.status === "undetermined" && plan.authorization?.canExecute === true) {
+    errors.push("执行前必须判断当前项目是否属于系列视频");
+  }
+
+  for (const markName of ["videoMark", "coverMark"]) {
+    const mark = series[markName];
+    requireFields(mark, ["enabled"], `seriesIdentity.${markName}`, errors);
+    if (mark && typeof mark.enabled !== "boolean") {
+      errors.push(`seriesIdentity.${markName}.enabled 必须是 boolean`);
+    }
+  }
+
+  if (series.status === "detected") {
+    if (!hasValue(series.seriesTitle)) {
+      errors.push("检测到系列视频时必须设置 seriesIdentity.seriesTitle");
+    }
+    for (const markName of ["videoMark", "coverMark"]) {
+      const mark = series[markName];
+      if (mark?.enabled !== true) {
+        errors.push(`检测到系列视频时 seriesIdentity.${markName}.enabled 必须为 true`);
+        continue;
+      }
+      requireFields(
+        mark,
+        ["placement", "styleVariant", "safeAreaEvidence"],
+        `seriesIdentity.${markName}`,
+        errors,
+      );
+      if (
+        !Array.isArray(mark.safeAreaEvidence)
+        || mark.safeAreaEvidence.length === 0
+      ) {
+        errors.push(`seriesIdentity.${markName}.safeAreaEvidence 必须是非空数组`);
+      }
+    }
+    if (!hasValue(series.videoMark?.interval)) {
+      errors.push("系列视频标识必须记录 videoMark.interval");
+    }
+  }
+
+  if (
+    series.status === "not_series"
+    && (series.videoMark?.enabled !== false || series.coverMark?.enabled !== false)
+  ) {
+    errors.push("非系列项目不得启用系列标识");
   }
 }
 
@@ -367,6 +552,7 @@ function validateProposal(plan, proposalFile) {
       "contentSpine",
       "editDecisions",
       "creativeLock",
+      "seriesIdentity",
       "planModules",
       "executionFlow",
       "approvedScope",
@@ -388,6 +574,7 @@ function validateProposal(plan, proposalFile) {
   validateAuthorization(plan, errors);
   validateSources(plan, proposalFile, errors);
   validateCreativeLock(plan, errors);
+  validateSeriesIdentity(plan, errors);
   requireFields(
     plan.goal,
     [
@@ -399,6 +586,8 @@ function validateProposal(plan, proposalFile) {
       "videoAspectRatios",
       "coverAspectRatios",
       "outputFormat",
+      "hasSpokenDialogue",
+      "audioProcessingRequired",
     ],
     "goal",
     errors,

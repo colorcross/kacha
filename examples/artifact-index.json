@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "3.0",
+  "projectId": "replace-with-project-id",
+  "generatedAt": "replace-with-iso-time",
+  "artifacts": [
+    {
+      "id": "baseline-video-v1",
+      "type": "video_master",
+      "versionId": "v1",
+      "path": "/absolute/path/to/base-version.mov",
+      "sha256": "replace-with-real-sha256",
+      "sizeBytes": 1,
+      "mtimeMs": 1,
+      "fingerprint": "replace-with-real-sha256",
+      "status": "ready",
+      "dependencies": [],
+      "scope": {
+        "kind": "full"
+      },
+      "generator": {
+        "name": "existing-approved-version",
+        "version": "v1",
+        "parametersHash": "replace-with-real-sha256"
+      },
+      "retention": {
+        "userNeeds": true,
+        "requiredForIteration": true,
+        "paidOrRemote": false,
+        "humanCalibrated": true,
+        "regeneration": {
+          "verified": false,
+          "speed": "slow",
+          "estimatedSeconds": 0,
+          "method": "从受保护源和冻结时间线重新渲染"
+        }
+      }
+    }
+  ]
+}

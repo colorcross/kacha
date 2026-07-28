@@ -41,11 +41,17 @@
 ## 它能做什么
 
 - 在执行前建立可审计的剪辑方案、输入清单、授权边界和回退路径；
+- 对已有成片使用 v3 增量返工：只记录本轮差异，按依赖图复用产物，只渲染
+  受影响层，并用冻结流哈希证明无关层没有变化；
 - 检查内容完整性、切点顺序、同一主体的景别变化和效果合同；
 - 处理 dialogue 分离、人声增强、BGM/SFX、响度与音画同步；
 - 支持字幕、封面、插镜、画中画、蒙版、人物后文字和主体感知重构图；
 - 信息卡、流程图、弹窗、风格化转场和蒙版先做本地样式帧或条件式 Figma 设计预检，再进入实现；
 - 对整片 SFX 建立功能调色板和事件审计，拒绝从头到尾反复套用一个音效；
+- 含口播的音频处理先做人声/非人声源分离，只让验收通过的独立人声进入后续链路；
+- 自动识别项目是否属于既有系列；系列视频的封面和正片共同继承系列标识；
+- 用户未明确要求改画幅时，默认保持原视频像素尺寸和宽高比；
+- 出片后提供两级中间产物清理：例行阶段只删除用户不需要且可快速重建的缓存；最终清理必须得到“不再修改”的明确确认；
 - 对 MiniMax、Seedance 等生成镜头建立能力快照、素材哈希、付费授权和失败回退；
 - 对最终媒体执行解码、轨道、尺寸、帧率、响度、黑帧、冻帧和静音线索检查；
 - 内置 12 个由行者大灰原创并确认可分发的音效，按标题、ID 和哈希精确选择；
@@ -91,6 +97,8 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 
 ## 最短使用路径
 
+### 首剪或结构重做
+
 1. 让代理完整读取 `SKILL.md`，并按任务读取对应 `references/`。
 2. 从 `examples/edit-proposal.json`、`examples/edit-plan.json` 和 `examples/project-manifest.json` 复制项目文件。
 3. 将模板中的占位值替换为真实文件、SHA-256、目标规格和授权证据。
@@ -105,6 +113,35 @@ node scripts/kacha.mjs gate-release PROJECT.json
 ```
 
 `gate-render` 只表示项目具备执行条件，不会替你渲染视频。`qc` 只做自动技术检查，不等于人工审片完成。
+
+可先用 `route_references.mjs` 根据任务和模块生成最小 reference 清单，避免把
+所有文档一次性放进上下文。
+
+### 已有基线上的局部返工
+
+```bash
+node scripts/init_incremental_project.mjs BASE.mov \
+  --project-id my-video --output-dir /path/to/project
+
+node scripts/create_version_delta.mjs /path/to/project/project-context.json \
+  --write /path/to/project/v2-delta.json --new-version v2 \
+  --type beauty_adjust --output-video /path/to/project/v2.mov
+
+node scripts/create_incremental_manifest.mjs \
+  /path/to/project/project-context.json /path/to/project/v2-delta.json \
+  /path/to/project/artifact-index.json \
+  --output /path/to/project/v2-project.json
+
+node scripts/kacha.mjs gate-plan /path/to/project/v2-project.json
+node scripts/kacha.mjs qc /path/to/project/v2-project.json
+node scripts/create_incremental_review.mjs /path/to/project/v2-project.json
+node scripts/kacha.mjs gate-candidate /path/to/project/v2-project.json
+```
+
+只改画面时会校验音频流 SHA-256 未变；只改声音时会校验视频流未变。候选版
+不能冒充最终版，只有 `release_candidate` 完成全量人工审片后才能通过
+`gate-release`。完整说明见
+[v3 增量工作流](docs/INCREMENTAL_WORKFLOW_V3.md)。
 
 完整示例见[快速开始](docs/QUICKSTART.md)。
 
@@ -129,7 +166,7 @@ node scripts/kacha.mjs gate-release PROJECT.json
 ├── agents/openai.yaml       # OpenAI/Codex 展示配置
 ├── references/              # 按任务加载的详细合同
 ├── assets/sfx/              # 12 个原创音效、工作副本、哈希与资产许可
-├── examples/                # v2 JSON 模板
+├── examples/                # v2 首剪与 v3 增量 JSON 模板
 ├── scripts/                 # 安装、门禁、探测、媒体处理与 QC 工具
 ├── tests/run_tests.mjs      # 无第三方 npm 依赖的回归测试
 └── docs/                    # 安装、快速开始、架构和安全文档
@@ -153,12 +190,16 @@ node scripts/kacha.mjs gate-release PROJECT.json
 ## 测试
 
 ```bash
+node tests/run_tests.mjs --suite incremental
+node tests/run_tests.mjs --suite audio
+node tests/run_tests.mjs --suite visual
 node tests/run_tests.mjs
 bash tests/test_installer.sh
 python3 scripts/scan_secrets.py
 ```
 
-测试会创建临时媒体夹具，不读取或修改你的真实项目素材。
+分层测试只生成当前套件需要的媒体夹具；全量测试不会读取或修改你的真实项目
+素材。运行 `node tests/run_tests.mjs --list` 可查看套件归属。
 
 ## 平台说明
 

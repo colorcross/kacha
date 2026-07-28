@@ -19,6 +19,7 @@ function usage() {
       + "  kacha.mjs gate-plan <project-manifest.json>\n"
       + "  kacha.mjs gate-render <project-manifest.json>\n"
       + "  kacha.mjs qc <project-manifest.json>\n"
+      + "  kacha.mjs gate-candidate <incremental-project.json>\n"
       + "  kacha.mjs gate-release <project-manifest.json>",
   );
 }
@@ -37,6 +38,12 @@ function requireProjectPath(projectFile, entry, label) {
   return resolved;
 }
 
+function projectPath(projectFile, entry, label) {
+  const candidate = entryPath(entry);
+  if (!hasValue(candidate)) throw new Error(`${label} 缺少 path`);
+  return resolveFrom(projectFile, candidate);
+}
+
 function invoke(script, args) {
   const result = run(process.execPath, [path.join(scriptDirectory, script), ...args]);
   if (result.stdout.trim()) process.stdout.write(`${result.stdout.trim()}\n`);
@@ -48,7 +55,7 @@ function invoke(script, args) {
 
 const [, , command, projectInput] = process.argv;
 if (
-  !["gate-plan", "gate-render", "qc", "gate-release"].includes(command)
+  !["gate-plan", "gate-render", "qc", "gate-candidate", "gate-release"].includes(command)
   || !projectInput
 ) {
   usage();
@@ -63,24 +70,24 @@ try {
   console.error(`无法读取项目 manifest：${error.message}`);
   process.exit(2);
 }
-if (project.schemaVersion !== "2.0") {
-  console.error("project schemaVersion 必须为 2.0");
+if (!["2.0", "3.0"].includes(project.schemaVersion)) {
+  console.error("project schemaVersion 必须为 2.0 或 3.0");
   process.exit(1);
 }
-for (const field of [
-  "projectId",
-  "plans",
-  "outputs",
-  "expectedMedia",
-  "requiredCoverAspectRatios",
-]) {
-  if (!hasValue(project[field])) {
-    console.error(`project 缺少 ${field}`);
+if (project.schemaVersion === "2.0") {
+  for (const field of ["projectId", "plans", "outputs", "expectedMedia"]) {
+    if (!hasValue(project[field])) {
+      console.error(`project 缺少 ${field}`);
+      process.exit(1);
+    }
+  }
+  if (!Array.isArray(project.requiredCoverAspectRatios)) {
+    console.error("project.requiredCoverAspectRatios 必须是数组，可以为空");
     process.exit(1);
   }
 }
 
-function gatePlan() {
+function gatePlanV2() {
   const proposal = requireProjectPath(
     projectFile,
     project.plans.proposal,
@@ -119,6 +126,21 @@ function gatePlan() {
 }
 
 function validateCapabilities() {
+  if ((project.requiredCapabilities ?? []).length === 0) {
+    console.log(
+      JSON.stringify(
+        {
+          status: "pass",
+          capabilityManifest: null,
+          requiredCapabilities: [],
+          reused: true,
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
   const capabilityFile = requireProjectPath(
     projectFile,
     project.capabilityManifest,
@@ -156,47 +178,120 @@ function validateCapabilities() {
   );
 }
 
+function gatePlanV3() {
+  invoke("validate_incremental_project.mjs", [projectFile]);
+  const context = requireProjectPath(projectFile, project.context, "context");
+  const delta = requireProjectPath(projectFile, project.delta, "delta");
+  const artifactIndex = requireProjectPath(
+    projectFile,
+    project.artifactIndex,
+    "artifactIndex",
+  );
+  const incrementalPlan = projectPath(
+    projectFile,
+    project.outputs.incrementalPlan,
+    "outputs.incrementalPlan",
+  );
+  invoke("validate_project_context.mjs", [context]);
+  invoke("validate_artifact_index.mjs", [artifactIndex]);
+  invoke("validate_version_delta.mjs", [delta]);
+  invoke("plan_incremental_build.mjs", [
+    context,
+    delta,
+    artifactIndex,
+    "--output",
+    incrementalPlan,
+  ]);
+}
+
+function gatePlan() {
+  if (project.schemaVersion === "3.0") gatePlanV3();
+  else gatePlanV2();
+}
+
 if (command === "gate-plan") {
   gatePlan();
 } else if (command === "gate-render") {
   gatePlan();
-  const proposalFile = requireProjectPath(
-    projectFile,
-    project.plans.proposal,
-    "plans.proposal",
-  );
-  const proposal = readJson(proposalFile);
-  if (proposal.authorization?.canExecute !== true) {
-    console.error("方案未授权执行，render gate 拒绝通过");
-    process.exit(1);
-  }
-  if (
-    (project.plans.generatedShotPlans ?? []).length > 0
-    && proposal.authorization?.paidGenerationAllowed !== true
-  ) {
-    console.error("项目包含生成镜头，但 editProposal 未授权付费生成");
-    process.exit(1);
-  }
-  validateCapabilities();
-  for (const entry of project.plans.generatedShotPlans ?? []) {
-    const plan = requireProjectPath(projectFile, entry, "generatedShotPlans");
-    invoke("validate_generated_shot_plan.mjs", [plan, "--for-execution"]);
+  if (project.schemaVersion === "3.0") {
+    const contextFile = requireProjectPath(projectFile, project.context, "context");
+    const context = readJson(contextFile);
+    if (context.authorization?.canExecute !== true) {
+      console.error("project context 未授权执行，render gate 拒绝通过");
+      process.exit(1);
+    }
+    validateCapabilities();
+  } else {
+    const proposalFile = requireProjectPath(
+      projectFile,
+      project.plans.proposal,
+      "plans.proposal",
+    );
+    const proposal = readJson(proposalFile);
+    if (proposal.authorization?.canExecute !== true) {
+      console.error("方案未授权执行，render gate 拒绝通过");
+      process.exit(1);
+    }
+    if (
+      (project.plans.generatedShotPlans ?? []).length > 0
+      && proposal.authorization?.paidGenerationAllowed !== true
+    ) {
+      console.error("项目包含生成镜头，但 editProposal 未授权付费生成");
+      process.exit(1);
+    }
+    validateCapabilities();
+    for (const entry of project.plans.generatedShotPlans ?? []) {
+      const plan = requireProjectPath(projectFile, entry, "generatedShotPlans");
+      invoke("validate_generated_shot_plan.mjs", [plan, "--for-execution"]);
+    }
   }
 } else if (command === "qc") {
-  invoke("qc_media.mjs", [projectFile]);
-} else if (command === "gate-release") {
-  gatePlan();
-  const proposalFile = requireProjectPath(
-    projectFile,
-    project.plans.proposal,
-    "plans.proposal",
-  );
-  const proposal = readJson(proposalFile);
-  if (proposal.authorization?.canExecute !== true) {
-    console.error("方案未授权执行，release gate 拒绝通过");
+  if (project.schemaVersion === "3.0") {
+    gatePlanV3();
+    invoke("qc_incremental.mjs", [projectFile]);
+  } else {
+    invoke("qc_media.mjs", [projectFile]);
+  }
+} else if (command === "gate-candidate") {
+  if (project.schemaVersion !== "3.0") {
+    console.error("gate-candidate 只适用于 schemaVersion 3.0 增量项目");
     process.exit(1);
   }
-  invoke("validate_release_report.mjs", [projectFile]);
+  gatePlanV3();
+  invoke("validate_incremental_review.mjs", [
+    projectFile,
+    "--mode",
+    "candidate",
+  ]);
+} else if (command === "gate-release") {
+  gatePlan();
+  if (project.schemaVersion === "3.0") {
+    const context = requireProjectPath(projectFile, project.context, "context");
+    const artifactIndex = requireProjectPath(
+      projectFile,
+      project.artifactIndex,
+      "artifactIndex",
+    );
+    invoke("validate_project_context.mjs", [context, "--full-hash"]);
+    invoke("validate_artifact_index.mjs", [artifactIndex, "--full-hash"]);
+    invoke("validate_incremental_review.mjs", [
+      projectFile,
+      "--mode",
+      "release",
+    ]);
+  } else {
+    const proposalFile = requireProjectPath(
+      projectFile,
+      project.plans.proposal,
+      "plans.proposal",
+    );
+    const proposal = readJson(proposalFile);
+    if (proposal.authorization?.canExecute !== true) {
+      console.error("方案未授权执行，release gate 拒绝通过");
+      process.exit(1);
+    }
+    invoke("validate_release_report.mjs", [projectFile]);
+  }
 }
 
 console.log(

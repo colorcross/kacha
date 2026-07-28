@@ -11,6 +11,14 @@
 
 双语、书籍编号、AI 镜头、第三方素材、归档、上传和发布都是条件模块，不随主路径自动启用。
 
+`local_optimization` 还要按风险分流：
+
+- 已有真实基线，且只改一个交付层或局部区间：使用 v3
+  `project-context + version-delta + artifact-index`；
+- 删除、重排、补录、改画幅、改变时长或整体创意方向：回到 v2 完整方案；
+- 没有可验证基线、旧文件身份不明或 artifact 依赖不可信：先重建基线，
+  不凭文件名猜测可复用范围。
+
 ## 方案先行
 
 整支剪辑、跨版本重做和内容生成必须先创建 `editProposal`。方案要具体说明：
@@ -25,6 +33,10 @@
 不能只写“优化节奏”“提升画面”或“加入合适素材”。每个启用模块都要有理由、动作和成功条件；不适用模块写 `not_applicable` 及理由。
 
 在任何粗剪、改画幅、生成素材或效果设计前，必须填写 `creativeLock`：源/输出画幅、是否保持源格式、前台主体、AI 角色、冻结决定和重新授权条件。偏离锁定项时停止执行并重新确认，不能在后续“尽量修回去”。
+
+`creativeLock` 还必须记录源与输出的宽、高、宽高比，以及用户是否明确要求改变输出几何。用户没有说明时，`preserveSourceDimensions=true`、`preserveSourceAspectRatio=true`，输出宽、高、宽高比分别等于源文件探测值。封面画幅是独立合同，不能反向改变视频画幅。
+
+inventory 阶段同时建立 `seriesIdentity`。检查用户说明、项目目录、既有成片、封面、标题和品牌配置；只有证据确认属于系列时才设置 `status=detected`。一旦检测到系列，视频和封面两处系列标识都必须启用并提供安全区证据。执行方案不得保持 `undetermined`。
 
 先运行：
 
@@ -52,6 +64,17 @@ node scripts/validate_edit_proposal.mjs edit-proposal.json
 
 同一时刻最多一个阶段为 `in_progress`。前置阶段未通过，后续阶段不能写 `passed`。`not_applicable` 必须记录理由，`passed` 必须记录真实证据。
 
+## 处理后的中间产物
+
+`release_package` 后可以建立 `cleanup-plan.json`，但默认先 dry-run，不自动删除：
+
+- `routine`：仅处理用户确认不需要、已验证可快速重建、且下一轮返工不依赖的缓存；
+- `final`：只有用户明确说明视频已经完成且不会再修改后启用；
+- 原始素材、当前/基线成片、工程、方案、manifest、许可、最终 QC/release 证据和批准的人声 stem 始终保护；
+- 重建需要长时间、付费生成、重新下载、重新人工校准或重新审核的产物不属于例行缓存。
+
+清理报告必须进入 release package，记录候选路径、文件数、预计/实际释放空间、重建成本、用户保留偏好和失败项。
+
 ## 项目 manifest 与统一入口
 
 以 `examples/project-manifest.json` 为结构模板。它集中记录：
@@ -74,22 +97,19 @@ node scripts/kacha.mjs gate-release PROJECT.json
 
 ## 局部迭代
 
-用户提出局部反馈时：
+v3 是默认路径，具体合同见 `references/incremental-workflow.md`。每轮反馈只写
+相对基线的 `version-delta.json`；脚本推导冻结层、失效产物、最小渲染范围和
+专项 QC。旧的 `local-change-plan.json` 只保留给尚未迁移的 v2 项目，不再要求
+局部返工复制完整 proposal、edit plan 和 release report。
 
-- 每条反馈绑定具体时间段、视觉层或音频 stem；
-- 明确 `changed / frozen / affectedIntervals / qcPlan`；
-- 默认冻结无关内容；
-- 同一轮反馈只生成一个新版本；
-- 先做最小预览，再完整渲染；
-- 修复一处同类缺陷后，对全片同类位置做规则化回归。
+局部反馈必须绑定具体层或时间区间；同一轮只产生一个新版本。先做代表帧、
+短片段或同源 A/B，参数冻结后再完整渲染。修复一处规则性缺陷后，对全片同类
+位置做专项回归。
 
-使用 `examples/local-change-plan.json` 和：
-
-```bash
-node scripts/validate_local_change_plan.mjs local-change-plan.json
-```
-
-纯音频改动优先 stream-copy 原视频；删段必须让所有时间层共用帧边界；每个新版本必须重建审计文件，不能继承旧版本的 proposal、QC 或 release report。
+纯音频改动优先 stream-copy 原视频流；纯画面改动保留原音频流；封面专项
+版本不渲染视频。删除、重排和改时长必须让所有时间层共用帧边界并升级为 L3。
+旧报告不能复制为新报告；冻结结论只能由 elementary-stream SHA-256 和依赖
+指纹证明。
 
 调整人声时使用同源、同响度 A/B；调整美颜时使用同源、同帧、同裁切脸部 A/B；字幕至少检查亮底、暗底和最长一条；画中画检查进入前、停留中和退出后。每个切点检查切前/切后人物头部完整性；信息卡、流程图和弹窗检查信息最满帧的头像安全区；人物后文字检查字体、字号层级、可见面积、字幕避让和 SFX 同步。信息模块、风格化转场和蒙版先冻结本地样式帧或 Figma 设计交接，再做最小动效预览；使用 SFX 时对整片 `sfxPlan` 做重复率、类别和事件映射审计。
 
@@ -98,6 +118,7 @@ node scripts/validate_local_change_plan.mjs local-change-plan.json
 - 原始素材只读，输出进入独立版本目录；
 - “保持原格式”分别锁定容器、视频编码、音频编码、分辨率、帧率和色彩元数据；
 - 默认继承有效源帧率和 48 kHz 音频；
+- 用户未明确指定新尺寸或画幅时，默认继承源宽度、源高度和源宽高比；
 - 从最高质量源素材直接构建最终时间线；
 - 尽量只做一次最终编码，不从低清中间片放大；
 - 禁止静默覆盖正式成片、降低分辨率、改帧率或改变声道；

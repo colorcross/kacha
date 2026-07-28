@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "3.0",
+  "projectId": "replace-with-project-id",
+  "projectRoot": "./example-project",
+  "createdAt": "replace-with-iso-time",
+  "authorization": {
+    "canExecute": true,
+    "externalUploadAllowed": false,
+    "paidGenerationAllowed": false,
+    "evidence": "用户已授权本地增量修改，不含上传或付费生成。"
+  },
+  "source": {
+    "path": "/absolute/path/to/source.mov",
+    "sha256": "replace-with-real-sha256",
+    "sizeBytes": 1,
+    "mtimeMs": 1,
+    "readOnly": true,
+    "media": {
+      "durationSeconds": 207,
+      "width": 3840,
+      "height": 2160,
+      "fps": 25,
+      "aspectRatio": "16:9",
+      "hasVideo": true,
+      "hasAudio": true,
+      "audioSampleRate": 48000,
+      "audioChannels": 2
+    }
+  },
+  "creativeLock": {
+    "preserveSourceDimensions": true,
+    "preserveSourceAspectRatio": true,
+    "outputGeometryUserSpecified": false,
+    "outputWidth": 3840,
+    "outputHeight": 2160,
+    "outputAspectRatio": "16:9",
+    "primaryNarrativeRole": "creator",
+    "aiRole": "behind_the_scenes",
+    "changeRequiresReapproval": true
+  },
+  "seriesIdentity": {
+    "status": "not_series",
+    "title": "not_applicable",
+    "evidence": [
+      "已检查用户说明、项目目录和既有成片。"
+    ]
+  },
+  "delivery": {
+    "artifacts": [
+      "video"
+    ],
+    "coverAspectRatios": [],
+    "subtitleLanguages": [],
+    "audioContract": {
+      "integratedLufsMin": -21.5,
+      "integratedLufsMax": -19,
+      "truePeakMax": -3
+    }
+  },
+  "policies": [
+    "semantic-integrity-v1",
+    "preserve-source-geometry-v1",
+    "no-overwrite-v1",
+    "delta-qc-v1"
+  ],
+  "baseline": {
+    "versionId": "v1",
+    "video": {
+      "path": "/absolute/path/to/base-version.mov",
+      "sha256": "replace-with-real-sha256",
+      "sizeBytes": 1,
+      "mtimeMs": 1
+    }
+  },
+  "artifactIndex": "./artifact-index.json"
+}

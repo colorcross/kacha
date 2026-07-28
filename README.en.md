@@ -38,11 +38,18 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 ## What it does
 
 - Builds auditable edit proposals with source hashes, authorization boundaries, success criteria, and fallbacks.
+- Adds a v3 incremental path for approved baselines: record only the current
+  delta, reuse fingerprinted artifacts, render affected layers, and prove
+  frozen streams unchanged.
 - Validates semantic cuts, shot motivation, continuity, reframing, masks, picture-in-picture, subtitles, covers, and visual packaging.
 - Coordinates dialogue preprocessing, voice enhancement, final mixing, and audio/video alignment.
 - Bundles 12 creator-produced sound effects with exact titles, IDs, hashes, and a dedicated asset license.
 - Requires local styleframes or an optional Figma handoff before implementing information cards, flowcharts, popups, stylized transitions, and masks.
 - Audits the whole-film SFX palette and event map so one sound is not reused across every visual beat.
+- Separates dialogue from non-dialogue audio before spoken-word processing, and keeps only the approved dialogue stem in the downstream chain.
+- Detects an established series identity and carries the same series mark into both the video and its covers.
+- Preserves the source video's pixel dimensions and aspect ratio unless the user explicitly requests a change.
+- Provides two-stage intermediate cleanup: routine cleanup only for user-unneeded, fast-regenerating caches, and final cleanup only after explicit no-more-edits confirmation.
 - Records AI-generated shot plans with provider, model, capability snapshot, paid-call authorization, and QC targets.
 - Runs automated media checks and requires separate human-review evidence before local release.
 - Keeps uploads, publishing, purchases, and paid generation outside the default authorization boundary.
@@ -95,6 +102,8 @@ Planning is not authorization to modify files. Rendering is not QC. Automated te
 
 ## The shortest complete workflow
 
+### First edit or structural rebuild
+
 ```text
 edit proposal + edit plan + source hashes
                     |
@@ -126,13 +135,42 @@ node scripts/kacha.mjs gate-release /path/to/project-manifest.json
 
 `gate-render` checks readiness; it does **not** render a timeline. `qc` performs automated technical analysis; it does **not** create human-review evidence. See [Quick start](docs/en/QUICKSTART.md) and [Architecture and boundaries](docs/en/ARCHITECTURE.md).
 
+Use `route_references.mjs` to derive the minimum reference set for the selected
+task and modules instead of loading every document into context.
+
+### Local change on an approved baseline
+
+```bash
+node scripts/init_incremental_project.mjs BASE.mov \
+  --project-id my-video --output-dir /path/to/project
+
+node scripts/create_version_delta.mjs /path/to/project/project-context.json \
+  --write /path/to/project/v2-delta.json --new-version v2 \
+  --type beauty_adjust --output-video /path/to/project/v2.mov
+
+node scripts/create_incremental_manifest.mjs \
+  /path/to/project/project-context.json /path/to/project/v2-delta.json \
+  /path/to/project/artifact-index.json \
+  --output /path/to/project/v2-project.json
+
+node scripts/kacha.mjs gate-plan /path/to/project/v2-project.json
+node scripts/kacha.mjs qc /path/to/project/v2-project.json
+node scripts/create_incremental_review.mjs /path/to/project/v2-project.json
+node scripts/kacha.mjs gate-candidate /path/to/project/v2-project.json
+```
+
+A visual-only change proves the audio elementary stream unchanged; an
+audio-only change proves the video stream unchanged. A `candidate` cannot pass
+the release gate. Only a fully reviewed `release_candidate` can become a local
+release.
+
 ## Repository layout
 
 ```text
 SKILL.md           Agent entry point and routing rules
 references/        Detailed workflow, editing, audio, visual, and QC contracts
 scripts/           Gates, validators, probes, media helpers, and secret scanning
-examples/          Fictional contract templates
+examples/          Fictional v2 full-edit and v3 incremental templates
 assets/sfx/        12 original SFX, working copies, hashes, and asset license
 tests/             Regression and installer tests
 docs/              Chinese documentation
@@ -146,12 +184,18 @@ Keep real project media outside this repository. Treat source media as read-only
 From the repository root:
 
 ```bash
+node tests/run_tests.mjs --suite incremental
+node tests/run_tests.mjs --suite audio
+node tests/run_tests.mjs --suite visual
 node tests/run_tests.mjs
 bash tests/test_installer.sh
 python3 scripts/scan_secrets.py
 ```
 
-Passing repository tests proves that the included gates and fixtures behave as expected. It does not prove that a real project has been rendered, watched, approved, uploaded, or published.
+Scoped suites generate only the media fixtures they need. Passing repository
+tests proves that the included gates and fixtures behave as expected. It does
+not prove that a real project has been rendered, watched, approved, uploaded,
+or published.
 
 ## Privacy and security
 
