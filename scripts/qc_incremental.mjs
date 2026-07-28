@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
+  fileIdentity,
   mediaSummary,
   parseRatio,
   readJson,
@@ -37,24 +38,6 @@ function parseLoudnorm(stderr) {
     }
   }
   return null;
-}
-
-function runLoudness(file) {
-  const result = run("ffmpeg", [
-    "-hide_banner",
-    "-nostats",
-    "-nostdin",
-    "-i",
-    file,
-    "-map",
-    "0:a:0",
-    "-af",
-    "loudnorm=I=-20:TP=-2:LRA=7:print_format=json",
-    "-f",
-    "null",
-    "-",
-  ]);
-  return parseLoudnorm(result.stderr);
 }
 
 function resolveOutput(projectFile, project, delta, field) {
@@ -109,6 +92,7 @@ const detectorFindings = {
 };
 let summary = null;
 let loudness = null;
+let candidateIdentity = null;
 
 if (
   plan.inputHashes.projectContext !== sha256File(contextFile)
@@ -204,28 +188,109 @@ if (delta.deliverables.video) {
     checks.push(check("audio_video_drift", drift <= maximum, drift, `<= ${maximum}s`));
   }
 
-  const decode = run("ffmpeg", [
+  const analysisArguments = [
     "-hide_banner",
-    "-v",
-    "error",
+    "-nostats",
     "-xerror",
     "-nostdin",
     "-i",
     candidateVideo,
-    "-map",
-    "0:v:0",
-    "-map",
-    "0:a?",
-    "-f",
-    "null",
-    "-",
-  ]);
+  ];
+  if (videoChanged) {
+    analysisArguments.push(
+      "-vf",
+      "blackdetect=d=0.08:pix_th=0.10,freezedetect=n=-60dB:d=0.5",
+    );
+  }
+  if (audioChanged && summary.audio) {
+    analysisArguments.push(
+      "-af",
+      "silencedetect=n=-50dB:d=0.5,"
+        + "loudnorm=I=-20:TP=-2:LRA=7:print_format=json",
+    );
+  }
+  analysisArguments.push("-f", "null", "-");
+  const analysisPass = run("ffmpeg", analysisArguments);
+  const analysisLog = `${analysisPass.stdout}\n${analysisPass.stderr}`;
   checks.push(check(
     "decode_output",
-    decode.status === 0,
-    decode.status === 0 ? "decoded without errors" : decode.stderr.trim(),
+    analysisPass.status === 0,
+    analysisPass.status === 0
+      ? "combined QC pass decoded without errors"
+      : analysisPass.stderr.trim(),
     "complete decode with no errors",
   ));
+  if (videoChanged) {
+    checks.push(check(
+      "visual_artifact_detectors",
+      analysisPass.status === 0,
+      analysisPass.status === 0 ? "completed" : analysisPass.stderr.trim(),
+      "black/freeze detectors complete",
+    ));
+    detectorFindings.blackSegments = analysisLog
+      .split("\n")
+      .filter((line) => line.includes("black_start:"))
+      .map((line) => line.trim());
+    detectorFindings.freezeSegments = analysisLog
+      .split("\n")
+      .filter((line) => line.includes("freeze_start:") || line.includes("freeze_end:"))
+      .map((line) => line.trim());
+  }
+  if (audioChanged && summary.audio) {
+    if (Number.isFinite(context.source.media.audioSampleRate)) {
+      checks.push(check(
+        "audio_sample_rate",
+        summary.sampleRate === Number(context.source.media.audioSampleRate),
+        summary.sampleRate,
+        Number(context.source.media.audioSampleRate),
+      ));
+    }
+    if (Number.isFinite(context.source.media.audioChannels)) {
+      checks.push(check(
+        "audio_channels",
+        summary.channels === Number(context.source.media.audioChannels),
+        summary.channels,
+        Number(context.source.media.audioChannels),
+      ));
+    }
+    loudness = parseLoudnorm(analysisPass.stderr);
+    checks.push(check(
+      "loudness_analysis",
+      Boolean(loudness),
+      loudness ?? "unavailable",
+      "valid loudnorm measurement",
+    ));
+    const contract = context.delivery.audioContract;
+    if (loudness && contract) {
+      const integrated = Number(loudness.input_i);
+      const truePeak = Number(loudness.input_tp);
+      checks.push(check(
+        "integrated_loudness",
+        integrated >= Number(contract.integratedLufsMin)
+          && integrated <= Number(contract.integratedLufsMax),
+        integrated,
+        `${contract.integratedLufsMin} to ${contract.integratedLufsMax} LUFS`,
+      ));
+      checks.push(check(
+        "true_peak",
+        truePeak <= Number(contract.truePeakMax),
+        truePeak,
+        `<= ${contract.truePeakMax} dBTP`,
+      ));
+    }
+    checks.push(check(
+      "audio_silence_detector",
+      analysisPass.status === 0,
+      analysisPass.status === 0 ? "completed" : analysisPass.stderr.trim(),
+      "silence detector complete",
+    ));
+    detectorFindings.silenceSegments = analysisLog
+      .split("\n")
+      .filter(
+        (line) => line.includes("silence_start:") || line.includes("silence_end:"),
+      )
+      .map((line) => line.trim());
+  }
 
   if (delta.newVersion.intent !== "preview") {
     if (!audioChanged && context.source.media.hasAudio) {
@@ -282,113 +347,10 @@ if (delta.deliverables.video) {
     }
   }
 
-  if (audioChanged && summary.audio) {
-    if (Number.isFinite(context.source.media.audioSampleRate)) {
-      checks.push(check(
-        "audio_sample_rate",
-        summary.sampleRate === Number(context.source.media.audioSampleRate),
-        summary.sampleRate,
-        Number(context.source.media.audioSampleRate),
-      ));
-    }
-    if (Number.isFinite(context.source.media.audioChannels)) {
-      checks.push(check(
-        "audio_channels",
-        summary.channels === Number(context.source.media.audioChannels),
-        summary.channels,
-        Number(context.source.media.audioChannels),
-      ));
-    }
-    loudness = runLoudness(candidateVideo);
-    checks.push(check(
-      "loudness_analysis",
-      Boolean(loudness),
-      loudness ?? "unavailable",
-      "valid loudnorm measurement",
-    ));
-    const contract = context.delivery.audioContract;
-    if (loudness && contract) {
-      const integrated = Number(loudness.input_i);
-      const truePeak = Number(loudness.input_tp);
-      checks.push(check(
-        "integrated_loudness",
-        integrated >= Number(contract.integratedLufsMin)
-          && integrated <= Number(contract.integratedLufsMax),
-        integrated,
-        `${contract.integratedLufsMin} to ${contract.integratedLufsMax} LUFS`,
-      ));
-      checks.push(check(
-        "true_peak",
-        truePeak <= Number(contract.truePeakMax),
-        truePeak,
-        `<= ${contract.truePeakMax} dBTP`,
-      ));
-    }
-    const silenceDetector = run("ffmpeg", [
-      "-hide_banner",
-      "-nostats",
-      "-nostdin",
-      "-i",
-      candidateVideo,
-      "-map",
-      "0:a:0",
-      "-af",
-      "silencedetect=n=-50dB:d=0.5",
-      "-f",
-      "null",
-      "-",
-    ]);
-    checks.push(check(
-      "audio_silence_detector",
-      silenceDetector.status === 0,
-      silenceDetector.status === 0
-        ? "completed"
-        : silenceDetector.stderr.trim(),
-      "silence detector complete",
-    ));
-    const silenceLog = `${silenceDetector.stdout}\n${silenceDetector.stderr}`;
-    detectorFindings.silenceSegments = silenceLog
-      .split("\n")
-      .filter(
-        (line) => line.includes("silence_start:") || line.includes("silence_end:"),
-      )
-      .map((line) => line.trim());
-  }
-
-  if (videoChanged) {
-    const detector = run("ffmpeg", [
-      "-hide_banner",
-      "-nostats",
-      "-nostdin",
-      "-i",
-      candidateVideo,
-      "-vf",
-      "blackdetect=d=0.08:pix_th=0.10,freezedetect=n=-60dB:d=0.5",
-      "-f",
-      "null",
-      "-",
-    ]);
-    checks.push(check(
-      "visual_artifact_detectors",
-      detector.status === 0,
-      detector.status === 0 ? "completed" : detector.stderr.trim(),
-      "black/freeze detectors complete",
-    ));
-    const log = `${detector.stdout}\n${detector.stderr}`;
-    detectorFindings.blackSegments = log
-      .split("\n")
-      .filter((line) => line.includes("black_start:"))
-      .map((line) => line.trim());
-    detectorFindings.freezeSegments = log
-      .split("\n")
-      .filter((line) => line.includes("freeze_start:") || line.includes("freeze_end:"))
-      .map((line) => line.trim());
-  }
-
+  candidateIdentity = fileIdentity(candidateVideo);
   deliverableEvidence.push({
     type: "video",
-    path: candidateVideo,
-    sha256: sha256File(candidateVideo),
+    ...candidateIdentity,
   });
 }
 
@@ -417,7 +379,7 @@ for (const cover of delta.deliverables.covers ?? []) {
       type: "cover",
       aspectRatio: cover.aspectRatio,
       path: file,
-      sha256: sha256File(file),
+      ...fileIdentity(file),
     });
   } catch (error) {
     checks.push(check(
@@ -446,7 +408,7 @@ for (const subtitle of delta.deliverables.subtitles ?? []) {
       type: "subtitle",
       language: subtitle.language,
       path: file,
-      sha256: sha256File(file),
+      ...fileIdentity(file),
     });
   }
 }
@@ -480,8 +442,7 @@ const report = {
       : "pass",
   output: candidateVideo
     ? {
-        path: candidateVideo,
-        sha256: sha256File(candidateVideo),
+        ...candidateIdentity,
         durationSeconds: summary.duration,
         width: summary.width,
         height: summary.height,

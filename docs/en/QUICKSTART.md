@@ -2,6 +2,24 @@
 
 This walkthrough creates a local `source_edit` project from the fictional templates. The templates are not authorization for a real project; replace every placeholder with verified project data.
 
+## 0. Put the Agent into deterministic mode
+
+For a lower-capability model, lower reasoning effort, or Claude Code:
+
+```bash
+node scripts/kacha.mjs doctor --profile claude-vision
+node scripts/kacha.mjs prepare \
+  --task source_edit --modules audio,subtitles \
+  --agent claude --model-tier economy --source /path/to/source.mov \
+  --output my-video-project/agent-packet.json
+```
+
+Read the packet's complete `readOrder`. When a manifest exists, run
+`node scripts/kacha.mjs next PROJECT.json` and execute one `nextAction` at a
+time. Build local `visual-evidence` for visual tasks. MiniMax remains blocked
+without external-upload authorization, paid-service authorization, and the
+explicit upload flag.
+
 ## 1. Create a separate project directory
 
 ```bash
@@ -139,3 +157,11 @@ An audio-only change should preserve the original video stream; a visual-only
 change should preserve the original audio stream. QC proves this with
 elementary-stream SHA-256. Use a new `release_candidate` delta and the full
 manual checklist before `gate-release`.
+
+Common changes can be compiled instead of hand-authoring a complex delta:
+
+```bash
+node scripts/kacha.mjs compile-change change-request.json --dry-run
+node scripts/kacha.mjs compile-change change-request.json
+node scripts/kacha.mjs next /path/to/compiled/incremental-project.json
+```

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "projectContext": "./project-context.json",
+  "newVersion": {
+    "id": "v2",
+    "intent": "candidate",
+    "outputVideo": "./versions/v2/v2.mov"
+  },
+  "changes": [
+    {
+      "recipe": "beauty",
+      "reason": "把自然匀肤提高到已批准参考版本的观感。",
+      "parameters": {
+        "profile": "light_plus",
+        "referenceVersion": "v1"
+      }
+    }
+  ],
+  "render": {
+    "strategy": "auto",
+    "handleFrames": 25
+  },
+  "deliverables": {
+    "covers": [],
+    "subtitles": []
+  },
+  "reuseRequests": []
+}

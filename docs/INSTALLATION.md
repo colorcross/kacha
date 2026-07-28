@@ -99,6 +99,8 @@ scripts/capability_probe.sh --profile core --output capabilities.json
 - `geometry`：镜头和几何修正 filters；
 - `hdr`：`zscale` 与 `tonemap`；
 - `ai-video`：当前可用的 `mmx` 接口；
+- `claude-vision`：本地视觉证据，以及 Apple Vision 或已认证 MiniMax 视觉
+  中至少一个语义后端；
 - `full`：检查所有已声明能力。
 
 能力缺失时脚本返回非零状态。请降级方案或安装明确需要的依赖，不要绕过门禁。

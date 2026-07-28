@@ -99,6 +99,8 @@ Conditional profiles:
 - `geometry`: lens and geometry correction filters
 - `hdr`: `zscale` and `tonemap`
 - `ai-video`: a currently available `mmx` interface
+- `claude-vision`: local visual evidence plus at least one semantic backend:
+  Apple Vision or authenticated MiniMax vision
 - `full`: all declared capabilities
 
 The probe exits non-zero when a required capability is missing. Downgrade the proposal or install the explicitly required dependency; do not bypass the gate.

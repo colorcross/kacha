@@ -25,8 +25,13 @@ capabilities.json
 *-capabilities.json
 *-qc-report.json
 *-release-report.json
+*-agent-packet.json
+visual-evidence/
+*-visual-evidence/
 
 # Models and caches
+.cache/
+.kacha-cache/
 models/
 weights/
 checkpoints/

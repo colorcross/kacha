@@ -43,6 +43,11 @@
 - 在执行前建立可审计的剪辑方案、输入清单、授权边界和回退路径；
 - 对已有成片使用 v3 增量返工：只记录本轮差异，按依赖图复用产物，只渲染
   受影响层，并用冻结流哈希证明无关层没有变化；
+- 为较低能力模型提供 `prepare → next` 确定性执行协议和稳定错误码，避免依赖
+  高推理强度临场拼合同、猜状态；
+- 为 Claude Code 生成本地关键帧、人物、人脸、OCR、亮度和时间码证据；只有
+  外传、付费服务和显式命令均获授权后，才用 MiniMax 增强少量关键帧语义，
+  不上传整段视频；
 - 检查内容完整性、切点顺序、同一主体的景别变化和效果合同；
 - 处理 dialogue 分离、人声增强、BGM/SFX、响度与音画同步；
 - 支持字幕、封面、插镜、画中画、蒙版、人物后文字和主体感知重构图；
@@ -96,6 +101,24 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 安装位置分别为 `~/.codex/skills/kacha` 和 `~/.claude/skills/kacha`。仓库根目录的 `SKILL.md` 是两个 Agent 共用的入口。
 
 ## 最短使用路径
+
+### 较弱模型或 Claude Code
+
+```bash
+node scripts/kacha.mjs doctor --profile claude-vision
+node scripts/kacha.mjs prepare \
+  --task local_optimization --modules beauty \
+  --agent claude --model-tier economy --project /path/to/project.json \
+  --output /path/to/agent-packet.json
+node scripts/kacha.mjs next /path/to/project.json
+```
+
+代理完整读取 packet 的 `readOrder`，但每次只执行一个 `nextAction`。常见返工
+可用 `examples/change-request.json` 和 `compile-change` 编译成增量项目。
+Claude Code 先读本地 `visual-evidence.md/.json`；MiniMax 是条件增强，不是
+默认依赖。`prepare` 会自动补齐弱模型/Claude 支持 reference，并对中文友好
+的 token 预算做超限阻断。详见
+[V4 工程化优化](docs/ENGINEERING_OPTIMIZATION_V4.md)。
 
 ### 首剪或结构重做
 
@@ -167,7 +190,7 @@ node scripts/kacha.mjs gate-candidate /path/to/project/v2-project.json
 ├── references/              # 按任务加载的详细合同
 ├── assets/sfx/              # 12 个原创音效、工作副本、哈希与资产许可
 ├── examples/                # v2 首剪与 v3 增量 JSON 模板
-├── scripts/                 # 安装、门禁、探测、媒体处理与 QC 工具
+├── scripts/                 # 确定性状态机、视觉证据、门禁、媒体处理与 QC
 ├── tests/run_tests.mjs      # 无第三方 npm 依赖的回归测试
 └── docs/                    # 安装、快速开始、架构和安全文档
 ```
@@ -205,6 +228,8 @@ python3 scripts/scan_secrets.py
 
 - 核心 JSON 门禁和多数 FFmpeg 流程可在 macOS/Linux 使用；
 - `generate_vision_masks.swift` 依赖 macOS 的 Vision、AVFoundation 和 CoreImage；
+- Claude Code 可通过 `visual-evidence` 使用 Apple Vision 本地语义证据；Apple
+  Vision 不可用时可在明确授权后使用 `mmx vision describe`；
 - Demucs、MiniMax/mmx、素材平台 API、Resolve 等均为可选能力，必须在当前机器上真实探测；
 - 不同 FFmpeg 构建包含的 filter 不同，应以 `capability_probe.sh` 的结果为准。
 

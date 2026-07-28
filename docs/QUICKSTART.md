@@ -2,6 +2,23 @@
 
 下面演示如何从模板建立一个本地 `source_edit` 项目。模板不是已授权的真实项目，必须填写实际信息。
 
+## 0. 先让代理进入确定性模式
+
+较弱模型、低推理强度或 Claude Code 先运行：
+
+```bash
+node scripts/kacha.mjs doctor --profile claude-vision
+node scripts/kacha.mjs prepare \
+  --task source_edit --modules audio,subtitles \
+  --agent claude --model-tier economy --source /path/to/source.mov \
+  --output my-video-project/agent-packet.json
+```
+
+完整读取 packet 的 `readOrder`。已有 manifest 时运行
+`node scripts/kacha.mjs next PROJECT.json`，一次只执行一个 `nextAction`。
+涉及画面时先生成本地 `visual-evidence`；MiniMax 必须同时获得外传、付费服务
+和命令行显式上传授权。
+
 ## 1. 创建项目目录
 
 ```bash
@@ -143,3 +160,11 @@ node scripts/kacha.mjs gate-candidate \
 纯声音修改应保留原视频流，纯画面修改应保留原音频流；QC 会比较对应
 elementary-stream SHA-256。需要最终交付时新建 intent 为
 `release_candidate` 的 delta，完成完整人工清单后再运行 `gate-release`。
+
+常见返工可从 `examples/change-request.json` 编译，避免手写复杂 delta：
+
+```bash
+node scripts/kacha.mjs compile-change change-request.json --dry-run
+node scripts/kacha.mjs compile-change change-request.json
+node scripts/kacha.mjs next /path/to/compiled/incremental-project.json
+```

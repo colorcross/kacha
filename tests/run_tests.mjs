@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   mediaSummary,
   readJson,
@@ -195,7 +195,88 @@ await test("reference router loads only task-relevant context", () => {
   ) {
     throw new Error("local optimization loaded unrelated full-workflow context");
   }
+  if (report.totals.approximateInputTokens <= report.totals.characters / 4) {
+    throw new Error("multilingual token estimate still undercounts Chinese context");
+  }
+  const editRoute = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "route_references.mjs"),
+    "--task", "source_edit",
+  ]).stdout);
+  if (editRoute.files.some((item) => item.path === "references/qc-release.md")) {
+    throw new Error("source edit loaded release context before the release phase");
+  }
+  const releaseRoute = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "route_references.mjs"),
+    "--task", "source_edit",
+    "--release",
+  ]).stdout);
+  if (!releaseRoute.files.some((item) => item.path === "references/qc-release.md")) {
+    throw new Error("release phase did not load qc-release reference");
+  }
 });
+
+await test("doctor and low-model packet expose deterministic execution", () => {
+  const doctor = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "doctor",
+    "--profile",
+    "core",
+  ]);
+  const doctorReport = JSON.parse(doctor.stdout);
+  if (!["pass", "pass_with_optional_gaps"].includes(doctorReport.status)) {
+    throw new Error(`unexpected doctor status ${doctorReport.status}`);
+  }
+  const prepared = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "prepare",
+    "--task",
+    "local_optimization",
+    "--modules",
+    "beauty,low_model,visual_evidence",
+    "--agent",
+    "claude",
+    "--model-tier",
+    "economy",
+  ]);
+  const packet = JSON.parse(prepared.stdout);
+  for (const expected of [
+    "references/incremental-workflow.md",
+    "references/visuals-masks.md",
+    "references/agent-execution.md",
+    "references/visual-evidence.md",
+  ]) {
+    if (!packet.readOrder.some((file) => file.endsWith(expected))) {
+      throw new Error(`agent packet missing ${expected}`);
+    }
+  }
+  if (
+    packet.modelTier !== "economy"
+    || packet.contextBudget.withinBudget !== true
+    || packet.contextBudget.approximateInputTokens > packet.contextBudget.limit
+  ) {
+    throw new Error("agent packet did not enforce the economy context budget");
+  }
+  if (packet.visualEvidencePolicy.required !== true) {
+    throw new Error("Claude visual packet did not require local evidence");
+  }
+  const overBudget = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "prepare",
+    "--task",
+    "local_optimization",
+    "--modules",
+    "beauty,audio",
+    "--agent",
+    "claude",
+    "--model-tier",
+    "economy",
+    "--max-reference-tokens",
+    "1",
+  ]);
+  if (!overBudget.stderr.includes("KACHA-E140")) {
+    throw new Error("over-budget packet did not fail closed");
+  }
+}, "core");
 
 await test("proposal executable source, hash and authorization pass", () => {
   execute(process.execPath, [
@@ -716,6 +797,48 @@ function ensureMediaFixtures() {
   mediaFixturesReady = true;
 }
 
+await test("cross-process media probe cache reuses strong file identity", () => {
+  const missingCommand = run("__kacha_missing_runtime_command__", []);
+  if (missingCommand.status === 0 || !missingCommand.stderr) {
+    throw new Error("missing command was not normalized into a stable failure");
+  }
+  ensureMediaFixtures();
+  const cacheRoot = path.join(temporary, "media-cache");
+  const moduleUrl = pathToFileURL(path.join(scripts, "kacha_utils.mjs")).href;
+  const program = [
+    `import { mediaSummary } from ${JSON.stringify(moduleUrl)};`,
+    "console.log(mediaSummary(process.argv[1]).width);",
+  ].join("");
+  const first = run(process.execPath, [
+    "--input-type=module",
+    "-e",
+    program,
+    baseVideo,
+  ], {
+    cwd: temporary,
+    env: { ...process.env, XDG_CACHE_HOME: cacheRoot },
+  });
+  if (first.status !== 0 || first.stdout.trim() !== "320") {
+    throw new Error(`first persistent ffprobe cache run failed: ${first.stderr}`);
+  }
+  const second = run(process.execPath, [
+    "--input-type=module",
+    "-e",
+    program,
+    baseVideo,
+  ], {
+    cwd: temporary,
+    env: {
+      ...process.env,
+      XDG_CACHE_HOME: cacheRoot,
+      PATH: "/nonexistent",
+    },
+  });
+  if (second.status !== 0 || second.stdout.trim() !== "320") {
+    throw new Error("second media probe did not reuse the persistent cache");
+  }
+}, "core");
+
 function initializeIncrementalFixture(name, options = {}) {
   ensureMediaFixtures();
   const root = path.join(temporary, `incremental-${name}`);
@@ -788,6 +911,203 @@ function createIncrementalCase(
     review: path.join(fixture.root, "output", "incremental-review.json"),
   };
 }
+
+await test("low-model change compiler creates a safe incremental project", () => {
+  const fixture = initializeIncrementalFixture("compiled-change");
+  const requestFile = path.join(fixture.root, "change-request.json");
+  const outputRoot = path.join(fixture.root, "versions", "v2");
+  writeJson(requestFile, {
+    schemaVersion: "1.0",
+    projectContext: fixture.context,
+    newVersion: {
+      id: "v2",
+      intent: "candidate",
+    },
+    changes: [{
+      recipe: "beauty",
+      reason: "synthetic beauty regression",
+      parameters: {
+        profile: "light_plus",
+      },
+    }],
+    render: {
+      strategy: "auto",
+      handleFrames: 25,
+    },
+    deliverables: {
+      covers: [],
+      subtitles: [],
+    },
+  });
+  const unsafeRequestFile = path.join(fixture.root, "unsafe-change-request.json");
+  const unsafeRequest = readJson(requestFile);
+  unsafeRequest.newVersion.id = "../escape";
+  writeJson(unsafeRequestFile, unsafeRequest);
+  const unsafeVersion = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "compile-change",
+    unsafeRequestFile,
+    "--dry-run",
+  ]);
+  if (!unsafeVersion.stderr.includes("KACHA-E140")) {
+    throw new Error("unsafe version id did not fail closed");
+  }
+  const dryRun = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "compile-change",
+    requestFile,
+    "--output-dir",
+    outputRoot,
+    "--dry-run",
+  ]);
+  if (JSON.parse(dryRun.stdout).status !== "dry_run") {
+    throw new Error("compile-change dry-run did not stay read-only");
+  }
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "compile-change",
+    requestFile,
+    "--output-dir",
+    outputRoot,
+  ]);
+  const projectFile = path.join(outputRoot, "incremental-project.json");
+  const deltaFile = path.join(outputRoot, "version-delta.json");
+  const planFile = path.join(outputRoot, "output", "incremental-plan.json");
+  for (const file of [projectFile, deltaFile, planFile]) {
+    if (!fs.existsSync(file)) throw new Error(`compiled file missing: ${file}`);
+  }
+  const delta = readJson(deltaFile);
+  if (delta.changeSet.recipeChanges?.[0]?.parameters?.profile !== "light_plus") {
+    throw new Error("recipe parameters were not preserved in version delta");
+  }
+  const packetFile = path.join(outputRoot, "agent-packet.json");
+  const evidenceFile = path.join(outputRoot, "visual-evidence.json");
+  const metricsFile = path.join(outputRoot, "run-metrics.json");
+  writeJson(packetFile, {
+    contextBudget: {
+      files: 7,
+      approximateInputTokens: 4321,
+    },
+  });
+  writeJson(evidenceFile, {
+    status: "pass",
+    sampling: { mode: "fast" },
+    frames: [{ timeSeconds: 0 }],
+    analysis: {
+      localSemantic: "pass",
+      remoteSemantic: "not_requested",
+      remoteSemanticFrames: 0,
+    },
+    provenance: { wholeVideoUploaded: false },
+  });
+  execute(process.execPath, [
+    path.join(scripts, "write_run_metrics.mjs"),
+    projectFile,
+    "--output",
+    metricsFile,
+    "--agent-packet",
+    packetFile,
+    "--visual-evidence",
+    evidenceFile,
+    "--model-tier",
+    "economy",
+  ]);
+  const metrics = readJson(metricsFile);
+  if (
+    metrics.context.routedFiles !== 7
+    || metrics.context.routedApproximateTokens !== 4321
+    || metrics.context.modelTier !== "economy"
+    || metrics.visualEvidence.frames !== 1
+    || metrics.visualEvidence.wholeVideoUploaded !== false
+  ) {
+    throw new Error("run metrics did not preserve model or visual evidence data");
+  }
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "compile-change",
+    requestFile,
+    "--output-dir",
+    outputRoot,
+  ]);
+  const lockedRoot = path.join(fixture.root, "versions", "v3");
+  const lockFile = `${lockedRoot}.lock`;
+  writeJson(lockFile, {
+    schemaVersion: "1.0",
+    pid: process.pid,
+    host: process.env.HOSTNAME || process.env.COMPUTERNAME || "local",
+    purpose: "synthetic-live-lock",
+    createdAt: new Date().toISOString(),
+  });
+  const locked = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "compile-change",
+    requestFile,
+    "--output-dir",
+    lockedRoot,
+    "--dry-run",
+  ]);
+  if (!locked.stderr.includes("KACHA-E500")) {
+    throw new Error("active project lock did not fail with a stable diagnostic");
+  }
+  fs.unlinkSync(lockFile);
+  const recoveredRoot = path.join(fixture.root, "versions", "v4");
+  const recoveredLock = `${recoveredRoot}.lock`;
+  writeJson(recoveredLock, {
+    schemaVersion: "1.0",
+    pid: 2_147_483_647,
+    host: os.hostname(),
+    purpose: "synthetic-dead-lock",
+    createdAt: new Date().toISOString(),
+  });
+  const recovered = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "compile-change",
+    requestFile,
+    "--output-dir",
+    recoveredRoot,
+    "--dry-run",
+  ]);
+  if (JSON.parse(recovered.stdout).status !== "dry_run" || fs.existsSync(recoveredLock)) {
+    throw new Error("dead same-host operation lock was not safely recovered");
+  }
+}, "incremental");
+
+await test("next action advances only one deterministic project state", () => {
+  const fixture = initializeIncrementalFixture("next-action");
+  const candidate = path.join(fixture.root, "v2.mov");
+  const current = createIncrementalCase(fixture, {
+    versionId: "v2",
+    type: "beauty_adjust",
+    outputVideo: candidate,
+  });
+  const first = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "next",
+    current.project,
+  ]);
+  const firstState = JSON.parse(first.stdout);
+  if (firstState.nextAction.id !== "build_incremental_plan") {
+    throw new Error(`unexpected first action ${firstState.nextAction.id}`);
+  }
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "gate-plan",
+    current.project,
+  ]);
+  const second = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "next",
+    current.project,
+  ]);
+  const secondState = JSON.parse(second.stdout);
+  if (
+    secondState.nextAction.id !== "render_changed_layers"
+    || secondState.nextAction.owner !== "render_engine"
+    || secondState.nextAction.safeToAutoExecute !== false
+  ) {
+    throw new Error("next action did not stop at the real render boundary");
+  }
+}, "incremental");
 
 function renderVisualOnlyCandidate(base, output) {
   execute("ffmpeg", [
@@ -885,6 +1205,131 @@ await test("beauty modes preserve duration and produce distinct outputs", () => 
     throw new Error("beauty-light and beauty-plus unexpectedly produced identical files");
   }
 });
+
+await test("Claude visual evidence is local, cacheable and upload-gated", () => {
+  ensureMediaFixtures();
+  const outputDirectory = path.join(temporary, "visual-evidence");
+  const first = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "visual-evidence",
+    baseVideo,
+    "--output-dir",
+    outputDirectory,
+    "--mode",
+    "fast",
+    "--max-frames",
+    "5",
+    "--skip-apple-vision",
+  ]);
+  const firstResult = JSON.parse(first.stdout);
+  if (firstResult.frames !== 5 || firstResult.localSemantic !== "unavailable") {
+    throw new Error("unexpected local visual evidence result");
+  }
+  const evidenceFile = path.join(outputDirectory, "visual-evidence.json");
+  const evidence = readJson(evidenceFile);
+  if (
+    evidence.provenance.externalUpload !== false
+    || evidence.provenance.wholeVideoUploaded !== false
+    || !fs.existsSync(evidence.contactSheet.path)
+  ) {
+    throw new Error("local visual evidence provenance is unsafe or incomplete");
+  }
+  const reused = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "visual-evidence",
+    baseVideo,
+    "--output-dir",
+    outputDirectory,
+    "--mode",
+    "fast",
+    "--max-frames",
+    "5",
+    "--skip-apple-vision",
+  ]);
+  if (JSON.parse(reused.stdout).status !== "reused") {
+    throw new Error("identical visual evidence did not hit cache");
+  }
+  const dryRun = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "vision-enrich",
+    evidenceFile,
+    "--dry-run",
+    "--max-frames",
+    "3",
+  ]);
+  const plan = JSON.parse(dryRun.stdout);
+  if (
+    plan.upload.wholeVideo !== false
+    || plan.upload.contactSheet !== false
+    || plan.upload.selectedFrames !== 3
+  ) {
+    throw new Error("MiniMax dry-run selected an unsafe upload scope");
+  }
+  const priorityEvidenceFile = path.join(outputDirectory, "priority-evidence.json");
+  const priorityEvidence = structuredClone(evidence);
+  priorityEvidence.findings = [{
+    severity: "review",
+    frameId: evidence.frames.at(-1).id,
+    code: "synthetic-risk",
+  }];
+  writeJson(priorityEvidenceFile, priorityEvidence);
+  const priorityPlan = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "vision-enrich",
+    priorityEvidenceFile,
+    "--dry-run",
+    "--max-frames",
+    "1",
+  ]).stdout);
+  if (priorityPlan.frames[0].id !== evidence.frames.at(-1).id) {
+    throw new Error("MiniMax selection did not prioritize local findings");
+  }
+  const selectedFrame = evidence.frames[Math.floor(evidence.frames.length / 2)].path;
+  const originalFrame = fs.readFileSync(selectedFrame);
+  fs.appendFileSync(selectedFrame, "tampered");
+  const staleFrame = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "vision-enrich",
+    evidenceFile,
+    "--dry-run",
+    "--max-frames",
+    "1",
+  ]);
+  fs.writeFileSync(selectedFrame, originalFrame);
+  if (!staleFrame.stderr.includes("KACHA-E110")) {
+    throw new Error("modified evidence frame did not fail identity validation");
+  }
+  const unpaidContext = path.join(temporary, "unpaid-visual-context.json");
+  writeJson(unpaidContext, {
+    authorization: {
+      externalUploadAllowed: true,
+      paidGenerationAllowed: false,
+    },
+  });
+  const unpaid = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "vision-enrich",
+    evidenceFile,
+    "--context",
+    unpaidContext,
+    "--allow-external-upload",
+    "--max-frames",
+    "1",
+  ]);
+  if (!unpaid.stderr.includes("KACHA-E410")) {
+    throw new Error("unpaid MiniMax request did not fail authorization");
+  }
+  const denied = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "vision-enrich",
+    evidenceFile,
+    "--max-frames",
+    "1",
+  ]);
+  if (!denied.stderr.includes("KACHA-E410")) {
+    throw new Error("unauthorized MiniMax upload did not return KACHA-E410");
+  }
+}, "visual");
 
 await test("mask PNG manifest builds an aligned lossless video", () => {
   ensureMediaFixtures();
@@ -1127,6 +1572,23 @@ await test("incremental cover-only change skips video render and checks exact ra
     || qc.deliverableEvidence[0]?.type !== "cover"
   ) {
     throw new Error("cover-only delta unexpectedly required a video render");
+  }
+  const current = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "next",
+    project.project,
+  ]).stdout);
+  if (current.nextAction.id !== "create_review_checklist") {
+    throw new Error("current cover QC did not advance to review");
+  }
+  fs.appendFileSync(cover, "modified-after-qc");
+  const stale = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "next",
+    project.project,
+  ]).stdout);
+  if (stale.nextAction.id !== "run_delta_qc") {
+    throw new Error("next did not invalidate QC after a cover changed");
   }
 });
 
@@ -1420,6 +1882,14 @@ await test("release gate verifies hashes, cover ratios and manual evidence", () 
   const projectFile = path.join(temporary, "release-project.json");
   writeJson(projectFile, project);
   execute(process.execPath, [path.join(scripts, "qc_media.mjs"), projectFile]);
+  const beforeReview = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "next",
+    projectFile,
+  ]);
+  if (JSON.parse(beforeReview.stdout).nextAction.id !== "complete_release_review") {
+    throw new Error("v2 next did not reuse the current QC identity");
+  }
   const checkIds = [
     "contentIntegrity",
     "connectionPlayback",
@@ -1445,6 +1915,14 @@ await test("release gate verifies hashes, cover ratios and manual evidence", () 
       checkIds.map((id) => [id, { status: "pass", evidence: ["synthetic test evidence"] }]),
     ),
   });
+  const afterReview = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "next",
+    projectFile,
+  ]);
+  if (JSON.parse(afterReview.stdout).nextAction.id !== "gate_release") {
+    throw new Error("v2 next did not advance to release gate");
+  }
   execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
     "gate-release",

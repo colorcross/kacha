@@ -2,8 +2,34 @@
 
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+
+const fileHashCache = new Map();
+const mediaProbeCache = new Map();
+const streamHashCache = new Map();
+const commandCache = new Map();
+
+function statCacheKey(file) {
+  const resolved = path.resolve(file);
+  const stat = fs.statSync(resolved);
+  return [
+    resolved,
+    stat.size,
+    Math.trunc(stat.mtimeMs * 1000),
+    Math.trunc(stat.ctimeMs * 1000),
+    stat.ino ?? 0,
+  ].join(":");
+}
+
+function persistentMediaCacheFile(kind, key) {
+  if (process.env.KACHA_DISABLE_MEDIA_CACHE === "1") return null;
+  const root = process.env.XDG_CACHE_HOME
+    || path.join(os.homedir(), ".cache");
+  const digest = crypto.createHash("sha256").update(key).digest("hex");
+  return path.join(root, "kacha", kind, "v1", `${digest}.json`);
+}
 
 export function hasValue(value) {
   if (typeof value === "string") return value.trim().length > 0;
@@ -30,6 +56,82 @@ export function writeJsonAtomic(file, value) {
   fs.renameSync(temporary, resolved);
 }
 
+export function acquireFileLock(
+  file,
+  {
+    staleAfterMs = 6 * 60 * 60 * 1000,
+    purpose = "kacha-operation",
+  } = {},
+) {
+  const resolved = path.resolve(file);
+  fs.mkdirSync(path.dirname(resolved), { recursive: true });
+  const attempt = () => {
+    const descriptor = fs.openSync(resolved, "wx", 0o600);
+    const payload = {
+      schemaVersion: "1.0",
+      pid: process.pid,
+      host: osHostname(),
+      purpose,
+      createdAt: new Date().toISOString(),
+    };
+    fs.writeFileSync(descriptor, `${JSON.stringify(payload)}\n`);
+    fs.closeSync(descriptor);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      try {
+        const current = JSON.parse(fs.readFileSync(resolved, "utf8"));
+        if (current.pid === process.pid && current.host === payload.host) {
+          fs.unlinkSync(resolved);
+        }
+      } catch {
+        // A missing or externally replaced lock must not be deleted blindly.
+      }
+    };
+  };
+  try {
+    return attempt();
+  } catch (error) {
+    if (error.code !== "EEXIST") throw error;
+  }
+
+  let existing = null;
+  let stat = null;
+  try {
+    existing = JSON.parse(fs.readFileSync(resolved, "utf8"));
+    stat = fs.statSync(resolved);
+  } catch {
+    throw new Error(`operation lock exists and is unreadable: ${resolved}`);
+  }
+  const sameHost = existing.host === osHostname();
+  let ownerAlive = true;
+  if (sameHost && Number.isInteger(existing.pid)) {
+    try {
+      process.kill(existing.pid, 0);
+    } catch (error) {
+      if (error.code === "ESRCH") ownerAlive = false;
+    }
+  }
+  const stale = Date.now() - stat.mtimeMs > staleAfterMs;
+  if (sameHost && !ownerAlive) {
+    fs.unlinkSync(resolved);
+    return attempt();
+  }
+  throw new Error(
+    `operation lock is active: ${resolved} `
+      + `(pid=${existing.pid ?? "unknown"}, purpose=${existing.purpose ?? "unknown"}, `
+      + `stale=${stale})`,
+  );
+}
+
+function osHostname() {
+  return os.hostname()
+    || process.env.HOSTNAME
+    || process.env.COMPUTERNAME
+    || "local";
+}
+
 export function resolveFrom(ownerFile, candidate) {
   if (!hasValue(candidate)) return null;
   return path.isAbsolute(candidate)
@@ -38,6 +140,8 @@ export function resolveFrom(ownerFile, candidate) {
 }
 
 export function sha256File(file) {
+  const cacheKey = statCacheKey(file);
+  if (fileHashCache.has(cacheKey)) return fileHashCache.get(cacheKey);
   const digest = crypto.createHash("sha256");
   const descriptor = fs.openSync(file, "r");
   const buffer = Buffer.allocUnsafe(1024 * 1024);
@@ -50,7 +154,12 @@ export function sha256File(file) {
   } finally {
     fs.closeSync(descriptor);
   }
-  return digest.digest("hex");
+  const value = digest.digest("hex");
+  if (statCacheKey(file) !== cacheKey) {
+    throw new Error(`file changed while hashing: ${path.resolve(file)}`);
+  }
+  fileHashCache.set(cacheKey, value);
+  return value;
 }
 
 export function stableStringify(value) {
@@ -72,26 +181,51 @@ export function sha256Value(value) {
 
 export function fileIdentity(file, { includeHash = true } = {}) {
   const resolved = path.resolve(file);
+  const beforeKey = statCacheKey(resolved);
+  const digest = includeHash ? sha256File(resolved) : null;
+  if (statCacheKey(resolved) !== beforeKey) {
+    throw new Error(`file changed while building identity: ${resolved}`);
+  }
   const stat = fs.statSync(resolved);
   return {
     path: resolved,
     sizeBytes: stat.size,
     mtimeMs: Math.trunc(stat.mtimeMs),
-    ...(includeHash ? { sha256: sha256File(resolved) } : {}),
+    ctimeMs: Math.trunc(stat.ctimeMs),
+    inode: stat.ino ?? null,
+    ...(includeHash ? { sha256: digest } : {}),
   };
 }
 
 export function fastIdentityMatches(file, identity) {
   if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return false;
   const stat = fs.statSync(file);
-  return Number(identity?.sizeBytes) === stat.size
+  const baseMatch = Number(identity?.sizeBytes) === stat.size
     && Math.abs(Number(identity?.mtimeMs) - Math.trunc(stat.mtimeMs)) <= 1;
+  if (!baseMatch) return false;
+  if (
+    Number.isFinite(Number(identity?.ctimeMs))
+    && Math.abs(Number(identity.ctimeMs) - Math.trunc(stat.ctimeMs)) > 1
+  ) {
+    return false;
+  }
+  if (
+    identity?.inode !== undefined
+    && identity?.inode !== null
+    && Number(identity.inode) !== Number(stat.ino)
+  ) {
+    return false;
+  }
+  return true;
 }
 
 export function streamSha256(file, kind) {
   if (!["video", "audio"].includes(kind)) {
     throw new Error(`Unsupported stream kind: ${kind}`);
   }
+  const sourceCacheKey = statCacheKey(file);
+  const cacheKey = `${sourceCacheKey}:${kind}`;
+  if (streamHashCache.has(cacheKey)) return streamHashCache.get(cacheKey);
   const map = kind === "video" ? "0:v:0" : "0:a:0";
   const result = run("ffmpeg", [
     "-hide_banner",
@@ -119,7 +253,12 @@ export function streamSha256(file, kind) {
   if (!match) {
     throw new Error(`FFmpeg returned no SHA-256 for ${kind} stream: ${file}`);
   }
-  return match[1].toLowerCase();
+  const value = match[1].toLowerCase();
+  if (statCacheKey(file) !== sourceCacheKey) {
+    throw new Error(`file changed while hashing ${kind} stream: ${path.resolve(file)}`);
+  }
+  streamHashCache.set(cacheKey, value);
+  return value;
 }
 
 export function parseTimecode(value, fps = null) {
@@ -169,10 +308,13 @@ export function rationalToNumber(value) {
 }
 
 export function commandExists(command) {
+  if (commandCache.has(command)) return commandCache.get(command);
   const result = spawnSync("/usr/bin/env", ["bash", "-lc", `command -v "${command}"`], {
     encoding: "utf8",
   });
-  return result.status === 0;
+  const available = result.status === 0;
+  commandCache.set(command, available);
+  return available;
 }
 
 export function run(command, args, options = {}) {
@@ -181,10 +323,34 @@ export function run(command, args, options = {}) {
     maxBuffer: 64 * 1024 * 1024,
     ...options,
   });
-  return result;
+  return {
+    ...result,
+    status: result.status ?? 1,
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? result.error?.message ?? "",
+  };
 }
 
 export function ffprobe(file) {
+  const cacheKey = statCacheKey(file);
+  if (mediaProbeCache.has(cacheKey)) return mediaProbeCache.get(cacheKey);
+  const persistentFile = persistentMediaCacheFile("media-probe", cacheKey);
+  if (persistentFile && fs.existsSync(persistentFile)) {
+    try {
+      const cached = readJson(persistentFile);
+      if (
+        cached.schemaVersion === "1.0"
+        && cached.cacheKey === cacheKey
+        && cached.probe
+        && statCacheKey(file) === cacheKey
+      ) {
+        mediaProbeCache.set(cacheKey, cached.probe);
+        return cached.probe;
+      }
+    } catch {
+      // Corrupt cache is ignored and replaced after a real probe succeeds.
+    }
+  }
   const result = run("ffprobe", [
     "-v",
     "error",
@@ -197,7 +363,24 @@ export function ffprobe(file) {
   if (result.status !== 0) {
     throw new Error(result.stderr.trim() || `ffprobe failed for ${file}`);
   }
-  return JSON.parse(result.stdout);
+  const value = JSON.parse(result.stdout);
+  if (statCacheKey(file) !== cacheKey) {
+    throw new Error(`file changed while probing: ${path.resolve(file)}`);
+  }
+  mediaProbeCache.set(cacheKey, value);
+  if (persistentFile) {
+    try {
+      writeJsonAtomic(persistentFile, {
+        schemaVersion: "1.0",
+        cacheKey,
+        generatedAt: new Date().toISOString(),
+        probe: value,
+      });
+    } catch {
+      // Cache writes are optional and must never block media processing.
+    }
+  }
+  return value;
 }
 
 export function mediaSummary(file) {

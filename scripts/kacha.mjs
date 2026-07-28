@@ -16,6 +16,12 @@ const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 function usage() {
   console.error(
     "用法：\n"
+      + "  kacha.mjs doctor [--profile core|claude-vision|full]\n"
+      + "  kacha.mjs prepare --task TASK [--modules a,b] [--agent codex|claude]\n"
+      + "  kacha.mjs next <project-manifest.json>\n"
+      + "  kacha.mjs compile-change <change-request.json> [--output-dir DIR]\n"
+      + "  kacha.mjs visual-evidence <video> --output-dir DIR [--mode fast|review|release]\n"
+      + "  kacha.mjs vision-enrich <visual-evidence.json> --context CONTEXT --allow-external-upload\n"
       + "  kacha.mjs gate-plan <project-manifest.json>\n"
       + "  kacha.mjs gate-render <project-manifest.json>\n"
       + "  kacha.mjs qc <project-manifest.json>\n"
@@ -53,7 +59,22 @@ function invoke(script, args) {
   }
 }
 
-const [, , command, projectInput] = process.argv;
+const [, , command, projectInput, ...remainingArguments] = process.argv;
+const delegatedCommands = {
+  doctor: "kacha_doctor.mjs",
+  prepare: "prepare_agent_packet.mjs",
+  next: "next_action.mjs",
+  "compile-change": "compile_change_request.mjs",
+  "visual-evidence": "build_visual_evidence.mjs",
+  "vision-enrich": "enrich_visual_evidence_minimax.mjs",
+};
+if (Object.hasOwn(delegatedCommands, command)) {
+  invoke(
+    delegatedCommands[command],
+    [projectInput, ...remainingArguments].filter((item) => item !== undefined),
+  );
+  process.exit(0);
+}
 if (
   !["gate-plan", "gate-render", "qc", "gate-candidate", "gate-release"].includes(command)
   || !projectInput

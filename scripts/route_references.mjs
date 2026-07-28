@@ -60,11 +60,28 @@ const MODULE_REFERENCES = {
   network_assets: ["references/generated-media-assets.md"],
   cleanup: ["references/cleanup-retention.md"],
   hardening: ["docs/PRODUCTION_HARDENING.md"],
+  low_model: ["references/agent-execution.md"],
+  agent_execution: ["references/agent-execution.md"],
+  visual_evidence: ["references/visual-evidence.md"],
+  claude_visual: [
+    "references/agent-execution.md",
+    "references/visual-evidence.md",
+  ],
 };
 
 function option(args, name, fallback = null) {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : fallback;
+}
+
+function estimateTokens(text) {
+  let nonAscii = 0;
+  let asciiCharacters = 0;
+  for (const character of text) {
+    if (character.codePointAt(0) > 0x7f) nonAscii += 1;
+    else asciiCharacters += 1;
+  }
+  return nonAscii + Math.ceil(asciiCharacters / 4);
 }
 
 const args = process.argv.slice(2);
@@ -99,7 +116,7 @@ if (task === "local_optimization") {
 } else {
   selected.add("references/project-workflow.md");
   selected.add("references/editing-theory.md");
-  selected.add("references/qc-release.md");
+  if (release) selected.add("references/qc-release.md");
 }
 for (const module of modules) {
   for (const reference of MODULE_REFERENCES[module]) selected.add(reference);
@@ -117,6 +134,7 @@ const files = [...selected].map((relative) => {
     absolutePath: absolute,
     bytes: Buffer.byteLength(text),
     characters: [...text].length,
+    approximateInputTokens: estimateTokens(text),
   };
 });
 const totalCharacters = files.reduce((sum, file) => sum + file.characters, 0);
@@ -130,9 +148,12 @@ const report = {
     files: files.length,
     bytes: files.reduce((sum, file) => sum + file.bytes, 0),
     characters: totalCharacters,
-    approximateInputTokens: Math.ceil(totalCharacters / 4),
+    approximateInputTokens: files.reduce(
+      (sum, file) => sum + file.approximateInputTokens,
+      0,
+    ),
   },
-  note: "token 数仅为字符/4 的预算估算，不是模型实际计费结果",
+  note: "token 为保守启发式预算：非 ASCII 字符按 1 token、ASCII 按 4 字符/token；不是实际计费结果",
 };
 if (output) writeJsonAtomic(path.resolve(output), report);
 console.log(JSON.stringify(report, null, 2));

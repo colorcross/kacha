@@ -143,3 +143,16 @@
 4. `final` 必须记录用户明确的“已经完成且不会再修改”原话与时间；
 5. 删除目标使用精确相对路径，不接受 glob、项目根目录、主目录或项目外路径；
 6. 清理后复核 protected paths、最终视频、封面、工程和 release package。
+
+## 11. 低能力模型与 Claude Code 门禁
+
+- 较弱模型先运行 `prepare --model-tier economy`，只加载 `readOrder`；预算
+  超限时拆分阶段/模块，不截断 reference；
+- 已有项目每次运行 `next`，只执行一个 `nextAction`；
+- 常见增量返工用 `compile-change` 稳定配方，禁止手工漏填变化层和验收条件；
+- `nextAction.owner=render_engine` 或 `human` 时，代理不得伪造完成状态；
+- Claude Code 涉及画面时必须先生成 `visual-evidence.json/.md`；
+- 本地视觉证据不足时，MiniMax 只能分析同时获得外传、付费服务和显式命令
+  授权的少量关键帧；上传前复核帧 SHA，不上传整段视频、不自动重试；
+- MiniMax/Apple Vision 的单帧结果不能证明转场、口型、蒙版闪烁、美颜时域
+  稳定或全片无漏检，仍需动态短片和正常速度通看。

@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
+  fastIdentityMatches,
   hasValue,
   readJson,
   resolveFrom,
@@ -109,14 +110,28 @@ if (review.outputSha256 !== expectedOutputIdentity) {
 if (qc.output?.path) {
   if (!fs.existsSync(qc.output.path)) {
     errors.push(`候选视频不存在：${qc.output.path}`);
-  } else if (sha256File(qc.output.path) !== qc.output.sha256) {
+  } else if (
+    mode === "candidate"
+      ? !(
+          qc.output?.sizeBytes
+          && fastIdentityMatches(qc.output.path, qc.output)
+        )
+      : sha256File(qc.output.path) !== qc.output.sha256
+  ) {
     errors.push("候选视频在 QC 后发生变化");
   }
 }
 for (const artifact of qc.deliverableEvidence ?? []) {
   if (!artifact.path || !fs.existsSync(artifact.path)) {
     errors.push(`交付物不存在：${artifact.path ?? artifact.type}`);
-  } else if (sha256File(artifact.path) !== artifact.sha256) {
+  } else if (
+    mode === "candidate"
+      ? !(
+          artifact?.sizeBytes
+          && fastIdentityMatches(artifact.path, artifact)
+        )
+      : sha256File(artifact.path) !== artifact.sha256
+  ) {
     errors.push(`交付物在 QC 后发生变化：${artifact.path}`);
   }
 }

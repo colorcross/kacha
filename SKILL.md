@@ -25,8 +25,9 @@ description: |
 
 主代理必须完整读本文件，并按任务读取以下 reference；不要一次加载全部：
 
-- 首剪/结构重做：`references/project-workflow.md`、
-  `references/editing-theory.md`、`references/qc-release.md`
+- 首剪/结构重做：先读 `references/project-workflow.md`、
+  `references/editing-theory.md`；进入最终 QC/release 阶段再读
+  `references/qc-release.md`
 - 局部返工：`references/incremental-workflow.md`；涉及最终交付时再读
   `references/qc-release.md`
 - 人声/BGM/SFX/同步：`references/audio.md`；本地音效库另读
@@ -35,6 +36,8 @@ description: |
 - 信息卡/流程图/弹窗/复杂动效：`references/visual-design-preflight.md`
 - 字幕/封面/品牌/系列：`references/subtitles-covers-brand.md`
 - MiniMax/Seedance/网络素材：`references/generated-media-assets.md`
+- 较弱模型/低推理强度/长任务续跑：`references/agent-execution.md`
+- Claude Code 视觉补偿/关键帧证据：`references/visual-evidence.md`
 - 缓存与清理：`references/cleanup-retention.md`
 - 复盘生产缺陷或改门禁：`docs/PRODUCTION_HARDENING.md`
 
@@ -47,6 +50,27 @@ node scripts/route_references.mjs \
 
 如果本机存在私有能力 reference，只有任务实际使用该能力时才读取；私有
 overlay 缺失或探测失败时必须失败或明确降级，不能悄悄换算法后声称等效。
+
+## 较弱模型的确定性入口
+
+较低能力模型、较低推理强度和 Claude Code 使用确定性入口，不手写复杂状态：
+
+```bash
+node scripts/kacha.mjs doctor --profile core
+node scripts/kacha.mjs prepare --task local_optimization \
+  --modules beauty,audio --agent claude --model-tier economy \
+  --project PROJECT.json
+node scripts/kacha.mjs next PROJECT.json
+node scripts/kacha.mjs compile-change change-request.json
+node scripts/kacha.mjs visual-evidence INPUT.mov \
+  --output-dir output/visual-evidence --mode review
+```
+
+完整读取 packet 的 `readOrder`，每次只执行一个 `nextAction`。Claude 先读
+本地视觉 JSON/Markdown；只有明确允许外传时才用 MiniMax 增强最多 6 张
+关键帧。`prepare` 会自动补入弱模型执行协议和 Claude 视觉 reference，并
+阻止 reference 超过所选模型档位预算。详细配方、错误码和授权见对应
+reference。
 
 ## 不可降低的合同
 

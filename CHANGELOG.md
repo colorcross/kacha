@@ -6,6 +6,19 @@
 
 ### Added
 
+- 增加 V4 确定性执行层：`doctor`、`prepare`、`next`、`compile-change`、
+  `visual-evidence` 与 `vision-enrich` 统一入口。
+- 增加较弱模型执行包、唯一下一步状态机、稳定 `KACHA-E100`–`E500` 错误码
+  和常见增量返工配方编译器。
+- 增加 Claude Code 本地视觉证据：关键帧、contact sheet、时间码、亮度、
+  Apple Vision 人脸/人物/OCR 与低 token Markdown 摘要。
+- 增加外传/付费服务/显式命令三重授权的 MiniMax 关键帧语义增强、无代理
+  直连、帧哈希复核、并发锁、结构校验、有限帧上传、结果缓存和零上传
+  dry-run。
+- 增加项目/视觉构建互斥锁、进程内媒体探测与哈希复用，以及候选阶段快速文件
+  身份复核；最终 release 仍强制完整 SHA-256。
+- 增加基于 path/size/mtime/ctime/inode 强身份的跨进程 ffprobe 缓存，文件
+  变化自动失效，缓存失败不阻断主流程。
 - 增加 v3 增量返工架构：稳定项目上下文、版本差异、产物依赖索引、L0–L3
   影响推导、最小渲染计划和运行指标。
 - 增加分层 QC：只改画面时证明音频 elementary stream 未变，只改声音时证明
@@ -33,6 +46,10 @@
 
 ### Changed
 
+- 完整 QC 把解码、black/freeze/silence 和 loudness 合并为一次媒体遍历；
+  增量 QC 也按实际变化层复用同一次遍历，移除重复全片解码。
+- reference token 预算改为中文友好的保守估算；`prepare` 增加
+  economy/balanced/frontier 档位、自动支持 reference 和超预算阻断。
 - `SKILL.md` 改为按任务路由的精简入口，详细规则下沉到 reference，减少局部
   返工时的重复上下文。
 - Skill 名称由 `kacha-kacha` / “咔嚓咔嚓”统一为 `kacha` / “咔嚓”。

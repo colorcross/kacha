@@ -94,6 +94,22 @@ For v3 only. It checks the current deliverable, incremental technical evidence,
 frozen-layer proof, and the dynamic human checklist. A passing `candidate`
 remains editable; only a `release_candidate` may enter `gate-release`.
 
+## V4 deterministic execution layer
+
+Six stable commands reduce model-reasoning dependence:
+
+- `doctor`: inspect runtime and visual-compensation capabilities;
+- `prepare`: emit a model-tiered, budget-bounded task packet and exact `readOrder`;
+- `next`: derive one legal next action from current files and hashes;
+- `compile-change`: compile common feedback recipes into v3 contracts;
+- `visual-evidence`: build local keyframe, face/person, OCR, and technical evidence;
+- `vision-enrich`: enrich a few frames with MiniMax only after external-upload,
+  paid-service, and explicit command authorization.
+
+`nextAction.owner` separates Agent-safe work from a real render engine and
+human review. See `references/agent-execution.md` and
+`references/visual-evidence.md`.
+
 ## Fail closed
 
 - Missing input or hash mismatch: stop.

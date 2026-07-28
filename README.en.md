@@ -41,6 +41,13 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Adds a v3 incremental path for approved baselines: record only the current
   delta, reuse fingerprinted artifacts, render affected layers, and prove
   frozen streams unchanged.
+- Gives lower-capability models a deterministic `prepare → next` protocol,
+  stable error codes, and compiled change recipes instead of relying on
+  high-reasoning improvisation.
+- Produces local, machine-readable keyframe, face, person, OCR, luminance, and
+  timestamp evidence for Claude Code. MiniMax may enrich a few frames only
+  after external-upload, paid-service, and explicit command authorization;
+  the whole video is never uploaded by this path.
 - Validates semantic cuts, shot motivation, continuity, reframing, masks, picture-in-picture, subtitles, covers, and visual packaging.
 - Coordinates dialogue preprocessing, voice enhancement, final mixing, and audio/video alignment.
 - Bundles 12 creator-produced sound effects with exact titles, IDs, hashes, and a dedicated asset license.
@@ -101,6 +108,25 @@ The installer needs Python 3, `curl`, and `tar`. Node.js 20+ is required for the
 Planning is not authorization to modify files. Rendering is not QC. Automated technical QC is not human approval. Local release is not upload or publication.
 
 ## The shortest complete workflow
+
+### Lower-capability models and Claude Code
+
+```bash
+node scripts/kacha.mjs doctor --profile claude-vision
+node scripts/kacha.mjs prepare \
+  --task local_optimization --modules beauty \
+  --agent claude --model-tier economy --project /path/to/project.json \
+  --output /path/to/agent-packet.json
+node scripts/kacha.mjs next /path/to/project.json
+```
+
+The Agent reads the packet's `readOrder`, then executes exactly one
+`nextAction` at a time. Common changes can be compiled from
+`examples/change-request.json`. Claude Code reads local
+`visual-evidence.md/.json` first; MiniMax is an explicitly authorized optional
+semantic layer, not a default dependency. `prepare` automatically routes the
+economy-model and Claude visual support references, and fails closed when the
+conservative multilingual token budget is exceeded.
 
 ### First edit or structural rebuild
 
@@ -169,7 +195,7 @@ release.
 ```text
 SKILL.md           Agent entry point and routing rules
 references/        Detailed workflow, editing, audio, visual, and QC contracts
-scripts/           Gates, validators, probes, media helpers, and secret scanning
+scripts/           State machine, visual evidence, gates, media helpers, and scanning
 examples/          Fictional v2 full-edit and v3 incremental templates
 assets/sfx/        12 original SFX, working copies, hashes, and asset license
 tests/             Regression and installer tests

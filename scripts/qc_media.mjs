@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
+  fileIdentity,
   mediaSummary,
   parseRatio,
   readJson,
@@ -165,48 +166,33 @@ if (summary.video && summary.audio && summary.fps > 0) {
   );
 }
 
-const decode = run("ffmpeg", [
+const detectorArguments = [
   "-hide_banner",
-  "-v",
-  "error",
+  "-nostats",
   "-xerror",
   "-nostdin",
   "-i",
   finalVideo,
-  "-map",
-  "0:v:0",
-  "-map",
-  "0:a?",
-  "-f",
-  "null",
-  "-",
-]);
-checks.push(
-  check(
-    "full_decode",
-    decode.status === 0,
-    decode.status === 0 ? "decoded without FFmpeg errors" : decode.stderr.trim(),
-    "complete decode with no errors",
-  ),
-);
-
+];
+if (summary.video) {
+  detectorArguments.push(
+    "-vf",
+    "blackdetect=d=0.08:pix_th=0.10,freezedetect=n=-60dB:d=0.5",
+  );
+}
+if (summary.audio) {
+  detectorArguments.push(
+    "-af",
+    "silencedetect=n=-50dB:d=0.5,"
+      + "loudnorm=I=-20:TP=-2:LRA=7:print_format=json",
+  );
+}
+detectorArguments.push("-f", "null", "-");
+const detector = run("ffmpeg", detectorArguments);
+const detectorLog = `${detector.stdout}\n${detector.stderr}`;
 let loudness = null;
 if (summary.audio) {
-  const result = run("ffmpeg", [
-    "-hide_banner",
-    "-nostats",
-    "-nostdin",
-    "-i",
-    finalVideo,
-    "-map",
-    "0:a:0",
-    "-af",
-    "loudnorm=I=-20:TP=-2:LRA=7:print_format=json",
-    "-f",
-    "null",
-    "-",
-  ]);
-  loudness = parseLoudnorm(result.stderr);
+  loudness = parseLoudnorm(detector.stderr);
   if (!loudness) {
     checks.push(check("loudness_analysis", false, "unavailable", "valid loudnorm report"));
   } else {
@@ -234,20 +220,16 @@ if (summary.audio) {
   }
 }
 
-const detector = run("ffmpeg", [
-  "-hide_banner",
-  "-nostats",
-  "-nostdin",
-  "-i",
-  finalVideo,
-  "-vf",
-  "blackdetect=d=0.08:pix_th=0.10,freezedetect=n=-60dB:d=0.5",
-  "-af",
-  "silencedetect=n=-50dB:d=0.5",
-  "-f",
-  "null",
-  "-",
-]);
+checks.push(
+  check(
+    "full_decode",
+    detector.status === 0,
+    detector.status === 0
+      ? "complete detector pass decoded without FFmpeg errors"
+      : detector.stderr.trim(),
+    "complete decode with no errors",
+  ),
+);
 checks.push(
   check(
     "artifact_detectors",
@@ -256,7 +238,6 @@ checks.push(
     "black/freeze/silence detectors complete",
   ),
 );
-const detectorLog = `${detector.stdout}\n${detector.stderr}`;
 const findings = {
   blackSegments: detectorLog
     .split("\n")
@@ -274,12 +255,14 @@ const findings = {
 
 const failures = checks.filter((item) => item.status === "fail");
 const reviewFindings = Object.values(findings).flat().length;
+const finalIdentity = fileIdentity(finalVideo);
 const report = {
   schemaVersion: "2.0",
   generatedAt: new Date().toISOString(),
   project: project.projectId,
   finalVideo,
-  sha256: sha256File(finalVideo),
+  sha256: finalIdentity.sha256,
+  fileIdentity: finalIdentity,
   status: failures.length > 0
     ? "fail"
     : reviewFindings > 0

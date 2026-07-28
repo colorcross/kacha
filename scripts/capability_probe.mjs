@@ -2,6 +2,7 @@
 
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   commandExists,
   run,
@@ -59,6 +60,10 @@ const GROUPS = {
   ],
   hdr: ["filter:zscale", "filter:tonemap"],
   ai_video: ["command:mmx", "mmx-flag:--async"],
+  claude_vision: [
+    "engine:visual-evidence",
+    "engine:semantic-visual-evidence",
+  ],
 };
 
 const OPTIONAL = [
@@ -76,6 +81,8 @@ const OPTIONAL = [
   "mmx-flag:--duration",
   "mmx-flag:--resolution",
   "mmx-flag:--prompt-optimizer",
+  "mmx-command:vision-describe",
+  "mmx-auth:active",
 ];
 
 const managedDataRoot = process.env.XDG_DATA_HOME
@@ -98,7 +105,7 @@ const legacyManagedDemucsBin = path.join(
 
 function usage() {
   console.error(
-    "用法：capability_probe.sh [--profile core|voice|masks|motion|geometry|hdr|ai-video|full] "
+    "用法：capability_probe.sh [--profile core|voice|masks|motion|geometry|hdr|ai-video|claude-vision|full] "
       + "[--require CAPABILITY] [--output manifest.json]",
   );
 }
@@ -152,12 +159,25 @@ for (const line of filters.split("\n")) {
 }
 
 let mmxHelp = "";
+let mmxVisionHelp = "";
 let mmxVersion = null;
+let mmxAuthenticated = false;
 if (commandExists("mmx")) {
   const version = run("mmx", ["--version"]);
   mmxVersion = (version.stdout || version.stderr).trim() || "unknown";
   const help = run("mmx", ["video", "generate", "--help"]);
   mmxHelp = `${help.stdout}\n${help.stderr}`;
+  const visionHelp = run("mmx", ["vision", "describe", "--help"]);
+  mmxVisionHelp = `${visionHelp.stdout}\n${visionHelp.stderr}`;
+  const auth = run("mmx", [
+    "auth",
+    "status",
+    "--output",
+    "json",
+    "--quiet",
+    "--non-interactive",
+  ]);
+  mmxAuthenticated = auth.status === 0;
 }
 
 function inspect(capability) {
@@ -220,6 +240,32 @@ function inspect(capability) {
       evidence: "Swift import Vision/CoreImage/AVFoundation",
     };
   }
+  if (kind === "engine" && value === "visual-evidence") {
+    const script = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "build_visual_evidence.mjs",
+    );
+    return {
+      available: run("/bin/test", ["-f", script]).status === 0
+        && commandExists("ffmpeg")
+        && commandExists("ffprobe"),
+      evidence: `local visual evidence builder: ${script}`,
+    };
+  }
+  if (kind === "engine" && value === "semantic-visual-evidence") {
+    const appleVision = inspect("framework:apple-vision");
+    const minimaxVision = inspect("mmx-command:vision-describe");
+    const minimaxAuth = inspect("mmx-auth:active");
+    return {
+      available: appleVision.available
+        || (minimaxVision.available && minimaxAuth.available),
+      evidence: appleVision.available
+        ? "local Apple Vision semantic evidence"
+        : minimaxVision.available && minimaxAuth.available
+          ? "authorized MiniMax keyframe semantic evidence"
+          : "neither Apple Vision nor authorized MiniMax vision is available",
+    };
+  }
   if (kind === "application" && value === "davinci-resolve") {
     const location = "/Applications/DaVinci Resolve/DaVinci Resolve.app";
     const result = run("/bin/test", ["-d", location]);
@@ -229,6 +275,19 @@ function inspect(capability) {
     return {
       available: commandExists("mmx") && mmxHelp.includes(value),
       evidence: `mmx video generate --help contains ${value}`,
+    };
+  }
+  if (kind === "mmx-command" && value === "vision-describe") {
+    return {
+      available: commandExists("mmx")
+        && /Describe an image|image understanding/i.test(mmxVisionHelp),
+      evidence: "mmx vision describe --help",
+    };
+  }
+  if (kind === "mmx-auth" && value === "active") {
+    return {
+      available: mmxAuthenticated,
+      evidence: "mmx auth status (credential omitted)",
     };
   }
   return { available: false, evidence: "unknown capability" };

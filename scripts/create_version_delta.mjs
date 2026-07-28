@@ -23,6 +23,7 @@ const LAYERS_BY_TYPE = {
   reorder: ["visual", "dialogue", "bgm", "sfx", "subtitles"],
   geometry_change: ["visual", "metadata"],
 };
+const VERSION_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 
 function option(args, name, fallback = null) {
   const index = args.indexOf(name);
@@ -99,6 +100,13 @@ if (!contextInput || !writeInput || !newVersionId || types.length === 0) {
       + "[--cover 3:4=FILE] [--subtitle zh-CN=FILE] "
       + "[--reuse ARTIFACT_ID=FINGERPRINT] "
       + "[--duration-change] [--reason TEXT] [--accept TEXT]",
+  );
+  process.exit(2);
+}
+if (!VERSION_ID.test(newVersionId)) {
+  console.error(
+    "newVersionId 只能包含 1–64 位字母、数字、点、下划线或连字符，"
+      + "且必须以字母或数字开头",
   );
   process.exit(2);
 }

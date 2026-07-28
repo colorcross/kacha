@@ -92,6 +92,22 @@ editProposal + editPlan + inputs
 `candidate` 通过后仍可返工；只有 `release_candidate` 能进入
 `gate-release`。
 
+## V4 确定性执行层
+
+模型不再直接控制状态机，而是通过六个稳定入口工作：
+
+- `doctor`：运行环境和视觉补偿能力；
+- `prepare`：按任务/模型档位生成受预算约束的执行包与 readOrder；
+- `next`：从真实文件和哈希推导唯一下一步；
+- `compile-change`：把常见返工小合同编译成 v3 delta/manifest/plan；
+- `visual-evidence`：本地关键帧、人物、OCR 和技术证据；
+- `vision-enrich`：外传、付费服务和显式命令授权后，以 MiniMax 增强有限
+  关键帧语义。
+
+`nextAction.owner` 把 `agent`、`render_engine` 和 `human` 分开，防止验证命令
+冒充渲染、自动 QC 冒充审片。详细合同见
+`references/agent-execution.md` 和 `references/visual-evidence.md`。
+
 ## 失败即停
 
 - 输入缺失或哈希不符：停止；
