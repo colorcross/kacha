@@ -10,13 +10,28 @@ source_clone="$temporary/source"
 archive="$temporary/kacha.tar.gz"
 mkdir -p "$test_home"
 
+archive_paths() {
+  if git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git -C "$root" ls-files --cached --others --exclude-standard -z \
+      | while IFS= read -r -d '' path; do
+          if [[ -e "$root/$path" || -L "$root/$path" ]]; then
+            printf '%s\0' "$path"
+          fi
+        done
+    return
+  fi
+
+  (
+    cd "$root"
+    find . \
+      \( -name .git -o -name node_modules -o -name .next \
+        -o -name .open-next -o -name .wrangler -o -name dist \) -prune \
+      -o \( -type f -o -type l \) -print0
+  )
+}
+
 mkdir -p "$source_clone/kacha-fixture"
-git -C "$root" ls-files --cached --others --exclude-standard -z \
-  | while IFS= read -r -d '' path; do
-      if [[ -e "$root/$path" || -L "$root/$path" ]]; then
-        printf '%s\0' "$path"
-      fi
-    done \
+archive_paths \
   | tar -cf - -C "$root" --null -T - \
   | tar -xf - -C "$source_clone/kacha-fixture"
 tar -czf "$archive" -C "$source_clone" kacha-fixture
