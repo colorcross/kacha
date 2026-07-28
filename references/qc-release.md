@@ -73,6 +73,7 @@ node scripts/kacha.mjs gate-release PROJECT.json
 - 切点有信息、情绪或视角理由；
 - 同一主体相邻景别有可感知变化；
 - 无 2–4 帧瞬闪、残帧、黑帧或模板转场掩盖错误切点；
+- 高影响视觉模块的实现与已批准本地样式帧/Figma 设计、三态动效和声音交接一致；
 - 插镜对象、动作、状态、角色和时态完全匹配；
 - 插镜首/中/尾和回到 A-roll 的交接帧通过；
 - 画中画不遮关键证据，退出后无同源重复；
@@ -97,6 +98,7 @@ node scripts/kacha.mjs gate-release PROJECT.json
 - 参考版本同源同响度 A/B；
 - BGM 可感知但不抢人声；
 - 每个计划内 SFX 在最终成片可听；
+- SFX 与 `sfxPlan.events` 一一对应，功能、音色和落点有区分，无整片单一音效滥用；
 - 响度、true peak、声道和 48 kHz 合同通过；
 - declared FPS 与 average FPS 都符合项目合同；
 - 手机扬声器和耳机均已正常速度试听。

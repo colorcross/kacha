@@ -41,6 +41,20 @@ function expectFailure(command, args) {
   return result;
 }
 
+function localDesignPreflight(name) {
+  return {
+    status: "approved_for_implementation",
+    artifactMode: "local_styleframe",
+    artifactRef: `design/${name}/approved-styleframes.png`,
+    layoutSpec: "已定义人物、字幕、品牌和模块安全区",
+    motionSpec: "已定义进入、停稳和退出状态及缓动",
+    soundSpec: "已定义声音功能、落点和相对人声音量",
+    stateFrames: ["entry", "peak", "exit"],
+    implementationHandoff: "按已批准样式帧、动效参数和音效帧点实现",
+    qcEvidence: ["手机尺寸样式帧", "进入/停稳/退出状态"],
+  };
+}
+
 async function test(name, callback) {
   try {
     await callback();
@@ -136,6 +150,117 @@ await test("edit plan rejects reversed timecode without timeSeconds", () => {
   plan.cuts[0].timecode = "00:00:20.000";
   plan.cuts[1].timecode = "00:00:10.000";
   const file = path.join(temporary, "edit-plan-reversed.json");
+  writeJson(file, plan);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
+});
+
+await test("edit plan rejects a cropped head in a normal human shot", () => {
+  const plan = readJson(path.join(examples, "edit-plan.json"));
+  plan.cuts[0].headTopMarginAfter = 0;
+  const file = path.join(temporary, "edit-plan-cropped-head.json");
+  writeJson(file, plan);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
+});
+
+await test("edit plan accepts a designed full-screen information module", () => {
+  const plan = readJson(path.join(examples, "edit-plan.json"));
+  plan.effects.push({
+    timeSeconds: 90,
+    timecode: "00:01:30.000",
+    technique: "全屏流程图",
+    trigger: "口播开始解释完整工作流程",
+    function: ["information"],
+    mechanism: "暂时替换 A-roll，把多阶段关系交给完整画布逐步建立",
+    beforeState: "人物中景口播",
+    afterState: "全屏流程节点按口播逐项点亮",
+    entryExit: "章节边界进入，流程收束后完整退出，再恢复人物",
+    simplerAlternative: "人物旁侧小卡；信息节点较多，旁侧布局会过密",
+    failureCondition: "流程没有真正铺满画布，或半透明叠在人物头像上",
+    qcEvidence: ["全屏覆盖率截图", "进入前/停留中/退出后代表帧"],
+    layoutMode: "full_screen",
+    subjectVisibilityPolicy: "replace_a_roll",
+    fullScreenCoverage: 0.98,
+    layoutEvidence: ["A-roll 已完全替换", "手机尺寸阅读预览"],
+    designPreflight: localDesignPreflight("full-screen-flowchart"),
+  });
+  const file = path.join(temporary, "edit-plan-fullscreen-flowchart.json");
+  writeJson(file, plan);
+  execute(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
+});
+
+await test("edit plan rejects an information card covering the head safe zone", () => {
+  const plan = readJson(path.join(examples, "edit-plan.json"));
+  plan.effects.push({
+    timeSeconds: 90,
+    timecode: "00:01:30.000",
+    technique: "人物旁侧信息卡",
+    trigger: "需要列出三个并列结论",
+    function: ["information"],
+    mechanism: "人物保留在画面中，信息卡从负空间展开",
+    beforeState: "人物中景口播",
+    afterState: "人物与卡片并置",
+    entryExit: "句首进入，最后一项说完后退出",
+    simplerAlternative: "全屏信息卡；当前仍需保留人物表情",
+    failureCondition: "卡片进入人物头像或字幕安全区",
+    qcEvidence: ["人物头像框和卡片框叠加图"],
+    layoutMode: "subject_safe",
+    moduleBounds: { x: 0.52, y: 0.06, width: 0.42, height: 0.34 },
+    subjectHeadBounds: [{ x: 0.62, y: 0.1, width: 0.2, height: 0.25 }],
+    headSafetyMargin: 0.03,
+    layoutEvidence: ["中段代表帧"],
+    designPreflight: localDesignPreflight("subject-safe-card"),
+  });
+  const file = path.join(temporary, "edit-plan-card-covers-head.json");
+  writeJson(file, plan);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
+});
+
+await test("edit plan rejects implementation before visual design approval", () => {
+  const plan = readJson(path.join(examples, "edit-plan.json"));
+  delete plan.effects[1].designPreflight;
+  const file = path.join(temporary, "edit-plan-missing-design-preflight.json");
+  writeJson(file, plan);
+  expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
+});
+
+await test("edit plan accepts a varied whole-timeline SFX palette", () => {
+  const plan = readJson(path.join(examples, "edit-plan.json"));
+  plan.sfxPlan.palette = [
+    { assetId: "turn-local-pivot", title: "转折", category: "turn", useFor: "观点或叙事方向真正改变" },
+    { assetId: "ui-tick", title: "轻提示", category: "ui", useFor: "列表项落位" },
+    { assetId: "soft-whoosh", title: "轻转场", category: "transition", useFor: "方向一致的短动画" },
+    { assetId: "knowledge-local-point", title: "知识点", category: "knowledge", useFor: "核心判断落位" },
+  ];
+  plan.sfxPlan.events = [
+    { timeSeconds: 10, effectRef: "effects:title", assetId: "ui-tick", title: "轻提示", category: "ui", purpose: "标题落位", syncTarget: "标题停稳帧", levelRelativeToDialogueDb: -12 },
+    { timeSeconds: 12.4, effectRef: "effects[0]", assetId: "turn-local-pivot", title: "转折", category: "turn", purpose: "手掌落桌并转入新观点", syncTarget: "动作峰值", levelRelativeToDialogueDb: -10 },
+    { timeSeconds: 20, effectRef: "effects:transition-a", assetId: "soft-whoosh", title: "轻转场", category: "transition", purpose: "横向连接", syncTarget: "运动峰值", levelRelativeToDialogueDb: -10 },
+    { timeSeconds: 41.2, effectRef: "effects[1]", assetId: "knowledge-local-point", title: "知识点", category: "knowledge", purpose: "人物后文字落位", syncTarget: "文字停稳帧", levelRelativeToDialogueDb: -8 },
+    { timeSeconds: 50, effectRef: "effects:list-b", assetId: "ui-tick", title: "轻提示", category: "ui", purpose: "流程节点", syncTarget: "节点亮起帧", levelRelativeToDialogueDb: -12 },
+    { timeSeconds: 60, effectRef: "effects:transition-b", assetId: "soft-whoosh", title: "轻转场", category: "transition", purpose: "返回真人", syncTarget: "画面停稳帧", levelRelativeToDialogueDb: -10 },
+  ];
+  const file = path.join(temporary, "edit-plan-varied-sfx.json");
+  writeJson(file, plan);
+  execute(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
+});
+
+await test("edit plan rejects one SFX reused across the whole timeline", () => {
+  const plan = readJson(path.join(examples, "edit-plan.json"));
+  plan.effects[0].soundDesign.assetId = "knowledge-local-point";
+  plan.effects[0].soundDesign.title = "知识点";
+  plan.effects[0].soundDesign.readySha256 =
+    "36aaccd076bdae00568426e29eceb9684116b4973c0f1a8859f5a78b6b4fa7b5";
+  plan.sfxPlan.events = [10, 20, 30, 41.2, 50, 60].map((timeSeconds, index) => ({
+    timeSeconds,
+    effectRef: index === 3 ? "effects[1]" : `effects:${index}`,
+    assetId: "knowledge-local-point",
+    title: "知识点",
+    category: "knowledge",
+    purpose: "重复使用同一落点音",
+    syncTarget: "视觉停稳帧",
+    levelRelativeToDialogueDb: -8,
+  }));
+  const file = path.join(temporary, "edit-plan-one-sfx-everywhere.json");
   writeJson(file, plan);
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
 });

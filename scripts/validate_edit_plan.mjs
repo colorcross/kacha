@@ -17,6 +17,43 @@ const EFFECT_FUNCTIONS = new Set([
   "attention",
   "safety",
 ]);
+const TRANSITION_TYPES = new Set([
+  "clean_cut",
+  "action_cut",
+  "eyeline_cut",
+  "match_cut",
+  "j_cut",
+  "l_cut",
+  "sound_bridge",
+  "cutaway",
+  "graphic_transition",
+  "dissolve",
+  "directional_transition",
+  "whip_transition",
+]);
+const TRANSITION_BASES = new Set([
+  "information",
+  "action",
+  "eyeline",
+  "sound",
+  "time",
+  "space",
+  "graphic",
+  "emotion",
+]);
+const STYLIZED_TRANSITIONS = new Set([
+  "graphic_transition",
+  "dissolve",
+  "directional_transition",
+  "whip_transition",
+]);
+const HEAD_FRAMING = new Set([
+  "clear",
+  "intentional_extreme_close",
+  "not_applicable",
+]);
+const INFORMATION_LAYOUT_MODES = new Set(["full_screen", "subject_safe"]);
+const DESIGN_ARTIFACT_MODES = new Set(["local_styleframe", "figma"]);
 const SCALE_ALIASES = new Map([
   ["extreme_wide", "extreme_wide"],
   ["远景", "wide"],
@@ -62,6 +99,85 @@ function validActiveInterval(value) {
     && value.endSeconds > value.startSeconds;
 }
 
+function normalizedRect(value) {
+  if (!value || typeof value !== "object") return null;
+  const rect = {
+    x: Number(value.x),
+    y: Number(value.y),
+    width: Number(value.width),
+    height: Number(value.height),
+  };
+  if (
+    !Object.values(rect).every(Number.isFinite)
+    || rect.x < 0
+    || rect.y < 0
+    || rect.width <= 0
+    || rect.height <= 0
+    || rect.x + rect.width > 1.000001
+    || rect.y + rect.height > 1.000001
+  ) {
+    return null;
+  }
+  return rect;
+}
+
+function expandedRect(rect, margin) {
+  return {
+    x: Math.max(0, rect.x - margin),
+    y: Math.max(0, rect.y - margin),
+    width: Math.min(1, rect.x + rect.width + margin) - Math.max(0, rect.x - margin),
+    height: Math.min(1, rect.y + rect.height + margin) - Math.max(0, rect.y - margin),
+  };
+}
+
+function rectanglesOverlap(a, b) {
+  return a.x < b.x + b.width
+    && a.x + a.width > b.x
+    && a.y < b.y + b.height
+    && a.y + a.height > b.y;
+}
+
+function validateHeadFraming(cut, side, scale, label, errors) {
+  const suffix = side === "before" ? "Before" : "After";
+  const humanPresence = cut[`humanPresence${suffix}`];
+  const framing = cut[`headFraming${suffix}`];
+  const margin = Number(cut[`headTopMargin${suffix}`]);
+  const sideLabel = `${label}.${side}`;
+
+  if (typeof humanPresence !== "boolean") {
+    errors.push(`${sideLabel}: humanPresence${suffix} 必须为布尔值`);
+    return;
+  }
+  if (!HEAD_FRAMING.has(framing)) {
+    errors.push(`${sideLabel}: headFraming${suffix} 无效或缺失`);
+    return;
+  }
+  if (!humanPresence) {
+    if (framing !== "not_applicable") {
+      errors.push(`${sideLabel}: 无人物时 headFraming${suffix} 必须为 not_applicable`);
+    }
+    return;
+  }
+  if (framing === "not_applicable") {
+    errors.push(`${sideLabel}: 有人物时不得跳过头部完整性检查`);
+    return;
+  }
+  if (framing === "intentional_extreme_close") {
+    if (scale !== "extreme_close") {
+      errors.push(`${sideLabel}: 只有特写/大特写允许有意裁切头部`);
+    }
+    if (!hasValue(cut[`extremeCloseIntent${suffix}`])) {
+      errors.push(`${sideLabel}: 有意裁切头部必须说明 extremeCloseIntent${suffix}`);
+    }
+    return;
+  }
+  if (!Number.isFinite(margin) || margin < 0.015 || margin > 0.5) {
+    errors.push(
+      `${sideLabel}: 普通人物镜头 headTopMargin${suffix} 必须为 0.015 至 0.5 的归一化余量`,
+    );
+  }
+}
+
 function effectiveTime(item, fps, label, errors) {
   const fromSeconds = Number.isFinite(item.timeSeconds) ? item.timeSeconds : null;
   const fromTimecode = hasValue(item.timecode)
@@ -92,6 +208,206 @@ function effectiveTime(item, fps, label, errors) {
 function requireFields(object, fields, label, errors) {
   for (const field of fields) {
     if (!hasValue(object?.[field])) errors.push(`${label}: 缺少 ${field}`);
+  }
+}
+
+function validateDesignPreflight(value, label, errors) {
+  if (!value || typeof value !== "object") {
+    errors.push(`${label}: 缺少设计预检；必须先设计展示、动效和音效再实施`);
+    return;
+  }
+  requireFields(
+    value,
+    [
+      "status",
+      "artifactMode",
+      "artifactRef",
+      "layoutSpec",
+      "motionSpec",
+      "soundSpec",
+      "stateFrames",
+      "implementationHandoff",
+      "qcEvidence",
+    ],
+    label,
+    errors,
+  );
+  if (value.status !== "approved_for_implementation") {
+    errors.push(`${label}: status 必须为 approved_for_implementation`);
+  }
+  if (!DESIGN_ARTIFACT_MODES.has(value.artifactMode)) {
+    errors.push(`${label}: artifactMode 必须为 local_styleframe 或 figma`);
+  }
+  if (!Array.isArray(value.stateFrames) || value.stateFrames.length < 3) {
+    errors.push(`${label}: stateFrames 至少包含进入、信息最满/停稳和退出三种状态`);
+  }
+  if (value.artifactMode === "figma") {
+    requireFields(
+      value,
+      ["figmaFileUrl", "figmaNodeIds", "exportEvidence"],
+      label,
+      errors,
+    );
+    if (!/^https:\/\/(?:www\.)?figma\.com\//i.test(String(value.figmaFileUrl ?? ""))) {
+      errors.push(`${label}: figmaFileUrl 必须是有效的 figma.com 链接`);
+    }
+    if (!Array.isArray(value.figmaNodeIds) || value.figmaNodeIds.length === 0) {
+      errors.push(`${label}: Figma 设计必须记录至少一个 node ID`);
+    }
+  }
+}
+
+function effectSoundAsset(effect) {
+  return effect.soundDesign?.assetId
+    ?? effect.soundAsset?.assetId
+    ?? effect.sfxDesign?.assetId
+    ?? null;
+}
+
+function validateSfxPlan(plan, effects, errors) {
+  const soundEffects = effects
+    .map((effect, index) => ({
+      index,
+      timeSeconds: Number(effect.timeSeconds),
+      assetId: effectSoundAsset(effect),
+    }))
+    .filter((item) => hasValue(item.assetId));
+  if (soundEffects.length === 0 && !hasValue(plan.sfxPlan)) return;
+
+  const sfxPlan = plan.sfxPlan;
+  const label = "sfxPlan";
+  if (!sfxPlan || typeof sfxPlan !== "object") {
+    errors.push(`${label}: 使用音效时必须提供整片音效计划`);
+    return;
+  }
+  requireFields(
+    sfxPlan,
+    [
+      "selectionPrinciple",
+      "repetitionPolicy",
+      "dialogueProtection",
+      "palette",
+      "events",
+      "auditionEvidence",
+    ],
+    label,
+    errors,
+  );
+  if (!Array.isArray(sfxPlan.palette) || sfxPlan.palette.length === 0) {
+    errors.push(`${label}.palette: 必须提供至少一个候选音效`);
+  }
+  if (!Array.isArray(sfxPlan.events) || sfxPlan.events.length === 0) {
+    errors.push(`${label}.events: 必须列出真实音效事件`);
+    return;
+  }
+
+  const palette = Array.isArray(sfxPlan.palette) ? sfxPlan.palette : [];
+  const paletteIds = new Set();
+  palette.forEach((asset, index) => {
+    requireFields(
+      asset,
+      ["assetId", "title", "category", "useFor"],
+      `${label}.palette[${index}]`,
+      errors,
+    );
+    if (hasValue(asset.assetId)) {
+      if (paletteIds.has(asset.assetId)) {
+        errors.push(`${label}.palette[${index}]: assetId 重复：${asset.assetId}`);
+      }
+      paletteIds.add(asset.assetId);
+    }
+  });
+
+  const events = sfxPlan.events;
+  const eventIds = [];
+  const categories = new Set();
+  let previousTime = -Infinity;
+  let consecutiveAsset = null;
+  let consecutiveCount = 0;
+  events.forEach((event, index) => {
+    const eventLabel = `${label}.events[${index}]`;
+    requireFields(
+      event,
+      [
+        "timeSeconds",
+        "effectRef",
+        "assetId",
+        "title",
+        "category",
+        "purpose",
+        "syncTarget",
+        "levelRelativeToDialogueDb",
+      ],
+      eventLabel,
+      errors,
+    );
+    const time = Number(event.timeSeconds);
+    if (
+      !Number.isFinite(time)
+      || time < 0
+      || time > Number(plan.timelineDurationSeconds)
+    ) {
+      errors.push(`${eventLabel}: timeSeconds 超出时间线`);
+    } else if (time < previousTime) {
+      errors.push(`${eventLabel}: 音效事件必须按时间排序`);
+    }
+    previousTime = Number.isFinite(time) ? time : previousTime;
+    if (hasValue(event.assetId) && !paletteIds.has(event.assetId)) {
+      errors.push(`${eventLabel}: assetId 未进入 sfxPlan.palette`);
+    }
+    const level = Number(event.levelRelativeToDialogueDb);
+    if (!Number.isFinite(level) || level < -30 || level > 0) {
+      errors.push(`${eventLabel}: 相对人声音量必须为 -30 dB 至 0 dB`);
+    }
+    if (hasValue(event.assetId)) eventIds.push(event.assetId);
+    if (hasValue(event.category)) categories.add(event.category);
+
+    if (event.assetId === consecutiveAsset) {
+      consecutiveCount += 1;
+    } else {
+      consecutiveAsset = event.assetId;
+      consecutiveCount = 1;
+    }
+    if (consecutiveCount > 2 && !hasValue(event.patternException)) {
+      errors.push(`${eventLabel}: 同一音效不得连续使用超过两次，重复节奏必须说明 patternException`);
+    }
+  });
+
+  soundEffects.forEach((soundEffect) => {
+    const matched = events.some((event) => (
+      event.assetId === soundEffect.assetId
+      && (
+        !Number.isFinite(soundEffect.timeSeconds)
+        || Math.abs(Number(event.timeSeconds) - soundEffect.timeSeconds)
+          <= Math.max(0.002, 1 / Number(plan.timelineFPS))
+      )
+    ));
+    if (!matched) {
+      errors.push(
+        `effects[${soundEffect.index}]: sound asset ${soundEffect.assetId} 未映射到 sfxPlan.events`,
+      );
+    }
+  });
+
+  if (events.length >= 4) {
+    const uniqueAssets = new Set(eventIds);
+    if (uniqueAssets.size < 3) {
+      errors.push(`${label}: 4 个及以上音效事件至少使用 3 个真正不同的音效`);
+    }
+    const counts = new Map();
+    for (const assetId of eventIds) {
+      counts.set(assetId, (counts.get(assetId) ?? 0) + 1);
+    }
+    const maxShare = Math.max(...counts.values()) / eventIds.length;
+    if (maxShare > 0.5) {
+      errors.push(`${label}: 单个音效不得占整片音效事件的 50% 以上`);
+    }
+    if (categories.size < 2) {
+      errors.push(`${label}: 4 个及以上音效事件至少覆盖 2 种声音功能`);
+    }
+  }
+  if (events.length >= 7 && categories.size < 3) {
+    errors.push(`${label}: 7 个及以上音效事件至少覆盖 3 种声音功能`);
   }
 }
 
@@ -126,12 +442,54 @@ function validateCuts(cuts, plan, errors) {
         "change",
         "anchor",
         "continuityTreatment",
+        "transitionDecision",
         "failureCondition",
         "qcEvidence",
       ],
       label,
       errors,
     );
+    validateHeadFraming(cut, "before", before, label, errors);
+    validateHeadFraming(cut, "after", after, label, errors);
+
+    const transition = cut.transitionDecision;
+    if (transition && typeof transition === "object") {
+      requireFields(
+        transition,
+        ["type", "motivation", "continuityBasis", "visualTreatment", "audioTreatment", "fallback", "previewEvidence"],
+        `${label}.transitionDecision`,
+        errors,
+      );
+      if (!TRANSITION_TYPES.has(transition.type)) {
+        errors.push(`${label}.transitionDecision: 未知切镜/转场类型：${transition.type}`);
+      }
+      if (!TRANSITION_BASES.has(transition.continuityBasis)) {
+        errors.push(
+          `${label}.transitionDecision: continuityBasis 必须来自信息、动作、视线、声音、时间、空间、图形或情绪连续性`,
+        );
+      }
+      if (STYLIZED_TRANSITIONS.has(transition.type)) {
+        for (const field of ["handleFramesBefore", "handleFramesAfter"]) {
+          const frames = Number(transition[field]);
+          if (!Number.isInteger(frames) || frames < 3) {
+            errors.push(
+              `${label}.transitionDecision: 风格化转场 ${field} 必须至少保留 3 帧真实 handle`,
+            );
+          }
+        }
+        validateDesignPreflight(
+          transition.designPreflight,
+          `${label}.transitionDecision.designPreflight`,
+          errors,
+        );
+      }
+      if (
+        ["directional_transition", "whip_transition"].includes(transition.type)
+        && !hasValue(transition.motionDirection)
+      ) {
+        errors.push(`${label}.transitionDecision: 方向型转场必须声明 motionDirection`);
+      }
+    }
 
     const sameSubject = hasValue(cut.subjectBefore)
       && hasValue(cut.subjectAfter)
@@ -318,9 +676,81 @@ function validateEffects(effects, plan, errors) {
       );
     }
 
+    const isExplicitSoundEffect = techniqueIncludes(effect, [
+      "音效",
+      "sfx",
+      "tonal hit",
+      "whoosh",
+      "tick",
+      "impact",
+    ]);
+    if (isExplicitSoundEffect) {
+      const sound = effect.soundDesign ?? effect.soundAsset ?? effect.sfxDesign;
+      requireFields(
+        sound,
+        ["assetId", "title", "readySha256"],
+        `${label}.soundDesign`,
+        errors,
+      );
+    }
+
     const isSplitScreen = techniqueIncludes(effect, ["分屏", "split-screen", "split screen"]);
     if (isSplitScreen) {
       requireFields(effect, ["subjectSafeArea"], label, errors);
+    }
+
+    const isInformationModule = techniqueIncludes(effect, [
+      "信息卡",
+      "information card",
+      "info card",
+      "流程图",
+      "flowchart",
+      "弹窗",
+      "popup",
+      "modal",
+    ]);
+    if (isInformationModule) {
+      requireFields(effect, ["layoutMode", "layoutEvidence"], label, errors);
+      if (!INFORMATION_LAYOUT_MODES.has(effect.layoutMode)) {
+        errors.push(`${label}: 信息卡/流程图/弹窗 layoutMode 必须为 full_screen 或 subject_safe`);
+      } else if (effect.layoutMode === "full_screen") {
+        if (effect.subjectVisibilityPolicy !== "replace_a_roll") {
+          errors.push(`${label}: 全屏信息模块必须替换 A-roll，不得半透明覆盖人物头像`);
+        }
+        const coverage = Number(effect.fullScreenCoverage);
+        if (!Number.isFinite(coverage) || coverage < 0.95 || coverage > 1) {
+          errors.push(`${label}: 全屏信息模块 fullScreenCoverage 必须为 0.95 至 1`);
+        }
+      } else {
+        const moduleBounds = normalizedRect(effect.moduleBounds);
+        const headBounds = asArray(effect.subjectHeadBounds);
+        const margin = Number(effect.headSafetyMargin);
+        if (!moduleBounds) {
+          errors.push(`${label}: subject_safe 信息模块必须提供有效 moduleBounds`);
+        }
+        if (
+          !Number.isFinite(margin)
+          || margin < 0.01
+          || margin > 0.15
+        ) {
+          errors.push(`${label}: headSafetyMargin 必须为 0.01 至 0.15`);
+        }
+        if (headBounds.length === 0) {
+          errors.push(`${label}: subject_safe 信息模块必须提供 subjectHeadBounds`);
+        }
+        headBounds.forEach((value, headIndex) => {
+          const head = normalizedRect(value);
+          if (!head) {
+            errors.push(`${label}.subjectHeadBounds[${headIndex}]: 必须是有效归一化矩形`);
+          } else if (
+            moduleBounds
+            && Number.isFinite(margin)
+            && rectanglesOverlap(moduleBounds, expandedRect(head, margin))
+          ) {
+            errors.push(`${label}: 信息模块与人物头像安全区发生遮盖`);
+          }
+        });
+      }
     }
 
     const isParallax = techniqueIncludes(effect, ["2.5d", "视差", "parallax"]);
@@ -345,6 +775,111 @@ function validateEffects(effects, plan, errors) {
         effect,
         ["maskSource", "maskAlignmentEvidence", "fallback"],
         label,
+        errors,
+      );
+    }
+
+    const isTextBehindPerson = techniqueIncludes(effect, [
+      "人物后置文字",
+      "人物后文字",
+      "文字从人物背后",
+      "text behind person",
+    ]);
+    if (isTextBehindPerson) {
+      requireFields(
+        effect,
+        ["textDesign", "soundDesign", "layoutEvidence"],
+        label,
+        errors,
+      );
+      requireFields(
+        effect.textDesign,
+        [
+          "content",
+          "fontFamily",
+          "fontWeight",
+          "fontLicense",
+          "fontSizeRatioToSubtitle",
+          "positionRationale",
+          "textBounds",
+          "subtitleBounds",
+          "color",
+          "backgroundContrastRatio",
+          "visibleAreaRatio",
+          "phraseGrouping",
+        ],
+        `${label}.textDesign`,
+        errors,
+      );
+      const textBounds = normalizedRect(effect.textDesign?.textBounds);
+      const subtitleBounds = normalizedRect(effect.textDesign?.subtitleBounds);
+      if (!textBounds) {
+        errors.push(`${label}.textDesign: textBounds 必须是有效归一化矩形`);
+      }
+      if (!subtitleBounds) {
+        errors.push(`${label}.textDesign: subtitleBounds 必须是有效归一化矩形`);
+      }
+      if (textBounds && subtitleBounds && rectanglesOverlap(textBounds, subtitleBounds)) {
+        errors.push(`${label}.textDesign: 人物后文字不得侵占字幕安全区`);
+      }
+      const fontWeight = Number(effect.textDesign?.fontWeight);
+      if (!Number.isFinite(fontWeight) || fontWeight < 600 || fontWeight > 800) {
+        errors.push(`${label}.textDesign: 展示字体 fontWeight 必须为 600 至 800`);
+      }
+      const sizeRatio = Number(effect.textDesign?.fontSizeRatioToSubtitle);
+      if (!Number.isFinite(sizeRatio) || sizeRatio < 1.35 || sizeRatio > 3) {
+        errors.push(`${label}.textDesign: 字号必须为普通字幕的 1.35 至 3 倍`);
+      }
+      if (!/^#[0-9a-f]{6}$/i.test(String(effect.textDesign?.color ?? ""))) {
+        errors.push(`${label}.textDesign: color 必须是六位十六进制颜色`);
+      }
+      const contrast = Number(effect.textDesign?.backgroundContrastRatio);
+      if (!Number.isFinite(contrast) || contrast < 4.5) {
+        errors.push(`${label}.textDesign: 可见区域背景对比度必须至少为 4.5:1`);
+      }
+      const visibleArea = Number(effect.textDesign?.visibleAreaRatio);
+      if (!Number.isFinite(visibleArea) || visibleArea < 0.65 || visibleArea > 1) {
+        errors.push(`${label}.textDesign: 文字可见面积比例必须为 0.65 至 1`);
+      }
+      if (!Array.isArray(effect.textDesign?.phraseGrouping)
+        || effect.textDesign.phraseGrouping.length === 0) {
+        errors.push(`${label}.textDesign: phraseGrouping 必须按语义提供至少一个短语`);
+      }
+      requireFields(
+        effect.soundDesign,
+        [
+          "assetId",
+          "title",
+          "readySha256",
+          "entryCue",
+          "motionMatch",
+          "syncToleranceFrames",
+          "levelRelativeToDialogueDb",
+        ],
+        `${label}.soundDesign`,
+        errors,
+      );
+      const syncTolerance = Number(effect.soundDesign?.syncToleranceFrames);
+      if (!Number.isInteger(syncTolerance) || syncTolerance < 0 || syncTolerance > 2) {
+        errors.push(`${label}.soundDesign: 音效与文字落位误差必须在 0 至 2 帧`);
+      }
+      const sfxLevel = Number(effect.soundDesign?.levelRelativeToDialogueDb);
+      if (!Number.isFinite(sfxLevel) || sfxLevel < -18 || sfxLevel > -3) {
+        errors.push(`${label}.soundDesign: 音效相对人声电平应位于 -18 dB 至 -3 dB`);
+      }
+    }
+
+    const isDesignedTransition = techniqueIncludes(effect, [
+      "转场",
+      "transition",
+      "dissolve",
+      "wipe",
+      "whip",
+    ]);
+    if (isInformationModule || isMask || isTextBehindPerson || isDesignedTransition) {
+      validateDesignPreflight(
+        effect.designPreflight,
+        `${label}.designPreflight`,
         errors,
       );
     }
@@ -401,6 +936,7 @@ if (!Array.isArray(plan.effects) && !Array.isArray(plan.effectPlan)) {
 
 validateCuts(cuts, plan, errors);
 validateEffects(effects, plan, errors);
+validateSfxPlan(plan, effects, errors);
 
 if (errors.length > 0) {
   console.error(`剪辑方案检查失败：${errors.length} 项`);
@@ -421,11 +957,17 @@ console.log(
       rules: {
         cutReasons: [...CUT_REASONS],
         sameScale: "forbidden only for the same subject",
+        headIntegrity: "required for every human shot except intentional extreme close-ups",
+        transitionDecision: "required and continuity-motivated",
         timecodeOrder: "validated",
         effectRationaleContract: "required",
         externalInsertSemanticContract: "conditional",
         maskAlignmentContract: "conditional",
         pipBoundaryContract: "conditional",
+        informationModuleLayout: "full-screen replacement or verified subject-head avoidance",
+        textBehindDesign: "font, scale, bounds, contrast, visibility and SFX sync required",
+        visualDesignPreflight: "required before implementation for information modules, stylized transitions and masks",
+        sfxDiversity: "whole-timeline palette, event mapping and repetition audit required",
       },
     },
     null,

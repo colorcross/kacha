@@ -42,7 +42,7 @@ node scripts/validate_edit_proposal.mjs edit-proposal.json
 4. `dialogue_preprocess`：只处理 dialogue stem，保留时长和声道；
 5. `connection_qc`：逐连接点正常速度试听和音画同步检查；
 6. `fine_cut`：景别、节奏、重构图、切点和转场精修；
-7. `visual_packaging`：插镜、图解、跟踪、蒙版、调色、动效；
+7. `visual_packaging`：先完成高影响模块 `designPreflight`，再实施插镜、图解、跟踪、蒙版、调色和动效；
 8. `subtitles`：按冻结后的最终音频生成、校准和排版；
 9. `final_mix`：视觉时序冻结后完成 BGM、SFX、闪避和母带；
 10. `cover`：独立制作并核验各封面画幅；
@@ -91,7 +91,7 @@ node scripts/validate_local_change_plan.mjs local-change-plan.json
 
 纯音频改动优先 stream-copy 原视频；删段必须让所有时间层共用帧边界；每个新版本必须重建审计文件，不能继承旧版本的 proposal、QC 或 release report。
 
-调整人声时使用同源、同响度 A/B；调整美颜时使用同源、同帧、同裁切脸部 A/B；字幕至少检查亮底、暗底和最长一条；画中画检查进入前、停留中和退出后。
+调整人声时使用同源、同响度 A/B；调整美颜时使用同源、同帧、同裁切脸部 A/B；字幕至少检查亮底、暗底和最长一条；画中画检查进入前、停留中和退出后。每个切点检查切前/切后人物头部完整性；信息卡、流程图和弹窗检查信息最满帧的头像安全区；人物后文字检查字体、字号层级、可见面积、字幕避让和 SFX 同步。信息模块、风格化转场和蒙版先冻结本地样式帧或 Figma 设计交接，再做最小动效预览；使用 SFX 时对整片 `sfxPlan` 做重复率、类别和事件映射审计。
 
 ## 输出合同
 

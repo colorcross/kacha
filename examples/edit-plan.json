@@ -16,6 +16,24 @@
       "change": "从人物完整动作切到手部细节",
       "anchor": "手掌落到桌面的动作峰值",
       "continuityTreatment": "动作切",
+      "humanPresenceBefore": true,
+      "humanPresenceAfter": true,
+      "headFramingBefore": "clear",
+      "headFramingAfter": "clear",
+      "headTopMarginBefore": 0.06,
+      "headTopMarginAfter": 0.045,
+      "transitionDecision": {
+        "type": "action_cut",
+        "motivation": "动作峰值能够自然吸收从人物动作到手部细节的视觉跳变",
+        "continuityBasis": "action",
+        "visualTreatment": "在手掌落桌的同一动作相位硬切，不叠加模板转场",
+        "audioTreatment": "保留连续人声和桌面动作原声作为声音桥",
+        "fallback": "动作相位不连续时改用短手部插镜或干净切",
+        "previewEvidence": [
+          "动作峰值前后各 8 帧预览",
+          "正常速度手机尺寸试听"
+        ]
+      },
       "failureCondition": "手部动作不连续或两侧景别差在手机尺寸不可感知",
       "qcEvidence": [
         "切前后帧对照",
@@ -38,6 +56,24 @@
       "perspectiveAfter": "客观环境观察",
       "anchor": "人物呼气结束",
       "continuityTreatment": "L-cut",
+      "humanPresenceBefore": true,
+      "humanPresenceAfter": true,
+      "headFramingBefore": "clear",
+      "headFramingAfter": "clear",
+      "headTopMarginBefore": 0.04,
+      "headTopMarginAfter": 0.08,
+      "transitionDecision": {
+        "type": "l_cut",
+        "motivation": "让人物呼气尾音跨入宽景，先释放情绪再重新交代空间",
+        "continuityBasis": "sound",
+        "visualTreatment": "呼气结束附近干净切到宽景",
+        "audioTreatment": "前一镜人声尾音延续到后一镜 6 帧",
+        "fallback": "尾音跨镜不自然时回退为呼吸结束后的干净切",
+        "previewEvidence": [
+          "切前后各 12 帧预览",
+          "耳机和手机扬声器正常速度试听"
+        ]
+      },
       "failureCondition": "宽景没有形成情绪释放，或尾音与新画面关系不清",
       "qcEvidence": [
         "切前后帧对照",
@@ -50,7 +86,7 @@
       "timeSeconds": 12.4,
       "timecode": "00:00:12.400",
       "technique": "低音量 tonal hit",
-      "trigger": "手掌落桌且关键结论完成",
+      "trigger": "手掌落桌且观点真正转折",
       "function": [
         "attention"
       ],
@@ -60,6 +96,15 @@
       "entryExit": "动作落点进入，150 ms 内衰减",
       "simplerAlternative": "只做字幕强调；试听后落点仍偏弱，因此保留音效",
       "failureCondition": "音效盖住尾字或脱离动作超过两帧",
+      "soundDesign": {
+        "assetId": "turn-local-pivot",
+        "title": "转折",
+        "readySha256": "defde54582d6807bbbe44244b841a416f3f568462978b5608a243e95a6f340d8",
+        "entryCue": "手掌接触桌面且新观点开始成立",
+        "motionMatch": "转折峰值跟随动作落点，长尾在后续口播下方快速衰减",
+        "syncToleranceFrames": 1,
+        "levelRelativeToDialogueDb": -10
+      },
       "qcEvidence": [
         "SFX stem",
         "手机扬声器正常速度试听"
@@ -83,6 +128,66 @@
       "maskSource": "逐帧人物蒙版视频",
       "maskAlignmentEvidence": "时长、帧率和起始 PTS 自动对齐报告",
       "fallback": "边缘不稳时改用普通信息卡",
+      "designPreflight": {
+        "status": "approved_for_implementation",
+        "artifactMode": "local_styleframe",
+        "artifactRef": "design/text-behind/approved-styleframes.png",
+        "layoutSpec": "人物头顶左侧负空间，文字与字幕区、品牌区分离",
+        "motionSpec": "两组短语分别以 8 帧遮罩揭示进入，停稳后统一淡出",
+        "soundSpec": "知识点落位声跟随第二组文字停稳，第一组只使用轻微空气感 whoosh",
+        "stateFrames": [
+          "entry",
+          "peak",
+          "exit"
+        ],
+        "implementationHandoff": "使用同一字体、色值、归一化边界、缓动曲线和 SFX 帧点实现",
+        "qcEvidence": [
+          "手机尺寸样式帧",
+          "亮底/暗底对比",
+          "人物蒙版边缘预览"
+        ]
+      },
+      "textDesign": {
+        "content": "工具降低门槛，品味决定上限",
+        "fontFamily": "项目字幕字体",
+        "fontWeight": 700,
+        "fontLicense": "项目已授权字体；不可用时使用已授权的同风格展示字体",
+        "fontSizeRatioToSubtitle": 1.8,
+        "positionRationale": "放在人物头顶左侧负空间，形成章节题眼，不侵占脸部与字幕区",
+        "textBounds": {
+          "x": 0.07,
+          "y": 0.12,
+          "width": 0.58,
+          "height": 0.2
+        },
+        "subtitleBounds": {
+          "x": 0.08,
+          "y": 0.72,
+          "width": 0.84,
+          "height": 0.12
+        },
+        "color": "#F6C85F",
+        "backgroundContrastRatio": 5.2,
+        "visibleAreaRatio": 0.76,
+        "phraseGrouping": [
+          "工具降低门槛",
+          "品味决定上限"
+        ]
+      },
+      "soundDesign": {
+        "assetId": "knowledge-local-point",
+        "title": "知识点",
+        "readySha256": "36aaccd076bdae00568426e29eceb9684116b4973c0f1a8859f5a78b6b4fa7b5",
+        "entryCue": "每个短语完成落位时取音效中对应的轻落点",
+        "motionMatch": "暖金文字从人物轮廓后向负空间展开，音效峰值跟随最终停稳",
+        "syncToleranceFrames": 1,
+        "levelRelativeToDialogueDb": -8
+      },
+      "layoutEvidence": [
+        "人物蒙版首中尾帧",
+        "文字与字幕安全区叠加图",
+        "手机尺寸亮底/暗底代表帧"
+      ],
       "qcEvidence": [
         "人物蒙版首中尾帧",
         "头发、眼镜和手部遮挡帧",
@@ -136,5 +241,51 @@
         "正常速度口型与退出动画检查"
       ]
     }
-  ]
+  ],
+  "sfxPlan": {
+    "selectionPrinciple": "按可见动作、文字落位和叙事功能选音，不按时间间隔机械铺设",
+    "repetitionPolicy": "同一音效不连续超过两次；四个及以上事件至少使用三个音效，并限制单个音效占比",
+    "dialogueProtection": "音效避开口播辅音和结论尾字，必要时只短暂闪避 BGM",
+    "palette": [
+      {
+        "assetId": "turn-local-pivot",
+        "title": "转折",
+        "category": "turn",
+        "useFor": "观点或叙事方向真正改变"
+      },
+      {
+        "assetId": "knowledge-local-point",
+        "title": "知识点",
+        "category": "knowledge",
+        "useFor": "核心判断完成落位"
+      }
+    ],
+    "events": [
+      {
+        "timeSeconds": 12.4,
+        "effectRef": "effects[0]",
+        "assetId": "turn-local-pivot",
+        "title": "转折",
+        "category": "turn",
+        "purpose": "手掌落桌并进入新的观点方向",
+        "syncTarget": "手掌接触桌面的动作峰值",
+        "levelRelativeToDialogueDb": -10
+      },
+      {
+        "timeSeconds": 41.2,
+        "effectRef": "effects[1]",
+        "assetId": "knowledge-local-point",
+        "title": "知识点",
+        "category": "knowledge",
+        "purpose": "人物后置文字第二组短语完成落位",
+        "syncTarget": "第二组文字停稳帧",
+        "levelRelativeToDialogueDb": -8
+      }
+    ],
+    "auditionEvidence": [
+      "SFX solo stem",
+      "人声+BGM+SFX 手机扬声器试听",
+      "耳机正常速度试听"
+    ]
+  }
 }

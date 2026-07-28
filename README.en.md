@@ -41,6 +41,8 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Validates semantic cuts, shot motivation, continuity, reframing, masks, picture-in-picture, subtitles, covers, and visual packaging.
 - Coordinates dialogue preprocessing, voice enhancement, final mixing, and audio/video alignment.
 - Bundles 12 creator-produced sound effects with exact titles, IDs, hashes, and a dedicated asset license.
+- Requires local styleframes or an optional Figma handoff before implementing information cards, flowcharts, popups, stylized transitions, and masks.
+- Audits the whole-film SFX palette and event map so one sound is not reused across every visual beat.
 - Records AI-generated shot plans with provider, model, capability snapshot, paid-call authorization, and QC targets.
 - Runs automated media checks and requires separate human-review evidence before local release.
 - Keeps uploads, publishing, purchases, and paid generation outside the default authorization boundary.
