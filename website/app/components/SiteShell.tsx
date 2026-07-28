@@ -53,9 +53,9 @@ export function SiteShell({
             {content.hero.eyebrow}
           </p>
           <h1>
-            {content.hero.titleLead}
+            <span className="hero-title-lead">{content.hero.titleLead}</span>
             <br />
-            <span>{content.hero.titleAccent}</span>
+            <span className="hero-title-accent">{content.hero.titleAccent}</span>
           </h1>
           <p className="hero-summary">{content.hero.summary}</p>
           <div className="hero-actions">

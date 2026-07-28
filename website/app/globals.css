@@ -120,6 +120,7 @@ main {
   position: relative;
   display: inline-grid;
   place-items: center;
+  flex: 0 0 auto;
   width: 190px;
   height: 190px;
   overflow: hidden;
@@ -137,12 +138,15 @@ main {
 }
 
 .logo-mark__image {
+  position: absolute;
+  top: 50%;
+  left: 50%;
   display: block;
   width: 208%;
   max-width: none;
   height: 208%;
   object-fit: cover;
-  transform: translate(1%, 1%);
+  transform: translate(-50%, -50%);
 }
 
 .site-header nav {
@@ -301,14 +305,22 @@ main {
 .beauty-panel h2 {
   margin: 0;
   font-family: var(--display);
-  font-size: clamp(58px, 6.2vw, 104px);
+  font-size: clamp(54px, 5.3vw, 92px);
   font-weight: 780;
   font-stretch: condensed;
   line-height: 0.93;
   letter-spacing: -0.055em;
 }
 
-.hero h1 span {
+.hero h1 {
+  white-space: nowrap;
+}
+
+.hero-title-lead {
+  color: var(--ink);
+}
+
+.hero h1 .hero-title-accent {
   color: var(--signal);
 }
 
@@ -1291,6 +1303,7 @@ footer {
 
   .hero h1 {
     font-size: clamp(48px, 15vw, 70px);
+    white-space: normal;
   }
 
   .hero-summary {
