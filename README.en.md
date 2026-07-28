@@ -4,7 +4,25 @@
 
 [中文说明](README.md) · [One-prompt install](docs/en/AGENT_INSTALL.md) · [Quick start](docs/en/QUICKSTART.md) · [Privacy and security](docs/en/PRIVACY_SECURITY.md)
 
+<p align="center">
+  <img src="assets/brand/kacha-og.png" alt="Kacha local AI video workflow" width="100%">
+</p>
+
 Kacha is not a universal renderer. It coordinates verified tools such as FFmpeg, an NLE, Remotion, HyperFrames, or another project-selected engine. Your project still owns the actual timeline implementation and final creative decisions.
+
+## Official site and product design
+
+The bilingual official-site source lives in [`website/`](website/). Logo usage,
+color, typography, grid, components, motion, accessibility, and copy boundaries
+are governed by the
+[product brand and website system](docs/en/PRODUCT_BRAND_AND_WEBSITE.md).
+The verified completion matrix is recorded in the
+[2026-07-29 completion review](docs/en/COMPLETION_REVIEW_2026-07-29.md).
+
+The scissors represent selection and editing, the play/K geometry represents
+video and Kacha, and the orange dot is the active cut point and verified action.
+The site intentionally avoids generic purple AI gradients, neon, and one-click
+magic claims.
 
 ## See Kacha in action
 
@@ -48,6 +66,12 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
   credentials through one validated configuration system. Editing defaults
   accept structured parameters and natural language without leaking keys into
   project artifacts.
+- Resolves a full video design system with show, aspect-ratio, language,
+  surface, and density modes, plus 52 registered components and 63 reusable
+  scenes.
+- Provides local Beauty v2 for skin smoothing, whitening, tone evening, and
+  restrained nasolabial-fold softening. Beauty is disabled by default and does
+  not use GPUPixel, cloud beautification, or generative face repair.
 - Produces local, machine-readable keyframe, face, person, OCR, luminance, and
   timestamp evidence for Claude Code. MiniMax may enrich a few frames only
   after external-upload, paid-service, and explicit command authorization;
@@ -105,6 +129,8 @@ The installer needs Python 3, `curl`, and `tar`. Node.js 20+ is required for the
 ```bash
 node scripts/kacha.mjs config init --scope user
 node scripts/kacha.mjs config show --anchor /path/to/project
+node scripts/kacha.mjs design validate
+node scripts/kacha.mjs design list --kind scene
 ```
 
 User defaults live in `~/.config/kacha/config.json`. A project may commit
@@ -120,6 +146,22 @@ project config cannot redirect providers, credential environment names, or
 machine-local tools; those settings require user config or explicit
 `--config`. See
 [Configuration](docs/en/CONFIGURATION.md).
+
+Visual configuration resolves
+`style.system + style.profile + style.modes + style.overrides`; see
+[Video Design System V1](docs/VIDEO_DESIGN_SYSTEM_V1.md). The resulting design
+digest and implementation digest invalidate only dependent visual artifacts.
+Beauty remains off unless
+the project or current change request explicitly enables Beauty v2. Beauty
+rendering also requires a frame-accurate Vision manifest; a technical pass is
+reported separately from the required same-frame dynamic human review, and
+the report freezes the full Beauty implementation-chain digest.
+
+For a release-level design-system check:
+
+```bash
+node scripts/kacha.mjs design qc --matrix --output /tmp/design-system-qc.json
+```
 
 ## Choose the correct task path
 
@@ -224,9 +266,11 @@ scripts/           State machine, visual evidence, gates, media helpers, and sca
 config/            Public, credential-free runtime defaults
 examples/          Fictional v2 full-edit and v3 incremental templates
 assets/sfx/        12 original SFX, working copies, hashes, and asset license
+assets/brand/      Logo and social-card assets
 tests/             Regression and installer tests
 docs/              Chinese documentation
 docs/en/           English documentation
+website/           Bilingual official site source, excluded from skill bundles
 ```
 
 Keep real project media outside this repository. Treat source media as read-only and store project contracts, capability snapshots, renders, and review evidence in a separate project directory.
@@ -242,12 +286,14 @@ node tests/run_tests.mjs --suite visual
 node tests/run_tests.mjs
 bash tests/test_installer.sh
 python3 scripts/scan_secrets.py
+cd website && npm run lint && npm run typecheck && npm test
 ```
 
 Scoped suites generate only the media fixtures they need. Passing repository
 tests proves that the included gates and fixtures behave as expected. It does
 not prove that a real project has been rendered, watched, approved, uploaded,
-or published.
+or published. Website checks are a separate gate and do not replace the skill
+regression suite.
 
 ## Privacy and security
 
@@ -270,6 +316,8 @@ The scanner reduces risk but cannot prove that a repository contains no sensitiv
 - [Quick start](docs/en/QUICKSTART.md)
 - [Configuration and credentials](docs/en/CONFIGURATION.md)
 - [Architecture and design boundaries](docs/en/ARCHITECTURE.md)
+- [Product brand and website system](docs/en/PRODUCT_BRAND_AND_WEBSITE.md)
+- [2026-07-29 completion review](docs/en/COMPLETION_REVIEW_2026-07-29.md)
 - [Privacy and security](docs/en/PRIVACY_SECURITY.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
@@ -277,4 +325,8 @@ The scanner reduces risk but cannot prove that a repository contains no sensitiv
 
 ## License
 
-[MIT](LICENSE) for code and documentation. The bundled original SFX use the dedicated [asset license](assets/sfx/LICENSE.md). Third-party media, fonts, models, templates, and platform content are not licensed by this repository.
+[MIT](LICENSE) for code and documentation. The bundled original SFX use the
+dedicated [asset license](assets/sfx/LICENSE.md). The logo and social card use
+the separate [brand-asset rules](assets/brand/README.md) and are not covered by
+MIT. Third-party media, fonts, models, templates, and platform content are not
+licensed by this repository.

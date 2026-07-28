@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0",
+  "id": "dahui-video-system",
+  "name": "行者大灰视频设计系统",
+  "version": "1.1.0",
+  "description": "面向真人口播、工具演示、知识长谈、纪录片和人与AI互动的视频设计系统。",
+  "styleProfile": "warm-editorial",
+  "registries": {
+    "modes": "modes.json",
+    "components": "components.json",
+    "scenes": "scenes.json",
+    "implementations": "implementations.json"
+  },
+  "defaultModes": {
+    "show": "tool-share",
+    "aspectRatio": "landscape-16x9",
+    "language": "zh",
+    "surface": "footage",
+    "density": "standard"
+  },
+  "principles": [
+    "先保证内容、人物和证据清楚，再增加视觉层级",
+    "每次变化都由信息、情绪、视角、时间、空间或动作驱动",
+    "统一品牌下保留四个栏目的不同气质",
+    "人物头脸、字幕、品牌、来源和平台UI共享同一碰撞系统",
+    "组件必须有进入、停稳、退出和失败回退",
+    "设计系统提供一致性，不替代具体内容判断"
+  ],
+  "governance": {
+    "tokenSourceOfTruth": "resolved JSON design contract",
+    "figmaRole": "可选的组件设计、复杂多状态场景和多画幅交接后端",
+    "renderRole": "本地SVG、FFmpeg或项目时间线实现",
+    "forbidHardcodedVisualsInTimeline": true,
+    "requireVersionedDigest": true,
+    "requireDesignPreflightForHighImpactScenes": true
+  },
+  "quality": {
+    "minimumTextContrastRatio": 4.5,
+    "minimumLargeTextContrastRatio": 3,
+    "minimumHeadTopMarginRatio": 0.04,
+    "maximumSubtitleWidthRatio": 0.88,
+    "maximumSimultaneousReadingZones": 3,
+    "requireEntryPeakExitStates": true,
+    "requirePhoneSizeReview": true,
+    "forbidFullFrameFlashByDefault": true,
+    "forbidUnmotivatedMotion": true
+  }
+}

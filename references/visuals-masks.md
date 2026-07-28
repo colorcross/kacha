@@ -104,14 +104,11 @@
 
 ## 人物美化
 
-默认只尝试 `light`：
+美颜默认关闭。明确启用后只使用 `references/beauty-v2.md` 定义的本地
+Beauty v2，并且只处理磨皮、美白、匀肤和法令纹弱化。
 
-- 轻微脸部提亮；
-- 轻度匀肤；
-- 保边纹理柔化；
-- 保留毛孔、眼睛、眉毛、发丝、眼镜、嘴唇和轮廓。
-
-`light_plus` 只有用户明确要求、人物跟踪稳定且同源同帧 A/B 通过时启用。它是最终观感档位，不是参数档位。
+`natural` 是显式启用后的起始档；`visible` 只有用户明确要求、人物跟踪稳定
+且同源同帧 A/B 通过时启用。它们是最终观感档位，不是允许绕过检查的参数档位。
 
 禁止默认瘦脸、大眼、改鼻形、改变族群肤色或删除永久特征。所谓“祛法令纹”只能在稳定正脸中用极轻局部提亮和纹理柔化降低对比，不能承诺语义级删除。
 
@@ -132,7 +129,13 @@ scripts/generate_vision_masks.swift SOURCE.mov MASK_DIR SOURCE_FPS accurate
 node scripts/build_mask_video.mjs MASK_DIR/manifest.json person MASK_DIR/person.mkv
 node scripts/build_mask_video.mjs MASK_DIR/manifest.json face MASK_DIR/face.mkv
 node scripts/build_mask_video.mjs MASK_DIR/manifest.json skin MASK_DIR/skin.mkv
-scripts/apply_mask_effect.sh SOURCE.mov MASK_DIR/skin.mkv OUTPUT.mov beauty-light
+node scripts/build_mask_video.mjs \
+  MASK_DIR/manifest.json nasolabial MASK_DIR/nasolabial.mkv
+scripts/apply_beauty_v2.sh \
+  SOURCE.mov MASK_DIR/skin.mkv MASK_DIR/nasolabial.mkv OUTPUT.mov natural \
+  --vision-manifest MASK_DIR/manifest.json \
+  --config /path/to/beauty-enabled.json \
+  --report /path/to/beauty-technical-report.json
 scripts/compose_text_behind_person.sh SOURCE.mov MASK_DIR/person.mkv TEXT.mov OUTPUT.mov
 ```
 
@@ -145,7 +148,11 @@ scripts/compose_text_behind_person.sh SOURCE.mov MASK_DIR/person.mkv TEXT.mov OU
 - 蒙版视频、文字层和源视频的时长、帧率、起始 PTS 不匹配时直接失败；
 - 禁止末帧无限复制、`-shortest` 静默截短或低帧率预检蒙版进入 4K 正式渲染；
 - 逐段检查头发、眼镜、手指、肩部、遮挡、快速运动和边缘帧；
-- 皮肤蒙版必须保护眼睛、眉毛、嘴唇和眼镜附近；`beauty-plus` 只有同源同帧 A/B 通过后启用；
+- 皮肤蒙版必须保护眼睛、眉毛、嘴唇和眼镜附近；
+- Beauty 只处理持续锁定的主讲人；多人歧义帧必须输出空蒙版并进入 QC；
+- 脸、耳和颈部需要连续，手和手臂不进入 Beauty 蒙版；
+- 灰度蒙版必须显式覆盖 Y/U/V 三个平面，遮罩外背景色度不得变化；
+- 法令纹蒙版只允许覆盖鼻翼至嘴角附近的保守窄区，跟踪不稳时局部禁用；
 - 漏抠、误抠、白边、黑边、抖动或跟踪丢失时减弱、局部禁用或回退。
 
 ## 2.5D 与分层效果预检

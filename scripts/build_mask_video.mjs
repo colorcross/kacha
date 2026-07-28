@@ -12,7 +12,7 @@ import {
 
 function usage() {
   console.error(
-    "用法：build_mask_video.mjs <manifest.json> <person|face|skin> <output.mkv>",
+    "用法：build_mask_video.mjs <manifest.json> <person|face|skin|nasolabial> <output.mkv>",
   );
 }
 
@@ -21,7 +21,11 @@ function quoteConcatPath(file) {
 }
 
 const [, , manifestInput, kind, outputInput] = process.argv;
-if (!manifestInput || !["person", "face", "skin"].includes(kind) || !outputInput) {
+if (
+  !manifestInput
+  || !["person", "face", "skin", "nasolabial"].includes(kind)
+  || !outputInput
+) {
   usage();
   process.exit(2);
 }
@@ -73,7 +77,9 @@ const field = kind === "person"
   ? "personMask"
   : kind === "face"
     ? "faceMask"
-    : "skinMask";
+    : kind === "skin"
+      ? "skinMask"
+      : "nasolabialMask";
 const entries = [];
 let previousTime = -Infinity;
 for (let index = 0; index < frames.length; index += 1) {

@@ -21,6 +21,8 @@
 ### `editPlan`
 
 定义切点、主体、景别、切镜理由、连续性和效果合同。它回答“时间线上具体怎么做”。
+高影响视觉模块还必须引用当前视频设计系统的真实样式帧、实施清单、文件 hash、
+字体选择和 token 路径。
 
 ### `projectManifest`
 
@@ -101,6 +103,10 @@ editProposal + editPlan + inputs
 - `next`：从真实文件和哈希推导唯一下一步；
 - `compile-change`：把常见返工小合同编译成 v3 delta/manifest/plan；
 - `effects`：校验、枚举和真实预览统一风格下的开场/转场；
+- `design`：解析视频设计系统，使用注册 renderer 生成 SVG/PNG/ASS 与实施
+  清单，并对全部 mode/状态运行矩阵 QC；
+- `beauty`：验证默认关闭与本地作用域、执行项目级启用授权，并把自动技术
+  QC 与人工动态复核分开；
 - `connections`：合并最终时间线切点与场景变化候选，生成逐点复核 handle；
 - `visual-evidence`：本地关键帧、人物、OCR 和技术证据；
 - `vision-enrich`：外传、付费服务和显式命令授权后，以 MiniMax 增强有限
@@ -122,10 +128,15 @@ authorization 或不可降低的安全门禁。
 
 ### 风格与效果边界
 
+`config/design-system/` 保存系统、五组模式、组件和场景注册表；
 `config/styles/` 保存统一 style profile，`config/effects/` 保存开场和转场
-注册表。项目时间区间只引用 style/effect ID 与 digest，不复制字体、颜色、
-阴影、边框和缓动。效果注册表定义实现、handle、声音功能、失败条件与
-fallback；具体是否使用仍由内容、情绪、视角和连续性判断。
+注册表。项目时间区间只引用 design system/style/scene/component/effect ID
+与 digest，不复制字体、颜色、阴影、边框和缓动。设计系统由
+`scripts/design_system.mjs` 解析，`scripts/kacha_design.mjs` 提供验证、枚举、
+解析和样式帧预览。每个本地实施清单同时冻结解析器、风格解析器与渲染器代码
+摘要，防止旧样式帧在实现变化后继续被当作当前证据。效果注册表定义实现、
+handle、声音功能、失败条件与 fallback；具体是否使用仍由内容、情绪、视角
+和连续性判断。
 
 FFmpeg/SVG 预览证明实现可运行，不证明效果适合当前内容。正式渲染前仍需用
 真实前后片段和真实声音做最小 A/B。

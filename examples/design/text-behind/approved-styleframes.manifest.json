@@ -1,0 +1,140 @@
+{
+  "schemaVersion": "1.0",
+  "status": "rendered",
+  "designSystemId": "dahui-video-system",
+  "designSystemVersion": "1.1.0",
+  "designDigest": "690062bbcaf7143b177710c354b7c48431ffe35410b7b5c0da7463e4e5f77051",
+  "implementationDigest": "8a51684e14431cbe91aad691f7ec04631999d3608fc74ef8b1321f7756502b8e",
+  "rendererCodeSha256": "34d26116dd76af9bcaf00610bd84a50f4a84e4d38225c3b96b3eeea2d8beebed",
+  "sceneId": "text_behind_subject_scene",
+  "layoutId": "negative_space_behind_subject",
+  "layoutTemplate": "negative_space_subject",
+  "componentIds": [
+    "text_behind_subject"
+  ],
+  "modeSelection": {
+    "show": "tool-share",
+    "aspectRatio": "landscape-16x9",
+    "language": "zh",
+    "surface": "footage",
+    "density": "standard"
+  },
+  "state": "peak",
+  "resolvedFonts": {
+    "display": "PingFang SC",
+    "subtitlePrimary": "STSong",
+    "subtitleSecondary": "STSong",
+    "label": "Avenir Next",
+    "body": "Avenir Next"
+  },
+  "fontResolution": {
+    "probe": "fc-list",
+    "error": null,
+    "roles": {
+      "display": {
+        "requested": [
+          "华光标题黑",
+          "Source Han Sans SC",
+          "PingFang SC"
+        ],
+        "resolved": "PingFang SC",
+        "verified": true,
+        "fallbackUsed": true
+      },
+      "subtitlePrimary": {
+        "requested": [
+          "金陵体",
+          "STSong",
+          "Songti SC"
+        ],
+        "resolved": "STSong",
+        "verified": true,
+        "fallbackUsed": true
+      },
+      "subtitleSecondary": {
+        "requested": [
+          "金陵体",
+          "STSong",
+          "Songti SC"
+        ],
+        "resolved": "STSong",
+        "verified": true,
+        "fallbackUsed": true
+      },
+      "label": {
+        "requested": [
+          "Avenir Next",
+          "Source Han Sans SC",
+          "PingFang SC"
+        ],
+        "resolved": "Avenir Next",
+        "verified": true,
+        "fallbackUsed": false
+      },
+      "body": {
+        "requested": [
+          "Avenir Next",
+          "Source Han Sans SC",
+          "PingFang SC"
+        ],
+        "resolved": "Avenir Next",
+        "verified": true,
+        "fallbackUsed": false
+      }
+    },
+    "warnings": [],
+    "digest": "9d6987ad5399b0df64692f7e77a6bd31dc2d83edc58eecd8865ba88f182b1f49"
+  },
+  "scene": {
+    "trigger": "章节题眼或记忆点适合空间层级",
+    "entry": "phrase_groups",
+    "exit": "before_next_event",
+    "fallbackChain": [
+      "text_behind_subject_scene",
+      "narrative_statement",
+      "subtitle_emphasis_only",
+      "subtitle_plain"
+    ]
+  },
+  "components": [
+    {
+      "componentId": "text_behind_subject",
+      "rendererId": "mask_composite",
+      "adapter": "mask_composite",
+      "requiresMedia": true,
+      "outputs": [
+        "svg",
+        "png",
+        "manifest"
+      ],
+      "states": [
+        "entry",
+        "peak",
+        "exit"
+      ],
+      "safety": [
+        "face",
+        "subtitle",
+        "platform_ui"
+      ],
+      "tokenRefs": [
+        "typography.display",
+        "palette",
+        "motion"
+      ],
+      "fallbackChain": [
+        "text_behind_subject",
+        "statement_title",
+        "subtitle_emphasis",
+        "subtitle_single"
+      ],
+      "filtergraphTemplate": "[layer][mask]alphamerge[masked];[base][masked]overlay={x}:{y}"
+    }
+  ],
+  "qc": {
+    "stateRendered": "peak",
+    "guidesRendered": false,
+    "textOverflowPolicy": "truncate_with_ellipsis",
+    "fullFrameFlashPolicy": "forbid_except_explicit_flash_motivation"
+  }
+}

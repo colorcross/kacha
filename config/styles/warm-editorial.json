@@ -3,6 +3,10 @@
   "id": "warm-editorial",
   "name": "暖色编辑部",
   "description": "明亮、克制、可信，适合行者大灰真人口播、工具分享与知识型内容。",
+  "designSystem": {
+    "id": "dahui-video-system",
+    "minimumVersion": "1.0.0"
+  },
   "palette": {
     "canvas": "#F7E8C9",
     "surface": "#FFF8EA",
@@ -15,7 +19,8 @@
     "darkSurface": "#2B1912",
     "textOnDark": "#FFF8EE",
     "textOnLight": "#1A100B",
-    "secondaryTextOnLight": "#2D1B12"
+    "secondaryTextOnLight": "#2D1B12",
+    "textOnAccent": "#24150F"
   },
   "typography": {
     "display": {

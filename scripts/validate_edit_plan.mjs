@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 
+import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   asArray,
   hasValue,
   parseTimecode,
   readJson,
+  sha256File,
+  sha256Value,
 } from "./kacha_utils.mjs";
+import { resolveDesignSystem } from "./design_system.mjs";
 
 const CUT_REASONS = new Set(["information", "emotion", "perspective"]);
 const EFFECT_FUNCTIONS = new Set([
@@ -55,6 +60,34 @@ const HEAD_FRAMING = new Set([
 const INFORMATION_LAYOUT_MODES = new Set(["full_screen", "subject_safe"]);
 const PROGRESSIVE_UPDATE_MODES = new Set(["local_highlight", "local_reveal"]);
 const DESIGN_ARTIFACT_MODES = new Set(["local_styleframe", "figma"]);
+const DESIGN_FONT_ROLES = [
+  "display",
+  "subtitlePrimary",
+  "subtitleSecondary",
+  "label",
+  "body",
+];
+let validationBaseDirectory = process.cwd();
+const skillRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
+
+function resolveDesignArtifactRef(reference) {
+  const value = String(reference ?? "");
+  if (value.startsWith("kacha://")) {
+    const relative = value.slice("kacha://".length);
+    if (
+      !relative
+      || path.isAbsolute(relative)
+      || relative.split(/[\\/]/).includes("..")
+    ) {
+      throw new Error(`无效的 kacha 设计资产引用：${value}`);
+    }
+    return path.join(skillRoot, relative);
+  }
+  return path.resolve(validationBaseDirectory, value);
+}
 const SCALE_ALIASES = new Map([
   ["extreme_wide", "extreme_wide"],
   ["远景", "wide"],
@@ -220,9 +253,18 @@ function validateDesignPreflight(value, label, errors) {
   requireFields(
     value,
     [
+      "designSystemId",
+      "designSystemVersion",
+      "designDigest",
+      "sceneId",
+      "componentIds",
+      "modeSelection",
       "status",
       "artifactMode",
       "artifactRef",
+      "artifactSha256",
+      "implementationManifestRef",
+      "implementationManifestSha256",
       "layoutSpec",
       "motionSpec",
       "soundSpec",
@@ -233,6 +275,136 @@ function validateDesignPreflight(value, label, errors) {
     label,
     errors,
   );
+  if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(String(value.designSystemId ?? ""))) {
+    errors.push(`${label}: designSystemId 格式无效`);
+  }
+  if (!/^\d+\.\d+\.\d+$/.test(String(value.designSystemVersion ?? ""))) {
+    errors.push(`${label}: designSystemVersion 必须使用 x.y.z`);
+  }
+  if (!/^[a-f0-9]{64}$/.test(String(value.designDigest ?? ""))) {
+    errors.push(`${label}: designDigest 必须是 64 位 SHA-256`);
+  }
+  if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(String(value.sceneId ?? ""))) {
+    errors.push(`${label}: sceneId 格式无效`);
+  }
+  if (!Array.isArray(value.componentIds) || value.componentIds.length === 0) {
+    errors.push(`${label}: componentIds 至少包含一个已注册组件`);
+  } else if (
+    value.componentIds.some(
+      (id) => !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(String(id)),
+    )
+  ) {
+    errors.push(`${label}: componentIds 包含格式无效的组件 id`);
+  }
+  const requiredModes = [
+    "show",
+    "aspectRatio",
+    "language",
+    "surface",
+    "density",
+  ];
+  if (!value.modeSelection || typeof value.modeSelection !== "object") {
+    errors.push(`${label}: modeSelection 必须记录五个设计模式`);
+  } else {
+    requireFields(value.modeSelection, requiredModes, `${label}.modeSelection`, errors);
+  }
+  let resolved = null;
+  try {
+    resolved = resolveDesignSystem({
+      system: value.designSystemId,
+      modes: value.modeSelection,
+    });
+  } catch (error) {
+    errors.push(`${label}: 设计合同无法解析：${error.message}`);
+  }
+  if (resolved) {
+    if (value.designSystemVersion !== resolved.system.version) {
+      errors.push(
+        `${label}: designSystemVersion 已失效；应为 ${resolved.system.version}`,
+      );
+    }
+    if (value.designDigest !== resolved.digest) {
+      errors.push(`${label}: designDigest 与当前系统、模式和风格不一致`);
+    }
+    const scene = resolved.scenes.find((item) => item.id === value.sceneId);
+    if (!scene) {
+      errors.push(`${label}: sceneId 未注册：${value.sceneId}`);
+    }
+    const componentIds = Array.isArray(value.componentIds) ? value.componentIds : [];
+    for (const componentId of componentIds) {
+      if (!resolved.components.some((item) => item.id === componentId)) {
+        errors.push(`${label}: componentId 未注册：${componentId}`);
+      } else if (scene && !scene.components.includes(componentId)) {
+        errors.push(
+          `${label}: componentId ${componentId} 不属于场景 ${scene.id}`,
+        );
+      }
+    }
+    const handoff = value.implementationHandoff;
+    if (!handoff || typeof handoff !== "object" || Array.isArray(handoff)) {
+      errors.push(`${label}.implementationHandoff 必须是 object`);
+    } else {
+      requireFields(
+        handoff,
+        ["resolvedFonts", "fontResolutionDigest", "tokenRefs"],
+        `${label}.implementationHandoff`,
+        errors,
+      );
+      if (handoff.fontResolutionDigest !== sha256Value(handoff.resolvedFonts)) {
+        errors.push(
+          `${label}.implementationHandoff.fontResolutionDigest `
+          + "与 resolvedFonts 选择摘要不一致",
+        );
+      }
+      if (
+        !handoff.resolvedFonts
+        || typeof handoff.resolvedFonts !== "object"
+        || Array.isArray(handoff.resolvedFonts)
+      ) {
+        errors.push(`${label}.implementationHandoff.resolvedFonts 必须是 object`);
+      } else {
+        requireFields(
+          handoff.resolvedFonts,
+          DESIGN_FONT_ROLES,
+          `${label}.implementationHandoff.resolvedFonts`,
+          errors,
+        );
+        for (const role of Object.keys(handoff.resolvedFonts)) {
+          if (!DESIGN_FONT_ROLES.includes(role)) {
+            errors.push(
+              `${label}.implementationHandoff.resolvedFonts 包含未知角色：${role}`,
+            );
+          }
+        }
+      }
+      for (const [role, selectedFont] of Object.entries(
+        handoff.resolvedFonts ?? {},
+      )) {
+        const candidates = resolved.style.typography?.[role]?.families ?? [];
+        if (!candidates.includes(selectedFont)) {
+          errors.push(
+            `${label}.implementationHandoff.resolvedFonts.${role} `
+            + `不在设计系统候选字体中：${selectedFont}`,
+          );
+        }
+      }
+      const declaredTokenRefs = new Set(asArray(handoff.tokenRefs));
+      const requiredTokenRefs = new Set(
+        componentIds.flatMap(
+          (componentId) => resolved.components.find(
+            (item) => item.id === componentId,
+          )?.tokenRefs ?? [],
+        ),
+      );
+      for (const tokenRef of requiredTokenRefs) {
+        if (!declaredTokenRefs.has(tokenRef)) {
+          errors.push(
+            `${label}.implementationHandoff.tokenRefs 缺少 ${tokenRef}`,
+          );
+        }
+      }
+    }
+  }
   if (value.status !== "approved_for_implementation") {
     errors.push(`${label}: status 必须为 approved_for_implementation`);
   }
@@ -241,6 +413,67 @@ function validateDesignPreflight(value, label, errors) {
   }
   if (!Array.isArray(value.stateFrames) || value.stateFrames.length < 3) {
     errors.push(`${label}: stateFrames 至少包含进入、信息最满/停稳和退出三种状态`);
+  }
+  if (!/^[a-f0-9]{64}$/.test(String(value.artifactSha256 ?? ""))) {
+    errors.push(`${label}: artifactSha256 必须是 64 位 SHA-256`);
+  }
+  if (!/^[a-f0-9]{64}$/.test(String(value.implementationManifestSha256 ?? ""))) {
+    errors.push(`${label}: implementationManifestSha256 必须是 64 位 SHA-256`);
+  }
+  if (value.artifactMode === "local_styleframe") {
+    let artifact;
+    let manifestFile;
+    try {
+      artifact = resolveDesignArtifactRef(value.artifactRef);
+      manifestFile = resolveDesignArtifactRef(value.implementationManifestRef);
+    } catch (error) {
+      errors.push(`${label}: ${error.message}`);
+      return;
+    }
+    if (!fs.existsSync(artifact) || !fs.statSync(artifact).isFile()) {
+      errors.push(`${label}: 本地样式帧不存在：${artifact}`);
+    } else if (sha256File(artifact) !== value.artifactSha256) {
+      errors.push(`${label}: 本地样式帧 SHA-256 不一致`);
+    }
+    if (!fs.existsSync(manifestFile) || !fs.statSync(manifestFile).isFile()) {
+      errors.push(`${label}: 实施清单不存在：${manifestFile}`);
+    } else {
+      if (sha256File(manifestFile) !== value.implementationManifestSha256) {
+        errors.push(`${label}: 实施清单 SHA-256 不一致`);
+      }
+      try {
+        const manifest = readJson(manifestFile);
+        if (manifest.status !== "rendered") {
+          errors.push(`${label}: 实施清单状态必须为 rendered`);
+        }
+        if (
+          manifest.designDigest !== value.designDigest
+          || manifest.sceneId !== value.sceneId
+        ) {
+          errors.push(`${label}: 实施清单与 designDigest/sceneId 不一致`);
+        }
+        if (
+          manifest.rendererCodeSha256 !== resolved.rendererCodeSha256
+          || manifest.implementationDigest !== resolved.implementationDigest
+        ) {
+          errors.push(`${label}: 实施清单代码摘要与当前实现不一致`);
+        }
+        const actualComponentIds = new Set(manifest.componentIds ?? []);
+        for (const componentId of value.componentIds ?? []) {
+          if (!actualComponentIds.has(componentId)) {
+            errors.push(`${label}: 实施清单缺少组件 ${componentId}`);
+          }
+        }
+        if (
+          sha256Value(manifest.resolvedFonts ?? {})
+          !== value.implementationHandoff?.fontResolutionDigest
+        ) {
+          errors.push(`${label}: 实施清单字体解析与 implementationHandoff 不一致`);
+        }
+      } catch (error) {
+        errors.push(`${label}: 实施清单无法读取：${error.message}`);
+      }
+    }
   }
   if (value.artifactMode === "figma") {
     requireFields(
@@ -1119,6 +1352,7 @@ if (!input) {
 }
 
 const file = path.resolve(input);
+validationBaseDirectory = path.dirname(file);
 let plan;
 try {
   plan = readJson(file);

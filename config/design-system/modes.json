@@ -1,0 +1,175 @@
+{
+  "schemaVersion": "1.0",
+  "dimensions": {
+    "show": {
+      "tool-share": {
+        "label": "工具分享",
+        "styleOverrides": {
+          "brand": {"label": "工具分享"},
+          "motion": {"fastFrames": 6, "standardFrames": 9, "slowFrames": 15}
+        },
+        "sceneTags": ["practical", "screen", "evidence", "fast-clear"]
+      },
+      "book-talk": {
+        "label": "解读好书",
+        "styleOverrides": {
+          "palette": {"accent": "#C98245", "accentSecondary": "#8A5A3C"},
+          "brand": {"label": "解读好书"},
+          "motion": {"fastFrames": 8, "standardFrames": 12, "slowFrames": 20}
+        },
+        "sceneTags": ["calm", "evidence", "quote", "long-form"]
+      },
+      "infinite-game": {
+        "label": "有限的无限游戏",
+        "styleOverrides": {
+          "palette": {"accent": "#D38A3B", "accentSecondary": "#87513A"},
+          "brand": {"label": "有限的无限游戏"},
+          "motion": {"fastFrames": 7, "standardFrames": 11, "slowFrames": 18}
+        },
+        "sceneTags": ["documentary", "timeline", "process", "reflective"]
+      },
+      "very-ai": {
+        "label": "灰常AI",
+        "styleOverrides": {
+          "palette": {"accent": "#D9A333", "accentSecondary": "#718FA2"},
+          "brand": {"label": "灰常AI"},
+          "motion": {"fastFrames": 5, "standardFrames": 8, "slowFrames": 14}
+        },
+        "sceneTags": ["dialogue", "experiment", "playful", "fact-check"]
+      }
+    },
+    "aspectRatio": {
+      "landscape-16x9": {
+        "label": "16:9横版",
+        "styleOverrides": {
+          "subtitles": {"maxWidthRatio": 0.8, "baselineYRatio": 0.76},
+          "popups": {"maxWidthRatio": 0.58},
+          "pip": {"safeMarginRatio": 0.04}
+        },
+        "layout": {
+          "canvasRatio": 1.777778,
+          "gridColumns": 12,
+          "outerMarginRatio": 0.05,
+          "gutterRatio": 0.018,
+          "platformUiExclusion": {"top": 0.04, "right": 0.04, "bottom": 0.1, "left": 0.04}
+        }
+      },
+      "portrait-9x16": {
+        "label": "9:16竖版",
+        "styleOverrides": {
+          "typography": {
+            "display": {"sizeRatio": 0.082},
+            "subtitlePrimary": {"sizeRatio": 0.052},
+            "subtitleSecondary": {"sizeRatio": 0.034}
+          },
+          "subtitles": {"maxWidthRatio": 0.86, "baselineYRatio": 0.68},
+          "popups": {"maxWidthRatio": 0.78},
+          "pip": {"safeMarginRatio": 0.055}
+        },
+        "layout": {
+          "canvasRatio": 0.5625,
+          "gridColumns": 6,
+          "outerMarginRatio": 0.06,
+          "gutterRatio": 0.025,
+          "platformUiExclusion": {"top": 0.07, "right": 0.13, "bottom": 0.2, "left": 0.06}
+        }
+      },
+      "square-1x1": {
+        "label": "1:1方形",
+        "styleOverrides": {
+          "subtitles": {"maxWidthRatio": 0.82, "baselineYRatio": 0.72},
+          "popups": {"maxWidthRatio": 0.68}
+        },
+        "layout": {
+          "canvasRatio": 1,
+          "gridColumns": 8,
+          "outerMarginRatio": 0.055,
+          "gutterRatio": 0.022,
+          "platformUiExclusion": {"top": 0.05, "right": 0.06, "bottom": 0.14, "left": 0.06}
+        }
+      }
+    },
+    "language": {
+      "zh": {
+        "label": "中文",
+        "styleOverrides": {},
+        "subtitleLines": 1
+      },
+      "en": {
+        "label": "英文",
+        "styleOverrides": {
+          "typography": {
+            "subtitlePrimary": {"families": ["Avenir Next", "Helvetica Neue", "Arial"], "sizeRatio": 0.042}
+          }
+        },
+        "subtitleLines": 1
+      },
+      "bilingual": {
+        "label": "中英双语",
+        "styleOverrides": {
+          "subtitles": {"lineGapRatio": 0.03, "maxWidthRatio": 0.86},
+          "typography": {
+            "subtitlePrimary": {"families": ["Avenir Next", "Helvetica Neue", "Arial"], "sizeRatio": 0.041},
+            "subtitleSecondary": {"families": ["金陵体", "STSong", "Songti SC"], "sizeRatio": 0.03}
+          }
+        },
+        "subtitleLines": 2
+      }
+    },
+    "surface": {
+      "footage": {
+        "label": "实拍背景",
+        "styleOverrides": {}
+      },
+      "light": {
+        "label": "明亮底图",
+        "styleOverrides": {
+          "subtitles": {
+            "foregroundVariant": "lightSurfaceVariant"
+          }
+        }
+      },
+    "dark": {
+      "label": "暗色底图",
+      "styleOverrides": {
+        "palette": {
+          "canvas": "#1A100B",
+          "surface": "#2B1912",
+          "surfaceElevated": "#382319",
+          "ink": "#FFF8EE",
+          "inkSecondary": "#E7C9A7",
+          "accentSecondary": "#D98555",
+          "shadow": "#000000",
+          "darkSurface": "#120A07",
+          "textOnDark": "#FFF8EE",
+          "textOnAccent": "#24150F"
+        },
+        "subtitles": {
+            "primaryColor": "#FFF8EE",
+            "secondaryColor": "#F2D8B5"
+          }
+        }
+      }
+    },
+    "density": {
+      "compact": {
+        "label": "紧凑",
+        "styleOverrides": {
+          "cards": {"gapRatio": 0.018, "paddingRatio": 0.028},
+          "motion": {"staggerFrames": 2}
+        }
+      },
+      "standard": {
+        "label": "标准",
+        "styleOverrides": {}
+      },
+      "spacious": {
+        "label": "舒展",
+        "styleOverrides": {
+          "cards": {"gapRatio": 0.032, "paddingRatio": 0.045},
+          "motion": {"staggerFrames": 4}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "1.0",
+  "id": "beauty-v2",
+  "name": "Kacha Local Beauty v2",
+  "engine": "apple-vision-plus-ffmpeg",
+  "defaultEnabled": false,
+  "scope": [
+    "skin_smoothing",
+    "whitening",
+    "tone_evening",
+    "nasolabial_softening"
+  ],
+  "profiles": {
+    "natural": {
+      "description": "默认自然档；保留皮肤纹理，只降低局部粗糙和色差。",
+      "skin": {
+        "smoothingSigmaS": 2.2,
+        "smoothingSigmaR": 0.042,
+        "chromaSigmaS": 3.2,
+        "chromaSigmaR": 0.052,
+        "brightness": 0.006,
+        "gamma": 1.012,
+        "saturation": 1.004,
+        "detailAmount": 0.1,
+        "maskBlur": 12,
+        "maskTemporalFrames": 1
+      },
+      "nasolabial": {
+        "smoothingSigmaS": 1.8,
+        "smoothingSigmaR": 0.036,
+        "brightness": 0.008,
+        "gamma": 1.01,
+        "maskBlur": 9,
+        "maskTemporalFrames": 1
+      }
+    },
+    "visible": {
+      "description": "明确要求更明显时使用；仍不改变脸型和永久特征。",
+      "skin": {
+        "smoothingSigmaS": 3,
+        "smoothingSigmaR": 0.058,
+        "chromaSigmaS": 4,
+        "chromaSigmaR": 0.07,
+        "brightness": 0.011,
+        "gamma": 1.022,
+        "saturation": 1.006,
+        "detailAmount": 0.08,
+        "maskBlur": 14,
+        "maskTemporalFrames": 1
+      },
+      "nasolabial": {
+        "smoothingSigmaS": 2.4,
+        "smoothingSigmaR": 0.048,
+        "brightness": 0.013,
+        "gamma": 1.017,
+        "maskBlur": 11,
+        "maskTemporalFrames": 1
+      }
+    }
+  },
+  "hardLimits": {
+    "maximumBrightness": 0.02,
+    "maximumGamma": 1.04,
+    "maximumSmoothingSigmaR": 0.08,
+    "maximumTemporalMaskFrames": 5,
+    "forbidFaceGeometryChange": true,
+    "forbidEyeOrNoseReshape": true,
+    "forbidCloudProcessing": true
+  },
+  "qc": {
+    "minimumPrimaryFaceCoverage": 0.97,
+    "minimumLandmarkCoverage": 0.97,
+    "maximumAmbiguousFrameRatio": 0.02,
+    "maximumTrackingJumpRatio": 0.22,
+    "requiredFrames": [
+      "front_neutral",
+      "front_speaking",
+      "head_turn",
+      "blink",
+      "glasses_reflection",
+      "hand_near_face"
+    ],
+    "requireSameFrameAB": true,
+    "requireTemporalFlickerReview": true,
+    "requireSkinNeckContinuityReview": true,
+    "requireVideoStreamPreservationWhenDisabled": true
+  }
+}

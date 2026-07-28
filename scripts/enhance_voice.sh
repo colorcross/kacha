@@ -7,7 +7,8 @@ Usage:
   enhance_voice.sh INPUT OUTPUT.wav [options]
 
 Options:
-  --preset natural|warm|clear    Voice tone preset (default: Kacha config)
+  --preset natural|warm|warm-soft|clear
+                                  Voice tone preset (default: Kacha config)
   --denoise off|light|medium     Spectral denoise strength (default: Kacha config)
   --declick                      Enable conservative click/mouth-noise repair
   --neural-model PATH            Optional trusted FFmpeg arnndn model
@@ -148,12 +149,20 @@ fi
 }
 duration_args=(-t "$input_duration")
 
+deesser_filter="deesser=i=0.12:m=0.5:f=0.5"
+compressor_filter="acompressor=threshold=0.12:ratio=1.8:attack=18:release=200:makeup=1"
+
 case "$preset" in
   natural)
     tone_filters="equalizer=f=180:t=q:w=1:g=-1.0,equalizer=f=3200:t=q:w=1.2:g=0.8"
     ;;
   warm)
     tone_filters="equalizer=f=180:t=q:w=1:g=0.7,equalizer=f=3200:t=q:w=1.2:g=0.4,equalizer=f=7600:t=q:w=1.1:g=-0.6"
+    ;;
+  warm-soft)
+    tone_filters="lowshelf=f=160:g=1.4,equalizer=f=280:t=q:w=0.8:g=2.0,equalizer=f=850:t=q:w=1.0:g=-1.5,equalizer=f=2500:t=q:w=1.05:g=-2.0,equalizer=f=3800:t=q:w=1.15:g=-1.5,highshelf=f=6500:g=-1.0"
+    deesser_filter="deesser=i=0.14:m=0.35:f=0.5"
+    compressor_filter="acompressor=threshold=0.10:ratio=1.5:attack=8:release=160:knee=4:makeup=1:mix=0.9"
     ;;
   clear)
     tone_filters="equalizer=f=180:t=q:w=1:g=-1.0,equalizer=f=420:t=q:w=0.85:g=-1.2,equalizer=f=3200:t=q:w=1.0:g=1.4,highshelf=f=7000:t=s:w=0.7:g=0.8"
@@ -199,7 +208,7 @@ loudness_log="$work_dir/loudness.log"
 loudness_json="$work_dir/loudness.json"
 final_output="$work_dir/final.wav"
 
-voice_chain="aformat=sample_fmts=fltp:sample_rates=48000,highpass=f=70,lowpass=f=15500,${neural_filter}${denoise_filters}${declick_filter}${tone_filters},deesser=i=0.12:m=0.5:f=0.5,acompressor=threshold=0.12:ratio=1.8:attack=18:release=200:makeup=1,alimiter=limit=0.82"
+voice_chain="aformat=sample_fmts=fltp:sample_rates=48000,highpass=f=70,lowpass=f=15500,${neural_filter}${denoise_filters}${declick_filter}${tone_filters},${deesser_filter},${compressor_filter}"
 
 channel_args=(-ac "$input_channels")
 if [[ -n "$input_channel_layout" && "$input_channel_layout" != "unknown" ]]; then
@@ -233,14 +242,14 @@ ffmpeg -hide_banner -nostats -nostdin \
 sed -n '/^{/,/^}/p' "$loudness_log" >"$loudness_json"
 
 measured_i=$(jq -r '.input_i' "$loudness_json")
-measured_tp=$(jq -r '.input_tp' "$loudness_json")
-measured_lra=$(jq -r '.input_lra' "$loudness_json")
-measured_thresh=$(jq -r '.input_thresh' "$loudness_json")
-offset=$(jq -r '.target_offset' "$loudness_json")
+gain_db=$(awk -v target="$target_lufs" -v measured="$measured_i" \
+  'BEGIN { printf "%.6f", target - measured }')
+limiter_linear=$(awk -v peak="$true_peak" \
+  'BEGIN { printf "%.8f", exp(log(10) * peak / 20) }')
 
 ffmpeg -hide_banner -loglevel error -nostdin -y \
   -i "$pre_master" \
-  -af "loudnorm=I=${target_lufs}:TP=${true_peak}:LRA=6:measured_I=${measured_i}:measured_TP=${measured_tp}:measured_LRA=${measured_lra}:measured_thresh=${measured_thresh}:offset=${offset}:linear=true" \
+  -af "volume=${gain_db}dB,alimiter=limit=${limiter_linear}:attack=5:release=80:level=false" \
   "${duration_args[@]}" \
   -c:a pcm_s24le -ar 48000 "${channel_args[@]}" \
   "$final_output"

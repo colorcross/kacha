@@ -9,6 +9,7 @@ import {
   readJson,
   run,
   sha256File,
+  sha256Value,
 } from "../scripts/kacha_utils.mjs";
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -106,15 +107,58 @@ function expectFailure(command, args) {
 }
 
 function localDesignPreflight(name) {
+  const artifactDirectory = path.join(temporary, "design-preflight", name);
+  const artifact = path.join(artifactDirectory, "styleframe.svg");
+  const manifestFile = path.join(artifactDirectory, "styleframe.manifest.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "design",
+    "render",
+    "--scene",
+    "info_single",
+    "--output",
+    artifact,
+    "--manifest",
+    manifestFile,
+    "--no-guides",
+  ]);
+  const manifest = readJson(manifestFile);
+  const tokenRefs = [
+    ...new Set(
+      (manifest.components ?? []).flatMap(
+        (component) => component.tokenRefs ?? [],
+      ),
+    ),
+  ];
   return {
+    designSystemId: "dahui-video-system",
+    designSystemVersion: manifest.designSystemVersion,
+    designDigest: manifest.designDigest,
+    sceneId: "info_single",
+    componentIds: ["info_card"],
+    modeSelection: {
+      show: "tool-share",
+      aspectRatio: "landscape-16x9",
+      language: "zh",
+      surface: "footage",
+      density: "standard",
+    },
     status: "approved_for_implementation",
     artifactMode: "local_styleframe",
-    artifactRef: `design/${name}/approved-styleframes.png`,
+    artifactRef: artifact,
+    artifactSha256: sha256File(artifact),
+    implementationManifestRef: manifestFile,
+    implementationManifestSha256: sha256File(manifestFile),
     layoutSpec: "已定义人物、字幕、品牌和模块安全区",
     motionSpec: "已定义进入、停稳和退出状态及缓动",
     soundSpec: "已定义声音功能、落点和相对人声音量",
     stateFrames: ["entry", "peak", "exit"],
-    implementationHandoff: "按已批准样式帧、动效参数和音效帧点实现",
+    implementationHandoff: {
+      resolvedFonts: manifest.resolvedFonts,
+      fontResolutionDigest: sha256Value(manifest.resolvedFonts),
+      tokenRefs,
+      implementation: "按渲染清单、令牌和帧状态实施",
+    },
     qcEvidence: ["手机尺寸样式帧", "进入/停稳/退出状态"],
   };
 }
@@ -660,6 +704,298 @@ await test("style profile and effect registries validate and render executable p
   }
 }, "visual");
 
+await test("video design system validates, resolves every mode and renders production artifacts", async () => {
+  const validation = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "design",
+    "validate",
+  ]).stdout);
+  if (
+    validation.designSystem.id !== "dahui-video-system"
+    || validation.designSystem.componentCount < 40
+    || validation.designSystem.sceneCount < 50
+    || validation.designSystem.rendererCount < 8
+    || validation.designSystem.layoutCount < 30
+    || validation.designSystem.motionCount < 70
+    || !/^[a-f0-9]{64}$/.test(validation.designSystem.implementationDigest)
+    || !/^[a-f0-9]{64}$/.test(validation.designSystem.rendererCodeSha256)
+    || !validation.fontResolution?.digest
+  ) {
+    throw new Error("video design system inventory is incomplete");
+  }
+
+  const portrait = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "design",
+    "resolve",
+    "--show",
+    "very-ai",
+    "--aspect",
+    "portrait-9x16",
+    "--language",
+    "bilingual",
+    "--surface",
+    "light",
+  ]).stdout);
+  if (
+    portrait.selectedModes.show !== "very-ai"
+    || portrait.selectedModes.aspectRatio !== "portrait-9x16"
+    || portrait.selectedModes.language !== "bilingual"
+    || portrait.layout.canvasRatio !== 0.5625
+    || !/^[a-f0-9]{64}$/.test(portrait.digest)
+    || !/^[a-f0-9]{64}$/.test(portrait.implementationDigest)
+  ) {
+    throw new Error("video design system mode resolution is invalid");
+  }
+
+  const styleframe = path.join(temporary, "design-system-portrait.svg");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "design",
+    "preview",
+    "--scene",
+    "process_progressive",
+    "--aspect",
+    "portrait-9x16",
+    "--language",
+    "bilingual",
+    "--output",
+    styleframe,
+  ]);
+  const svg = fs.readFileSync(styleframe, "utf8");
+  if (
+    !svg.includes("<svg")
+    || !svg.includes('data-scene-id="process_progressive"')
+    || !svg.includes('data-component-id="process_flow"')
+  ) {
+    throw new Error("video design system styleframe was not rendered");
+  }
+
+  const matrixReportFile = path.join(temporary, "design-system-matrix-qc.json");
+  const matrix = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "design",
+    "qc",
+    "--matrix",
+    "--output",
+    matrixReportFile,
+  ]).stdout);
+  if (
+    matrix.status !== "pass"
+    || matrix.profileCount < 14
+    || matrix.totalComponentRenders < 2000
+    || matrix.totalSceneRenders < 2500
+    || !/^[a-f0-9]{64}$/.test(matrix.implementationDigest)
+    || matrix.profiles.some((profile) => profile.contrastStatus !== "pass")
+  ) {
+    throw new Error("video design system matrix QC did not cover every mode and state");
+  }
+
+  const subtitle = path.join(temporary, "design-system-subtitle.ass");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "design",
+    "render",
+    "--kind",
+    "component",
+    "--id",
+    "subtitle_bilingual",
+    "--language",
+    "bilingual",
+    "--output",
+    subtitle,
+  ]);
+  const ass = fs.readFileSync(subtitle, "utf8");
+  if (!ass.includes("KachaPrimary") || !ass.includes("\\N")) {
+    throw new Error("bilingual subtitle renderer did not emit an ASS implementation");
+  }
+
+  const designApi = await import(
+    `${pathToFileURL(path.join(scripts, "design_system.mjs")).href}?test=${Date.now()}`
+  );
+  const bundle = designApi.loadDesignSystem();
+  const fakeRenderer = JSON.parse(JSON.stringify(bundle));
+  fakeRenderer.components.components[0].renderer = "fake-renderer";
+  if (
+    !designApi.validateDesignSystem(fakeRenderer)
+      .some((error) => error.includes("renderer 未注册"))
+  ) {
+    throw new Error("design validation accepted an unregistered renderer");
+  }
+  const fallbackCycle = JSON.parse(JSON.stringify(bundle));
+  const first = fallbackCycle.components.components[0];
+  const second = fallbackCycle.components.components[1];
+  first.fallback = second.id;
+  second.fallback = first.id;
+  if (
+    !designApi.validateDesignSystem(fallbackCycle)
+      .some((error) => error.includes("fallback 存在循环"))
+  ) {
+    throw new Error("design validation accepted a fallback cycle");
+  }
+
+  if (process.platform === "darwin") {
+    const fontProbeBin = path.join(temporary, "font-probe-bin");
+    const profiler = path.join(fontProbeBin, "system_profiler");
+    fs.mkdirSync(fontProbeBin, { recursive: true });
+    fs.writeFileSync(
+      profiler,
+      "#!/bin/sh\n"
+        + "printf '%s\\n' "
+        + "'{\"SPFontsDataType\":[{\"_name\":\"华光标题黑\"},"
+        + "{\"_name\":\"金陵体\"},{\"_name\":\"Avenir Next\"}]}'\n",
+    );
+    fs.chmodSync(profiler, 0o755);
+    const fallbackProbe = run(process.execPath, [
+      path.join(scripts, "kacha.mjs"),
+      "design",
+      "validate",
+    ], {
+      cwd: temporary,
+      env: { ...process.env, PATH: fontProbeBin },
+    });
+    if (fallbackProbe.status !== 0) {
+      throw new Error(`macOS font fallback probe failed:\n${fallbackProbe.stderr}`);
+    }
+    const fallbackReport = JSON.parse(fallbackProbe.stdout);
+    if (
+      fallbackReport.fontResolution.probe !== "system_profiler"
+      || fallbackReport.fontResolution.warnings.length > 0
+      || Object.values(fallbackReport.fontResolution.roles)
+        .some((role) => role.verified !== true)
+    ) {
+      throw new Error("macOS font fallback did not resolve every design role");
+    }
+  }
+}, "visual");
+
+await test("beauty v2 is local, scoped, bounded and disabled by default", async () => {
+  const report = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config",
+    "show",
+    "--no-secrets",
+  ]).stdout);
+  const beauty = report.config.editingDefaults.parameters.beauty;
+  if (
+    beauty.enabled !== false
+    || beauty.engine !== "beauty-v2"
+    || beauty.profile !== "natural"
+  ) {
+    throw new Error("Beauty v2 defaults are not disabled and explicit");
+  }
+  const beautyConfig = readJson(
+    path.join(skillDirectory, "config", "beauty-v2.json"),
+  );
+  const beautyValidation = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "beauty",
+    "validate",
+  ]).stdout);
+  const expectedScope = [
+    "skin_smoothing",
+    "whitening",
+    "tone_evening",
+    "nasolabial_softening",
+  ];
+  if (
+    beautyConfig.defaultEnabled !== false
+    || beautyValidation.defaultEnabled !== false
+    || !/^[a-f0-9]{64}$/.test(beautyValidation.implementation?.digest)
+    || beautyValidation.implementation?.files?.length < 7
+    || JSON.stringify(beautyConfig.scope) !== JSON.stringify(expectedScope)
+    || beautyConfig.hardLimits.forbidFaceGeometryChange !== true
+    || beautyConfig.hardLimits.forbidCloudProcessing !== true
+    || beautyConfig.qc.minimumPrimaryFaceCoverage < 0.97
+    || beautyConfig.qc.minimumLandmarkCoverage < 0.97
+    || Object.values(beautyConfig.profiles)
+      .some((profile) => (
+        profile.skin.maskTemporalFrames !== 1
+        || profile.nasolabial.maskTemporalFrames !== 1
+      ))
+  ) {
+    throw new Error("Beauty v2 scope or safety limits drifted");
+  }
+
+  const unsafeBeauty = path.join(temporary, "unsafe-beauty-config.json");
+  writeJson(unsafeBeauty, {
+    schemaVersion: "1.0",
+    editingDefaults: {
+      parameters: {
+        beauty: {
+          enabled: "yes",
+          engine: "GPUPixel",
+          profile: "extreme",
+        },
+      },
+    },
+  });
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config",
+    "validate",
+    "--config",
+    unsafeBeauty,
+    "--no-secrets",
+  ]);
+  const beautyApi = await import(
+    `${pathToFileURL(path.join(scripts, "beauty_v2.mjs")).href}?test=${Date.now()}`
+  );
+  const tampered = JSON.parse(JSON.stringify(beautyConfig));
+  tampered.hardLimits.maximumTemporalMaskFrames = 99;
+  tampered.profiles.visible.skin.brightness = 0.5;
+  tampered.profiles.extreme = tampered.profiles.visible;
+  const errors = beautyApi.validateBeautyV2(tampered);
+  if (
+    !errors.some((error) => error.includes("maximumTemporalMaskFrames"))
+    || !errors.some((error) => error.includes("brightness"))
+    || !errors.some((error) => error.includes("extreme"))
+  ) {
+    throw new Error("Beauty v2 accepted parameters outside immutable safety limits");
+  }
+}, "visual");
+
+await test("Beauty v2 Vision generator typechecks and can verify a real-face fixture", () => {
+  const generator = path.join(scripts, "generate_vision_masks.swift");
+  const source = fs.readFileSync(generator, "utf8");
+  for (const contract of [
+    "primaryTrackingStatus",
+    "beautyMaskApplied",
+    "ambiguousFrameRatio",
+    "previousPrimaryBox",
+    "isPrimary",
+  ]) {
+    if (!source.includes(contract)) {
+      throw new Error(`Vision generator is missing ${contract}`);
+    }
+  }
+  if (process.platform === "darwin") {
+    execute("swiftc", ["-typecheck", generator]);
+  }
+  const realFixture = process.env.KACHA_REAL_FACE_FIXTURE;
+  if (!realFixture) return;
+  if (!fs.existsSync(realFixture)) {
+    throw new Error(`KACHA_REAL_FACE_FIXTURE not found: ${realFixture}`);
+  }
+  const summary = mediaSummary(realFixture);
+  const masks = path.join(temporary, "beauty-v2-real-face-masks");
+  execute(generator, [
+    realFixture,
+    masks,
+    String(summary.fps),
+    "accurate",
+  ]);
+  const manifest = readJson(path.join(masks, "manifest.json"));
+  if (
+    manifest.tracking.primaryFaceCoverage < 0.97
+    || manifest.tracking.landmarkCoverage < 0.97
+    || manifest.tracking.ambiguousFrameRatio > 0.02
+    || manifest.frames.some((frame) => frame.beautyMaskApplied !== true)
+  ) {
+    throw new Error("real-face Beauty v2 tracking fixture failed its coverage gate");
+  }
+}, "visual");
+
 await test("connection scanner finds edit joins and emits review handles", () => {
   const first = path.join(temporary, "connection-first.mp4");
   const second = path.join(temporary, "connection-second.mp4");
@@ -1096,6 +1432,50 @@ await test("edit plan rejects implementation before visual design approval", () 
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
 });
 
+await test("edit plan rejects stale or fabricated design evidence", () => {
+  const plan = readJson(path.join(examples, "edit-plan.json"));
+  const preflight = plan.effects[1].designPreflight;
+  preflight.designDigest = "0".repeat(64);
+  preflight.artifactSha256 = "1".repeat(64);
+  preflight.implementationHandoff.resolvedFonts.display = "Imaginary Display";
+  preflight.implementationHandoff.fontResolutionDigest = sha256Value(
+    preflight.implementationHandoff.resolvedFonts,
+  );
+  const file = path.join(temporary, "edit-plan-fabricated-design-evidence.json");
+  writeJson(file, plan);
+  const failure = expectFailure(process.execPath, [
+    path.join(scripts, "validate_edit_plan.mjs"),
+    file,
+  ]);
+  if (
+    !failure.stderr.includes("designDigest")
+    || !failure.stderr.includes("SHA-256")
+    || !failure.stderr.includes("候选字体")
+  ) {
+    throw new Error("fabricated design evidence was rejected for the wrong reason");
+  }
+}, "visual");
+
+await test("edit plan rejects a styleframe from stale renderer code", () => {
+  const plan = readJson(path.join(examples, "edit-plan.json"));
+  const preflight = localDesignPreflight("stale-renderer-code");
+  const manifestFile = preflight.implementationManifestRef;
+  const manifest = readJson(manifestFile);
+  manifest.implementationDigest = "0".repeat(64);
+  writeJson(manifestFile, manifest);
+  preflight.implementationManifestSha256 = sha256File(manifestFile);
+  plan.effects[1].designPreflight = preflight;
+  const file = path.join(temporary, "edit-plan-stale-renderer-code.json");
+  writeJson(file, plan);
+  const failure = expectFailure(process.execPath, [
+    path.join(scripts, "validate_edit_plan.mjs"),
+    file,
+  ]);
+  if (!failure.stderr.includes("代码摘要")) {
+    throw new Error("stale renderer evidence was rejected for the wrong reason");
+  }
+}, "visual");
+
 await test("edit plan rejects PIP without a designed border contract", () => {
   const plan = readJson(path.join(examples, "edit-plan.json"));
   const pip = plan.effects.find((effect) => /画中画|picture-in-picture|pip/i.test(effect.technique));
@@ -1309,6 +1689,7 @@ await test("capability probe returns nonzero for missing required capability", (
 const baseVideo = path.join(temporary, "base.mov");
 const shortMask = path.join(temporary, "mask-short.mkv");
 const exactMask = path.join(temporary, "mask-exact.mkv");
+const localizedMask = path.join(temporary, "mask-localized.mkv");
 const exactText = path.join(temporary, "text-exact.mov");
 let mediaFixturesReady = false;
 function ensureMediaFixtures() {
@@ -1329,6 +1710,13 @@ function ensureMediaFixtures() {
     "-hide_banner", "-loglevel", "error", "-y",
     "-f", "lavfi", "-i", "color=c=white:s=320x180:d=2:r=25",
     "-c:v", "ffv1", "-pix_fmt", "gray", exactMask,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i",
+    "color=c=black:s=320x180:d=2:r=25,"
+      + "drawbox=x=120:y=60:w=80:h=60:color=white:t=fill,format=gray",
+    "-c:v", "ffv1", "-pix_fmt", "gray", localizedMask,
   ]);
   execute("ffmpeg", [
     "-hide_banner", "-loglevel", "error", "-y",
@@ -1841,31 +2229,274 @@ await test("aligned mask and text pipelines preserve base duration", () => {
   }
 });
 
-await test("beauty modes preserve duration and produce distinct outputs", () => {
+await test("Beauty v2 profiles preserve duration and produce distinct outputs", () => {
   ensureMediaFixtures();
-  const light = path.join(temporary, "beauty-light.mov");
-  const plus = path.join(temporary, "beauty-plus.mov");
-  execute(path.join(scripts, "apply_mask_effect.sh"), [
+  const natural = path.join(temporary, "beauty-v2-natural.mov");
+  const visible = path.join(temporary, "beauty-v2-visible.mov");
+  const naturalConfig = path.join(temporary, "beauty-v2-natural-config.json");
+  const visibleConfig = path.join(temporary, "beauty-v2-visible-config.json");
+  writeJson(naturalConfig, {
+    schemaVersion: "1.0",
+    editingDefaults: {
+      parameters: {
+        beauty: {
+          enabled: true,
+          engine: "beauty-v2",
+          profile: "natural",
+        },
+      },
+    },
+  });
+  writeJson(visibleConfig, {
+    schemaVersion: "1.0",
+    editingDefaults: {
+      parameters: {
+        beauty: {
+          enabled: true,
+          engine: "beauty-v2",
+          profile: "visible",
+        },
+      },
+    },
+  });
+  const sourceMedia = mediaSummary(baseVideo);
+  const visionManifest = path.join(temporary, "beauty-v2-vision-manifest.json");
+  const frameCount = Math.round(sourceMedia.duration * sourceMedia.fps);
+  writeJson(visionManifest, {
+    input: baseVideo,
+    sourceSha256: sha256File(baseVideo),
+    sampleFPS: sourceMedia.fps,
+    sourceFPS: sourceMedia.fps,
+    sourceDuration: sourceMedia.duration,
+    frames: Array.from({ length: frameCount }, (_, index) => ({
+      index: index + 1,
+      primaryFaceIndex: 0,
+      primaryTrackingStatus: index === 0 ? "acquired" : "locked",
+      primaryLandmarksAvailable: true,
+      primaryJumpRatio: index === 0 ? null : 0.01,
+      candidateCount: 1,
+      beautyMaskApplied: true,
+      faces: [{
+        isPrimary: true,
+        landmarksAvailable: true,
+      }],
+    })),
+  });
+  expectFailure(path.join(scripts, "apply_beauty_v2.sh"), [
     baseVideo,
     exactMask,
-    light,
-    "beauty-light",
+    exactMask,
+    path.join(temporary, "beauty-v2-disabled.mov"),
+    "natural",
+    "--vision-manifest",
+    visionManifest,
   ]);
-  execute(path.join(scripts, "apply_mask_effect.sh"), [
+  const naturalReport = path.join(temporary, "beauty-v2-natural-report.json");
+  execute(path.join(scripts, "apply_beauty_v2.sh"), [
     baseVideo,
     exactMask,
-    plus,
-    "beauty-plus",
+    exactMask,
+    natural,
+    "natural",
+    "--vision-manifest",
+    visionManifest,
+    "--config",
+    naturalConfig,
+    "--report",
+    naturalReport,
+  ]);
+  execute(path.join(scripts, "apply_beauty_v2.sh"), [
+    baseVideo,
+    exactMask,
+    exactMask,
+    visible,
+    "visible",
+    "--vision-manifest",
+    visionManifest,
+    "--config",
+    visibleConfig,
   ]);
   const baseDuration = mediaSummary(baseVideo).duration;
-  for (const file of [light, plus]) {
+  for (const file of [natural, visible]) {
     if (Math.abs(mediaSummary(file).duration - baseDuration) > 1 / 25 + 0.0005) {
       throw new Error(`${path.basename(file)} duration drifted`);
     }
   }
-  if (sha256File(light) === sha256File(plus)) {
-    throw new Error("beauty-light and beauty-plus unexpectedly produced identical files");
+  if (sha256File(natural) === sha256File(visible)) {
+    throw new Error("Beauty v2 natural and visible unexpectedly produced identical files");
   }
+  const localizedOutput = path.join(temporary, "beauty-v2-localized.mov");
+  execute(path.join(scripts, "apply_beauty_v2.sh"), [
+    baseVideo,
+    localizedMask,
+    localizedMask,
+    localizedOutput,
+    "visible",
+    "--vision-manifest",
+    visionManifest,
+    "--config",
+    visibleConfig,
+  ]);
+  const control = path.join(temporary, "beauty-v2-control.mov");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+    "-i", baseVideo,
+    "-vf", "format=yuv444p10le,format=yuv422p10le",
+    "-map", "0:v:0", "-map", "0:a?",
+    "-c:v", "prores_ks", "-profile:v", "3", "-pix_fmt", "yuv422p10le",
+    "-c:a", "copy",
+    control,
+  ]);
+  const chromaCheck = run("ffmpeg", [
+    "-hide_banner", "-loglevel", "info",
+    "-i", control,
+    "-i", localizedOutput,
+    "-filter_complex",
+    "[0:v]crop=96:180:0:0[a];[1:v]crop=96:180:0:0[b];[a][b]psnr",
+    "-f", "null", "-",
+  ]);
+  if (chromaCheck.status !== 0) {
+    throw new Error(`Beauty v2 chroma isolation check failed: ${chromaCheck.stderr}`);
+  }
+  const psnr = /PSNR y:([^ ]+) u:([^ ]+) v:([^ ]+) average:([^ ]+)/.exec(
+    chromaCheck.stderr,
+  );
+  const acceptable = (value) => value === "inf" || Number(value) >= 55;
+  if (!psnr || !acceptable(psnr[2]) || !acceptable(psnr[3])) {
+    throw new Error(`Beauty v2 leaked chroma outside its mask: ${psnr?.[0] ?? "no PSNR"}`);
+  }
+  const report = readJson(naturalReport);
+  if (
+    report.status !== "pass_with_review"
+    || report.technicalStatus !== "pass"
+    || report.manualStatus !== "review_required"
+    || report.tracking.metrics.primaryFaceCoverage !== 1
+    || !/^[a-f0-9]{64}$/.test(report.implementation?.digest)
+    || report.implementation?.files?.some(
+      (file) => !/^[a-f0-9]{64}$/.test(file.sha256),
+    )
+  ) {
+    throw new Error("Beauty v2 did not emit a gated technical QC report");
+  }
+  const manualReview = path.join(temporary, "beauty-v2-manual-review.json");
+  writeJson(manualReview, {
+    schemaVersion: "1.0",
+    reviewer: "automated-test-fixture",
+    reviewedAt: "2026-07-28T00:00:00.000Z",
+    outputSha256: sha256File(natural),
+    visionManifestSha256: sha256File(visionManifest),
+    profile: "natural",
+    sameFrameAB: true,
+    temporalFlickerReviewed: true,
+    skinNeckContinuityReviewed: true,
+    dynamicReviewRef: natural,
+    dynamicReviewSha256: sha256File(natural),
+    requiredFrames: Object.fromEntries(
+      [
+        "front_neutral",
+        "front_speaking",
+        "head_turn",
+        "blink",
+        "glasses_reflection",
+        "hand_near_face",
+      ].map((id, index) => [id, {
+        status: "pass",
+        timeSeconds: Math.min(
+          sourceMedia.duration - 1 / sourceMedia.fps,
+          index / sourceMedia.fps,
+        ),
+        evidenceRef: natural,
+        evidenceSha256: sha256File(natural),
+      }]),
+    ),
+  });
+  const releaseQc = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "beauty",
+    "qc",
+    baseVideo,
+    natural,
+    "--skin-mask",
+    exactMask,
+    "--nasolabial-mask",
+    exactMask,
+    "--vision-manifest",
+    visionManifest,
+    "--profile",
+    "natural",
+    "--manual-review",
+    manualReview,
+    "--ab-dir",
+    path.join(temporary, "beauty-v2-release-ab"),
+  ]).stdout);
+  if (releaseQc.status !== "pass" || releaseQc.manualStatus !== "pass") {
+    throw new Error("Beauty v2 release QC did not honor complete manual evidence");
+  }
+  const staleReview = readJson(manualReview);
+  staleReview.outputSha256 = "0".repeat(64);
+  const staleReviewFile = path.join(temporary, "beauty-v2-stale-review.json");
+  writeJson(staleReviewFile, staleReview);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "beauty",
+    "qc",
+    baseVideo,
+    natural,
+    "--skin-mask",
+    exactMask,
+    "--nasolabial-mask",
+    exactMask,
+    "--vision-manifest",
+    visionManifest,
+    "--profile",
+    "natural",
+    "--manual-review",
+    staleReviewFile,
+    "--ab-dir",
+    path.join(temporary, "beauty-v2-stale-review-ab"),
+  ]);
+  const ambiguousManifest = readJson(visionManifest);
+  ambiguousManifest.frames.slice(0, 3).forEach((frame) => {
+    frame.primaryTrackingStatus = "ambiguous";
+    frame.beautyMaskApplied = false;
+  });
+  const ambiguousFile = path.join(temporary, "beauty-v2-ambiguous-manifest.json");
+  writeJson(ambiguousFile, ambiguousManifest);
+  expectFailure(process.execPath, [
+    path.join(scripts, "beauty_qc.mjs"),
+    baseVideo,
+    natural,
+    "--skin-mask",
+    exactMask,
+    "--nasolabial-mask",
+    exactMask,
+    "--vision-manifest",
+    ambiguousFile,
+    "--profile",
+    "natural",
+    "--technical-only",
+  ]);
+  const staleSourceManifest = readJson(visionManifest);
+  staleSourceManifest.sourceSha256 = "0".repeat(64);
+  const staleSourceFile = path.join(
+    temporary,
+    "beauty-v2-stale-source-manifest.json",
+  );
+  writeJson(staleSourceFile, staleSourceManifest);
+  expectFailure(process.execPath, [
+    path.join(scripts, "beauty_qc.mjs"),
+    baseVideo,
+    natural,
+    "--skin-mask",
+    exactMask,
+    "--nasolabial-mask",
+    exactMask,
+    "--vision-manifest",
+    staleSourceFile,
+    "--profile",
+    "natural",
+    "--technical-only",
+  ]);
 });
 
 await test("Claude visual evidence is local, cacheable and upload-gated", () => {
@@ -2127,6 +2758,45 @@ await test("skin mask PNG manifest builds an aligned lossless video", () => {
   ]);
   if (Math.abs(mediaSummary(output).duration - 2) > 1 / 25 + 0.0005) {
     throw new Error("skin mask duration drifted");
+  }
+});
+
+await test("nasolabial mask PNG manifest builds an aligned lossless video", () => {
+  ensureMediaFixtures();
+  const maskDirectory = path.join(temporary, "nasolabial-mask-frames");
+  fs.mkdirSync(maskDirectory);
+  const first = path.join(maskDirectory, "nasolabial_000001.png");
+  const second = path.join(maskDirectory, "nasolabial_000002.png");
+  for (const [file, color] of [[first, "white"], [second, "black"]]) {
+    execute("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-y",
+      "-f", "lavfi", "-i", `color=c=${color}:s=80x45:d=0.04:r=25`,
+      "-frames:v", "1", file,
+    ]);
+  }
+  const manifest = {
+    schemaVersion: "2.0",
+    input: baseVideo,
+    sourceFPS: 25,
+    sourceDuration: 2,
+    sourceWidth: 320,
+    sourceHeight: 180,
+    frames: [
+      { timeSeconds: 0, nasolabialMask: "nasolabial_000001.png" },
+      { timeSeconds: 1, nasolabialMask: "nasolabial_000002.png" },
+    ],
+  };
+  const manifestFile = path.join(maskDirectory, "manifest.json");
+  const output = path.join(maskDirectory, "nasolabial.mkv");
+  writeJson(manifestFile, manifest);
+  execute(process.execPath, [
+    path.join(scripts, "build_mask_video.mjs"),
+    manifestFile,
+    "nasolabial",
+    output,
+  ]);
+  if (Math.abs(mediaSummary(output).duration - 2) > 1 / 25 + 0.0005) {
+    throw new Error("nasolabial mask duration drifted");
   }
 });
 
@@ -2473,6 +3143,93 @@ await test("MOV timing normalizer stream-copies and checks both FPS values", () 
   }
   if (summary.video.codec_name !== mediaSummary(baseVideo).video.codec_name) {
     throw new Error("video codec changed during timing normalization");
+  }
+});
+
+await test("natural dialogue reference standard protects dynamics and equal-loudness review", () => {
+  const audioReference = fs.readFileSync(
+    path.join(skillDirectory, "references", "audio.md"),
+    "utf8",
+  );
+  const requiredRules = [
+    "自然口播参考基准（中文版标准）",
+    "±0.2 LU",
+    "dialogue LRA",
+    "centered_dialogue",
+    "整段动态 `loudnorm`",
+    "视频 elementary-stream SHA-256",
+  ];
+  for (const rule of requiredRules) {
+    if (!audioReference.includes(rule)) {
+      throw new Error(`natural dialogue reference contract missing: ${rule}`);
+    }
+  }
+});
+
+await test("warm-soft long-listening voice profile is the executable default", () => {
+  const defaults = readJson(path.join(skillDirectory, "config", "defaults.json"));
+  const voice = defaults.execution.voiceEnhancement;
+  const audio = defaults.editingDefaults.parameters.audio;
+  if (
+    voice.preset !== "warm-soft"
+    || voice.targetLufs !== -21
+    || voice.truePeakDbtp !== -4
+    || audio.profile !== "warm-soft-long-listening"
+    || audio.bgm?.targetBelowDialogueDb !== 18
+    || audio.bgm?.stereoWidth !== 0.5
+    || audio.sfx?.defaultBelowDialogueDb !== 12
+    || audio.sfx?.highShelfFrequencyHz !== 4500
+    || audio.sfx?.highShelfGainDb !== -1.5
+  ) {
+    throw new Error("warm-soft default parameters drifted");
+  }
+  const enhancer = fs.readFileSync(
+    path.join(scripts, "enhance_voice.sh"),
+    "utf8",
+  );
+  for (const fragment of [
+    "warm-soft)",
+    "lowshelf=f=160:g=1.4",
+    "equalizer=f=2500:t=q:w=1.05:g=-2.0",
+    "deesser=i=0.14:m=0.35",
+    "ratio=1.5:attack=8:release=160",
+    "volume=${gain_db}dB",
+    "level=false",
+  ]) {
+    if (!enhancer.includes(fragment)) {
+      throw new Error(`warm-soft executable chain missing: ${fragment}`);
+    }
+  }
+  if (enhancer.includes("measured_I=${measured_i}")) {
+    throw new Error("voice enhancer still applies final dynamic loudnorm");
+  }
+});
+
+await test("default warm-soft enhancer reaches its long-listening loudness target", () => {
+  const input = path.join(temporary, "warm-soft-input.wav");
+  const output = path.join(temporary, "warm-soft-output.wav");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "sine=frequency=220:duration=5:sample_rate=48000",
+    "-c:a", "pcm_s24le", input,
+  ]);
+  execute(path.join(scripts, "enhance_voice.sh"), [input, output]);
+  const measured = execute("ffmpeg", [
+    "-hide_banner", "-nostats",
+    "-i", output,
+    "-af", "loudnorm=I=-21:TP=-4:LRA=5:print_format=json",
+    "-f", "null", "-",
+  ]);
+  const jsonText = measured.stderr.match(/\{[\s\S]*\}/)?.[0];
+  if (!jsonText) throw new Error("could not parse warm-soft loudness report");
+  const loudness = JSON.parse(jsonText);
+  const integrated = Number(loudness.input_i);
+  const truePeak = Number(loudness.input_tp);
+  if (Math.abs(integrated - (-21)) > 0.2) {
+    throw new Error(`warm-soft loudness drifted: ${integrated} LUFS`);
+  }
+  if (truePeak > -4) {
+    throw new Error(`warm-soft true peak exceeded ceiling: ${truePeak} dBTP`);
   }
 });
 

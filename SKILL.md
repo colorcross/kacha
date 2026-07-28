@@ -32,7 +32,8 @@ description: |
   `references/qc-release.md`
 - 人声/BGM/SFX/同步：`references/audio.md`；本地音效库另读
   `references/sfx-library.md`
-- 插镜/PIP/美颜/蒙版/人物后文字/调色：`references/visuals-masks.md`
+- 插镜/PIP/蒙版/人物后文字/调色：`references/visuals-masks.md`
+- 美颜：`references/beauty-v2.md`；默认关闭，只在明确启用时读取并执行
 - 信息卡/流程图/弹窗/复杂动效：`references/visual-design-preflight.md`
 - 统一风格、开场和转场库：`references/style-effects-library.md`
 - 字幕/封面/品牌/系列：`references/subtitles-covers-brand.md`
@@ -81,6 +82,8 @@ reference。
 node scripts/kacha.mjs config validate
 node scripts/kacha.mjs config show --anchor PROJECT_DIR
 node scripts/kacha.mjs config init --scope user
+node scripts/kacha.mjs design validate
+node scripts/kacha.mjs design list --kind scene
 node scripts/kacha.mjs effects validate
 node scripts/kacha.mjs effects list --kind transition
 ```
@@ -97,10 +100,13 @@ Git。默认要求只表示偏好，不构成上传、付费、发布、覆盖�
 敏感项只接受用户配置或显式 `--config`。完整说明见
 `docs/CONFIGURATION.md`。
 
-视觉风格必须从 `style.profile + style.overrides` 解析，默认使用
-`warm-editorial`。字幕、弹窗、信息卡、画中画、品牌、封面、开场和转场只读取
-解析后的风格令牌与 digest，不在时间区间实现中写死字体、颜色、圆角、阴影、
-边框或缓动。更换风格走 `style` 增量配方并按依赖失效重建。
+视觉必须从 `style.system + style.profile + style.modes + style.overrides`
+解析，默认使用 `dahui-video-system` 与 `warm-editorial`。设计系统包含基础
+令牌、栏目/画幅/语言/明暗/密度模式、组件库和场景库。字幕、弹窗、信息卡、
+画中画、品牌、封面、开场和转场只读取解析后的设计合同与 digest，不在时间
+区间实现中写死字体、颜色、圆角、阴影、边框或缓动。更换模式或风格走
+`style` 增量配方并按依赖失效重建。
+系统规范、组件与场景选择见 `docs/VIDEO_DESIGN_SYSTEM_V1.md`。
 
 ## 不可降低的合同
 
@@ -119,7 +125,18 @@ Git。默认要求只表示偏好，不构成上传、付费、发布、覆盖�
 - 插镜同时匹配对象、动作、角色、状态、时态、方向和全片风格。
 - 含口播且需要音频处理时，先做人声/非人声分离；只有验收通过的 dialogue
   stem 可进入降噪、美化和混音，residual 不回混。
+- 匹配已认可的人声参考时，必须同时比较同响度听感、LRA/峰均动态、频谱、
+  声像和语气强弱；只对齐 LUFS 不算完成。知识口播默认采用
+  `references/audio.md` 的“自然口播参考基准”和 `warm-soft` 长听感预设。
 - SFX 按功能建立调色板并与事件逐一映射；禁止整片反复套一个声音。
+- 美颜默认关闭。明确启用时只使用本地 Beauty v2，并且只做磨皮、美白、匀肤
+  和法令纹弱化；不得回退 GPUPixel、生成式人脸修复或云端美颜。
+- Beauty v2 渲染必须由当前项目配置显式 `enabled=true`，携带逐帧 Vision
+  manifest，并通过主脸跟踪、媒体保真、同帧 A/B 和人工动态复核；仅指定
+  profile 不构成启用授权。QC 报告必须冻结配置与完整实现链 digest。
+- 高影响视觉模块使用 `design render` 生成真实样式帧与实施清单；预检必须
+  校验文件 hash、当前 design digest、实现 digest、组件、字体与 token
+  路径。发布前运行 `design qc --matrix` 覆盖全部 mode 取值和组件/场景状态。
 - 检测到系列时，视频和封面使用同一系列标识、层级和安全区。
 - 自动技术 QC、当前版本人工审片和对应门禁全部通过前，不能称为可发布成片。
 - 上传、发布、付费生成、购买授权与不可逆删除必须在明确授权内。

@@ -1,8 +1,9 @@
-# 统一风格系统、开场与转场效果库
+# 视频设计系统、开场与转场效果库
 
-视频展现风格必须先解析成一份 style profile，再由字幕、弹窗、信息卡、画中画、
-品牌、封面、开场和转场共同消费。禁止在单个时间区间的渲染代码中重新写字体、
-颜色、圆角、阴影、边框、缓动或安全区。
+视频展现必须先解析“设计系统 + style profile + 五组 mode”，再由已注册的
+组件、场景、开场和转场共同消费。禁止在单个时间区间的渲染代码中重新写字体、
+颜色、圆角、阴影、边框、缓动或安全区。完整可执行规范见
+`docs/VIDEO_DESIGN_SYSTEM_V1.md`。
 
 ## 风格配置入口
 
@@ -18,7 +19,15 @@ config/styles/warm-editorial.json
 {
   "schemaVersion": "1.0",
   "style": {
+    "system": "dahui-video-system",
     "profile": "warm-editorial",
+    "modes": {
+      "show": "tool-share",
+      "aspectRatio": "landscape-16x9",
+      "language": "zh",
+      "surface": "footage",
+      "density": "standard"
+    },
     "overrides": {
       "palette": {
         "accent": "#E9A92F"
@@ -32,15 +41,23 @@ config/styles/warm-editorial.json
 
 ```bash
 node scripts/kacha.mjs config validate
+node scripts/kacha.mjs design validate
+node scripts/kacha.mjs design list --kind scene
+node scripts/kacha.mjs design preview --scene process_progressive \
+  --output /tmp/process-progressive.svg
 node scripts/kacha.mjs effects validate
 node scripts/kacha.mjs effects show --kind opening --id editorial_label_reveal
 ```
 
-解析后的 style digest 必须写入设计预检、版本 delta 和相关 artifact fingerprint。
+解析后的 design digest 必须写入设计预检、版本 delta 和相关 artifact fingerprint。
 更换 profile 或 override 后，所有依赖旧 digest 的字幕层、弹窗、信息卡、画中画、
 品牌、封面和视觉母版失效；不能只改一处颜色后继续继承旧风格结论。
 
-## 风格令牌
+## 设计模式、组件、场景与风格令牌
+
+设计系统注册表位于 `config/design-system/`。当前提供 5 个 mode 维度、52 个
+组件与 63 个场景；项目优先选择场景，再由场景组合组件，不在时间线上直接
+拼装一套新视觉语言。
 
 默认 profile 统一管理：
 

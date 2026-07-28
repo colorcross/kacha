@@ -9,7 +9,7 @@ import {
   readJson,
   sha256Value,
 } from "./kacha_utils.mjs";
-import { loadStyleProfile } from "./style_profile.mjs";
+import { resolveDesignSystem } from "./design_system.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(scriptDirectory, "..");
@@ -61,7 +61,14 @@ const EXECUTION_KEYS = new Set([
   "stockMedia",
 ]);
 const EDITING_KEYS = new Set(["parameters", "instructions", "recipeParameters"]);
-const STYLE_KEYS = new Set(["profile", "overrides"]);
+const STYLE_KEYS = new Set(["system", "profile", "modes", "overrides"]);
+const STYLE_MODE_KEYS = new Set([
+  "show",
+  "aspectRatio",
+  "language",
+  "surface",
+  "density",
+]);
 const TOOLS_KEYS = new Set(["demucsBin", "sfxLibrary"]);
 const PROVIDER_KEYS = {
   minimax: new Set(["credentialEnv", "region", "baseUrl"]),
@@ -84,6 +91,7 @@ const FORBIDDEN_AUTH_KEYS = new Set([
   "overwritesource",
   "uploadallowed",
 ]);
+const BEAUTY_PREFERENCE_KEYS = new Set(["enabled", "engine", "profile"]);
 
 function isPlainObject(value) {
   return Boolean(
@@ -229,6 +237,26 @@ function assertNoAuthorityOverride(value, label = "editingDefaults.parameters") 
   }
 }
 
+function validateBeautyPreference(value, label, { complete = false } = {}) {
+  assertPlainObject(value, label);
+  rejectUnknownKeys(value, BEAUTY_PREFERENCE_KEYS, label);
+  if (complete || value.enabled !== undefined) {
+    if (typeof value.enabled !== "boolean") {
+      throw new Error(`${label}.enabled 必须是 boolean`);
+    }
+  }
+  if (complete || value.engine !== undefined) {
+    if (value.engine !== "beauty-v2") {
+      throw new Error(`${label}.engine 必须为 beauty-v2`);
+    }
+  }
+  if (complete || value.profile !== undefined) {
+    if (!["natural", "visible"].includes(value.profile)) {
+      throw new Error(`${label}.profile 必须为 natural 或 visible`);
+    }
+  }
+}
+
 function validateConfigLayer(value, label) {
   rejectDangerousKeys(value, label);
   rejectUnknownKeys(value, TOP_LEVEL_KEYS, label);
@@ -246,6 +274,12 @@ function validateConfigLayer(value, label) {
         value.editingDefaults.parameters,
         `${label}.editingDefaults.parameters`,
       );
+      if (value.editingDefaults.parameters.beauty !== undefined) {
+        validateBeautyPreference(
+          value.editingDefaults.parameters.beauty,
+          `${label}.editingDefaults.parameters.beauty`,
+        );
+      }
     }
     normalizeInstructions(
       value.editingDefaults.instructions,
@@ -277,10 +311,23 @@ function validateConfigLayer(value, label) {
   }
   if (value.style !== undefined) {
     rejectUnknownKeys(value.style, STYLE_KEYS, `${label}.style`);
+    if (value.style.system !== undefined) {
+      assertString(value.style.system, `${label}.style.system`, {
+        pattern: /^[a-z0-9][a-z0-9-]{0,63}$/,
+      });
+    }
     if (value.style.profile !== undefined) {
       assertString(value.style.profile, `${label}.style.profile`, {
         pattern: /^[a-z0-9][a-z0-9-]{0,63}$/,
       });
+    }
+    if (value.style.modes !== undefined) {
+      rejectUnknownKeys(value.style.modes, STYLE_MODE_KEYS, `${label}.style.modes`);
+      for (const [dimension, mode] of Object.entries(value.style.modes)) {
+        assertString(mode, `${label}.style.modes.${dimension}`, {
+          pattern: /^[a-z0-9][a-z0-9-]{0,63}$/,
+        });
+      }
     }
     if (value.style.overrides !== undefined) {
       assertPlainObject(value.style.overrides, `${label}.style.overrides`);
@@ -324,7 +371,12 @@ function validateLayerTrust(value, scope) {
 
 function validateEffectiveConfig(config) {
   validateConfigLayer(config, "effectiveConfig");
-  loadStyleProfile(config.style.profile, config.style.overrides);
+  validateBeautyPreference(
+    config.editingDefaults.parameters.beauty,
+    "effectiveConfig.editingDefaults.parameters.beauty",
+    { complete: true },
+  );
+  resolveDesignSystem(config.style);
   if (!["economy", "balanced", "frontier"].includes(config.execution.modelTier)) {
     throw new Error("execution.modelTier 必须为 economy、balanced 或 frontier");
   }
@@ -487,7 +539,7 @@ function validateEffectiveConfig(config) {
     new Set(["preset", "denoise", "declick", "targetLufs", "truePeakDbtp", "channelMode"]),
     "execution.voiceEnhancement",
   );
-  if (!["natural", "warm", "clear"].includes(voice.preset)) {
+  if (!["natural", "warm", "warm-soft", "clear"].includes(voice.preset)) {
     throw new Error("execution.voiceEnhancement.preset 无效");
   }
   if (!["off", "light", "medium"].includes(voice.denoise)) {
@@ -861,12 +913,11 @@ export function applicableEditingDefaults(
     instructions: deepClone(instructions),
     recipeParameters: deepClone(loaded.config.editingDefaults.recipeParameters),
     style: {
+      system: loaded.config.style.system,
       id: loaded.config.style.profile,
+      modes: deepClone(loaded.config.style.modes),
       overrides: deepClone(loaded.config.style.overrides),
-      digest: loadStyleProfile(
-        loaded.config.style.profile,
-        loaded.config.style.overrides,
-      ).digest,
+      digest: resolveDesignSystem(loaded.config.style).digest,
     },
     authorityBoundary:
       "默认要求是偏好与实施输入，不构成上传、付费、发布、覆盖源文件或跳过门禁的授权。",
@@ -889,7 +940,15 @@ function userConfigTemplate() {
   return {
     schemaVersion: "1.0",
     style: {
+      system: "dahui-video-system",
       profile: "warm-editorial",
+      modes: {
+        show: "tool-share",
+        aspectRatio: "landscape-16x9",
+        language: "zh",
+        surface: "footage",
+        density: "standard",
+      },
       overrides: {},
     },
     editingDefaults: {
@@ -904,6 +963,7 @@ function projectConfigTemplate() {
   return {
     schemaVersion: "1.0",
     style: {
+      modes: {},
       overrides: {},
     },
     editingDefaults: {
@@ -1076,10 +1136,7 @@ async function main() {
     }
     return;
   }
-  const resolvedStyle = loadStyleProfile(
-    loaded.config.style.profile,
-    loaded.config.style.overrides,
-  );
+  const resolvedStyle = resolveDesignSystem(loaded.config.style);
   const report = {
     schemaVersion: "1.0",
     status: "pass",
@@ -1087,10 +1144,16 @@ async function main() {
     sources: loaded.sources,
     secrets: loaded.secrets,
     style: {
-      id: resolvedStyle.profile.id,
+      system: resolvedStyle.system.id,
+      systemVersion: resolvedStyle.system.version,
+      id: resolvedStyle.style.id,
+      modes: resolvedStyle.selectedModes,
       digest: resolvedStyle.digest,
-      source: resolvedStyle.source,
-      ...(action === "show" ? { profile: resolvedStyle.profile } : {}),
+      source: resolvedStyle.styleSource,
+      ...(action === "show" ? {
+        profile: resolvedStyle.style,
+        layout: resolvedStyle.layout,
+      } : {}),
     },
     ...(action === "show" ? { config: loaded.config } : {}),
   };

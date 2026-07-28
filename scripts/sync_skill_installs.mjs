@@ -56,6 +56,7 @@ function copyCore(source, output) {
         ".DS_Store",
         ".kacha-version",
         "node_modules",
+        "website",
       ].includes(first);
     },
   });

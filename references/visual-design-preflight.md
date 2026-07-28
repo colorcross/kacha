@@ -2,8 +2,9 @@
 
 信息卡、流程图、弹窗、风格化转场、人物后文字以及人物/局部/隐私等蒙版效果，必须先设计、后实施。设计预检解决的是“做成什么样、为什么这样动、听起来是什么感觉”，不能用渲染后的成片反向冒充设计。
 
-开始设计前先解析项目 style profile。`implementationHandoff` 必须记录
-`styleId`、`styleDigest` 和实际使用的 token 路径；单个模块只记录必要偏差，
+开始设计前先解析项目视频设计系统。`implementationHandoff` 必须记录
+`designSystemId`、`designSystemVersion`、`designDigest`、`sceneId`、
+`componentIds`、五组 `modeSelection` 和实际使用的 token 路径；单个模块只记录必要偏差，
 不得复制整套字体、颜色、圆角、阴影和缓动参数。无批准偏差时，渲染器直接
 消费解析后的统一令牌。
 
@@ -11,17 +12,36 @@
 
 每个高影响视觉效果在 `edit-plan.json` 中提供 `designPreflight`：
 
+- `designSystemId`、`designSystemVersion` 与 64 位 `designDigest`；
+- `sceneId` 与非空 `componentIds`；
+- `modeSelection`：`show`、`aspectRatio`、`language`、`surface`、`density`；
 - `status=approved_for_implementation`；
 - `artifactMode`：`local_styleframe` 或 `figma`；
 - `artifactRef`：本地样式帧、设计稿或交接文件；
+- `artifactSha256`：实际样式帧的 SHA-256；
+- `implementationManifestRef` 与 `implementationManifestSha256`：由
+  `design render` 生成的实施清单及其摘要；
 - `layoutSpec`：画幅、人物/头像、字幕、品牌、平台 UI 和模块边界；
 - `motionSpec`：进入、停稳、退出、持续时间、缓动、方向、层级和 motion blur；
 - `soundSpec`：声音功能、候选类别、峰值落点、相对人声音量及 BGM 闪避；
 - `stateFrames`：至少包含进入、信息最满/停稳、退出三种状态；
-- `implementationHandoff`：字体、色值、尺寸、归一化坐标、帧数和资产映射；
+- `implementationHandoff`：五类解析后字体、字体选择摘要、真实 token 路径、
+  尺寸、归一化坐标、帧数和资产映射；
 - `qcEvidence`：手机尺寸样式帧、亮/暗背景、人物安全区和短动效预览。
 
 设计稿通过不等于实现通过。正式实现后仍需对照设计稿检查构图、时序、音效落点、边缘和退出状态。
+
+本地设计包建议直接生成：
+
+```bash
+node scripts/kacha.mjs design render \
+  --scene SCENE_ID \
+  --output design/SCENE_ID/styleframe.svg \
+  --manifest design/SCENE_ID/styleframe.manifest.json
+```
+
+验证器会读取真实文件并核对 hash、当前 design digest、场景、组件和字体选择。
+仅填写看似正确的文件名或摘要不能通过。
 
 ## 本地样式帧还是 Figma
 

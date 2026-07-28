@@ -21,6 +21,9 @@ Defines goals, inputs, content structure, modules, authorization, fallbacks, and
 ### `editPlan`
 
 Defines cuts, subjects, shot sizes, reasons for shot changes, continuity, and effect contracts. It answers: what exactly should happen on the timeline?
+High-impact visual modules also reference a real styleframe, implementation
+manifest, file hashes, resolved fonts, and token paths from the active video
+design system.
 
 ### `projectManifest`
 
@@ -96,12 +99,18 @@ remains editable; only a `release_candidate` may enter `gate-release`.
 
 ## V4 deterministic execution layer
 
-Six stable commands reduce model-reasoning dependence:
+Eight stable commands reduce model-reasoning dependence:
 
 - `doctor`: inspect runtime and visual-compensation capabilities;
 - `prepare`: emit a model-tiered, budget-bounded task packet and exact `readOrder`;
 - `next`: derive one legal next action from current files and hashes;
 - `compile-change`: compile common feedback recipes into v3 contracts;
+- `effects`: validate, inspect, and preview registered openings/transitions;
+- `design`: resolve registered renderers, emit SVG/PNG/ASS plus implementation
+  manifests, and run the cross-mode/state QC matrix;
+- `beauty`: enforce project-level opt-in for local Beauty v2 and keep technical
+  QC separate from dynamic human review;
+- `connections`: combine timeline cuts and scene-change candidates into review handles;
 - `visual-evidence`: build local keyframe, face/person, OCR, and technical evidence;
 - `vision-enrich`: enrich a few frames with MiniMax only after external-upload,
   paid-service, and explicit command authorization.
@@ -121,6 +130,22 @@ Credentials come from a separate secrets file or environment. Values remain
 non-serializable internal state and are injected only into the required child
 process. Editing defaults enter the execution contract but cannot override
 project authorization or non-negotiable gates.
+
+## Video design system boundary
+
+`config/design-system/` stores the system, five mode dimensions, component,
+scene, renderer, layout, and motion registries. `config/styles/` stores the base style profile;
+`config/effects/` stores opening and transition registries. Timeline intervals
+reference IDs and digests instead of copying fonts, colors, shadows, borders,
+safe areas, or easing curves.
+
+`scripts/design_system.mjs` validates and resolves the contract.
+`scripts/kacha_design.mjs` provides validation, inventory, resolution, real
+SVG/PNG/ASS rendering, implementation manifests, font resolution, contrast
+checks, and cross-mode/state QC. Each manifest freezes the resolver, style
+resolver, and renderer implementation digest so stale previews cannot serve as
+current evidence. A preview proves that an implementation path works; it does
+not prove that a scene is narratively appropriate.
 
 ## Fail closed
 

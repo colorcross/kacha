@@ -143,9 +143,26 @@
       "maskAlignmentEvidence": "时长、帧率和起始 PTS 自动对齐报告",
       "fallback": "边缘不稳时改用普通信息卡",
       "designPreflight": {
+        "designSystemId": "dahui-video-system",
+        "designSystemVersion": "1.1.0",
+        "designDigest": "690062bbcaf7143b177710c354b7c48431ffe35410b7b5c0da7463e4e5f77051",
+        "sceneId": "text_behind_subject_scene",
+        "componentIds": [
+          "text_behind_subject"
+        ],
+        "modeSelection": {
+          "show": "tool-share",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "footage",
+          "density": "standard"
+        },
         "status": "approved_for_implementation",
         "artifactMode": "local_styleframe",
-        "artifactRef": "design/text-behind/approved-styleframes.png",
+        "artifactRef": "kacha://examples/design/text-behind/approved-styleframes.svg",
+        "artifactSha256": "1009f2dfbcb5bb5e387eceb216568c59e5d94a8f5cc16f741cabc738134f01f8",
+        "implementationManifestRef": "kacha://examples/design/text-behind/approved-styleframes.manifest.json",
+        "implementationManifestSha256": "fb001c5eef6065078874ace58cb656248e1a774a428c13e7bab6234642cc73cb",
         "layoutSpec": "人物头顶左侧负空间，文字与字幕区、品牌区分离",
         "motionSpec": "两组短语分别以 8 帧遮罩揭示进入，停稳后统一淡出",
         "soundSpec": "知识点落位声跟随第二组文字停稳，第一组只使用轻微空气感 whoosh",
@@ -154,7 +171,22 @@
           "peak",
           "exit"
         ],
-        "implementationHandoff": "使用同一字体、色值、归一化边界、缓动曲线和 SFX 帧点实现",
+        "implementationHandoff": {
+          "resolvedFonts": {
+            "display": "PingFang SC",
+            "subtitlePrimary": "STSong",
+            "subtitleSecondary": "STSong",
+            "label": "Avenir Next",
+            "body": "Avenir Next"
+          },
+          "fontResolutionDigest": "9c58cbcafcfccd6e2b79b8f61dd961e49c0210937c098e993a0078a44ffafdde",
+          "tokenRefs": [
+            "typography.display",
+            "palette",
+            "motion"
+          ],
+          "implementation": "使用解析后的设计令牌、归一化边界、缓动曲线和 SFX 帧点实现"
+        },
         "qcEvidence": [
           "手机尺寸样式帧",
           "亮底/暗底对比",

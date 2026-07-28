@@ -3,11 +3,27 @@
 [![CI](https://github.com/colorcross/kacha/actions/workflows/ci.yml/badge.svg)](https://github.com/colorcross/kacha/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+<p align="center">
+  <img src="assets/brand/kacha-og.png" alt="咔嚓 Kacha：本地专业 AI 视频工作流" width="100%">
+</p>
+
 一个同时支持 **Codex** 和 **Claude Code** 的本地专业视频工作流 skill。它不承诺“一键出片”，而是把视频策划、精剪、包装、技术检查和人工审片组织成可验证的流程。
 
 核心原则很简单：先解决内容、连接和同步，再做包装；每个效果都要有理由；自动检查不能代替人工通看。
 
 > English documentation starts at [README.en.md](README.en.md).
+
+## 官网与产品设计
+
+官网源码位于 [`website/`](website/)，提供中文首页与英文页面。产品品牌、Logo、
+色彩、字体、栅格、组件、动效、无障碍和文案边界统一记录在
+[产品品牌与官网设计规范](docs/PRODUCT_BRAND_AND_WEBSITE.md)。
+本轮完整完成度与真实验证证据见
+[2026-07-29 完成度复核](docs/COMPLETION_REVIEW_2026-07-29.md)。
+
+Logo 的剪刀代表选择与精剪，播放/K 几何代表视频与 Kacha，橙色圆点代表
+当前切点和可验证动作。官网沿用这套语义，不使用无关的紫色渐变、霓虹或
+“一键魔法”式宣传。
 
 ## 看看实际剪辑效果
 
@@ -47,8 +63,10 @@
   高推理强度临场拼合同、猜状态；
 - 统一管理可版本化参数、用户/项目默认剪辑要求和本机密钥；默认要求同时支持
   结构化参数与自然语言，密钥值不进入工程产物或日志；
-- 通过一份可切换的 style profile 统一字幕、字体、色板、弹窗、信息卡、
-  画中画边框、品牌和运动语言，默认提供明亮克制的暖色编辑风格；
+- 通过完整视频设计系统统一栏目/画幅/语言/明暗/密度模式、52 个组件、
+  63 个场景以及字幕、字体、色板、弹窗、信息卡、PIP、品牌和运动语言；
+- 内置本地 Beauty v2，仅处理磨皮、美白、匀肤和法令纹弱化；默认关闭，
+  不依赖 GPUPixel、云端美颜或生成式人脸修复；
 - 内置可执行的开场与转场效果库，每个效果都带适用理由、handle、声音功能、
   fallback 和真实本地预览，不把“酷炫”当作使用理由；
 - 为 Claude Code 生成本地关键帧、人物、人脸、OCR、亮度和时间码证据；只有
@@ -111,6 +129,9 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 ```bash
 node scripts/kacha.mjs config init --scope user
 node scripts/kacha.mjs config show --anchor /path/to/project
+node scripts/kacha.mjs design validate
+node scripts/kacha.mjs design list --kind scene
+node scripts/kacha.mjs design qc --matrix --output /tmp/design-system-qc.json
 node scripts/kacha.mjs effects validate
 node scripts/kacha.mjs effects list --kind transition
 ```
@@ -123,10 +144,14 @@ node scripts/kacha.mjs effects list --kind transition
 自动发现的项目配置不能改写 provider 地址、凭证环境名或本机工具路径；这些
 敏感连接项只接受用户配置或显式 `--config`。
 
-视觉风格使用 `style.profile + style.overrides`。默认 profile 是
-`warm-editorial`；解析后的 digest 会进入设计和增量返工合同，变更后只让
-依赖旧 digest 的视觉产物失效。开场/转场列表与本地预览见
-`references/style-effects-library.md`。
+视觉使用 `style.system + style.profile + style.modes + style.overrides`。
+默认是 `dahui-video-system + warm-editorial`；解析后的 design digest 会
+与解析器/渲染器 implementation digest 一同进入设计和增量返工合同，变更后
+只让依赖旧摘要的视觉产物失效。完整规范见
+`docs/VIDEO_DESIGN_SYSTEM_V1.md`，开场/转场列表与本地预览见
+`references/style-effects-library.md`。美颜默认关闭，需明确启用 Beauty v2。
+Beauty 渲染还必须提供逐帧 Vision manifest；技术报告通过后仍需同源同帧
+动态 A/B 人工复核，报告同时冻结 Beauty 配置与完整实现链 digest。
 
 配置不能授予上传、付费、发布或跳过门禁的权限。完整字段、优先级和示例见
 [配置说明](docs/CONFIGURATION.md)。
@@ -227,13 +252,15 @@ node scripts/kacha.mjs connections FINAL.mov \
 .
 ├── SKILL.md                 # skill 入口与不可降低的原则
 ├── agents/openai.yaml       # OpenAI/Codex 展示配置
+├── assets/brand/            # Logo 与社交分享图
 ├── references/              # 按任务加载的详细合同
 ├── assets/sfx/              # 12 个原创音效、工作副本、哈希与资产许可
 ├── config/                  # 无密钥的内置运行默认值
 ├── examples/                # v2 首剪与 v3 增量 JSON 模板
 ├── scripts/                 # 确定性状态机、视觉证据、门禁、媒体处理与 QC
 ├── tests/run_tests.mjs      # 无第三方 npm 依赖的回归测试
-└── docs/                    # 安装、快速开始、架构和安全文档
+├── docs/                    # 安装、架构、设计系统和安全文档
+└── website/                 # 中英文官网源码（不进入用户级 skill bundle）
 ```
 
 设计与数据流见[架构说明](docs/ARCHITECTURE.md)。
@@ -261,10 +288,12 @@ node tests/run_tests.mjs --suite visual
 node tests/run_tests.mjs
 bash tests/test_installer.sh
 python3 scripts/scan_secrets.py
+cd website && npm run lint && npm run typecheck && npm test
 ```
 
 分层测试只生成当前套件需要的媒体夹具；全量测试不会读取或修改你的真实项目
-素材。运行 `node tests/run_tests.mjs --list` 可查看套件归属。
+素材。官网测试是独立门禁，不替代 skill 本体测试。运行
+`node tests/run_tests.mjs --list` 可查看套件归属。
 
 ## 平台说明
 
@@ -281,4 +310,7 @@ python3 scripts/scan_secrets.py
 
 ## 许可证
 
-代码与文档采用 [MIT License](LICENSE)。`assets/sfx` 中的原创音效采用其目录内的[音频资产许可](assets/sfx/LICENSE.md)。第三方素材、字体、模型和平台内容不随本仓库授权。
+代码与文档采用 [MIT License](LICENSE)。`assets/sfx` 中的原创音效采用其目录内的
+[音频资产许可](assets/sfx/LICENSE.md)；Logo 与社交分享图适用
+[品牌资产规则](assets/brand/README.md)，不包含在 MIT 授权中。第三方素材、
+字体、模型和平台内容不随本仓库授权。

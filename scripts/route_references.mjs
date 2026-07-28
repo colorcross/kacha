@@ -22,13 +22,15 @@ const MODULE_REFERENCES = {
   sfx: ["references/audio.md", "references/sfx-library.md"],
   visual: ["references/visuals-masks.md"],
   masks: ["references/visuals-masks.md"],
-  beauty: ["references/visuals-masks.md"],
+  beauty: ["references/beauty-v2.md", "references/visuals-masks.md"],
   pip: ["references/visuals-masks.md"],
   color: ["references/visuals-masks.md"],
   reframe: ["references/visuals-masks.md"],
   design: [
     "references/visuals-masks.md",
     "references/visual-design-preflight.md",
+    "references/style-effects-library.md",
+    "docs/VIDEO_DESIGN_SYSTEM_V1.md",
   ],
   information_card: [
     "references/visuals-masks.md",
@@ -43,7 +45,10 @@ const MODULE_REFERENCES = {
     "references/visual-design-preflight.md",
     "references/style-effects-library.md",
   ],
-  style: ["references/style-effects-library.md"],
+  style: [
+    "references/style-effects-library.md",
+    "docs/VIDEO_DESIGN_SYSTEM_V1.md",
+  ],
   opening: ["references/style-effects-library.md"],
   transition: [
     "references/editing-theory.md",

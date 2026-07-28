@@ -13,7 +13,28 @@
       },
       "audio": {
         "dialogueFirst": true,
-        "keepResidualMuted": true
+        "keepResidualMuted": true,
+        "profile": "warm-soft-long-listening",
+        "targetIntegratedLufs": -21.0,
+        "truePeakMaxDbtp": -4.0,
+        "targetLoudnessRangeLu": {
+          "min": 4.5,
+          "max": 5.5
+        },
+        "bgm": {
+          "targetBelowDialogueDb": 18.0,
+          "stereoWidth": 0.5
+        },
+        "sfx": {
+          "defaultBelowDialogueDb": 12.0,
+          "highShelfFrequencyHz": 4500,
+          "highShelfGainDb": -1.5
+        }
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural"
       },
       "cleanup": {
         "automatic": false
@@ -23,7 +44,15 @@
     "recipeParameters": {}
   },
   "style": {
+    "system": "dahui-video-system",
     "profile": "warm-editorial",
+    "modes": {
+      "show": "tool-share",
+      "aspectRatio": "landscape-16x9",
+      "language": "zh",
+      "surface": "footage",
+      "density": "standard"
+    },
     "overrides": {}
   },
   "execution": {
@@ -71,11 +100,11 @@
       "maxDurationDiffSeconds": 0.04
     },
     "voiceEnhancement": {
-      "preset": "natural",
+      "preset": "warm-soft",
       "denoise": "light",
       "declick": false,
-      "targetLufs": -20.5,
-      "truePeakDbtp": -3.5,
+      "targetLufs": -21.0,
+      "truePeakDbtp": -4.0,
       "channelMode": "preserve"
     },
     "stockMedia": {

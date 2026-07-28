@@ -94,6 +94,11 @@ chmod 600 ~/.config/kacha/secrets.json
       "subtitle": {
         "singleLine": true,
         "safeAreaBottomRatio": 0.18
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural"
       }
     },
     "instructions": [
@@ -123,6 +128,53 @@ chmod 600 ~/.config/kacha/secrets.json
 `compile-change` records effective defaults and the safe configuration digest
 in the current delta, so a lower-capability model does not need to infer user
 preferences again from a long conversation.
+
+## Video design system
+
+Visual configuration resolves a system, base profile, five mode dimensions,
+and optional token overrides:
+
+```json
+{
+  "schemaVersion": "1.0",
+  "style": {
+    "system": "dahui-video-system",
+    "profile": "warm-editorial",
+    "modes": {
+      "show": "tool-share",
+      "aspectRatio": "landscape-16x9",
+      "language": "zh",
+      "surface": "footage",
+      "density": "standard"
+    },
+    "overrides": {}
+  }
+}
+```
+
+Validate, inspect, and render a local styleframe:
+
+```bash
+node scripts/kacha.mjs design validate
+node scripts/kacha.mjs design list --kind scene
+node scripts/kacha.mjs design resolve --show very-ai \
+  --aspect portrait-9x16 --language bilingual
+node scripts/kacha.mjs design preview --scene process_progressive \
+  --aspect portrait-9x16 --output /tmp/process-progressive.svg
+node scripts/kacha.mjs design qc --matrix \
+  --output /tmp/design-system-qc.json
+```
+
+The resolved design digest and resolver/renderer implementation digest are
+part of every dependent artifact fingerprint.
+Beauty is disabled by default. Explicitly enabled projects use only local
+Beauty v2 for skin smoothing, whitening, tone evening, and restrained
+nasolabial-fold softening. The Beauty preference is strict: `enabled` must be
+a boolean, `engine` must be `beauty-v2`, and `profile` must be `natural` or
+`visible`. Rendering requires a frame-accurate Vision manifest and cannot be
+enabled merely by passing a profile on the command line.
+Its technical report records both the strict configuration digest and the
+complete local implementation-chain digest.
 
 See [`examples/kacha.config.json`](../../examples/kacha.config.json). A
 user-level example for trusted provider and tool settings is available at

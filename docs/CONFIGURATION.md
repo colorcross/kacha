@@ -24,9 +24,11 @@
 覆盖低层。命令行参数始终优先，例如 `--model-tier`、`--max-frames` 和
 `--handle-frames`。
 
-`style.profile` 选择内置风格，`style.overrides` 只覆盖需要变化的风格令牌。
-默认是 `warm-editorial`。风格令牌统一控制字幕、字体、弹窗、信息卡、画中画、
-品牌、封面、开场、转场和运动参数，不再散落到时间区间实现中。
+`style.system` 选择视频设计系统，`style.profile` 选择基础视觉风格，
+`style.modes` 选择栏目、画幅、语言、表面和密度，`style.overrides` 只覆盖
+必要的风格令牌。默认是 `dahui-video-system + warm-editorial`。解析结果统一
+控制字幕、字体、弹窗、信息卡、画中画、品牌、封面、开场、转场、布局与运动
+参数，不再散落到时间区间实现中。
 
 `KACHA_CONFIG_HOME` 可以改变用户配置目录；`XDG_CONFIG_HOME` 也受支持。
 测试或隔离运行可设置 `KACHA_DISABLE_USER_CONFIG=1`。
@@ -94,6 +96,11 @@ chmod 600 ~/.config/kacha/secrets.json
       "subtitle": {
         "singleLine": true,
         "safeAreaBottomRatio": 0.18
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural"
       }
     },
     "instructions": [
@@ -120,9 +127,33 @@ chmod 600 ~/.config/kacha/secrets.json
 - `recipeParameters`：为 `compile-change` 的稳定配方提供默认参数；
 - 当前 change request 的 `parameters` 会覆盖配方默认值。
 
+`editingDefaults.parameters.beauty` 是严格结构，只允许：
+
+- `enabled`: boolean；
+- `engine`: 固定为 `beauty-v2`；
+- `profile`: `natural` 或 `visible`。
+
+未知字段、字符串形式的真假值、GPUPixel 或未注册档位都会使配置校验失败。
+内置值始终为 `enabled=false`；运行 Beauty 渲染时会再次读取当前项目/显式
+配置，不能靠命令行 profile 绕过默认关闭。
+
 `prepare` 把适用于当前任务/模块的要求写入 `agent-packet.json`。
 `compile-change` 把配方默认参数、自然语言要求和配置摘要写入当前 delta，
 因此较弱模型和长任务续跑不需要重新从对话中猜测用户习惯。
+
+### 默认长听感音频
+
+默认 `execution.voiceEnhancement.preset` 是 `warm-soft`，目标为
+`-21 LUFS / -4 dBTP`。对应的结构化混音偏好位于
+`editingDefaults.parameters.audio`：
+
+- 人声使用更暖、更柔、不过分强调 2–5 kHz 的知识口播音色；
+- 最终 LRA 从 `4.5–5.5 LU` 起步；
+- 连续口播 BGM 默认在人声下约 `18 dB`，立体声宽度约 `0.5`；
+- SFX 默认在人声下约 `12 dB`，并轻收 `4.5 kHz` 以上高频。
+
+这是经同响度 A/B 批准的默认起点，不替代具体录音的人声诊断。人声已经处理
+过时不得重复整链；源声音偏闷、女声、儿童声或音乐主导内容需要项目级覆盖。
 
 ## 风格配置
 
@@ -132,7 +163,15 @@ chmod 600 ~/.config/kacha/secrets.json
 {
   "schemaVersion": "1.0",
   "style": {
+    "system": "dahui-video-system",
     "profile": "warm-editorial",
+    "modes": {
+      "show": "tool-share",
+      "aspectRatio": "landscape-16x9",
+      "language": "zh",
+      "surface": "footage",
+      "density": "standard"
+    },
     "overrides": {
       "palette": {
         "accent": "#E9A92F"
@@ -149,14 +188,20 @@ chmod 600 ~/.config/kacha/secrets.json
 
 ```bash
 node scripts/kacha.mjs config validate --anchor PROJECT_DIR
+node scripts/kacha.mjs design validate --anchor PROJECT_DIR
+node scripts/kacha.mjs design resolve --show very-ai \
+  --aspect portrait-9x16 --language bilingual --anchor PROJECT_DIR
+node scripts/kacha.mjs design qc --matrix \
+  --output /tmp/design-system-qc.json --anchor PROJECT_DIR
 node scripts/kacha.mjs effects validate --anchor PROJECT_DIR
 node scripts/kacha.mjs effects show --kind opening \
   --id editorial_label_reveal --anchor PROJECT_DIR
 ```
 
-`style.overrides` 不能写授权或绕过门禁字段。解析后的 style digest 会进入返工
+`style.overrides` 不能写授权或绕过门禁字段。解析后的 design digest 会进入返工
 合同和 artifact fingerprint；digest 变化时依赖旧风格的产物不能继续复用。
-完整字段与默认效果见 `references/style-effects-library.md`。
+完整字段与默认效果见 `references/style-effects-library.md` 和
+`docs/VIDEO_DESIGN_SYSTEM_V1.md`。
 
 完整结构示例见
 [`examples/kacha.config.json`](../examples/kacha.config.json)。用户级敏感连接项

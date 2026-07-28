@@ -12,9 +12,9 @@ import {
 import {
   listStyleProfiles,
   loadEffectRegistry,
-  loadStyleProfile,
   resolveTransition,
 } from "./style_profile.mjs";
+import { resolveDesignSystem } from "./design_system.mjs";
 
 const args = process.argv.slice(2);
 const action = args[0];
@@ -169,10 +169,12 @@ const defaults = applicableEditingDefaults(loaded, {
   task: "local_optimization",
   modules: ["visual", "transitions", "openings"],
 });
-const style = loadStyleProfile(
-  loaded.config.style.profile,
-  loaded.config.style.overrides,
-);
+const design = resolveDesignSystem(loaded.config.style);
+const style = {
+  profile: design.style,
+  digest: design.digest,
+  source: design.styleSource,
+};
 const kinds = option("--kind") ? [option("--kind")] : ["transition", "opening"];
 const registries = kinds.map((kind) => loadEffectRegistry(kind));
 
@@ -181,6 +183,11 @@ if (action === "validate") {
     schemaVersion: "1.0",
     status: "pass",
     style: { id: style.profile.id, digest: style.digest, source: style.source },
+    designSystem: {
+      id: design.system.id,
+      version: design.system.version,
+      modes: design.selectedModes,
+    },
     registries: registries.map((item) => ({
       kind: item.registry.kind,
       count: item.registry.effects.length,
@@ -232,6 +239,8 @@ if (action === "show") {
     effect,
     style: style.profile,
     styleDigest: style.digest,
+    designSystemId: design.system.id,
+    designModes: design.selectedModes,
     defaultRequirements: defaults,
   }, null, 2));
   process.exit(0);
@@ -251,5 +260,7 @@ console.log(JSON.stringify({
   effectId: effect.id,
   styleId: style.profile.id,
   styleDigest: style.digest,
+  designSystemId: design.system.id,
+  designModes: design.selectedModes,
   output,
 }, null, 2));

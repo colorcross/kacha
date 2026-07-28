@@ -1,7 +1,15 @@
 {
   "schemaVersion": "1.0",
   "style": {
+    "system": "dahui-video-system",
     "profile": "warm-editorial",
+    "modes": {
+      "show": "tool-share",
+      "aspectRatio": "landscape-16x9",
+      "language": "zh",
+      "surface": "footage",
+      "density": "standard"
+    },
     "overrides": {}
   },
   "editingDefaults": {
@@ -13,6 +21,11 @@
       "audio": {
         "backgroundMusicRelativeDb": -24,
         "soundEffectRelativeDb": -14
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural"
       }
     },
     "instructions": [
