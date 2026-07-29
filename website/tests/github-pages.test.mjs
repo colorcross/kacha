@@ -21,8 +21,9 @@ test("packages Chinese and English GitHub Pages routes", async () => {
     readPage("en/index.html"),
   ]);
 
-  assert.match(chinese, /把视频工作流做完/);
-  assert.match(english, /Finish the workflow/);
+  assert.match(chinese, /从原始素材/);
+  assert.match(english, /From raw footage/);
+  assert.match(chinese, /dodofun@126\.com/);
   assert.match(chinese, /href="\/kacha\/en\/"/);
   assert.match(english, /href="\/kacha\/"/);
   assert.match(
@@ -42,12 +43,12 @@ test("packages Chinese and English GitHub Pages routes", async () => {
 test("prefixes every deployed asset with the repository base path", async () => {
   for (const relativePath of ["index.html", "en/index.html", "404.html"]) {
     const html = await readPage(relativePath);
-    assert.doesNotMatch(html, /(?:href|src)="\/(?:assets|brand)\//);
-    assert.doesNotMatch(html, /(?<!\/kacha)\/(?:assets|brand)\//);
+    assert.doesNotMatch(html, /(?:href|src)="\/(?:assets|brand|social)\//);
+    assert.doesNotMatch(html, /(?<!\/kacha)\/(?:assets|brand|social)\//);
     assert.doesNotMatch(html, /(?<!\/kacha)\/og\.png/);
 
     const matches = html.matchAll(
-      /(?:href|src)="(\/kacha\/(?:assets|brand)\/[^"#?]+)"/g,
+      /(?:href|src)="(\/kacha\/(?:assets|brand|social)\/[^"#?]+)"/g,
     );
     const urls = [...matches].map((match) => match[1]);
     assert.ok(urls.length > 0, `${relativePath} must reference local assets`);
@@ -63,6 +64,9 @@ test("ships Pages metadata and public assets without server files", async () => 
     access(path.join(outputRoot, ".nojekyll")),
     access(path.join(outputRoot, "404.html")),
     access(path.join(outputRoot, "brand", "kacha-logo.png")),
+    access(path.join(outputRoot, "social", "wechat-channels.jpg")),
+    access(path.join(outputRoot, "social", "douyin.png")),
+    access(path.join(outputRoot, "social", "xiaohongshu.jpg")),
     access(path.join(outputRoot, "og.png")),
   ]);
 

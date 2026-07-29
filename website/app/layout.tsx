@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     template: "%s｜咔嚓 Kacha",
   },
   description:
-    "把策划、精剪、声音、画面、字幕、返工与质量检查组织成一套可验证的本地视频工作流。",
+    "从原始素材到可发布成片：结构精剪、人声处理、字幕校准、视觉包装、增量返工与质量检查，组成一套本地优先、可验证的 AI 视频工作流。",
   keywords: [
     "咔嚓",
     "Kacha",
@@ -26,9 +26,9 @@ export const metadata: Metadata = {
     url: officialSiteUrl,
     locale: "zh_CN",
     siteName: "咔嚓 Kacha",
-    title: "咔嚓 Kacha｜把视频工作流做完，也把质量说清楚",
+    title: "咔嚓 Kacha｜从原始素材到可以发布的成片",
     description:
-      "本地优先、可审计、可返工的专业 AI 视频工作流 skill。",
+      "本地优先、语义安全、可增量返工、可验证的专业 AI 视频工作流 skill。",
     images: [
       {
         url: socialImageUrl,
@@ -40,8 +40,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "咔嚓 Kacha｜本地专业 AI 视频工作流",
-    description: "从策划到质量门禁，把视频工作流变成可验证的过程。",
+    title: "咔嚓 Kacha｜从原始素材到可以发布的成片",
+    description: "让 Codex 或 Claude Code 按专业流程完成视频后期，你保留最后判断。",
     images: [socialImageUrl],
   },
   icons: {

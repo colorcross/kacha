@@ -1,10 +1,113 @@
 import { CopyInstall } from "./CopyInstall";
 import { LogoMark } from "./LogoMark";
+import { ScrollLink } from "./ScrollLink";
 import type { SiteContent } from "../site-content";
 
 const installCommand =
-  "curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh | bash -s -- --agent codex";
+  "curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh | bash -s -- --agent both";
 const siteBasePath = process.env.NEXT_PUBLIC_SITE_BASE_PATH ?? "";
+const contactEmail = "dodofun@126.com";
+const channelAssets = {
+  wechat: "wechat-channels.jpg",
+  douyin: "douyin.png",
+  xiaohongshu: "xiaohongshu.jpg",
+} as const;
+
+function OutcomeVisual({
+  index,
+  beforeLabel,
+  afterLabel,
+  label,
+}: {
+  index: number;
+  beforeLabel: string;
+  afterLabel: string;
+  label: string;
+}) {
+  return (
+    <div
+      aria-label={`${beforeLabel} / ${afterLabel}: ${label}`}
+      className={`outcome-demo outcome-demo--${index + 1}`}
+      role="img"
+    >
+      <div className="outcome-demo__labels">
+        <span>{beforeLabel}</span>
+        <span>{afterLabel}</span>
+      </div>
+      <div className="outcome-demo__stage" aria-hidden="true">
+        {index === 0 ? (
+          <>
+            <div className="demo-transcript demo-transcript--before">
+              <i />
+              <i />
+              <i />
+              <b />
+            </div>
+            <span className="demo-arrow">→</span>
+            <div className="demo-transcript demo-transcript--after">
+              <i />
+              <i />
+              <i />
+              <b />
+            </div>
+          </>
+        ) : null}
+        {index === 1 ? (
+          <>
+            <div className="demo-audio demo-audio--before">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+            <span className="demo-arrow">→</span>
+            <div className="demo-audio demo-audio--after">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+              <b />
+            </div>
+          </>
+        ) : null}
+        {index === 2 ? (
+          <>
+            <div className="demo-frame demo-frame--before">
+              <span />
+              <i />
+              <b />
+            </div>
+            <span className="demo-arrow">→</span>
+            <div className="demo-frame demo-frame--after">
+              <span />
+              <i />
+              <b />
+            </div>
+          </>
+        ) : null}
+        {index === 3 ? (
+          <>
+            <div className="demo-layers demo-layers--before">
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+            <span className="demo-arrow">→</span>
+            <div className="demo-layers demo-layers--after">
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 export function SiteShell({
   content,
@@ -16,16 +119,21 @@ export function SiteShell({
   return (
     <main lang={locale === "zh" ? "zh-CN" : "en"}>
       <header className="site-header">
-        <a className="brand-lockup" href="#top" aria-label={content.brandHome}>
+        <ScrollLink
+          ariaLabel={content.brandHome}
+          className="brand-lockup"
+          targetId="top"
+        >
           <LogoMark compact />
           <span className="brand-wordmark">KACHA</span>
           <span className="brand-cn">咔嚓</span>
-        </a>
+        </ScrollLink>
         <nav aria-label={content.navLabel}>
-          <a href="#system">{content.nav.system}</a>
-          <a href="#workflow">{content.nav.workflow}</a>
-          <a href="#principles">{content.nav.principles}</a>
-          <a href="#install">{content.nav.install}</a>
+          <ScrollLink targetId="problems">{content.nav.problems}</ScrollLink>
+          <ScrollLink targetId="outcomes">{content.nav.outcomes}</ScrollLink>
+          <ScrollLink targetId="workflow">{content.nav.workflow}</ScrollLink>
+          <ScrollLink targetId="install">{content.nav.install}</ScrollLink>
+          <ScrollLink targetId="contact">{content.nav.contact}</ScrollLink>
         </nav>
         <div className="header-actions">
           <a
@@ -60,19 +168,17 @@ export function SiteShell({
           </h1>
           <p className="hero-summary">{content.hero.summary}</p>
           <div className="hero-actions">
-            <a className="button button--primary" href="#install">
+            <ScrollLink
+              className="button button--primary"
+              targetId="problems"
+            >
               {content.hero.primaryCta}
               <span aria-hidden="true">↓</span>
-            </a>
-            <a
-              className="button button--quiet"
-              href="https://github.com/colorcross/kacha"
-              rel="noreferrer"
-              target="_blank"
-            >
+            </ScrollLink>
+            <ScrollLink className="button button--quiet" targetId="install">
               {content.hero.secondaryCta}
-              <span aria-hidden="true">↗</span>
-            </a>
+              <span aria-hidden="true">↘</span>
+            </ScrollLink>
           </div>
           <div className="hero-contract">
             {content.hero.contracts.map((item, index) => (
@@ -149,9 +255,51 @@ export function SiteShell({
         ))}
       </section>
 
+      <section className="section section--problems" id="problems">
+        <div className="section-heading">
+          <p className="section-index">01 / PROBLEMS</p>
+          <h2>{content.problems.title}</h2>
+          <p>{content.problems.intro}</p>
+        </div>
+        <div className="problem-grid">
+          {content.problems.items.map((item) => (
+            <article className="problem-card" key={item.number}>
+              <span>{item.number}</span>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section section--outcomes" id="outcomes">
+        <div className="section-heading section-heading--inverse">
+          <p className="section-index">02 / RESULTS</p>
+          <h2>{content.outcomes.title}</h2>
+          <p>{content.outcomes.intro}</p>
+        </div>
+        <div className="outcome-grid">
+          {content.outcomes.items.map((item, index) => (
+            <article className="outcome-card" key={item.title}>
+              <OutcomeVisual
+                afterLabel={content.outcomes.afterLabel}
+                beforeLabel={content.outcomes.beforeLabel}
+                index={index}
+                label={item.title}
+              />
+              <p className="card-kicker">{item.kicker}</p>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+              <strong>{item.proof}</strong>
+            </article>
+          ))}
+        </div>
+        <p className="outcome-note">{content.outcomes.demoNote}</p>
+      </section>
+
       <section className="section section--system" id="system">
         <div className="section-heading">
-          <p className="section-index">01 / SYSTEM</p>
+          <p className="section-index">03 / CAPABILITIES</p>
           <h2>{content.system.title}</h2>
           <p>{content.system.intro}</p>
         </div>
@@ -176,7 +324,7 @@ export function SiteShell({
 
       <section className="section section--workflow" id="workflow">
         <div className="section-heading section-heading--inverse">
-          <p className="section-index">02 / WORKFLOW</p>
+          <p className="section-index">04 / WORKFLOW</p>
           <h2>{content.workflow.title}</h2>
           <p>{content.workflow.intro}</p>
         </div>
@@ -201,7 +349,7 @@ export function SiteShell({
 
       <section className="section section--principles" id="principles">
         <div className="principle-manifesto">
-          <p className="section-index">03 / PRINCIPLES</p>
+          <p className="section-index">05 / WHY KACHA</p>
           <blockquote>
             “{content.principles.quoteLead}
             <em>{content.principles.quoteAccent}</em>”
@@ -221,33 +369,46 @@ export function SiteShell({
         </div>
       </section>
 
-      <section className="section section--beauty">
-        <div className="beauty-panel">
-          <p className="section-index">04 / BEAUTY V2</p>
-          <h2>{content.beauty.title}</h2>
-          <p>{content.beauty.body}</p>
-          <ul>
-            {content.beauty.items.map((item) => (
-              <li key={item}>
-                <span>✓</span>
-                {item}
-              </li>
-            ))}
-          </ul>
+      <section className="section section--fit">
+        <div className="section-heading">
+          <p className="section-index">06 / FIT</p>
+          <h2>{content.fit.title}</h2>
+          <p>{content.fit.intro}</p>
         </div>
-        <div className="beauty-meter" aria-label={content.beauty.meterLabel}>
-          <span className="beauty-meter__label">DEFAULT</span>
-          <strong>OFF</strong>
-          <div className="beauty-switch" aria-hidden="true">
-            <i />
-          </div>
-          <p>{content.beauty.defaultNote}</p>
+        <div className="fit-grid">
+          {content.fit.items.map((item, index) => (
+            <article key={item.title}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section section--faq">
+        <div className="section-heading">
+          <p className="section-index">07 / FAQ</p>
+          <h2>{content.faq.title}</h2>
+          <p>{content.faq.intro}</p>
+        </div>
+        <div className="faq-list">
+          {content.faq.items.map((item, index) => (
+            <details key={item.question}>
+              <summary>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                {item.question}
+                <b aria-hidden="true">＋</b>
+              </summary>
+              <p>{item.answer}</p>
+            </details>
+          ))}
         </div>
       </section>
 
       <section className="section section--install" id="install">
         <div className="install-copy">
-          <p className="section-index">05 / START</p>
+          <p className="section-index">08 / START</p>
           <h2>{content.install.title}</h2>
           <p>{content.install.body}</p>
           <div className="agent-tabs" aria-label={content.install.agentLabel}>
@@ -270,6 +431,36 @@ export function SiteShell({
             idleLabel={content.install.copy}
           />
           <p>{content.install.note}</p>
+        </div>
+      </section>
+
+      <section className="section section--contact" id="contact">
+        <div className="contact-copy">
+          <p className="section-index">09 / CONTACT</p>
+          <h2>{content.contact.title}</h2>
+          <p>{content.contact.body}</p>
+          <span>{content.contact.emailLabel}</span>
+          <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+        </div>
+        <div className="contact-channels">
+          <p>{content.contact.channelsLabel}</p>
+          <div className="qr-grid">
+            {content.contact.channels.map((channel) => (
+              <article key={channel.id}>
+                <div className="qr-frame">
+                  <img
+                    alt={`${channel.name} ${channel.note} QR code`}
+                    height="720"
+                    loading="lazy"
+                    src={`${siteBasePath}/social/${channelAssets[channel.id]}`}
+                    width="720"
+                  />
+                </div>
+                <strong>{channel.name}</strong>
+                <span>{channel.note}</span>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -296,13 +487,7 @@ export function SiteShell({
           >
             {content.footer.docs}
           </a>
-          <a
-            href="https://github.com/colorcross/kacha/blob/main/LICENSE"
-            rel="noreferrer"
-            target="_blank"
-          >
-            MIT
-          </a>
+          <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
         </div>
         <p className="footer-credit">
           {content.footer.credit}

@@ -30,9 +30,13 @@ test("server-renders the Chinese Kacha product page", async () => {
 
   const html = await response.text();
   assert.match(html, /咔嚓 Kacha/);
-  assert.match(html, /把视频工作流做完/);
+  assert.match(html, /从原始素材/);
+  assert.match(html, /真正耗时间的/);
+  assert.match(html, /先看变化，再看功能/);
   assert.match(html, /本地优先/);
   assert.match(html, /Beauty v2/);
+  assert.match(html, /dodofun@126\.com/);
+  assert.match(html, /扫码查看真实视频效果/);
   assert.match(html, /colorcross\/kacha/);
   assert.doesNotMatch(html, /Your site is taking shape|SkeletonPreview/);
 });
@@ -41,14 +45,21 @@ test("server-renders the English product page", async () => {
   const response = await render("/en");
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /Finish the workflow/);
+  assert.match(html, /From raw footage/);
+  assert.match(html, /See the change before the feature list/);
   assert.match(html, /Local first/);
-  assert.match(html, /Automation never impersonates review/);
+  assert.match(html, /You keep the final judgment/);
+  assert.match(html, /dodofun@126\.com/);
 });
 
-test("ships the brand and social-card assets", async () => {
-  await access(new URL("../public/brand/kacha-logo.png", import.meta.url));
-  await access(new URL("../public/og.png", import.meta.url));
+test("ships brand, social-card, and contact QR assets", async () => {
+  await Promise.all([
+    access(new URL("../public/brand/kacha-logo.png", import.meta.url)),
+    access(new URL("../public/og.png", import.meta.url)),
+    access(new URL("../public/social/wechat-channels.jpg", import.meta.url)),
+    access(new URL("../public/social/douyin.png", import.meta.url)),
+    access(new URL("../public/social/xiaohongshu.jpg", import.meta.url)),
+  ]);
 });
 
 test("uses the local logo without the incompatible vinext image shim", async () => {
@@ -58,4 +69,16 @@ test("uses the local logo without the incompatible vinext image shim", async () 
   );
   assert.match(logoComponent, /<img/);
   assert.doesNotMatch(logoComponent, /from ["']next\/image["']/);
+});
+
+test("internal anchors bypass the static host router and keep scrolling", async () => {
+  const scrollLink = await readFile(
+    new URL("../app/components/ScrollLink.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(scrollLink, /event\.preventDefault\(\)/);
+  assert.match(scrollLink, /event\.stopPropagation\(\)/);
+  assert.match(scrollLink, /window\.history\.pushState/);
+  assert.match(scrollLink, /window\.scrollTo/);
 });

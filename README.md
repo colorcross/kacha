@@ -160,7 +160,8 @@ node scripts/kacha.mjs doctor --profile core
 ## 查看实际效果
 
 官网展示产品能力和工作流；「行者大灰」账号发布真实剪辑效果、前后对比和
-使用演示。
+使用演示。使用问题、合作或反馈也可以发邮件至
+[dodofun@126.com](mailto:dodofun@126.com)。
 
 <details>
   <summary>展开视频号、抖音和小红书二维码</summary>
