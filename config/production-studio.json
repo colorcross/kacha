@@ -1,0 +1,433 @@
+{
+  "schemaVersion": "1.0",
+  "id": "kacha-production-studio",
+  "name": "咔嚓本地生产台",
+  "defaultStyleId": "xingzhe",
+  "authorityBoundary": "页面生成的是本地剪辑意图与配置，不自动上传、付费生成、发布、覆盖源文件或跳过质量门禁。",
+  "stylePresets": [
+    {
+      "id": "xingzhe",
+      "name": "行者风",
+      "tagline": "明亮克制，淡定幽默",
+      "description": "从当前已验证运行参数提取的默认风格。自然表达优先，暖色编辑感，适量动效与画面呼吸。",
+      "builtIn": true,
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "xingzhe",
+        "modes": {
+          "show": "tool-share",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "footage",
+          "density": "standard"
+        },
+        "overrides": {}
+      },
+      "caption": {
+        "templateId": "editorial-readable",
+        "fontRole": "subtitle_primary",
+        "preferredFontFamily": "方正粗金陵简体",
+        "fontSizeRatio": 0.048,
+        "maxWidthRatio": 0.8,
+        "baselineYRatio": 0.76,
+        "primaryColor": "#FFF8EE",
+        "emphasisColor": "#E9A92F",
+        "shadowOpacity": 0.6,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "warm-soft",
+        "denoise": "light",
+        "targetLufs": -21,
+        "truePeakDbtp": -4,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": true,
+        "presetId": "quiet-knowledge",
+        "targetBelowDialogueDb": 18,
+        "ducking": "gentle"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 35,
+          "whitening": 22,
+          "toneEvening": 30,
+          "nasolabialSoftening": 24
+        }
+      },
+      "direction": {
+        "openingId": "editorial_label_reveal",
+        "transitionBias": "semantic-minimal",
+        "effectDensity": "balanced",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      }
+    },
+    {
+      "id": "clear-knowledge",
+      "name": "清朗知识",
+      "tagline": "更轻、更清楚、更理性",
+      "description": "适合课程、方法论和知识解释；降低装饰密度，强化结构、证据和长时间阅读。",
+      "builtIn": true,
+      "baseStyleId": "xingzhe",
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "xingzhe",
+        "modes": {
+          "show": "tool-share",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "light",
+          "density": "spacious"
+        },
+        "overrides": {
+          "palette": {
+            "canvas": "#F3F1EA",
+            "surface": "#FFFFFF",
+            "ink": "#172027",
+            "inkSecondary": "#52616A",
+            "accent": "#E9A92F",
+            "accentSecondary": "#6F8C95"
+          }
+        }
+      },
+      "caption": {
+        "templateId": "clean-sans",
+        "fontRole": "subtitle_primary",
+        "preferredFontFamily": "方正粗金陵简体",
+        "fontSizeRatio": 0.046,
+        "maxWidthRatio": 0.82,
+        "baselineYRatio": 0.75,
+        "primaryColor": "#FFFFFF",
+        "emphasisColor": "#E9A92F",
+        "shadowOpacity": 0.68,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "clear",
+        "denoise": "light",
+        "targetLufs": -21,
+        "truePeakDbtp": -4,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": true,
+        "presetId": "minimal-piano",
+        "targetBelowDialogueDb": 19,
+        "ducking": "gentle"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 28,
+          "whitening": 18,
+          "toneEvening": 25,
+          "nasolabialSoftening": 18
+        }
+      },
+      "direction": {
+        "openingId": "cold_open_marker",
+        "transitionBias": "clean-structural",
+        "effectDensity": "restrained",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      }
+    },
+    {
+      "id": "modern-tech",
+      "name": "现代科技",
+      "tagline": "清脆节奏，界面与数据优先",
+      "description": "适合 AI、软件和工具演示；强调 UI 反馈、流程节点和明确的方向性运动。",
+      "builtIn": true,
+      "baseStyleId": "xingzhe",
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "xingzhe",
+        "modes": {
+          "show": "very-ai",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "dark",
+          "density": "compact"
+        },
+        "overrides": {
+          "palette": {
+            "canvas": "#11151B",
+            "surface": "#1B222C",
+            "surfaceElevated": "#232C38",
+            "ink": "#F6F8FA",
+            "inkSecondary": "#AAB6C4",
+            "accent": "#FF7A1A",
+            "accentSecondary": "#6ED8FF",
+            "darkSurface": "#0C1015",
+            "textOnDark": "#F6F8FA"
+          },
+          "motion": {
+            "standardFrames": 8,
+            "slowFrames": 13
+          }
+        }
+      },
+      "caption": {
+        "templateId": "tech-sans",
+        "fontRole": "caption_tech",
+        "preferredFontFamily": "Source Han Sans CN",
+        "fontSizeRatio": 0.046,
+        "maxWidthRatio": 0.82,
+        "baselineYRatio": 0.75,
+        "primaryColor": "#F6F8FA",
+        "emphasisColor": "#FF7A1A",
+        "shadowOpacity": 0.72,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "clear",
+        "denoise": "light",
+        "targetLufs": -20.5,
+        "truePeakDbtp": -3.5,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": true,
+        "presetId": "modern-electronic",
+        "targetBelowDialogueDb": 18,
+        "ducking": "responsive"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 30,
+          "whitening": 20,
+          "toneEvening": 28,
+          "nasolabialSoftening": 20
+        }
+      },
+      "direction": {
+        "openingId": "typewriter_command",
+        "transitionBias": "directional-ui",
+        "effectDensity": "active",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      }
+    },
+    {
+      "id": "calm-documentary",
+      "name": "沉静纪录",
+      "tagline": "少效果，重时间与余味",
+      "description": "适合长期观察、人物故事和反思性表达；更多停稳、声音桥和自然景别变化。",
+      "builtIn": true,
+      "baseStyleId": "xingzhe",
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "xingzhe",
+        "modes": {
+          "show": "infinite-game",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "footage",
+          "density": "spacious"
+        },
+        "overrides": {
+          "palette": {
+            "canvas": "#DDD3C2",
+            "surface": "#F2EADF",
+            "ink": "#25231F",
+            "inkSecondary": "#625E55",
+            "accent": "#C78945",
+            "accentSecondary": "#7E6A54"
+          },
+          "motion": {
+            "standardFrames": 12,
+            "slowFrames": 20,
+            "maxOvershoot": 0.02
+          }
+        }
+      },
+      "caption": {
+        "templateId": "editorial-serif",
+        "fontRole": "caption_editorial",
+        "preferredFontFamily": "方正粗金陵简体",
+        "fontSizeRatio": 0.047,
+        "maxWidthRatio": 0.78,
+        "baselineYRatio": 0.76,
+        "primaryColor": "#FFF9F1",
+        "emphasisColor": "#D7A45B",
+        "shadowOpacity": 0.64,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "warm",
+        "denoise": "light",
+        "targetLufs": -21.5,
+        "truePeakDbtp": -4.5,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": true,
+        "presetId": "ambient-documentary",
+        "targetBelowDialogueDb": 20,
+        "ducking": "gentle"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 22,
+          "whitening": 12,
+          "toneEvening": 20,
+          "nasolabialSoftening": 14
+        }
+      },
+      "direction": {
+        "openingId": "cold_open_marker",
+        "transitionBias": "sound-bridge-first",
+        "effectDensity": "restrained",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      }
+    }
+  ],
+  "captionTemplates": [
+    {
+      "id": "editorial-readable",
+      "name": "编辑感主字幕",
+      "fontRole": "subtitle_primary",
+      "preferredFontFamily": "方正粗金陵简体",
+      "description": "默认使用已授权的真正金陵体；单行、无底色、60% 阴影。"
+    },
+    {
+      "id": "clean-sans",
+      "name": "清朗无衬线",
+      "fontRole": "subtitle_primary",
+      "description": "高识别度，适合课程、工具演示和信息密集口播。"
+    },
+    {
+      "id": "tech-sans",
+      "name": "科技界面",
+      "fontRole": "caption_tech",
+      "description": "适合 UI、数据、AI 对话和流程演示。"
+    },
+    {
+      "id": "editorial-serif",
+      "name": "人文编辑体",
+      "fontRole": "caption_editorial",
+      "description": "适合引用、反思、书籍和纪录片式表达。"
+    }
+  ],
+  "audioPresets": [
+    {
+      "id": "warm-soft",
+      "name": "温暖柔声版",
+      "description": "长时间听感柔和，保留自然强弱；咔嚓默认。",
+      "denoise": "light",
+      "targetLufs": -21,
+      "truePeakDbtp": -4
+    },
+    {
+      "id": "natural",
+      "name": "舒适自然版",
+      "description": "尽量保留原始声纹和现场质感，只修技术问题。",
+      "denoise": "light",
+      "targetLufs": -21,
+      "truePeakDbtp": -4
+    },
+    {
+      "id": "warm",
+      "name": "浑厚大气版",
+      "description": "增加低中频厚度，适合判断、故事和较稳重表达。",
+      "denoise": "light",
+      "targetLufs": -20.5,
+      "truePeakDbtp": -3.5
+    },
+    {
+      "id": "clear",
+      "name": "清晰通透版",
+      "description": "克制减少低中频堆积，提高辅音清晰度而不过亮。",
+      "denoise": "light",
+      "targetLufs": -21,
+      "truePeakDbtp": -4
+    }
+  ],
+  "bgmPresets": [
+    {
+      "id": "none",
+      "name": "不使用背景音乐",
+      "description": "保留纯人声和必要音效。"
+    },
+    {
+      "id": "quiet-knowledge",
+      "name": "轻知识氛围",
+      "description": "温暖、稳定、低存在感，不推动错误情绪。"
+    },
+    {
+      "id": "minimal-piano",
+      "name": "极简钢琴",
+      "description": "少量音符和留白，适合结构清晰的知识内容。"
+    },
+    {
+      "id": "modern-electronic",
+      "name": "现代电子",
+      "description": "轻颗粒、短脉冲和界面感，适合 AI 与工具内容。"
+    },
+    {
+      "id": "ambient-documentary",
+      "name": "纪录片氛围",
+      "description": "缓慢、低频克制、留有空间，适合长期叙事与反思。"
+    }
+  ],
+  "outputPresets": [
+    {
+      "id": "preserve-source",
+      "name": "保持原片规格",
+      "container": "source",
+      "preserveDimensions": true,
+      "preserveAspectRatio": true,
+      "preserveFrameRate": true,
+      "quality": "highest-practical"
+    },
+    {
+      "id": "platform-mov",
+      "name": "高质量 MOV",
+      "container": "mov",
+      "preserveDimensions": true,
+      "preserveAspectRatio": true,
+      "preserveFrameRate": true,
+      "quality": "prores-or-source-equivalent"
+    },
+    {
+      "id": "platform-mp4",
+      "name": "平台兼容 MP4",
+      "container": "mp4",
+      "preserveDimensions": true,
+      "preserveAspectRatio": true,
+      "preserveFrameRate": true,
+      "quality": "high"
+    }
+  ],
+  "professionalAutoDirector": {
+    "enabledByDefault": true,
+    "rules": [
+      "未指定区间先判断信息、情绪或视角是否变化，再决定切镜、转场或保持。",
+      "优先解决内容、切点、音画同步和连接，再选择组件、布局、字体、颜色、动效与声音。",
+      "普通口播字幕保持单行稳定；只有真实对照、层级或空间关系才升级排版。",
+      "画面运动遵守收紧、停稳、释放；运动覆盖默认不超过55%，静止不少于45%。",
+      "SFX必须对应具体动作或落点；普通字幕和慢推拉默认无音效。",
+      "弹窗、PIP、分屏和插镜避开头脸、字幕、品牌与平台UI，并在切回真人前完整退出。",
+      "高影响视觉模块先生成样式帧与进入、峰值、退出状态，再进入正式渲染。",
+      "无法满足蒙版、素材、字体授权或真实handle条件时，回退到已注册的最简安全效果。"
+    ]
+  }
+}

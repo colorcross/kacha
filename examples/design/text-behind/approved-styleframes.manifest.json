@@ -2,9 +2,9 @@
   "schemaVersion": "1.0",
   "status": "rendered",
   "designSystemId": "dahui-video-system",
-  "designSystemVersion": "1.1.0",
-  "designDigest": "cf98d1efee4321cc96c76f0ea599cb74b787fcc75b435bc29004afa2c63de7d3",
-  "implementationDigest": "8a51684e14431cbe91aad691f7ec04631999d3608fc74ef8b1321f7756502b8e",
+  "designSystemVersion": "1.3.0",
+  "designDigest": "0db496d3a07c8b15e7d6e491192f6e69056bb99524643e896b06fd1e5fe38b2a",
+  "implementationDigest": "94b7be5e15ec4f2aea2cf45871310e78fff9b45627a685d2f5715bbf4e05a908",
   "rendererCodeSha256": "34d26116dd76af9bcaf00610bd84a50f4a84e4d38225c3b96b3eeea2d8beebed",
   "sceneId": "text_behind_subject_scene",
   "layoutId": "negative_space_behind_subject",
@@ -45,7 +45,8 @@
       },
       "subtitlePrimary": {
         "requested": [
-          "金陵体",
+          "方正粗金陵简体",
+          "FZJinLS-B-GB",
           "STSong",
           "Songti SC",
           "Noto Serif CJK SC",
@@ -58,7 +59,8 @@
       },
       "subtitleSecondary": {
         "requested": [
-          "金陵体",
+          "方正粗金陵简体",
+          "FZJinLS-B-GB",
           "STSong",
           "Songti SC",
           "Noto Serif CJK SC",
@@ -95,7 +97,7 @@
       }
     },
     "warnings": [],
-    "digest": "7cad43acd00114e4ff85017a4b3bdc11ffa12461580cf97a4295e4a871c87a70"
+    "digest": "fd38c094379efb59e89d5e26c817c693bba09e5055893e5e23fcb41642cf67c6"
   },
   "scene": {
     "trigger": "章节题眼或记忆点适合空间层级",

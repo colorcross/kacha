@@ -21,6 +21,12 @@ function usage() {
       + "  kacha.mjs design validate|list|show|resolve|preview|render|qc [options]\n"
       + "  kacha.mjs beauty validate|show|authorize|qc [options]\n"
       + "  kacha.mjs effects list|show|validate|preview [options]\n"
+      + "  kacha.mjs fonts scan|validate|resolve|preview [options]\n"
+      + "  kacha.mjs captions plan|validate|render [options]\n"
+      + "  kacha.mjs breathing plan|validate|render [options]\n"
+      + "  kacha.mjs studio catalog|validate|probe|save-style|compile|serve [options]\n"
+      + "  kacha.mjs netstyle list|validate|preview|showcase [options]\n"
+      + "  kacha.mjs netstyle plan|validate-plan|render-plan [options]\n"
       + "  kacha.mjs connections VIDEO --output connection-candidates.json\n"
       + "  kacha.mjs prepare --task TASK [--modules a,b] [--agent codex|claude]\n"
       + "  kacha.mjs next <project-manifest.json>\n"
@@ -55,8 +61,12 @@ function projectPath(projectFile, entry, label) {
   return resolveFrom(projectFile, candidate);
 }
 
-function invoke(script, args) {
-  const result = run(process.execPath, [path.join(scriptDirectory, script), ...args]);
+function invoke(script, args, options = {}) {
+  const result = run(
+    process.execPath,
+    [path.join(scriptDirectory, script), ...args],
+    options,
+  );
   if (result.stdout.trim()) process.stdout.write(`${result.stdout.trim()}\n`);
   if (result.status !== 0) {
     if (result.stderr.trim()) process.stderr.write(`${result.stderr.trim()}\n`);
@@ -65,12 +75,29 @@ function invoke(script, args) {
 }
 
 const [, , command, projectInput, ...remainingArguments] = process.argv;
+if (
+  command === "netstyle"
+  && ["plan", "validate-plan", "render-plan"].includes(projectInput)
+) {
+  const timelineAction = {
+    plan: "plan",
+    "validate-plan": "validate",
+    "render-plan": "render",
+  }[projectInput];
+  invoke("netstyle_timeline.mjs", [timelineAction, ...remainingArguments]);
+  process.exit(0);
+}
 const delegatedCommands = {
   doctor: "kacha_doctor.mjs",
   config: "kacha_config.mjs",
   design: "kacha_design.mjs",
   beauty: "kacha_beauty.mjs",
   effects: "kacha_effects.mjs",
+  fonts: "kacha_fonts.mjs",
+  captions: "caption_layout.mjs",
+  breathing: "visual_breathing.mjs",
+  studio: "kacha_studio.mjs",
+  netstyle: "kacha_netstyle.mjs",
   connections: "scan_connections.mjs",
   prepare: "prepare_agent_packet.mjs",
   next: "next_action.mjs",
@@ -79,6 +106,14 @@ const delegatedCommands = {
   "vision-enrich": "enrich_visual_evidence_minimax.mjs",
 };
 if (Object.hasOwn(delegatedCommands, command)) {
+  if (command === "studio" && projectInput === "serve") {
+    invoke(
+      delegatedCommands[command],
+      [projectInput, ...remainingArguments],
+      { stdio: "inherit" },
+    );
+    process.exit(0);
+  }
   invoke(
     delegatedCommands[command],
     [projectInput, ...remainingArguments].filter((item) => item !== undefined),
@@ -131,6 +166,33 @@ function gatePlanV2() {
   );
   invoke("validate_edit_proposal.mjs", [proposal]);
   invoke("validate_edit_plan.mjs", [editPlan]);
+
+  for (const entry of project.plans.netstyleTimelines ?? []) {
+    const plan = requireProjectPath(
+      projectFile,
+      entry,
+      "plans.netstyleTimelines",
+    );
+    invoke("netstyle_timeline.mjs", ["validate", "--plan", plan]);
+  }
+
+  for (const entry of project.plans.captionTimelines ?? []) {
+    const plan = requireProjectPath(
+      projectFile,
+      entry,
+      "plans.captionTimelines",
+    );
+    invoke("caption_layout.mjs", ["validate", "--plan", plan]);
+  }
+
+  for (const entry of project.plans.visualBreathingTimelines ?? []) {
+    const plan = requireProjectPath(
+      projectFile,
+      entry,
+      "plans.visualBreathingTimelines",
+    );
+    invoke("visual_breathing.mjs", ["validate", "--plan", plan]);
+  }
 
   if (project.plans.localChange) {
     const localChange = requireProjectPath(

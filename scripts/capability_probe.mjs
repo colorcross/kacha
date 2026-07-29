@@ -18,6 +18,7 @@ const GROUPS = {
     "command:ffmpeg",
     "command:ffprobe",
     "command:node",
+    "command:rsvg-convert",
     "filter:afftdn",
     "filter:adeclick",
     "filter:deesser",
@@ -26,6 +27,7 @@ const GROUPS = {
     "filter:alimiter",
     "filter:loudnorm",
     "filter:overlay",
+    "filter:amix",
     "filter:blackdetect",
     "filter:freezedetect",
     "filter:silencedetect",
@@ -55,6 +57,18 @@ const GROUPS = {
     "filter:minterpolate",
     "filter:tblend",
     "filter:tmix",
+  ],
+  breathing: [
+    "filter:zoompan",
+    "filter:amix",
+  ],
+  typography: [
+    "command:python3",
+    "engine:font-metadata",
+    "engine:caption-overlay",
+    "filter:overlay",
+    "filter:alphamerge",
+    "encoder:qtrle",
   ],
   geometry: [
     "filter:lenscorrection",
@@ -91,7 +105,7 @@ const OPTIONAL = [
 
 function usage() {
   console.error(
-    "用法：capability_probe.sh [--profile core|voice|masks|motion|geometry|hdr|ai-video|claude-vision|full] "
+    "用法：capability_probe.sh [--profile core|voice|masks|motion|breathing|typography|geometry|hdr|ai-video|claude-vision|full] "
       + "[--require CAPABILITY] [--output manifest.json] "
       + "[--config FILE] [--secrets FILE]",
   );
@@ -175,9 +189,12 @@ for (const capability of explicitRequired) required.add(capability);
 const requested = [...new Set([...required, ...OPTIONAL])];
 
 let filters = "";
+let encoders = "";
 if (commandExists("ffmpeg")) {
   const result = run("ffmpeg", ["-hide_banner", "-filters"]);
   filters = `${result.stdout}\n${result.stderr}`;
+  const encoderResult = run("ffmpeg", ["-hide_banner", "-encoders"]);
+  encoders = `${encoderResult.stdout}\n${encoderResult.stderr}`;
 }
 const filterSet = new Set();
 for (const line of filters.split("\n")) {
@@ -224,6 +241,27 @@ function inspect(capability) {
     return {
       available: filterSet.has(value),
       evidence: `ffmpeg filter ${value}`,
+    };
+  }
+  if (kind === "encoder") {
+    return {
+      available: new RegExp(`\\b${value}\\b`).test(encoders),
+      evidence: `ffmpeg encoder ${value}`,
+    };
+  }
+  if (kind === "engine" && ["font-metadata", "caption-overlay"].includes(value)) {
+    if (!commandExists("python3")) {
+      return { available: false, evidence: "python3 unavailable" };
+    }
+    const modules = value === "font-metadata"
+      ? "from fontTools.ttLib import TTFont"
+      : "from PIL import Image, ImageDraw, ImageFont";
+    const result = run("python3", ["-c", modules]);
+    return {
+      available: result.status === 0,
+      evidence: value === "font-metadata"
+        ? "python3 import fontTools"
+        : "python3 import Pillow",
     };
   }
   if (kind === "engine" && value === "dialogue-separation") {

@@ -3,7 +3,10 @@
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { loadBeautyV2 } from "./beauty_v2.mjs";
+import {
+  loadBeautyV2,
+  resolveBeautyV2Parameters,
+} from "./beauty_v2.mjs";
 import { loadKachaConfig } from "./kacha_config.mjs";
 
 const args = process.argv.slice(2);
@@ -22,10 +25,11 @@ function fail(message, code = 1) {
   process.exit(code);
 }
 
-if (!["validate", "show", "authorize", "qc"].includes(action)) {
+if (!["validate", "show", "authorize", "parameters", "qc"].includes(action)) {
   fail(
-    "用法：kacha.mjs beauty validate|show|authorize|qc "
-      + "[--profile natural|visible] [--config FILE] [--anchor PATH]",
+    "用法：kacha.mjs beauty validate|show|authorize|parameters|qc "
+      + "[--profile natural|visible] [--config FILE] [--anchor PATH] "
+      + "[--format json|tsv]",
     2,
   );
 }
@@ -51,7 +55,7 @@ try {
     process.exit(0);
   }
 
-  if (action === "authorize") {
+  if (action === "authorize" || action === "parameters") {
     const configured = loadKachaConfig({
       args,
       anchorPath: option("--anchor"),
@@ -77,11 +81,51 @@ try {
     if (!loaded.config.profiles[requestedProfile]) {
       fail(`Beauty v2 档位不存在：${requestedProfile}`);
     }
+    const parameters = resolveBeautyV2Parameters(
+      loaded.config,
+      requestedProfile,
+      preference.tuning,
+    );
+    if (action === "parameters") {
+      if (option("--format", "json") === "tsv") {
+        const skin = parameters.resolved.skin;
+        const nasolabial = parameters.resolved.nasolabial;
+        process.stdout.write([
+          skin.smoothingSigmaS,
+          skin.smoothingSigmaR,
+          skin.chromaSigmaS,
+          skin.chromaSigmaR,
+          skin.brightness,
+          skin.gamma,
+          skin.saturation,
+          skin.detailAmount,
+          skin.maskBlur,
+          skin.maskTemporalFrames,
+          nasolabial.smoothingSigmaS,
+          nasolabial.smoothingSigmaR,
+          nasolabial.brightness,
+          nasolabial.gamma,
+          nasolabial.maskBlur,
+          nasolabial.maskTemporalFrames,
+        ].join("\t"));
+      } else {
+        console.log(JSON.stringify({
+          schemaVersion: "1.0",
+          status: "pass",
+          engine: preference.engine,
+          ...parameters,
+          configurationDigest: configured.digest,
+        }, null, 2));
+      }
+      process.exit(0);
+    }
     console.log(JSON.stringify({
       schemaVersion: "1.0",
       status: "authorized",
       engine: preference.engine,
       profile: requestedProfile,
+      tuning: parameters.tuning,
+      parameterDigest: parameters.digest,
       defaultEnabled: loaded.config.defaultEnabled,
       configurationDigest: configured.digest,
       implementationDigest: loaded.implementation.digest,

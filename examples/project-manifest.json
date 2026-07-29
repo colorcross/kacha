@@ -4,6 +4,9 @@
   "plans": {
     "proposal": "./edit-proposal.json",
     "editPlan": "./edit-plan.json",
+    "netstyleTimelines": [],
+    "visualBreathingTimelines": [],
+    "captionTimelines": [],
     "localChange": {
       "path": "./local-change-plan.json",
       "mode": "template"

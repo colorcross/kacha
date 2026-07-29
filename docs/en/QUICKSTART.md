@@ -7,6 +7,22 @@ project configuration first. `prepare` will carry applicable structured and
 natural-language defaults into the current packet. See
 [Configuration](CONFIGURATION.md).
 
+## Start with the local production studio
+
+When you do not want to author JSON by hand:
+
+```bash
+node scripts/kacha.mjs studio serve
+```
+
+Use the five-step flow—source, style, sound, effects, and delivery. Search the
+129 registered effects and assign them to natural-language positions. Current
+project voice, BGM, Beauty v2, and density overrides do not modify the reusable
+style. Run preflight before generation; it verifies source media, writable
+output, licensed font evidence, the design system, and every selected effect.
+The studio stays on `127.0.0.1` and does not upload, render, publish, or
+overwrite source media.
+
 ## 0. Put the Agent into deterministic mode
 
 For a lower-capability model, lower reasoning effort, or Claude Code:
@@ -106,6 +122,29 @@ After it passes, execute the approved plan with the project-selected FFmpeg, NLE
 13. `release_package`
 
 At most one stage may be `in_progress`. A `passed` stage must include real evidence; a `not_applicable` stage must explain why.
+
+### Apply semantic net-style mechanisms during `visual_packaging`
+
+After picture lock, compile and render a production effect timeline from the
+final timed transcript:
+
+```bash
+node scripts/kacha.mjs netstyle plan \
+  --input my-video-project/picture-lock.mov \
+  --transcript my-video-project/final-timed-transcript.json \
+  --output my-video-project/contracts/netstyle-plan.json \
+  [--mask my-video-project/person-mask.mkv]
+node scripts/kacha.mjs netstyle validate-plan \
+  --plan my-video-project/contracts/netstyle-plan.json
+node scripts/kacha.mjs netstyle render-plan \
+  --plan my-video-project/contracts/netstyle-plan.json \
+  --output my-video-project/visual-packaged.mov
+```
+
+Register the plan under `plans.netstyleTimelines` in the project manifest.
+Subtitles and final mixing run after this output. See the
+[semantic net-style reference](../../references/z-en-editing-system.md) for
+cue fields and fail-closed gates.
 
 ## 7. Run automated technical QC
 

@@ -25,6 +25,9 @@ const CHANGE_TYPES = new Set([
   "subtitle_only",
   "cover_only",
   "visual_interval",
+  "semantic_netstyle",
+  "visual_breathing",
+  "caption_layout",
   "metadata_only",
 ]);
 const RENDER_STRATEGIES = new Set([

@@ -110,7 +110,7 @@
           "subtitles": {"lineGapRatio": 0.03, "maxWidthRatio": 0.86},
           "typography": {
             "subtitlePrimary": {"families": ["Avenir Next", "Helvetica Neue", "Arial", "DejaVu Sans"], "sizeRatio": 0.041},
-            "subtitleSecondary": {"families": ["金陵体", "STSong", "Songti SC", "Noto Serif CJK SC", "Noto Sans CJK SC", "DejaVu Sans"], "sizeRatio": 0.03}
+            "subtitleSecondary": {"families": ["方正粗金陵简体", "FZJinLS-B-GB", "STSong", "Songti SC", "Noto Serif CJK SC", "Noto Sans CJK SC", "DejaVu Sans"], "sizeRatio": 0.03}
           }
         },
         "subtitleLines": 2

@@ -29,7 +29,9 @@ Style Profile
     ↓
 52 个 Component
     ↓
-63 个 Scene
+69 个 Scene
+    +
+33 个语义网感机制
     ↓
 8 个生产 Renderer / 36 个 Layout / 75 个 Motion
     ↓
@@ -48,11 +50,16 @@ config/design-system/modes.json
 config/design-system/components.json
 config/design-system/scenes.json
 config/design-system/implementations.json
-config/styles/warm-editorial.json
+config/styles/xingzhe.json
+config/effects/z-en-netstyle.json
 ```
 
 渲染代码只能消费解析后的令牌、组件 ID、场景 ID 和设计摘要。禁止在单个时间
 区间重新发明字体、色值、圆角、阴影、边框、安全区或缓动。
+
+默认 profile 是 `xingzhe`（行者风）。其主字幕与辅字幕使用本地已授权的
+真正金陵体 `方正粗金陵简体 / FZJinLS-B-GB`；正式项目必须冻结字体文件
+SHA-256 与授权证据，不能静默换回替代字体。字体二进制不属于公开设计系统。
 
 ## 3. 五组模式
 
@@ -118,7 +125,7 @@ V1 注册 52 个组件，覆盖以下类别：
 
 ## 5. 场景库
 
-V1 注册 63 个场景，覆盖：
+V1.2 注册 69 个场景，覆盖：
 
 - 开场：冷开场、标题、逐字命令、关键词、结果先行、问题、人机对话和纪录片；
 - 叙事：章节、核心判断、普通/强调/双语字幕、引用、定义、修正和不确定性；
@@ -131,6 +138,31 @@ V1 注册 63 个场景，覆盖：
 
 场景定义 `trigger`、`layout`、`entry`、`exit`、组件组合和 `fallback`。时间线
 优先引用场景；只有场景无法表达时才新增组件或新场景。
+
+六个 `netstyle_*` 场景把语义动效、空间舞台、贴纸引导、关键帧和并列句
+接入设计系统。33 个具体机制位于 `config/effects/z-en-netstyle.json`；
+机制注册表不保存字体、颜色或素材，只保存触发、功能、运动、声音、失败和
+QC，避免把参考风格写死到时间线。
+
+正式应用由 `netstyle plan → validate-plan → render-plan` 完成。时间线事件
+只保存当前内容、机制 ID、帧边界、真实资源引用与设计摘要；渲染时重新解析
+当前设计令牌，并按人物蒙版、证据素材和安全区条件执行或阻断。输出不含
+showcase 的家族标签、效果名称和固定示例文字。项目在
+`plans.netstyleTimelines` 中登记计划，设计或机制 digest 变化会使旧计划
+失效。
+
+画面呼吸与口播字幕排版使用独立能力注册表：
+
+- `config/effects/visual-breathing.json`：慢推、慢拉、横移、重音冲击和停稳；
+- `config/effects/spoken-caption-layouts.json`：普通单行、逻辑重音、左右、
+  侧边、上下和前后景布局；
+- `config/font-routing.json`：主字幕、强调、观点、人文、幽默、科技和中英文
+  标题的字体角色。
+
+它们进入 design digest，但不把本地字体文件写进系统。正式应用分别走
+`breathing plan → validate → render` 和
+`captions plan → validate → render`；排版计划冻结实际字体文件 hash 与项目
+授权记录，前后景布局同时冻结逐帧人物蒙版。
 
 ## 6. 解析与检查
 
@@ -202,6 +234,11 @@ entry/peak/exit、重复 SVG ID 和文字对比度。任一输入变化，最终
 - 插镜：对象、动作、角色、时态、方向与当前口播一致；
 - 连接：有信息、情绪或视角变化才切；优先声音桥、动作匹配或景别变化；
 - 声音：每个视觉动作只绑定有叙事功能的 SFX，不连续轰炸、不盖人声。
+- 呼吸：全片必须有停稳区；运动覆盖不超过 55%，连续同向缩放和无理由运镜
+  不允许；
+- 字幕排版：普通单行优先，左右/上下/前后只表达真实关系，同一时刻最多三个
+  阅读区和一个主重音；
+- 字体：按角色、字符覆盖、真实文件和项目授权路由，缺字或 hash 变化时阻断。
 
 ## 10. 视觉质量门禁
 
@@ -234,7 +271,8 @@ entry/peak/exit、重复 SVG ID 和文字对比度。任一输入变化，最终
 1. 注册表与引用验证通过；
 2. 配置可解析出稳定摘要；
 3. 设计预检记录系统、场景、组件和模式；
-4. 8 个 renderer、36 个 layout 和 75 个 motion 均由独立注册表验证；
+4. 8 个 renderer、36 个 layout 和 75 个 motion 均由独立注册表验证，33 个
+   语义网感机制也必须通过独立注册表与真实视频预览验证；
 5. 所有组件状态与场景 entry/peak/exit 都能本地生成真实 SVG；字幕组件还能
    生成 ASS；
 6. 样式帧实施清单包含当前解析器、风格解析器和渲染器实现摘要，旧代码生成的

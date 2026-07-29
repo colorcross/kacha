@@ -28,6 +28,12 @@ sudo apt-get update
 sudo apt-get install -y nodejs ffmpeg jq python3
 ```
 
+使用本地字体索引、字体预览和口播字幕图层时，还需要：
+
+```bash
+python3 -m pip install --user Pillow fonttools
+```
+
 安装后先确认版本：
 
 ```bash
@@ -36,6 +42,7 @@ ffmpeg -version
 ffprobe -version
 jq --version
 python3 --version
+python3 -c "from PIL import Image; from fontTools.ttLib import TTFont"
 ```
 
 ## 推荐：让 Agent 自动安装

@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "style": {
     "system": "dahui-video-system",
-    "profile": "warm-editorial",
+    "profile": "xingzhe",
     "modes": {
       "show": "tool-share",
       "aspectRatio": "landscape-16x9",
@@ -53,6 +53,14 @@
       "subtitles": {
         "singleLine": true,
         "allowOverflow": false
+      },
+      "visual_breathing": {
+        "maximumMotionCoverageRatio": 0.55,
+        "minimumStillCoverageRatio": 0.45
+      },
+      "caption_layout": {
+        "defaultLayout": "plain_single",
+        "maximumSimultaneousReadingZones": 3
       }
     }
   },
@@ -60,6 +68,14 @@
     "modelTier": "balanced",
     "incremental": {
       "handleFrames": 30
+    },
+    "netstyle": {
+      "automaticPlanning": true,
+      "maximumPrimaryEffectsPer10Seconds": 2.5,
+      "minimumGapSeconds": 0.35,
+      "maximumConcurrentPrimaryEffects": 1,
+      "representativeValidationCountPerEffect": 1,
+      "renderCrf": 16
     },
     "visualEvidence": {
       "maxFrames": {

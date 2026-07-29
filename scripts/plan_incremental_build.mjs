@@ -49,6 +49,15 @@ const INVALIDATION_BY_TYPE = {
   beauty_adjust: ["beauty_master", "video_master"],
   color_adjust: ["color_master", "video_master"],
   visual_interval: ["visual_segment", "video_master"],
+  semantic_netstyle: ["visual_segment", "sfx_stem", "final_mix", "video_master"],
+  visual_breathing: ["visual_segment", "sfx_stem", "final_mix", "video_master"],
+  caption_layout: [
+    "subtitle",
+    "subtitle_overlay",
+    "sfx_stem",
+    "final_mix",
+    "video_master",
+  ],
   insert_replace: ["visual_segment", "subtitle_overlay", "final_mix", "video_master"],
   remove_interval: [
     "timeline",

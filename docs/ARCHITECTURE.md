@@ -107,6 +107,14 @@ editProposal + editPlan + inputs
   清单，并对全部 mode/状态运行矩阵 QC；
 - `beauty`：验证默认关闭与本地作用域、执行项目级启用授权，并把自动技术
   QC 与人工动态复核分开；
+- `studio`：在只监听本机的五步生产页面中配置素材、风格、声音、效果和
+  交付；长期风格与当前项目覆盖分离，生成前校验源片、可写输出、授权字体、
+  设计系统和注册效果，再编译为 brief、项目配置和 Agent 执行入口，不直接
+  渲染或授予发布权限；
+- `fonts`：扫描真实字体元数据、字符覆盖、文件 hash 与项目授权，按场景角色
+  解析本地字体但不再分发字体文件；
+- `breathing`：把带时间口播编译为“收紧—停稳—释放”的镜头运动计划；
+- `captions`：把普通单行、左右、上下和前后景排版编译为可审计字幕时间线；
 - `connections`：合并最终时间线切点与场景变化候选，生成逐点复核 handle；
 - `visual-evidence`：本地关键帧、人物、OCR 和技术证据；
 - `vision-enrich`：外传、付费服务和显式命令授权后，以 MiniMax 增强有限
@@ -129,14 +137,36 @@ authorization 或不可降低的安全门禁。
 ### 风格与效果边界
 
 `config/design-system/` 保存系统、五组模式、组件和场景注册表；
-`config/styles/` 保存统一 style profile，`config/effects/` 保存开场和转场
-注册表。项目时间区间只引用 design system/style/scene/component/effect ID
+`config/styles/` 保存统一 style profile，`config/effects/` 保存开场、转场与
+33 个语义网感机制注册表。项目时间区间只引用
+design system/style/scene/component/effect ID
 与 digest，不复制字体、颜色、阴影、边框和缓动。设计系统由
 `scripts/design_system.mjs` 解析，`scripts/kacha_design.mjs` 提供验证、枚举、
 解析和样式帧预览。每个本地实施清单同时冻结解析器、风格解析器与渲染器代码
-摘要，防止旧样式帧在实现变化后继续被当作当前证据。效果注册表定义实现、
+摘要，防止旧样式帧在实现变化后继续被当作当前证据。语义网感注册表也进入
+design digest，机制或 QC 合同变化时会使依赖它的视觉证据失效。效果注册表定义实现、
 handle、声音功能、失败条件与 fallback；具体是否使用仍由内容、情绪、视角
 和连续性判断。
+
+`config/production-studio.json` 是生产页面的模板与专业自动判断注册表。
+`scripts/kacha_studio.mjs` 与 `studio/` 共用同一校验和编译入口；页面不能
+形成第二套风格 schema。生成的项目配置只保存偏好与执行意图，继续受统一
+配置、方案、能力、渲染、QC 和人工审片门禁约束。
+
+`scripts/netstyle_timeline.mjs` 是机制注册表与正式时间线之间的执行层。它
+读取最终带时间文稿，把显式 `effectId` 或确定性语义触发编译为帧级事件，
+冻结源片、文稿、蒙版、素材、设计系统和注册表摘要，再由
+`netstyle render-plan` 对锁画后的完整视频执行区间渲染。项目通过
+`plans.netstyleTimelines` 把计划接入 `gate-plan` 与 `next`；正式输出
+manifest 证明演示标签未进入成片，并检查解码、尺寸、有效帧率、时长、人声
+与音效峰值。`preview/showcase` 仍只负责能力开发和回归。
+
+`scripts/visual_breathing.mjs` 与 `scripts/caption_layout.mjs` 使用同一份最终
+带时间文稿。前者限制运动密度和覆盖率，后者限制阅读区、人物遮挡、字体真实
+命中和蒙版依赖；两者都冻结源媒体、配置和注册表摘要，并在 SFX 混音前测量
+源音效能量峰值。项目分别通过 `plans.visualBreathingTimelines` 与
+`plans.captionTimelines` 接入 `gate-plan`。`scripts/kacha_fonts.mjs` 只索引
+本地字体，项目授权记录不改变字体内嵌许可，也不允许公开分发字体文件。
 
 FFmpeg/SVG 预览证明实现可运行，不证明效果适合当前内容。正式渲染前仍需用
 真实前后片段和真实声音做最小 A/B。

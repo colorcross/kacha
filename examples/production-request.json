@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0",
+  "videoPath": "/ABSOLUTE/PATH/INPUT.mov",
+  "projectName": "示例项目",
+  "outputDirectory": "/ABSOLUTE/PATH/OUTPUT",
+  "task": "source_edit",
+  "platform": "douyin",
+  "show": "tool-share",
+  "language": "zh",
+  "outputPresetId": "preserve-source",
+  "targetDuration": "",
+  "preserveSource": true,
+  "backgroundMusicEnabled": true,
+  "styleId": "xingzhe",
+  "openingId": "editorial_label_reveal",
+  "automaticProfessionalJudgment": true,
+  "effectAssignments": [
+    {
+      "positionDescription": "说到结论“品味决定上限”的时候",
+      "effectKind": "caption",
+      "effectId": "logic_emphasis_inline",
+      "notes": "动作峰值对齐逻辑重音，落位后短暂停稳。"
+    }
+  ],
+  "notes": "所有弹窗和插镜避开人物头部，连接处先判断信息、情绪或视角变化。"
+}

@@ -219,6 +219,7 @@ export function validateDesignSystem(bundle) {
     components,
     scenes,
     implementations,
+    capabilityRegistries,
     baseStyle,
   } = bundle;
   if (system?.schemaVersion !== "1.0") errors.push("system.schemaVersion 必须为 1.0");
@@ -233,6 +234,46 @@ export function validateDesignSystem(bundle) {
   }
   if (implementations?.schemaVersion !== "1.0") {
     errors.push("implementations.schemaVersion 必须为 1.0");
+  }
+  const semanticNetstyle = capabilityRegistries?.semanticNetstyle;
+  if (semanticNetstyle) {
+    if (semanticNetstyle.schemaVersion !== "1.0") {
+      errors.push("capabilityRegistries.semanticNetstyle.schemaVersion 必须为 1.0");
+    }
+    if (
+      semanticNetstyle.id !== "z-en-netstyle"
+      || !Array.isArray(semanticNetstyle.effects)
+      || semanticNetstyle.effects.length !== 33
+    ) {
+      errors.push("semanticNetstyle 必须注册 z-en-netstyle 的 33 个机制");
+    }
+  }
+  const spokenCaptionLayouts = capabilityRegistries?.spokenCaptionLayouts;
+  if (
+    spokenCaptionLayouts?.schemaVersion !== "1.0"
+    || spokenCaptionLayouts?.id !== "spoken-caption-layouts"
+    || !Array.isArray(spokenCaptionLayouts?.layouts)
+    || spokenCaptionLayouts.layouts.length < 7
+  ) {
+    errors.push("spokenCaptionLayouts 必须注册至少 7 种可执行口播字幕布局");
+  }
+  const visualBreathing = capabilityRegistries?.visualBreathing;
+  if (
+    visualBreathing?.schemaVersion !== "1.0"
+    || visualBreathing?.id !== "visual-breathing"
+    || !Array.isArray(visualBreathing?.motions)
+    || visualBreathing.motions.length < 5
+  ) {
+    errors.push("visualBreathing 必须注册至少 5 种运动与停稳机制");
+  }
+  const fontRouting = capabilityRegistries?.fontRouting;
+  if (
+    fontRouting?.schemaVersion !== "1.0"
+    || fontRouting?.id !== "kacha-font-routing"
+    || !isObject(fontRouting?.roles)
+    || Object.keys(fontRouting.roles).length < 8
+  ) {
+    errors.push("fontRouting 必须注册至少 8 个语义字体角色");
   }
   const rendererIds = registryIds(
     implementations?.renderers,
@@ -394,6 +435,12 @@ export function loadDesignSystem(systemId = "dahui-video-system") {
     designSystemRoot,
     system.registries.implementations,
   );
+  const capabilityRegistryFiles = Object.fromEntries(
+    Object.entries(system.capabilityRegistries ?? {}).map(([id, relativeFile]) => [
+      id,
+      path.resolve(designSystemRoot, relativeFile),
+    ]),
+  );
   const rendererCodeFile = path.join(scriptDirectory, "design_renderers.mjs");
   const resolverCodeFile = fileURLToPath(import.meta.url);
   const styleResolverCodeFile = path.join(scriptDirectory, "style_profile.mjs");
@@ -402,6 +449,12 @@ export function loadDesignSystem(systemId = "dahui-video-system") {
   const components = readRegistry(componentsFile);
   const scenes = readRegistry(scenesFile);
   const implementations = readRegistry(implementationsFile);
+  const capabilityRegistries = Object.fromEntries(
+    Object.entries(capabilityRegistryFiles).map(([id, file]) => [
+      id,
+      readRegistry(file),
+    ]),
+  );
   const baseStyle = loadStyleProfile(system.styleProfile, {}).profile;
   const rendererCodeSha256 = sha256File(rendererCodeFile);
   const resolverCodeSha256 = sha256File(resolverCodeFile);
@@ -419,6 +472,7 @@ export function loadDesignSystem(systemId = "dahui-video-system") {
     components,
     scenes,
     implementations,
+    capabilityRegistries,
     baseStyle,
     rendererCodeSha256,
     resolverCodeSha256,
@@ -431,6 +485,7 @@ export function loadDesignSystem(systemId = "dahui-video-system") {
       components: componentsFile,
       scenes: scenesFile,
       implementations: implementationsFile,
+      capabilityRegistries: capabilityRegistryFiles,
       rendererCode: rendererCodeFile,
       resolverCode: resolverCodeFile,
       styleResolverCode: styleResolverCodeFile,
@@ -447,6 +502,7 @@ export function loadDesignSystem(systemId = "dahui-video-system") {
       components,
       scenes,
       implementations,
+      capabilityRegistries,
       rendererCodeSha256,
       resolverCodeSha256,
       styleResolverCodeSha256,
@@ -518,6 +574,7 @@ export function resolveDesignSystem(styleConfig = {}) {
     components: bundle.components.components,
     scenes: bundle.scenes.scenes,
     implementations: bundle.implementations,
+    capabilityRegistries: bundle.capabilityRegistries,
     rendererCodeSha256: bundle.rendererCodeSha256,
     resolverCodeSha256: bundle.resolverCodeSha256,
     styleResolverCodeSha256: bundle.styleResolverCodeSha256,

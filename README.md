@@ -15,6 +15,7 @@
 
 [官网](https://colorcross.github.io/kacha/) ·
 [English site](https://colorcross.github.io/kacha/en/) ·
+[生产台 Figma 设计稿](https://www.figma.com/design/uXfiviOI5rgi56awnD3Iut?node-id=1-2) ·
 [English README](README.en.md) ·
 [快速开始](docs/QUICKSTART.md) ·
 [安装说明](docs/INSTALLATION.md)
@@ -44,16 +45,26 @@
 | 能力 | 价值 |
 | --- | --- |
 | 本地优先 | 默认不上传素材；外传、付费生成和发布需要单独授权 |
+| 本地生产台 | 选素材、风格、开场和指定效果，生成可交给 Agent 执行的项目合同 |
 | 完整工作流 | 从方案、精剪、声音、视觉、字幕一直走到候选版与发布门禁 |
 | 增量返工 | 通过依赖图、产物指纹和冻结流哈希减少重复渲染 |
 | 视频设计系统 | 统一栏目、画幅、语言、字幕、卡片、PIP、流程图、封面和运动语言 |
-| 有理由的剪辑 | 切镜、转场、蒙版、音效和强调效果都必须对应信息、情绪或视角变化 |
+| 画面呼吸 | 用语义驱动的推近、停稳、释放、横移和重音冲击改善节奏，避免全片持续缩放 |
+| 口播字幕编排 | 普通单行优先，按真实信息关系使用左右、上下或人物前后景排版并联动功能音效 |
+| 项目字体路由 | 行者风默认使用已授权的真正金陵体；读取真实文件、字符覆盖、授权与哈希，不静默换字体 |
+| 有理由的剪辑 | 切镜、转场、蒙版、音效和 33 种语义网感机制都由带时间文稿触发并写入正式时间线 |
 | 本地 Beauty v2 | 只做磨皮、美白、匀肤和法令纹弱化；默认关闭，不改变五官和身份 |
 | 双 Agent 支持 | 同一套 skill、安装器、配置和门禁同时支持 Codex 与 Claude Code |
 | 失败即停 | 输入、授权、能力或 QC 不满足时停止，不用预览伪装最终成片 |
 
-当前版本包含 52 个设计组件、63 个复用场景、10 种转场、5 种开场和
-73 项回归检查。详细能力边界见[架构说明](docs/ARCHITECTURE.md)与
+当前版本包含 52 个设计组件、69 个复用场景、10 种转场、5 种开场、5 种
+画面呼吸运动、7 种口播字幕布局，以及
+从 6 条参考视频中验证出的 33 种语义网感机制。机制可从最终带时间文稿生成
+帧级计划、进入完整视频渲染，并通过摘要、资源、时序与媒体保真门禁。
+详细能力边界见
+[网感剪辑系统](references/z-en-editing-system.md)、
+[画面呼吸与字幕字体系统](references/visual-breathing-caption-typography.md)、
+[架构说明](docs/ARCHITECTURE.md)与
 [视频设计系统](docs/VIDEO_DESIGN_SYSTEM_V1.md)。
 
 ## 最快安装
@@ -84,6 +95,24 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 不会覆盖已有目标。详见[一句话安装](docs/AGENT_INSTALL.md)。
 
 ## 工作方式
+
+不想手写配置时，先启动本地生产台：
+
+```bash
+node scripts/kacha.mjs studio serve
+```
+
+页面只读取本机路径，支持四套内置风格、自建风格、开场选择和多组
+“自然语言位置 + 指定效果”。五步流程会分别处理素材、风格、声音、效果和
+交付；129 个注册效果支持搜索，生成前必须通过视频、输出目录、授权字体、
+设计系统与效果解析预检。它不会上传素材、覆盖源片或跳过质量门禁。详见
+[本地视频生产台](references/production-studio.md)。
+
+<p align="center">
+  <a href="https://www.figma.com/design/uXfiviOI5rgi56awnD3Iut?node-id=1-2">
+    <img src="docs/assets/kacha-production-studio.png" alt="咔嚓本地视频生产台" width="100%">
+  </a>
+</p>
 
 ```text
 任务与授权
@@ -138,6 +167,7 @@ node scripts/kacha.mjs doctor --profile core
 
 - 核心门禁需要 Node.js 20+；
 - 媒体链路需要 FFmpeg 与 FFprobe；
+- 本地字体索引与字幕图层渲染需要 Python 3、Pillow 和 fontTools；
 - 用户配置位于 `~/.config/kacha/config.json`；
 - 项目配置使用 `kacha.config.json`，本机覆盖使用已忽略的
   `kacha.local.json`；
@@ -153,6 +183,7 @@ node scripts/kacha.mjs doctor --profile core
 - 含口播的音频先做人声/非人声分离，只让验收通过的人声进入后续处理；
 - 自动发现的项目配置不能改写 provider、凭证入口或本机工具路径；
 - 网络素材、生成镜头、字体、音乐和音效必须记录来源、授权与哈希；
+- 本地字体文件不会进入公开仓库；项目授权记录只用于当前本地制作范围；
 - Beauty v2 默认关闭，启用后仍需同源同帧动态 A/B 人工复核；
 - 只有自动技术 QC、人工审片证据与 release gate 全部通过，才可标记为可交付；
 - 仓库不包含用户密钥、第三方库存素材、模型权重或项目私有音效库。
@@ -197,6 +228,8 @@ node scripts/kacha.mjs doctor --profile core
 | 文档 | 用途 |
 | --- | --- |
 | [快速开始](docs/QUICKSTART.md) | 从模板到门禁的完整示例 |
+| [本地视频生产台](references/production-studio.md) | 五步配置、预检、项目生成与信任边界 |
+| [生产台深度 review](docs/STUDIO_REVIEW.md) | 功能、流程、UI、安全与验证结论 |
 | [安装与依赖](docs/INSTALLATION.md) | 环境、平台与可选能力 |
 | [配置说明](docs/CONFIGURATION.md) | 用户、项目、本机和密钥配置 |
 | [架构说明](docs/ARCHITECTURE.md) | 工作流、证据链与模块边界 |

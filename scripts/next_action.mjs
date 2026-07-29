@@ -403,6 +403,15 @@ function nextV2() {
   }
   const finalVideo = resolveEntry(projectFile, project.outputs?.finalVideo);
   if (!fileReady(finalVideo)) {
+    const netstyleTimelines = (project.plans?.netstyleTimelines ?? [])
+      .map((entry) => resolveEntry(projectFile, entry))
+      .filter(Boolean);
+    const visualBreathingTimelines = (
+      project.plans?.visualBreathingTimelines ?? []
+    ).map((entry) => resolveEntry(projectFile, entry)).filter(Boolean);
+    const captionTimelines = (project.plans?.captionTimelines ?? [])
+      .map((entry) => resolveEntry(projectFile, entry))
+      .filter(Boolean);
     return action(
       "render_full_timeline",
       "plan_ready",
@@ -418,6 +427,60 @@ function nextV2() {
           projectFile,
         ]),
         expectedOutput: finalVideo,
+        visualPackaging: {
+          netstyleTimelines,
+          visualBreathingTimelines,
+          captionTimelines,
+          instruction: [
+            netstyleTimelines.length > 0
+              ? "画面锁定后执行 netstyle render-plan"
+              : null,
+            visualBreathingTimelines.length > 0
+              ? "按计划执行 breathing render，并在字幕前完成画面呼吸"
+              : null,
+            captionTimelines.length > 0
+              ? "按计划执行 captions render，并在最终混音前完成字幕排版"
+              : null,
+          ].filter(Boolean).join("；") || "当前项目没有注册视觉包装时间线计划",
+          commandTemplates: {
+            netstyle: netstyleTimelines.length > 0
+              ? shellCommand([
+              process.execPath,
+              path.join(scriptsDirectory, "kacha.mjs"),
+              "netstyle",
+              "render-plan",
+              "--plan",
+              "PLAN.json",
+              "--output",
+              "VISUAL_PACKAGED.mov",
+            ])
+              : null,
+            visualBreathing: visualBreathingTimelines.length > 0
+              ? shellCommand([
+                process.execPath,
+                path.join(scriptsDirectory, "kacha.mjs"),
+                "breathing",
+                "render",
+                "--plan",
+                "BREATHING_PLAN.json",
+                "--output",
+                "BREATHING.mov",
+              ])
+              : null,
+            captions: captionTimelines.length > 0
+              ? shellCommand([
+                process.execPath,
+                path.join(scriptsDirectory, "kacha.mjs"),
+                "captions",
+                "render",
+                "--plan",
+                "CAPTION_PLAN.json",
+                "--output",
+                "CAPTIONED.mov",
+              ])
+              : null,
+          },
+        },
         diagnostics: [diagnostic("KACHA-E200", `最终候选不存在：${finalVideo}`)],
       },
     );

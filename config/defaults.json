@@ -45,7 +45,7 @@
   },
   "style": {
     "system": "dahui-video-system",
-    "profile": "warm-editorial",
+    "profile": "xingzhe",
     "modes": {
       "show": "tool-share",
       "aspectRatio": "landscape-16x9",
@@ -64,6 +64,36 @@
     },
     "incremental": {
       "handleFrames": 25
+    },
+    "netstyle": {
+      "automaticPlanning": true,
+      "maximumPrimaryEffectsPer10Seconds": 2.5,
+      "minimumGapSeconds": 0.35,
+      "maximumConcurrentPrimaryEffects": 1,
+      "representativeValidationCountPerEffect": 1,
+      "renderCrf": 16
+    },
+    "visualBreathing": {
+      "automaticPlanning": true,
+      "maximumPrimaryEventsPer10Seconds": 1.5,
+      "minimumGapSeconds": 1.2,
+      "maximumMotionCoverageRatio": 0.55,
+      "minimumStillCoverageRatio": 0.45,
+      "renderCrf": 16
+    },
+    "spokenCaptions": {
+      "automaticLayout": true,
+      "defaultLayout": "plain_single",
+      "maximumSimultaneousReadingZones": 3,
+      "ordinarySubtitleSfx": "none",
+      "renderCrf": 16
+    },
+    "fonts": {
+      "autoDiscoverProjectFonts": true,
+      "directories": ["Fonts", "fonts", "assets/fonts"],
+      "allowRestrictedByDefault": false,
+      "publicRedistribution": false,
+      "routingProfile": "kacha-font-routing"
     },
     "visualEvidence": {
       "defaultMode": "fast",
@@ -116,7 +146,8 @@
   },
   "tools": {
     "demucsBin": null,
-    "sfxLibrary": null
+    "sfxLibrary": null,
+    "fontRegistry": null
   },
   "providers": {
     "minimax": {

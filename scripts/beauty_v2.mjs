@@ -283,6 +283,116 @@ export function validateBeautyV2(config) {
   return errors;
 }
 
+function clamp(value, minimum, maximum) {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
+function tuningScale(value) {
+  return 0.55 + (0.9 * Number(value) / 100);
+}
+
+function scaledDelta(value, neutral, scale, minimum, maximum) {
+  return clamp(neutral + ((Number(value) - neutral) * scale), minimum, maximum);
+}
+
+export function resolveBeautyV2Parameters(config, profileId, tuning = null) {
+  if (!PROFILE_IDS.has(profileId) || !config?.profiles?.[profileId]) {
+    throw new Error(`Beauty v2 档位不存在：${profileId}`);
+  }
+  const resolved = JSON.parse(JSON.stringify(config.profiles[profileId]));
+  if (tuning === null || tuning === undefined) {
+    return {
+      profileId,
+      tuning: null,
+      resolved,
+      digest: sha256Value({ profileId, tuning: null, resolved }),
+    };
+  }
+  const tuningErrors = [];
+  rejectUnknownKeys(tuning, new Set([
+    "smoothing",
+    "whitening",
+    "toneEvening",
+    "nasolabialSoftening",
+  ]), "tuning", tuningErrors);
+  for (const key of [
+    "smoothing",
+    "whitening",
+    "toneEvening",
+    "nasolabialSoftening",
+  ]) {
+    bounded(tuning[key], `tuning.${key}`, 0, 100, tuningErrors);
+  }
+  if (tuningErrors.length > 0) throw new Error(tuningErrors.join("\n"));
+
+  const smoothing = tuningScale(tuning.smoothing);
+  const whitening = tuningScale(tuning.whitening);
+  const tone = tuningScale(tuning.toneEvening);
+  const nasolabial = tuningScale(tuning.nasolabialSoftening);
+  const limits = config.hardLimits;
+  const skin = resolved.skin;
+  const fold = resolved.nasolabial;
+
+  skin.smoothingSigmaS = clamp(skin.smoothingSigmaS * smoothing, 0, 5);
+  skin.smoothingSigmaR = clamp(
+    skin.smoothingSigmaR * smoothing,
+    0,
+    limits.maximumSmoothingSigmaR,
+  );
+  skin.detailAmount = clamp(skin.detailAmount / smoothing, 0, 0.25);
+  skin.brightness = clamp(
+    skin.brightness * whitening,
+    0,
+    limits.maximumBrightness,
+  );
+  skin.gamma = scaledDelta(
+    skin.gamma,
+    1,
+    whitening,
+    1,
+    limits.maximumGamma,
+  );
+  skin.chromaSigmaS = clamp(skin.chromaSigmaS * tone, 0, 8);
+  skin.chromaSigmaR = clamp(skin.chromaSigmaR * tone, 0, 0.1);
+  skin.saturation = scaledDelta(skin.saturation, 1, tone, 0.98, 1.02);
+
+  fold.smoothingSigmaS = clamp(fold.smoothingSigmaS * nasolabial, 0, 5);
+  fold.smoothingSigmaR = clamp(
+    fold.smoothingSigmaR * nasolabial,
+    0,
+    limits.maximumSmoothingSigmaR,
+  );
+  fold.brightness = clamp(
+    fold.brightness * nasolabial,
+    0,
+    limits.maximumBrightness,
+  );
+  fold.gamma = scaledDelta(
+    fold.gamma,
+    1,
+    nasolabial,
+    1,
+    limits.maximumGamma,
+  );
+
+  const validationErrors = [];
+  validateSkin(skin, "resolved.skin", limits, validationErrors);
+  validateNasolabial(fold, "resolved.nasolabial", limits, validationErrors);
+  if (validationErrors.length > 0) throw new Error(validationErrors.join("\n"));
+  const normalizedTuning = {
+    smoothing: Number(tuning.smoothing),
+    whitening: Number(tuning.whitening),
+    toneEvening: Number(tuning.toneEvening),
+    nasolabialSoftening: Number(tuning.nasolabialSoftening),
+  };
+  return {
+    profileId,
+    tuning: normalizedTuning,
+    resolved,
+    digest: sha256Value({ profileId, tuning: normalizedTuning, resolved }),
+  };
+}
+
 export function loadBeautyV2(file = beautyConfigFile) {
   const config = JSON.parse(fs.readFileSync(file, "utf8"));
   const errors = validateBeautyV2(config);

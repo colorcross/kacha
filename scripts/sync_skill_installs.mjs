@@ -55,7 +55,10 @@ function copyCore(source, output) {
         ".git",
         ".DS_Store",
         ".kacha-version",
+        ".playwright-cli",
         "node_modules",
+        "output",
+        "outputs",
         "website",
       ].includes(first);
     },

@@ -28,6 +28,12 @@ sudo apt-get update
 sudo apt-get install -y nodejs ffmpeg jq python3
 ```
 
+Local font indexing, font previews, and spoken-caption overlays also require:
+
+```bash
+python3 -m pip install --user Pillow fonttools
+```
+
 Verify the environment:
 
 ```bash
@@ -36,6 +42,7 @@ ffmpeg -version
 ffprobe -version
 jq --version
 python3 --version
+python3 -c "from PIL import Image; from fontTools.ttLib import TTFont"
 ```
 
 ## Recommended: let the Agent install it

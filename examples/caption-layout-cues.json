@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "1.0",
+  "cues": [
+    {
+      "id": "plain",
+      "start": 0.2,
+      "end": 1.75,
+      "text": "普通解释先保持清楚"
+    },
+    {
+      "id": "emphasis",
+      "start": 1.9,
+      "end": 3.45,
+      "text": "真正重要的是判断",
+      "emphasis": "判断"
+    },
+    {
+      "id": "left-right",
+      "start": 3.6,
+      "end": 5.25,
+      "text": "不是堆效果，而是讲关系",
+      "fontRole": "caption_tech"
+    },
+    {
+      "id": "side-labels",
+      "start": 5.4,
+      "end": 6.95,
+      "text": "两个短标签放到画面两侧",
+      "captionLayout": "side_vertical_labels",
+      "display": {
+        "left": "信息",
+        "right": "情绪"
+      }
+    },
+    {
+      "id": "top-bottom",
+      "start": 7.1,
+      "end": 8.85,
+      "text": "先提出问题，再给出结论",
+      "captionLayout": "top_bottom_hierarchy",
+      "display": {
+        "top": "为什么要切",
+        "bottom": "因为关系变了"
+      }
+    },
+    {
+      "id": "background-word",
+      "start": 9,
+      "end": 10.75,
+      "text": "关键词进入人物后方",
+      "captionLayout": "oversize_background_word",
+      "display": {
+        "background": "关系",
+        "foreground": "关键词进入人物后方"
+      }
+    },
+    {
+      "id": "front-back",
+      "start": 10.85,
+      "end": 12.75,
+      "text": "前后景共同建立空间",
+      "captionLayout": "front_back_phrase",
+      "display": {
+        "background": "空间",
+        "foreground": "前后景层次"
+      }
+    }
+  ]
+}

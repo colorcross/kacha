@@ -57,6 +57,37 @@ const RECIPES = {
       "冻结音频 elementary stream 哈希与基线一致。",
     ],
   },
+  netstyle: {
+    type: "semantic_netstyle",
+    layers: ["visual", "sfx"],
+    requiresIntervals: true,
+    regressionClass: "semantic_netstyle",
+    defaultAcceptance: [
+      "效果来自当前 netstyle 时间线计划和注册表，触发、功能、机制、进入、峰值、退出、降级与失败条件均可追溯。",
+      "正式成片不含演示标签；源几何、有效帧率、时长和人声保持，音效峰值与视觉峰值误差不超过 1–2 帧。",
+      "效果不遮挡头脸、字幕、品牌和平台安全区；同一时刻最多一个主效果。",
+    ],
+  },
+  visual_breathing: {
+    type: "visual_breathing",
+    layers: ["visual", "sfx"],
+    regressionClass: "visual_breathing",
+    defaultAcceptance: [
+      "运动由语义、情绪或真实空间变化触发，遵守收紧—停稳—释放，不用持续缩放掩盖错误切点。",
+      "运动覆盖不超过 55%，静止不少于 45%；头顶、手势、字幕和平台安全区完整。",
+      "缓慢推拉和横移无音效；短促冲击的视觉峰值与音效能量峰值误差不超过 1–2 帧。",
+    ],
+  },
+  caption_layout: {
+    type: "caption_layout",
+    layers: ["subtitles", "sfx"],
+    regressionClass: "caption_layout",
+    defaultAcceptance: [
+      "字幕以最终音频为准，普通单行为默认；左右、上下或前后景布局只表达真实信息关系。",
+      "同一时刻最多三个阅读区和一个主重音，文字不遮挡人物头脸、品牌或平台安全区。",
+      "字体真实命中且覆盖文本；普通字幕无音效，强调音效峰值与文字落位误差不超过 1–2 帧。",
+    ],
+  },
   insert_replace: {
     type: "insert_replace",
     layers: ["visual"],
@@ -281,16 +312,108 @@ const normalizedChanges = request.changes.map((change, index) => {
   ) {
     fail("KACHA-E140", `changes[${index}].parameters 必须是 object`);
   }
+  const parameters = deepMerge(
+    editingDefaults.recipeParameters[change.recipe] ?? {},
+    change.parameters ?? {},
+  );
+  if (
+    change.recipe === "netstyle"
+    && !(
+      hasValue(parameters.effectId)
+      || hasValue(parameters.plan)
+    )
+  ) {
+    fail(
+      "KACHA-E140",
+      `changes[${index}] recipe=netstyle 必须通过 parameters.effectId 或 parameters.plan 指定效果来源`,
+    );
+  }
+  if (change.recipe === "netstyle" && hasValue(parameters.effectId)) {
+    const registry = readJson(
+      path.join(scriptsDirectory, "..", "config", "effects", "z-en-netstyle.json"),
+    );
+    if (!registry.effects?.some((effect) => effect.id === parameters.effectId)) {
+      fail(
+        "KACHA-E140",
+        `changes[${index}].parameters.effectId 未注册：${parameters.effectId}`,
+      );
+    }
+  }
+  if (change.recipe === "netstyle" && hasValue(parameters.plan)) {
+    const plan = resolveFrom(requestFile, parameters.plan);
+    if (!plan || !fs.existsSync(plan)) {
+      fail("KACHA-E100", `changes[${index}] netstyle plan 不存在：${plan}`);
+    }
+    const validation = run(process.execPath, [
+      path.join(scriptsDirectory, "netstyle_timeline.mjs"),
+      "validate",
+      "--plan",
+      plan,
+    ]);
+    if (validation.status !== 0) {
+      fail(
+        "KACHA-E140",
+        `changes[${index}] netstyle plan 无效：${validation.stderr || validation.stdout}`,
+      );
+    }
+    const frozenPlan = readJson(plan);
+    if (frozenPlan.source?.input?.sha256 !== context.source?.sha256) {
+      fail(
+        "KACHA-E110",
+        `changes[${index}] ${change.recipe} plan 的源片与当前增量基线不一致`,
+      );
+    }
+    parameters.plan = plan;
+  }
+  if (
+    ["visual_breathing", "caption_layout"].includes(change.recipe)
+    && !hasValue(parameters.plan)
+  ) {
+    fail(
+      "KACHA-E140",
+      `changes[${index}] recipe=${change.recipe} 必须通过 parameters.plan 指定已验证计划`,
+    );
+  }
+  if (
+    ["visual_breathing", "caption_layout"].includes(change.recipe)
+    && hasValue(parameters.plan)
+  ) {
+    const plan = resolveFrom(requestFile, parameters.plan);
+    if (!plan || !fs.existsSync(plan)) {
+      fail("KACHA-E100", `changes[${index}] ${change.recipe} plan 不存在：${plan}`);
+    }
+    const validator = change.recipe === "visual_breathing"
+      ? "visual_breathing.mjs"
+      : "caption_layout.mjs";
+    const validation = run(process.execPath, [
+      path.join(scriptsDirectory, validator),
+      "validate",
+      "--plan",
+      plan,
+    ]);
+    if (validation.status !== 0) {
+      fail(
+        "KACHA-E140",
+        `changes[${index}] ${change.recipe} plan 无效：`
+          + `${validation.stderr || validation.stdout}`,
+      );
+    }
+    const frozenPlan = readJson(plan);
+    if (frozenPlan.source?.input?.sha256 !== context.source?.sha256) {
+      fail(
+        "KACHA-E110",
+        `changes[${index}] ${change.recipe} plan 的源片与当前增量基线不一致`,
+      );
+    }
+    parameters.plan = plan;
+  }
   return {
     recipe: change.recipe,
     type: recipe.type,
     layers: recipe.layers,
     reason: change.reason || `按 ${change.recipe} 稳定配方修改当前基线。`,
     intervals,
-    parameters: deepMerge(
-      editingDefaults.recipeParameters[change.recipe] ?? {},
-      change.parameters ?? {},
-    ),
+    parameters,
     acceptanceCriteria: Array.isArray(change.acceptanceCriteria)
       && change.acceptanceCriteria.length > 0
       ? change.acceptanceCriteria

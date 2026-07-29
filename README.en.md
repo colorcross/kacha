@@ -2,7 +2,7 @@
 
 **Kacha** (`kacha`) is a local-first professional video workflow skill for **Codex** and **Claude Code**. It turns planning, editing, packaging, technical QC, and human review into explicit, auditable, fail-closed gates.
 
-[中文说明](README.md) · [One-prompt install](docs/en/AGENT_INSTALL.md) · [Quick start](docs/en/QUICKSTART.md) · [Privacy and security](docs/en/PRIVACY_SECURITY.md)
+[中文说明](README.md) · [Production Studio in Figma](https://www.figma.com/design/uXfiviOI5rgi56awnD3Iut?node-id=1-2) · [One-prompt install](docs/en/AGENT_INSTALL.md) · [Quick start](docs/en/QUICKSTART.md) · [Privacy and security](docs/en/PRIVACY_SECURITY.md)
 
 <p align="center">
   <img src="assets/brand/kacha-og.png" alt="Kacha local AI video workflow" width="100%">
@@ -72,9 +72,24 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
   credentials through one validated configuration system. Editing defaults
   accept structured parameters and natural language without leaking keys into
   project artifacts.
+- Provides a localhost-only production studio for selecting source media,
+  reusable styles, openings, and natural-language-positioned effects, then
+  compiling an auditable brief and project config without uploading media.
 - Resolves a full video design system with show, aspect-ratio, language,
-  surface, and density modes, plus 52 registered components and 63 reusable
-  scenes.
+  surface, and density modes, plus 52 registered components, 69 reusable
+  scenes, and 33 semantic net-style mechanisms validated from six reference
+  videos without copying their assets. Timed transcripts can compile those
+  mechanisms into a frame-accurate production plan, render them into the full
+  picture-locked video, and verify hashes, resources, timing, geometry, audio,
+  and the absence of demo labels.
+- Builds semantic visual-breathing timelines with push-in, hold, release,
+  lateral drift, and emphasis-punch motion while preserving deliberate stillness.
+- Lays out spoken captions as plain single lines or real left/right, top/bottom,
+  and foreground/background information relationships, with functional SFX.
+- Indexes authorized local fonts by metadata, glyph coverage, scene role, and
+  file hash without redistributing the font binaries. The default Xingzhe
+  style requires the licensed real Jinling typeface for spoken captions and
+  fails closed instead of silently substituting the old fallback.
 - Provides local Beauty v2 for skin smoothing, whitening, tone evening, and
   restrained nasolabial-fold softening. Beauty is disabled by default and does
   not use GPUPixel, cloud beautification, or generative face repair.
@@ -128,9 +143,32 @@ The installer refuses to overwrite an existing target. The default locations are
 | Codex | `~/.codex/skills/kacha` |
 | Claude Code | `~/.claude/skills/kacha` |
 
-The installer needs Python 3, `curl`, and `tar`. Node.js 20+ is required for the gates; FFmpeg, FFprobe, and `jq` are required for the full core workflow. Apple Vision mask generation is macOS-only. See [Installation and dependencies](docs/en/INSTALLATION.md).
+The installer needs Python 3, `curl`, and `tar`. Node.js 20+ is required for
+the gates; FFmpeg, FFprobe, and `jq` are required for the full core workflow.
+Local font indexing and caption overlays use Pillow and fontTools. Apple Vision
+mask generation is macOS-only. See
+[Installation and dependencies](docs/en/INSTALLATION.md).
 
 ## Configure editing defaults
+
+Start the local production studio when you do not want to hand-author config:
+
+```bash
+node scripts/kacha.mjs studio serve
+```
+
+It listens on `127.0.0.1`, reads explicit local paths, and generates a new
+project directory. Its five-step flow covers source, style, sound, effects,
+and delivery. All 129 registered effects are searchable, and project
+generation is blocked until source media, the output directory, licensed font,
+design system, and selected effects pass preflight. It does not upload,
+overwrite, render, or publish by itself.
+
+<p align="center">
+  <a href="https://www.figma.com/design/uXfiviOI5rgi56awnD3Iut?node-id=1-2">
+    <img src="docs/assets/kacha-production-studio.png" alt="Kacha local production studio" width="100%">
+  </a>
+</p>
 
 ```bash
 node scripts/kacha.mjs config init --scope user

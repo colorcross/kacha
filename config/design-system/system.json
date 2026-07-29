@@ -2,14 +2,20 @@
   "schemaVersion": "1.0",
   "id": "dahui-video-system",
   "name": "行者大灰视频设计系统",
-  "version": "1.1.0",
+  "version": "1.3.0",
   "description": "面向真人口播、工具演示、知识长谈、纪录片和人与AI互动的视频设计系统。",
-  "styleProfile": "warm-editorial",
+  "styleProfile": "xingzhe",
   "registries": {
     "modes": "modes.json",
     "components": "components.json",
     "scenes": "scenes.json",
     "implementations": "implementations.json"
+  },
+  "capabilityRegistries": {
+    "semanticNetstyle": "../effects/z-en-netstyle.json",
+    "spokenCaptionLayouts": "../effects/spoken-caption-layouts.json",
+    "visualBreathing": "../effects/visual-breathing.json",
+    "fontRouting": "../font-routing.json"
   },
   "defaultModes": {
     "show": "tool-share",
@@ -23,6 +29,8 @@
     "每次变化都由信息、情绪、视角、时间、空间或动作驱动",
     "统一品牌下保留四个栏目的不同气质",
     "人物头脸、字幕、品牌、来源和平台UI共享同一碰撞系统",
+    "口播字幕按左右、上下、前后等信息关系排版，常规连续口播仍保持单行",
+    "镜头运动与停稳交替形成呼吸，不允许全片持续漂移或缩放",
     "组件必须有进入、停稳、退出和失败回退",
     "设计系统提供一致性，不替代具体内容判断"
   ],

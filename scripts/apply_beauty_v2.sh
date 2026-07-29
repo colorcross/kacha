@@ -111,37 +111,14 @@ node "$script_dir/assert_media_alignment.mjs" \
   --allow-size-mismatch \
   --duration-tolerance-frames 1 >/dev/null
 
-parameter_line=$(node - "$config_file" "$profile" <<'NODE'
-const fs = require("node:fs");
-const [file, profileId] = process.argv.slice(2);
-const config = JSON.parse(fs.readFileSync(file, "utf8"));
-if (config.defaultEnabled !== false) {
-  console.error("Beauty v2 config must default to disabled");
-  process.exit(3);
-}
-const profile = config.profiles?.[profileId];
-if (!profile) {
-  console.error(`Unsupported Beauty v2 profile: ${profileId}`);
-  process.exit(2);
-}
-const s = profile.skin;
-const n = profile.nasolabial;
-const values = [
-  s.smoothingSigmaS, s.smoothingSigmaR,
-  s.chromaSigmaS, s.chromaSigmaR,
-  s.brightness, s.gamma, s.saturation, s.detailAmount,
-  s.maskBlur, s.maskTemporalFrames,
-  n.smoothingSigmaS, n.smoothingSigmaR,
-  n.brightness, n.gamma,
-  n.maskBlur, n.maskTemporalFrames,
-];
-if (values.some((value) => !Number.isFinite(Number(value)))) {
-  console.error("Beauty v2 profile contains invalid parameters");
-  process.exit(3);
-}
-process.stdout.write(values.join("\t"));
-NODE
-)
+parameter_args=(parameters --profile "$profile" --format tsv)
+if [[ -n "$project_config" ]]; then
+  parameter_args+=(--config "$project_config")
+fi
+if [[ -n "$anchor_path" ]]; then
+  parameter_args+=(--anchor "$anchor_path")
+fi
+parameter_line=$(node "$script_dir/kacha_beauty.mjs" "${parameter_args[@]}")
 IFS=$'\t' read -r \
   skin_sigma_s skin_sigma_r chroma_sigma_s chroma_sigma_r \
   skin_brightness skin_gamma skin_saturation detail_amount \

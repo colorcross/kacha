@@ -6,6 +6,23 @@
 [配置说明](CONFIGURATION.md)创建用户/项目配置。`prepare` 会把适用的结构化
 参数和自然语言要求带入当前执行包。
 
+## 先用本地生产台创建项目（推荐）
+
+不想手写配置时，启动只监听本机的生产页面：
+
+```bash
+node scripts/kacha.mjs studio serve
+```
+
+按“素材 → 风格 → 声音 → 效果 → 交付”完成配置。效果目录支持搜索，
+当前项目的人声、BGM、Beauty v2 与效果密度可以独立覆盖，不会污染可复用
+风格。点击“检查配置”确认源视频、输出目录、授权字体、设计系统和效果均可
+执行后，页面会生成独立项目目录及
+`production-brief.json`、`kacha.config.json`、`AGENT_INSTRUCTIONS.md`。
+默认“行者风”使用已授权的真正金陵体、`warm-soft` 人声和克制的暖色视觉；
+Beauty v2 默认关闭。页面不上传素材、不覆盖源文件，也不代表已经完成剪辑。
+完整说明见[本地视频生产台](../references/production-studio.md)。
+
 ## 0. 先让代理进入确定性模式
 
 较弱模型、低推理强度或 Claude Code 先运行：
@@ -107,6 +124,45 @@ node scripts/kacha.mjs gate-render my-video-project/contracts/project-manifest.j
 13. `release_package`
 
 同一时刻最多一个阶段为 `in_progress`。`passed` 必须附真实证据，`not_applicable` 必须说明原因。
+
+### 在 visual_packaging 阶段应用语义网感机制
+
+画面锁定后，用最终带时间文稿建立并渲染正式效果时间线：
+
+```bash
+node scripts/kacha.mjs netstyle plan \
+  --input my-video-project/picture-lock.mov \
+  --transcript my-video-project/final-timed-transcript.json \
+  --output my-video-project/contracts/netstyle-plan.json \
+  [--mask my-video-project/person-mask.mkv]
+node scripts/kacha.mjs netstyle validate-plan \
+  --plan my-video-project/contracts/netstyle-plan.json
+node scripts/kacha.mjs netstyle render-plan \
+  --plan my-video-project/contracts/netstyle-plan.json \
+  --output my-video-project/visual-packaged.mov
+```
+
+同一份最终带时间文稿还可以生成画面呼吸和口播字幕计划：
+
+```bash
+node scripts/kacha.mjs breathing plan \
+  --input my-video-project/picture-lock.mov \
+  --transcript my-video-project/final-timed-transcript.json \
+  --output my-video-project/contracts/breathing-plan.json
+node scripts/kacha.mjs captions plan \
+  --input my-video-project/picture-lock.mov \
+  --transcript my-video-project/final-timed-transcript.json \
+  --output my-video-project/contracts/caption-plan.json
+```
+
+把两个计划分别登记到 `project-manifest.json` 的
+`plans.visualBreathingTimelines` 和 `plans.captionTimelines`，再运行
+`gate-plan`。字幕计划会优先使用项目已授权字体注册表；未授权或缺字时不会
+静默替换。
+
+把计划加入项目 manifest 的 `plans.netstyleTimelines`。字幕与最终混音必须在
+这个输出之后执行。cue 字段和全部门禁见
+[`references/z-en-editing-system.md`](../references/z-en-editing-system.md)。
 
 ## 7. 自动技术 QC
 

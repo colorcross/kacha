@@ -36,6 +36,12 @@ description: |
 - 美颜：`references/beauty-v2.md`；默认关闭，只在明确启用时读取并执行
 - 信息卡/流程图/弹窗/复杂动效：`references/visual-design-preflight.md`
 - 统一风格、开场和转场库：`references/style-effects-library.md`
+- 语义拍、空间变化、贴纸引导、关键帧和并列句网感机制：
+  `references/z-en-editing-system.md`
+- 画面呼吸、左右/上下/前后口播字幕排版和项目字体路由：
+  `references/visual-breathing-caption-typography.md`
+- 本地页面选素材、建风格、指定开场/效果并生成项目配置：
+  `references/production-studio.md`
 - 字幕/封面/品牌/系列：`references/subtitles-covers-brand.md`
 - MiniMax/Seedance/网络素材：`references/generated-media-assets.md`
 - 较弱模型/低推理强度/长任务续跑：`references/agent-execution.md`
@@ -86,6 +92,13 @@ node scripts/kacha.mjs design validate
 node scripts/kacha.mjs design list --kind scene
 node scripts/kacha.mjs effects validate
 node scripts/kacha.mjs effects list --kind transition
+node scripts/kacha.mjs netstyle validate
+node scripts/kacha.mjs netstyle list
+node scripts/kacha.mjs fonts validate --registry LOCAL_AUTHORIZED_FONTS.json
+node scripts/kacha.mjs breathing validate --plan BREATHING_PLAN.json
+node scripts/kacha.mjs captions validate --plan CAPTION_PLAN.json
+node scripts/kacha.mjs studio validate
+node scripts/kacha.mjs studio serve
 ```
 
 优先级为：内置默认值 < 用户配置 < 项目 `kacha.config.json` <
@@ -101,12 +114,53 @@ Git。默认要求只表示偏好，不构成上传、付费、发布、覆盖�
 `docs/CONFIGURATION.md`。
 
 视觉必须从 `style.system + style.profile + style.modes + style.overrides`
-解析，默认使用 `dahui-video-system` 与 `warm-editorial`。设计系统包含基础
+解析，默认使用 `dahui-video-system` 与 `xingzhe`（行者风）。行者风的
+默认口播字幕必须从本地授权注册表解析真正的金陵体，不得静默换回替代字体。
+设计系统包含基础
 令牌、栏目/画幅/语言/明暗/密度模式、组件库和场景库。字幕、弹窗、信息卡、
 画中画、品牌、封面、开场和转场只读取解析后的设计合同与 digest，不在时间
 区间实现中写死字体、颜色、圆角、阴影、边框或缓动。更换模式或风格走
 `style` 增量配方并按依赖失效重建。
 系统规范、组件与场景选择见 `docs/VIDEO_DESIGN_SYSTEM_V1.md`。
+
+口播需要更强的语义动效、空间变化、贴纸引导、关键帧或并列句排版时，先从
+`z-en-netstyle` 注册表选择机制。注册表中的 33 个手法只保存触发、功能、
+运动关系、声音功能、失败模式和 QC；真实颜色、字体、边框与安全区仍由当前
+设计系统解析。正式项目在画面锁定后、字幕和最终混音前，把最终带时间文稿
+编译成可审计时间线，再渲染到完整视频：
+
+```bash
+node scripts/kacha.mjs netstyle plan \
+  --input PICTURE_LOCK.mov \
+  --transcript FINAL_TIMED_TRANSCRIPT.json \
+  --output NETSTYLE_PLAN.json \
+  [--mask PERSON_MASK.mkv]
+node scripts/kacha.mjs netstyle validate-plan --plan NETSTYLE_PLAN.json
+node scripts/kacha.mjs netstyle render-plan \
+  --plan NETSTYLE_PLAN.json \
+  --output VISUAL_PACKAGED.mov
+```
+
+带时间文稿可用 `effectId` 明确调用全部 33 个机制，也可让确定性规则按开场、
+否定、并列、证据、观点、结论和聚焦等语义自动选择。正式计划必须冻结源片、
+文稿、人物蒙版、外部素材、设计系统和效果注册表摘要；每个事件写明触发、
+功能、机制、进入/峰值/退出、最简替代、失败条件、音效和 QC。人物分层效果
+没有逐帧蒙版、证据卡没有真实素材时直接阻断；同一时刻最多一个主效果。
+正式渲染不显示演示标签，保留源尺寸、有效帧率、时长和人声，并输出 manifest。
+项目把计划登记在 `plans.netstyleTimelines`，`gate-plan` 会验证计划。
+
+`netstyle preview` 只用于单项代表样例；需要回归机制实现时才使用
+`netstyle showcase`。showcase 不能替代正式时间线方案。
+
+picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共享同一份最终带
+时间文稿和帧边界。画面呼吸只在语义、情绪或真实空间变化成立时使用，默认
+运动覆盖不超过 55%、静止不少于 45%，缓慢推拉和横移不配音效。字幕以普通
+单行为默认，只在对照、层级或空间关系明确时升级为左右、上下或前后景布局。
+项目字体通过本地注册表按角色、字符覆盖和授权状态解析，不把字体文件写进
+公开 skill。完整命令、路由和 QC 见
+`references/visual-breathing-caption-typography.md`。正式项目把计划分别登记
+在 `plans.visualBreathingTimelines` 和 `plans.captionTimelines`，
+`gate-plan` 会验证计划。
 
 ## 不可降低的合同
 
@@ -118,6 +172,16 @@ Git。默认要求只表示偏好，不构成上传、付费、发布、覆盖�
   变化，普通人物镜头不得切掉头顶。
 - 转场、字幕强调、SFX、插镜、PIP、蒙版和人物后文字都必须有触发理由、
   最简替代、失败条件与 QC 证据；不能用特效掩盖错误切点。
+- 画面运动遵守“收紧—停稳—释放”：推近、拉远、横移和冲击必须有语义或
+  空间理由；全片持续运动、连续同向缩放、无重音音效和裁头都不允许。
+- 普通口播字幕不加音效；左右/上下/前后排版只表达真实对照、层级或空间
+  关系，同一时刻最多三个阅读区和一个主重音，人物后文字必须有逐帧蒙版。
+- 字体按场景角色、字符覆盖、真实文件 hash 和授权状态解析；缺字、路径变化
+  或授权缺失时阻断，不静默 fallback，不把本地字体二进制提交到公开仓库。
+- 语义动效以短语义拍为单位：动作在重读词前 0–2 帧启动，在重音帧到达
+  峰值，并在下一事件前完整退出；不得按固定秒数随机套“网感”效果。
+- 正式语义动效只从已验证 timeline plan 渲染；展示模式标签、固定示例文案
+  和 showcase 音轨不得进入成片。
 - 信息卡/流程图/弹窗要么全屏，要么避开人物头脸与字幕安全区；高影响模块
   先做样式帧、进入/停稳/退出和声音设计。
 - 真人画中画默认把原始完整画面按比例缩小后再套形状和边框，不得先用固定

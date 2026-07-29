@@ -1,0 +1,43 @@
+[
+  {
+    "id": "hook",
+    "start": 0,
+    "end": 1.6,
+    "text": "为什么精剪不能只靠堆效果？",
+    "effectId": "hook_suspense_push",
+    "display": {
+      "title": "为什么不能堆效果？",
+      "subtitle": "先判断信息、情绪或视角是否变化"
+    },
+    "sfxLevelDb": -12
+  },
+  {
+    "id": "evidence",
+    "start": 4.2,
+    "end": 6.2,
+    "text": "比如，这里需要展示一份真实数据。",
+    "effectId": "semantic_evidence_insert",
+    "assetRef": "assets/example-evidence.png",
+    "display": {
+      "title": "真实证据",
+      "subtitle": "素材必须可追溯"
+    },
+    "sfxLevelDb": -14
+  },
+  {
+    "id": "parallel",
+    "start": 8.4,
+    "end": 10.6,
+    "text": "信息变了，情绪变了，或者视角变了。",
+    "effectId": "parallel_progressive_row",
+    "display": {
+      "title": "切镜三大理由",
+      "items": [
+        "信息变化",
+        "情绪变化",
+        "视角变化"
+      ]
+    },
+    "sfxLevelDb": -15
+  }
+]

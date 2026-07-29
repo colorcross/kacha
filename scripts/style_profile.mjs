@@ -127,7 +127,7 @@ export function validateStyleProfile(profile) {
   return errors;
 }
 
-export function loadStyleProfile(profileId = "warm-editorial", overrides = {}) {
+export function loadStyleProfile(profileId = "xingzhe", overrides = {}) {
   if (!PROFILE_ID.test(String(profileId))) throw new Error(`风格 profile id 无效：${profileId}`);
   const file = path.join(styleDirectory, `${profileId}.json`);
   if (!fs.existsSync(file)) throw new Error(`风格 profile 不存在：${profileId}`);

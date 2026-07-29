@@ -50,6 +50,37 @@ const MODULE_REFERENCES = {
     "docs/VIDEO_DESIGN_SYSTEM_V1.md",
   ],
   opening: ["references/style-effects-library.md"],
+  netstyle: [
+    "references/editing-theory.md",
+    "references/visuals-masks.md",
+    "references/z-en-editing-system.md",
+  ],
+  breathing: [
+    "references/editing-theory.md",
+    "references/visual-breathing-caption-typography.md",
+  ],
+  caption_layout: [
+    "references/subtitles-covers-brand.md",
+    "references/visual-breathing-caption-typography.md",
+  ],
+  typography: [
+    "references/subtitles-covers-brand.md",
+    "references/visual-breathing-caption-typography.md",
+  ],
+  fonts: ["references/visual-breathing-caption-typography.md"],
+  studio: [
+    "references/production-studio.md",
+    "references/style-effects-library.md",
+    "docs/CONFIGURATION.md",
+  ],
+  kinetic: [
+    "references/editing-theory.md",
+    "references/z-en-editing-system.md",
+  ],
+  parallel_layout: [
+    "references/visual-design-preflight.md",
+    "references/z-en-editing-system.md",
+  ],
   transition: [
     "references/editing-theory.md",
     "references/visual-design-preflight.md",
@@ -59,7 +90,10 @@ const MODULE_REFERENCES = {
     "references/visuals-masks.md",
     "references/visual-design-preflight.md",
   ],
-  subtitles: ["references/subtitles-covers-brand.md"],
+  subtitles: [
+    "references/subtitles-covers-brand.md",
+    "references/visual-breathing-caption-typography.md",
+  ],
   covers: ["references/subtitles-covers-brand.md"],
   brand: ["references/subtitles-covers-brand.md"],
   series: ["references/subtitles-covers-brand.md"],

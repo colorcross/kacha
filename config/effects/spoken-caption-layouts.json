@@ -1,0 +1,164 @@
+{
+  "schemaVersion": "1.0",
+  "id": "spoken-caption-layouts",
+  "name": "咔嚓口播字幕排版",
+  "sourceStudy": {
+    "reference": "https://www.douyin.com/video/7659640195897268724",
+    "extractedMechanisms": ["左右关系", "上下主从", "人物前后景层次"],
+    "copyrightBoundary": "只提炼信息关系、运动和验收规则，不复制参考视频的字体、贴纸、成片或音频"
+  },
+  "globalRules": {
+    "defaultLayout": "plain_single",
+    "singleLinePerReadingZone": true,
+    "backgroundPlate": "none",
+    "maximumSimultaneousReadingZones": 3,
+    "maximumPrimaryEmphasisPerCue": 1,
+    "entryLeadFrames": 2,
+    "sfxSyncToleranceFrames": 2,
+    "minimumReadableSeconds": 0.72,
+    "ordinarySubtitleSfx": "none",
+    "safeArea": {
+      "horizontalRatio": 0.07,
+      "topRatio": 0.09,
+      "bottomRatio": 0.2,
+      "faceMarginRatio": 0.06
+    }
+  },
+  "layouts": [
+    {
+      "id": "plain_single",
+      "label": "常规单行",
+      "function": "承载连续口播阅读，不改变主构图",
+      "trigger": "普通叙述、解释、事实和过渡句",
+      "zones": ["subtitle_center"],
+      "fontRole": "subtitle_primary",
+      "soundTrigger": null,
+      "entry": "cut",
+      "exit": "cut",
+      "fallback": "none",
+      "failureModes": ["超出安全宽度", "语义切分错误", "亮底仍使用白字"]
+    },
+    {
+      "id": "logic_emphasis_inline",
+      "label": "单行逻辑重音",
+      "function": "在不增加阅读区的前提下标出一个判断落点",
+      "trigger": "否定、限制、因果、关键数字、结论或明确行动词",
+      "zones": ["subtitle_center"],
+      "fontRole": "subtitle_emphasis",
+      "soundTrigger": "knowledge",
+      "entry": "scale_settle",
+      "exit": "short_fade",
+      "fallback": "plain_single",
+      "failureModes": ["一行出现多个竞争强调", "音效盖住尾字", "用强调代替事实校准"]
+    },
+    {
+      "id": "left_right_contrast",
+      "label": "左右对照",
+      "function": "把两个平行、对立或前后方案放进两个独立阅读区",
+      "trigger": "不是而是、前后、左右、方案A与方案B等双项关系",
+      "zones": ["left", "right"],
+      "fontRole": "caption_editorial",
+      "soundTrigger": "info",
+      "entry": "left_then_right",
+      "exit": "clear_before_next_cue",
+      "fallback": "logic_emphasis_inline",
+      "constraints": {
+        "minimumItems": 2,
+        "maximumItems": 2,
+        "maximumCharactersPerZone": 10
+      },
+      "failureModes": ["主体或手势占满左右两侧", "两项不是同层级关系", "为了排版把固定搭配拆开"]
+    },
+    {
+      "id": "side_vertical_labels",
+      "label": "两侧竖排标签",
+      "function": "用短标签给中心人物或物体建立左右分类",
+      "trigger": "两个极短分类词，中心主体仍需完整保留",
+      "zones": ["left_vertical", "right_vertical"],
+      "fontRole": "caption_editorial",
+      "soundTrigger": "info",
+      "entry": "side_reveal",
+      "exit": "clear_before_next_cue",
+      "fallback": "left_right_contrast",
+      "constraints": {
+        "maximumCharactersPerZone": 6,
+        "forbidLongSentence": true
+      },
+      "failureModes": ["长句强制竖排", "碰到平台按钮或品牌角标", "阅读方向不一致"]
+    },
+    {
+      "id": "top_bottom_hierarchy",
+      "label": "上下主从",
+      "function": "把问题与回答、概念与解释、标题与结论建立清楚层级",
+      "trigger": "两组信息有明确主从或问答关系",
+      "zones": ["top", "bottom"],
+      "fontRole": "caption_editorial",
+      "soundTrigger": "transition",
+      "entry": "top_then_bottom",
+      "exit": "clear_before_next_cue",
+      "fallback": "logic_emphasis_inline",
+      "constraints": {
+        "maximumCharactersTop": 10,
+        "maximumCharactersBottom": 14
+      },
+      "failureModes": ["上方标题遮住头部", "上下两组其实是并列关系", "底部落入平台UI"]
+    },
+    {
+      "id": "oversize_background_word",
+      "label": "大字后景",
+      "function": "用一个极短关键词建立空间深度和记忆点",
+      "trigger": "章节题眼、核心名词或反差词，且逐帧人物蒙版可用",
+      "zones": ["background_word", "subtitle_center"],
+      "fontRole": "display_title_zh",
+      "soundTrigger": "emphasis",
+      "entry": "background_scale_settle",
+      "exit": "clear_before_next_cue",
+      "maskRequired": true,
+      "fallback": "logic_emphasis_inline",
+      "constraints": {
+        "maximumCharactersBackground": 2
+      },
+      "failureModes": ["人物蒙版边缘抖动", "关键词太长", "大字与字幕争夺同一阅读区"]
+    },
+    {
+      "id": "front_back_phrase",
+      "label": "前后景短语",
+      "function": "让背景题眼、人物和前景补充形成真实遮挡层次",
+      "trigger": "强题眼需要人物作为空间分隔，且背景词和前景词各自很短",
+      "zones": ["background_phrase", "foreground_phrase"],
+      "fontRole": "display_title_zh",
+      "soundTrigger": "transition",
+      "entry": "back_then_front",
+      "exit": "clear_before_next_cue",
+      "maskRequired": true,
+      "fallback": "top_bottom_hierarchy",
+      "constraints": {
+        "maximumCharactersBackground": 4,
+        "maximumCharactersForeground": 8
+      },
+      "failureModes": ["蒙版缺失或跟踪失败", "头发眼镜边缘穿帮", "前景文字遮住五官"]
+    }
+  ],
+  "soundPalette": {
+    "knowledge": {
+      "preferredAssetIds": ["knowledge-local-point"],
+      "purpose": "核心判断落位",
+      "levelRelativeToDialogueDb": -13
+    },
+    "info": {
+      "preferredAssetIds": ["info-local-list-item-pop", "info-local-prompt"],
+      "purpose": "左右或列表信息落位",
+      "levelRelativeToDialogueDb": -14
+    },
+    "transition": {
+      "preferredAssetIds": ["transition-local"],
+      "purpose": "阅读区方向或前后层次变化",
+      "levelRelativeToDialogueDb": -13
+    },
+    "emphasis": {
+      "preferredAssetIds": ["knowledge-local-point", "hook-local-shock"],
+      "purpose": "极短题眼完成停稳",
+      "levelRelativeToDialogueDb": -12
+    }
+  }
+}

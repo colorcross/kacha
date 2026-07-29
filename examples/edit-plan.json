@@ -144,8 +144,8 @@
       "fallback": "边缘不稳时改用普通信息卡",
       "designPreflight": {
         "designSystemId": "dahui-video-system",
-        "designSystemVersion": "1.1.0",
-        "designDigest": "cf98d1efee4321cc96c76f0ea599cb74b787fcc75b435bc29004afa2c63de7d3",
+        "designSystemVersion": "1.3.0",
+        "designDigest": "0db496d3a07c8b15e7d6e491192f6e69056bb99524643e896b06fd1e5fe38b2a",
         "sceneId": "text_behind_subject_scene",
         "componentIds": [
           "text_behind_subject"
@@ -160,9 +160,9 @@
         "status": "approved_for_implementation",
         "artifactMode": "local_styleframe",
         "artifactRef": "kacha://examples/design/text-behind/approved-styleframes.svg",
-        "artifactSha256": "6e8a09bfcd808ac0d082351633edf48002c2bb1be55d4882a5cfac83e0ee970d",
+        "artifactSha256": "54a9804cd8630ccdeb26cb77d686025741003e45127a2dd63d646fac2a61ceec",
         "implementationManifestRef": "kacha://examples/design/text-behind/approved-styleframes.manifest.json",
-        "implementationManifestSha256": "74ebb0825681c25cd9fe3e652f489591282724096f75111034fdb532fa1be355",
+        "implementationManifestSha256": "d4353089c7d4454725f453bffc8f1fcee347054475e43641f21f6427d5fc27f7",
         "layoutSpec": "人物头顶左侧负空间，文字与字幕区、品牌区分离",
         "motionSpec": "两组短语分别以 8 帧遮罩揭示进入，停稳后统一淡出",
         "soundSpec": "知识点落位声跟随第二组文字停稳，第一组只使用轻微空气感 whoosh",

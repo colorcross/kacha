@@ -69,7 +69,7 @@ function inferSuite(name) {
   if (/SFX|sound effect/i.test(name)) return "sfx";
   if (/technical QC|release gate|timing normalizer/i.test(name)) return "qc";
   if (
-    /mask|beauty|text-behind|reframe|information card|visual design|cropped head|style profile|transition|opening|connection scanner/i
+    /mask|beauty|text-behind|reframe|information card|visual design|cropped head|style profile|transition|opening|connection scanner|netstyle|semantic motion|parallel layout|visual breathing|caption layout|font routing/i
       .test(name)
   ) {
     return "visual";
@@ -259,6 +259,18 @@ await test("reference router loads only task-relevant context", () => {
   if (!releaseRoute.files.some((item) => item.path === "references/qc-release.md")) {
     throw new Error("release phase did not load qc-release reference");
   }
+  const netstyleRoute = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "route_references.mjs"),
+    "--task", "source_edit",
+    "--modules", "netstyle",
+  ]).stdout);
+  if (
+    !netstyleRoute.files.some(
+      (item) => item.path === "references/z-en-editing-system.md",
+    )
+  ) {
+    throw new Error("netstyle route did not load the editing-system reference");
+  }
 });
 
 await test("doctor and low-model packet expose deterministic execution", () => {
@@ -431,7 +443,7 @@ await test("configuration merges parameters, natural language and redacted crede
     report.config.execution.incremental.handleFrames !== 36
     || report.config.editingDefaults.parameters.subtitle.singleLine !== true
     || report.config.editingDefaults.parameters.subtitle.safeAreaBottomRatio !== 0.2
-    || report.config.style.profile !== "warm-editorial"
+    || report.config.style.profile !== "xingzhe"
     || report.secrets.credentials.minimax.source !== "secrets_file"
   ) {
     throw new Error("configuration precedence or credential status is incorrect");
@@ -615,7 +627,7 @@ await test("style profile and effect registries validate and render executable p
     "validate",
   ]).stdout);
   if (
-    validation.style.id !== "warm-editorial"
+    validation.style.id !== "xingzhe"
     || validation.registries.find((item) => item.kind === "transition")?.count < 8
     || validation.registries.find((item) => item.kind === "opening")?.count < 4
   ) {
@@ -696,7 +708,7 @@ await test("style profile and effect registries validate and render executable p
     "--no-secrets",
   ]).stdout);
   if (
-    styleReport.style.profile.id !== "warm-editorial"
+    styleReport.style.profile.id !== "xingzhe"
     || styleReport.style.profile.popups.maxWidthRatio !== 0.6
     || !styleReport.style.digest
   ) {
@@ -843,7 +855,8 @@ await test("video design system validates, resolves every mode and renders produ
       "#!/bin/sh\n"
         + "printf '%s\\n' "
         + "'{\"SPFontsDataType\":[{\"_name\":\"华光标题黑\"},"
-        + "{\"_name\":\"金陵体\"},{\"_name\":\"Avenir Next\"}]}'\n",
+        + "{\"_name\":\"方正粗金陵简体\"},{\"_name\":\"FZJinLS-B-GB\"},"
+        + "{\"_name\":\"Avenir Next\"}]}'\n",
     );
     fs.chmodSync(profiler, 0o755);
     const fallbackProbe = run(process.execPath, [
@@ -930,12 +943,31 @@ await test("beauty v2 is local, scoped, bounded and disabled by default", async 
       },
     },
   });
+  const unsafeTuning = path.join(temporary, "unsafe-beauty-tuning.json");
+  writeJson(unsafeTuning, {
+    schemaVersion: "1.0",
+    editingDefaults: {
+      parameters: {
+        beauty: {
+          enabled: true,
+          engine: "beauty-v2",
+          profile: "natural",
+          tuning: {
+            smoothing: 101,
+            whitening: 22,
+            toneEvening: 30,
+            nasolabialSoftening: 24,
+          },
+        },
+      },
+    },
+  });
   expectFailure(process.execPath, [
     path.join(scripts, "kacha.mjs"),
     "config",
     "validate",
     "--config",
-    unsafeBeauty,
+    unsafeTuning,
     "--no-secrets",
   ]);
   const beautyApi = await import(
@@ -953,6 +985,36 @@ await test("beauty v2 is local, scoped, bounded and disabled by default", async 
   ) {
     throw new Error("Beauty v2 accepted parameters outside immutable safety limits");
   }
+
+  const tuned = beautyApi.resolveBeautyV2Parameters(
+    beautyConfig,
+    "natural",
+    {
+      smoothing: 35,
+      whitening: 22,
+      toneEvening: 30,
+      nasolabialSoftening: 24,
+    },
+  );
+  if (
+    !/^[a-f0-9]{64}$/.test(tuned.digest)
+    || tuned.resolved.skin.smoothingSigmaR
+      >= beautyConfig.profiles.natural.skin.smoothingSigmaR
+    || tuned.resolved.skin.brightness
+      >= beautyConfig.profiles.natural.skin.brightness
+    || tuned.resolved.nasolabial.smoothingSigmaR
+      >= beautyConfig.profiles.natural.nasolabial.smoothingSigmaR
+  ) {
+    throw new Error("Beauty v2 tuning did not resolve into bounded local parameters");
+  }
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config",
+    "validate",
+    "--config",
+    unsafeBeauty,
+    "--no-secrets",
+  ]);
 }, "visual");
 
 await test("Beauty v2 Vision generator typechecks and can verify a real-face fixture", () => {
@@ -1726,6 +1788,528 @@ function ensureMediaFixtures() {
   mediaFixturesReady = true;
 }
 
+await test("font routing scans, authorizes, resolves and previews a real local font", () => {
+  const match = run("fc-match", ["-f", "%{file}", "sans-serif"]);
+  const commonFonts = [
+    match.status === 0 ? match.stdout.trim() : null,
+    "/System/Library/Fonts/Supplemental/Arial.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+  ].filter(Boolean);
+  const sourceFont = commonFonts.find((candidate) => fs.existsSync(candidate));
+  if (!sourceFont) throw new Error("no real system font available for routing test");
+  const fontDirectory = path.join(temporary, "fonts");
+  fs.mkdirSync(fontDirectory);
+  const copiedFont = path.join(fontDirectory, path.basename(sourceFont));
+  fs.copyFileSync(sourceFont, copiedFont);
+  const scannedFile = path.join(temporary, "font-registry.json");
+  const authorizedFile = path.join(temporary, "font-registry-authorized.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "fonts", "scan",
+    "--directory", fontDirectory,
+    "--output", scannedFile,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "fonts", "authorize",
+    "--registry", scannedFile,
+    "--output", authorizedFile,
+    "--statement", "synthetic regression authorization",
+  ]);
+  const resolved = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "fonts", "resolve",
+    "--registry", authorizedFile,
+    "--role", "body_en",
+    "--text", "Caption 123",
+  ]).stdout);
+  if (
+    resolved.status !== "pass"
+    || resolved.selected.projectAuthorization?.status !== "authorized"
+    || resolved.selected.redistributionAllowed === true
+  ) {
+    throw new Error("font routing did not preserve local authorization boundaries");
+  }
+  const preview = path.join(temporary, "font-preview.png");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "fonts", "preview",
+    "--font", copiedFont,
+    "--text", "Caption 123",
+    "--output", preview,
+  ]);
+  if (!fs.existsSync(preview) || fs.statSync(preview).size === 0) {
+    throw new Error("font preview was not rendered");
+  }
+}, "visual");
+
+await test("local production studio compiles an auditable project with verified font evidence", () => {
+  const catalog = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "studio", "validate",
+  ]).stdout);
+  if (
+    catalog.defaultStyleId !== "xingzhe"
+    || catalog.builtInStyleCount < 4
+    || catalog.openingCount < 5
+    || catalog.assignableEffectCount < 100
+  ) {
+    throw new Error("production studio catalog is incomplete");
+  }
+
+  const match = run("fc-match", ["-f", "%{file}", "sans-serif"]);
+  const sourceFont = [
+    match.status === 0 ? match.stdout.trim() : null,
+    "/System/Library/Fonts/Supplemental/Arial.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+  ].filter(Boolean).find((candidate) => fs.existsSync(candidate));
+  if (!sourceFont) throw new Error("no real system font available for studio test");
+  const fontDirectory = path.join(temporary, "studio-fonts");
+  fs.mkdirSync(fontDirectory);
+  fs.copyFileSync(sourceFont, path.join(fontDirectory, path.basename(sourceFont)));
+  const scanned = path.join(temporary, "studio-font-registry.json");
+  const authorized = path.join(temporary, "studio-font-registry-authorized.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "fonts", "scan",
+    "--directory", fontDirectory,
+    "--output", scanned,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "fonts", "authorize",
+    "--registry", scanned,
+    "--output", authorized,
+    "--statement", "synthetic studio regression authorization",
+  ]);
+  const registry = readJson(authorized);
+  const fontFamily = registry.records[0].families[0];
+  const currentUserConfig = fs.existsSync(path.join(isolatedConfigHome, "config.json"))
+    ? readJson(path.join(isolatedConfigHome, "config.json"))
+    : { schemaVersion: "1.0" };
+  fs.mkdirSync(isolatedConfigHome, { recursive: true });
+  writeJson(path.join(isolatedConfigHome, "config.json"), {
+    ...currentUserConfig,
+    tools: {
+      ...(currentUserConfig.tools ?? {}),
+      fontRegistry: authorized,
+    },
+  });
+
+  const styleInput = path.join(temporary, "studio-test-style.json");
+  writeJson(styleInput, {
+    schemaVersion: "1.0",
+    id: "custom-studio-test",
+    name: "Studio Test",
+    tagline: "portable regression",
+    description: "Synthetic style used only by regression tests.",
+    baseStyleId: "xingzhe",
+    caption: {
+      preferredFontFamily: fontFamily,
+    },
+  });
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "studio", "save-style",
+    "--input", styleInput,
+  ]);
+  const duplicateStyle = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "studio", "save-style",
+    "--input", styleInput,
+  ]);
+  if (!duplicateStyle.stderr.includes("不会静默覆盖")) {
+    throw new Error("production studio did not block an accidental style overwrite");
+  }
+
+  const input = path.join(temporary, "studio-source.mp4");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "testsrc2=s=160x90:r=12:d=0.8",
+    "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=0.8",
+    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+    "-c:a", "aac", "-shortest", input,
+  ]);
+  const request = path.join(temporary, "studio-request.json");
+  const outputDirectory = path.join(temporary, "studio-output");
+  writeJson(request, {
+    schemaVersion: "1.0",
+    videoPath: input,
+    projectName: "studio-regression",
+    outputDirectory,
+    task: "source_edit",
+    platform: "general",
+    show: "tool-share",
+    language: "zh",
+    outputPresetId: "preserve-source",
+    preserveSource: true,
+    backgroundMusicEnabled: true,
+    styleId: "custom-studio-test",
+    openingId: "editorial_label_reveal",
+    automaticProfessionalJudgment: true,
+    effectAssignments: [{
+      positionDescription: "说到结论的时候",
+      effectKind: "caption",
+      effectId: "logic_emphasis_inline",
+      notes: "synthetic timing contract",
+    }],
+  });
+  const previewRequest = readJson(request);
+  previewRequest.projectOverrides = {
+    audioPresetId: "clear",
+    bgmPresetId: "minimal-piano",
+    effectDensity: "active",
+    beauty: {
+      enabled: true,
+      engine: "beauty-v2",
+      profile: "visible",
+      tuning: {
+        smoothing: 58,
+        whitening: 32,
+        toneEvening: 44,
+        nasolabialSoftening: 36,
+      },
+    },
+  };
+  const previewFile = path.join(temporary, "studio-preview-request.json");
+  writeJson(previewFile, previewRequest);
+  const preview = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "studio", "preview",
+    "--request", previewFile,
+  ]).stdout);
+  if (
+    preview.status !== "pass"
+    || !preview.validationDigest
+    || preview.readiness.outputWritable !== true
+    || preview.readiness.fontAuthorized !== true
+    || preview.projectConfig.execution.voiceEnhancement.preset !== "clear"
+    || preview.projectConfig.editingDefaults.parameters.audio.bgm.presetId
+      !== "minimal-piano"
+    || preview.projectConfig.editingDefaults.parameters.beauty.enabled !== true
+    || preview.projectConfig.editingDefaults.parameters.beauty.tuning.smoothing !== 58
+    || preview.projectConfig.editingDefaults.parameters.delivery.container !== "source"
+  ) {
+    throw new Error("production studio preview did not resolve project overrides");
+  }
+  const compiled = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "studio", "compile",
+    "--request", request,
+  ]).stdout);
+  const brief = readJson(compiled.briefPath);
+  const projectConfig = readJson(compiled.configPath);
+  if (
+    compiled.status !== "pass"
+    || brief.source.sha256 !== sha256File(input)
+    || brief.source.readOnly !== true
+    || brief.style.captionFontEvidence.sha256 !== registry.records[0].sha256
+    || brief.style.captionFontEvidence.authorizationStatus !== "authorized"
+    || projectConfig.editingDefaults.parameters.beauty.enabled !== false
+    || projectConfig.editingDefaults.parameters.beauty.tuning.smoothing !== 35
+    || projectConfig.editingDefaults.parameters.productionStudio
+      .effectAssignments[0].effectId !== "logic_emphasis_inline"
+  ) {
+    throw new Error("production studio project contract is incomplete");
+  }
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config", "validate",
+    "--anchor", compiled.projectDirectory,
+    "--no-secrets",
+  ]);
+}, "visual");
+
+await test("caption layout plan renders relationship layouts and guarded depth text", () => {
+  ensureMediaFixtures();
+  const cues = path.join(temporary, "caption-layout-cues.json");
+  writeJson(cues, [
+    {
+      id: "contrast",
+      start: 0,
+      end: 0.9,
+      text: "不是堆效果，而是讲关系",
+      captionLayout: "left_right_contrast",
+      fontRole: "caption_tech",
+      display: { left: "堆效果", right: "讲关系" },
+    },
+    {
+      id: "depth",
+      start: 1,
+      end: 1.9,
+      text: "人物和观点形成前后层次",
+      captionLayout: "oversize_background_word",
+      display: { background: "层次", foreground: "人物和观点" },
+    },
+  ]);
+  const planFile = path.join(temporary, "caption-layout-plan.json");
+  const planned = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "captions", "plan",
+    "--input", baseVideo,
+    "--transcript", cues,
+    "--mask", exactMask,
+    "--output", planFile,
+  ]).stdout);
+  if (
+    planned.eventCount !== 2
+    || !planned.layouts.includes("left_right_contrast")
+    || !planned.layouts.includes("oversize_background_word")
+  ) {
+    throw new Error("caption layout planner did not preserve explicit information relations");
+  }
+  if (readJson(planFile).events[0].font.roleId !== "caption_tech") {
+    throw new Error("caption layout did not route typography by scene role");
+  }
+  const output = path.join(temporary, "caption-layout.mp4");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "captions", "render",
+    "--plan", planFile,
+    "--output", output,
+  ]);
+  const summary = mediaSummary(output);
+  const manifest = readJson(`${output}.manifest.json`);
+  if (
+    summary.width !== 320
+    || summary.height !== 180
+    || !summary.audio
+    || manifest.qc.depthLayoutsUsedOnlyWithMask !== true
+    || manifest.events.length !== 2
+    || manifest.sfxPeakAlignmentPlan.length !== 2
+  ) {
+    throw new Error("caption layout render did not honor geometry, mask, or SFX contracts");
+  }
+  const invalid = readJson(planFile);
+  invalid.resources.mask = null;
+  invalid.digest = sha256Value({ ...invalid, digest: undefined });
+  const invalidFile = path.join(temporary, "caption-layout-no-mask.json");
+  writeJson(invalidFile, invalid);
+  const failure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "captions", "validate",
+    "--plan", invalidFile,
+  ]);
+  if (!failure.stderr.includes("蒙版")) {
+    throw new Error("depth caption plan without a mask did not fail closed");
+  }
+}, "visual");
+
+await test("visual breathing keeps deliberate stillness and aligns emphasis SFX", () => {
+  const input = path.join(temporary, "visual-breathing-input.mp4");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "testsrc2=s=320x180:d=4:r=25",
+    "-f", "lavfi", "-i", "sine=frequency=440:duration=4:sample_rate=48000",
+    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+    "-c:a", "aac", "-shortest", input,
+  ]);
+  const cues = path.join(temporary, "visual-breathing-cues.json");
+  writeJson(cues, [
+    {
+      id: "conclusion",
+      start: 0.2,
+      end: 2,
+      text: "关键是有收有放",
+      breathingIntent: "emphasis_punch_settle",
+    },
+  ]);
+  const planFile = path.join(temporary, "visual-breathing-plan.json");
+  const planned = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "breathing", "plan",
+    "--input", input,
+    "--transcript", cues,
+    "--output", planFile,
+  ]).stdout);
+  if (
+    planned.eventCount !== 1
+    || planned.coverage.motionRatio > 0.55
+    || planned.coverage.stillRatio < 0.45
+  ) {
+    throw new Error("visual breathing planner violated motion/still coverage");
+  }
+  const output = path.join(temporary, "visual-breathing.mp4");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "breathing", "render",
+    "--plan", planFile,
+    "--output", output,
+  ]);
+  const summary = mediaSummary(output);
+  const manifest = readJson(`${output}.manifest.json`);
+  if (
+    summary.width !== 320
+    || summary.height !== 180
+    || !summary.audio
+    || manifest.qc.stillCoveragePass !== true
+    || manifest.sfxPeakAlignmentPlan.length !== 1
+  ) {
+    throw new Error("visual breathing render did not preserve media or SFX alignment plan");
+  }
+}, "visual");
+
+await test("semantic netstyle registry validates and renders a deterministic showcase", () => {
+  ensureMediaFixtures();
+  const validation = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "netstyle",
+    "validate",
+  ]).stdout);
+  if (validation.effectCount !== 33 || validation.sourceVideoCount !== 6) {
+    throw new Error(
+      `unexpected netstyle coverage: ${validation.effectCount}/${validation.sourceVideoCount}`,
+    );
+  }
+  const list = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "netstyle",
+    "list",
+  ]).stdout);
+  if (
+    list.effects.length !== 33
+    || new Set(list.effects.map((item) => item.family)).size !== 6
+  ) {
+    throw new Error("netstyle list does not expose 33 effects in six families");
+  }
+  const output = path.join(temporary, "netstyle-showcase.mp4");
+  const result = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "netstyle",
+    "showcase",
+    "--input", baseVideo,
+    "--duration", "0.6",
+    "--max-effects", "2",
+    "--output", output,
+  ]).stdout);
+  const summary = mediaSummary(output);
+  if (
+    result.effectCount !== 2
+    || summary.width !== 320
+    || summary.height !== 180
+    || !summary.audio
+  ) {
+    throw new Error("netstyle showcase did not preserve media geometry and audio");
+  }
+  const decode = run("ffmpeg", [
+    "-hide_banner", "-loglevel", "error",
+    "-i", output, "-f", "null", "-",
+  ]);
+  if (decode.status !== 0 || decode.stderr.trim()) {
+    throw new Error(`netstyle showcase has decode/timestamp errors: ${decode.stderr}`);
+  }
+}, "visual");
+
+await test("semantic netstyle production plan renders real timeline events without demo labels", () => {
+  ensureMediaFixtures();
+  const cues = path.join(temporary, "netstyle-production-cues.json");
+  writeJson(cues, [
+    {
+      id: "hook",
+      start: 0,
+      end: 0.8,
+      text: "为什么精剪不能只靠堆效果？",
+      effectId: "hook_suspense_push",
+      display: {
+        title: "为什么不能堆效果？",
+        subtitle: "先有叙事触发，再选视觉机制",
+      },
+    },
+    {
+      id: "conclusion",
+      start: 1.05,
+      end: 1.9,
+      text: "所以，品味决定上限。",
+      effectId: "semantic_importance_zoom",
+      display: {
+        title: "品味决定上限",
+        subtitle: "结论",
+      },
+    },
+  ]);
+  const planFile = path.join(temporary, "netstyle-production-plan.json");
+  const planned = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "netstyle",
+    "plan",
+    "--input", baseVideo,
+    "--transcript", cues,
+    "--output", planFile,
+    "--max-effects-per-10", "6",
+    "--minimum-gap", "0.1",
+  ]).stdout);
+  if (planned.eventCount !== 2) {
+    throw new Error(`production planner expected 2 events, got ${planned.eventCount}`);
+  }
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "netstyle",
+    "validate-plan",
+    "--plan", planFile,
+  ]);
+  const output = path.join(temporary, "netstyle-production.mp4");
+  const rendered = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "netstyle",
+    "render-plan",
+    "--plan", planFile,
+    "--output", output,
+    "--no-sfx",
+  ]).stdout);
+  const summary = mediaSummary(output);
+  const manifest = readJson(`${output}.manifest.json`);
+  if (
+    rendered.eventCount !== 2
+    || summary.width !== 320
+    || summary.height !== 180
+    || !summary.audio
+    || manifest.appliedEvents.length !== 2
+    || manifest.qc.demoLabelsAbsent !== true
+    || manifest.audio.sourcePreservedAtUnityGain !== true
+  ) {
+    throw new Error("production netstyle render did not honor its media/QC contract");
+  }
+  const decode = run("ffmpeg", [
+    "-hide_banner", "-loglevel", "error",
+    "-i", output, "-f", "null", "-",
+  ]);
+  if (decode.status !== 0 || decode.stderr.trim()) {
+    throw new Error(`production netstyle render has decode errors: ${decode.stderr}`);
+  }
+  const productionPlan = readJson(planFile);
+  const secondEvent = productionPlan.events[1];
+  const visibility = run("ffmpeg", [
+    "-hide_banner", "-nostats",
+    "-i", output,
+    "-i", baseVideo,
+    "-filter_complex",
+    `[0:v]trim=start_frame=${secondEvent.peakFrame}:`
+      + `end_frame=${secondEvent.peakFrame + 1},setpts=PTS-STARTPTS[a];`
+      + `[1:v]trim=start_frame=${secondEvent.peakFrame}:`
+      + `end_frame=${secondEvent.peakFrame + 1},setpts=PTS-STARTPTS[b];`
+      + "[a][b]ssim",
+    "-f", "null", "-",
+  ]);
+  const ssim = Number(/All:([0-9.]+)/.exec(visibility.stderr)?.[1]);
+  if (!Number.isFinite(ssim) || ssim > 0.97) {
+    throw new Error(`second production event was not visibly present: SSIM=${ssim}`);
+  }
+  const invalid = readJson(planFile);
+  invalid.events[1].startFrame = invalid.events[0].startFrame;
+  invalid.digest = sha256Value({ ...invalid, digest: undefined });
+  const invalidFile = path.join(temporary, "netstyle-overlap-plan.json");
+  writeJson(invalidFile, invalid);
+  const failure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "netstyle",
+    "validate-plan",
+    "--plan", invalidFile,
+  ]);
+  if (!failure.stderr.includes("重叠")) {
+    throw new Error("production plan validator did not reject overlapping primary effects");
+  }
+}, "visual");
+
 await test("cross-process media probe cache reuses strong file identity", () => {
   const missingCommand = run("__kacha_missing_runtime_command__", []);
   if (missingCommand.status === 0 || !missingCommand.stderr) {
@@ -1770,11 +2354,12 @@ await test("cross-process media probe cache reuses strong file identity", () => 
 
 function initializeIncrementalFixture(name, options = {}) {
   ensureMediaFixtures();
+  const baseline = options.baseline ?? baseVideo;
   const root = path.join(temporary, `incremental-${name}`);
   fs.mkdirSync(root, { recursive: true });
   const args = [
     path.join(scripts, "init_incremental_project.mjs"),
-    baseVideo,
+    baseline,
     "--project-id",
     `incremental-${name}`,
     "--output-dir",
@@ -1787,7 +2372,7 @@ function initializeIncrementalFixture(name, options = {}) {
     root,
     context: path.join(root, "project-context.json"),
     index: path.join(root, "artifact-index.json"),
-    baseline: baseVideo,
+    baseline,
   };
 }
 
@@ -2119,6 +2704,158 @@ await test("style and timing feedback compile to correct rebuild and regression 
     || timingPlan.renderPlan.strategy === "full_rebuild"
   ) {
     throw new Error("timing feedback did not stay incremental with full-class regression");
+  }
+}, "incremental");
+
+await test("netstyle feedback compiles to visual and SFX incremental rebuild scope", () => {
+  const fixture = initializeIncrementalFixture("netstyle-change");
+  const requestFile = path.join(fixture.root, "netstyle-change-request.json");
+  const outputRoot = path.join(fixture.root, "versions", "netstyle-v2");
+  writeJson(requestFile, {
+    schemaVersion: "1.0",
+    projectContext: fixture.context,
+    newVersion: {
+      id: "netstyle-v2",
+      intent: "candidate",
+    },
+    changes: [{
+      recipe: "netstyle",
+      reason: "结论句需要与语义重音同步的推近和音效",
+      intervals: [{
+        startSeconds: 0.4,
+        endSeconds: 1.2,
+      }],
+      parameters: {
+        effectId: "semantic_importance_zoom",
+      },
+    }],
+    render: {
+      strategy: "auto",
+    },
+    deliverables: {
+      covers: [],
+      subtitles: [],
+    },
+  });
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "compile-change",
+    requestFile,
+    "--output-dir",
+    outputRoot,
+  ]);
+  const delta = readJson(path.join(outputRoot, "version-delta.json"));
+  const plan = readJson(path.join(outputRoot, "output", "incremental-plan.json"));
+  if (
+    !delta.changeSet.types.includes("semantic_netstyle")
+    || !delta.changeSet.changedLayers.includes("visual")
+    || !delta.changeSet.changedLayers.includes("sfx")
+    || !plan.artifactPlan.invalidatedTypes.includes("visual_segment")
+    || !plan.artifactPlan.invalidatedTypes.includes("sfx_stem")
+    || plan.renderPlan.strategy === "full_rebuild"
+  ) {
+    throw new Error("netstyle feedback did not remain an interval-scoped visual/SFX rebuild");
+  }
+  const badRequest = readJson(requestFile);
+  badRequest.newVersion.id = "netstyle-bad";
+  badRequest.changes[0].parameters.effectId = "unregistered-effect";
+  const badFile = path.join(fixture.root, "netstyle-bad-request.json");
+  writeJson(badFile, badRequest);
+  const failure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "compile-change",
+    badFile,
+    "--output-dir",
+    path.join(fixture.root, "versions", "netstyle-bad"),
+  ]);
+  if (!failure.stderr.includes("KACHA-E140")) {
+    throw new Error("unregistered netstyle effect did not fail closed");
+  }
+}, "incremental");
+
+await test("visual breathing and caption layout plans compile into incremental rebuilds", () => {
+  const baseline = path.join(temporary, "breathing-caption-baseline.mp4");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "testsrc2=s=320x180:d=4:r=25",
+    "-f", "lavfi", "-i", "sine=frequency=440:duration=4:sample_rate=48000",
+    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+    "-c:a", "aac", "-shortest", baseline,
+  ]);
+  const fixture = initializeIncrementalFixture(
+    "breathing-caption-change",
+    { baseline },
+  );
+  const breathingCues = path.join(fixture.root, "breathing-cues.json");
+  const captionCues = path.join(fixture.root, "caption-cues.json");
+  const breathingPlan = path.join(fixture.root, "breathing-plan.json");
+  const captionPlan = path.join(fixture.root, "caption-plan.json");
+  writeJson(breathingCues, [{
+    id: "conclusion",
+    start: 0.2,
+    end: 2,
+    text: "关键是有收有放",
+    breathingIntent: "emphasis_punch_settle",
+  }]);
+  writeJson(captionCues, [{
+    id: "caption",
+    start: 2.1,
+    end: 3.7,
+    text: "字幕表达真实的信息关系",
+    captionLayout: "logic_emphasis_inline",
+    emphasis: "真实",
+  }]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "breathing", "plan",
+    "--input", baseline,
+    "--transcript", breathingCues,
+    "--output", breathingPlan,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "captions", "plan",
+    "--input", baseline,
+    "--transcript", captionCues,
+    "--output", captionPlan,
+  ]);
+  const requestFile = path.join(fixture.root, "change-request.json");
+  const outputRoot = path.join(fixture.root, "versions", "v2");
+  writeJson(requestFile, {
+    schemaVersion: "1.0",
+    projectContext: fixture.context,
+    newVersion: { id: "v2", intent: "candidate" },
+    changes: [
+      {
+        recipe: "visual_breathing",
+        reason: "结论需要一次有停稳的画面呼吸",
+        parameters: { plan: breathingPlan },
+      },
+      {
+        recipe: "caption_layout",
+        reason: "重点句需要经过校准的逻辑重音字幕",
+        parameters: { plan: captionPlan },
+      },
+    ],
+    render: { strategy: "auto" },
+    deliverables: { covers: [], subtitles: [] },
+  });
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "compile-change",
+    requestFile,
+    "--output-dir", outputRoot,
+  ]);
+  const delta = readJson(path.join(outputRoot, "version-delta.json"));
+  const plan = readJson(path.join(outputRoot, "output", "incremental-plan.json"));
+  if (
+    !delta.changeSet.types.includes("visual_breathing")
+    || !delta.changeSet.types.includes("caption_layout")
+    || !plan.artifactPlan.invalidatedTypes.includes("visual_segment")
+    || !plan.artifactPlan.invalidatedTypes.includes("subtitle_overlay")
+    || !plan.artifactPlan.invalidatedTypes.includes("sfx_stem")
+  ) {
+    throw new Error("breathing/caption plans were not compiled into the real rebuild graph");
   }
 }, "incremental");
 

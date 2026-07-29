@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0",
+  "cues": [
+    {
+      "id": "opening",
+      "start": 0.2,
+      "end": 2.2,
+      "text": "先让镜头慢慢靠近",
+      "breathingIntent": "slow_push_in",
+      "focusXRatio": 0.5,
+      "focusYRatio": 0.42
+    },
+    {
+      "id": "rest",
+      "start": 2.2,
+      "end": 4,
+      "text": "给表情和信息留一点停稳"
+    },
+    {
+      "id": "release",
+      "start": 4,
+      "end": 6,
+      "text": "其实这里应该释放一下",
+      "breathingIntent": "slow_pull_back",
+      "focusXRatio": 0.5,
+      "focusYRatio": 0.42
+    },
+    {
+      "id": "rest-two",
+      "start": 6,
+      "end": 10.3,
+      "text": "不要让全片一直运动"
+    },
+    {
+      "id": "punch",
+      "start": 10.3,
+      "end": 12.1,
+      "text": "关键是有收有放",
+      "breathingIntent": "emphasis_punch_settle",
+      "focusXRatio": 0.5,
+      "focusYRatio": 0.42
+    }
+  ]
+}

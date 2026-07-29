@@ -10,7 +10,7 @@
 内置默认风格：
 
 ```text
-config/styles/warm-editorial.json
+config/styles/xingzhe.json
 ```
 
 配置：
@@ -20,7 +20,7 @@ config/styles/warm-editorial.json
   "schemaVersion": "1.0",
   "style": {
     "system": "dahui-video-system",
-    "profile": "warm-editorial",
+    "profile": "xingzhe",
     "modes": {
       "show": "tool-share",
       "aspectRatio": "landscape-16x9",
@@ -56,7 +56,7 @@ node scripts/kacha.mjs effects show --kind opening --id editorial_label_reveal
 ## 设计模式、组件、场景与风格令牌
 
 设计系统注册表位于 `config/design-system/`。当前提供 5 个 mode 维度、52 个
-组件与 63 个场景；项目优先选择场景，再由场景组合组件，不在时间线上直接
+组件与 69 个场景；项目优先选择场景，再由场景组合组件，不在时间线上直接
 拼装一套新视觉语言。
 
 默认 profile 统一管理：
@@ -72,8 +72,11 @@ node scripts/kacha.mjs effects show --kind opening --id editorial_label_reveal
 - `motion`：进入、退出、错峰、缓动、超调和运动模糊规则；
 - `defaults`：默认开场、转场、弹窗进入/退出和强调方式。
 
-字体列表是 fallback，不代表本机一定存在。正式实施前仍需检查真实字体文件和
-授权；首选字体不存在时按顺序降级，并把最终命中字体写入 handoff 和 QC。
+字体列表不是授权。正式实施前仍需检查真实字体文件、字符覆盖、SHA-256 和
+授权。行者风的主/辅字幕默认锁定已授权的真正金陵体
+`方正粗金陵简体 / FZJinLS-B-GB`；不存在时阻断，不得静默退回旧替代字体。
+其他字体角色只有在风格合同明确允许时才可按顺序降级，并把最终命中字体写入
+handoff 和 QC。
 
 ## 转场库
 

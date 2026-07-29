@@ -26,6 +26,9 @@ const RECIPE_NAMES = new Set([
   "beauty",
   "color",
   "visual_interval",
+  "netstyle",
+  "caption_layout",
+  "visual_breathing",
   "insert_replace",
   "dialogue",
   "bgm",
@@ -53,6 +56,10 @@ const EXECUTION_KEYS = new Set([
   "modelTier",
   "referenceTokenLimits",
   "incremental",
+  "netstyle",
+  "visualBreathing",
+  "spokenCaptions",
+  "fonts",
   "visualEvidence",
   "minimaxVision",
   "qualityControl",
@@ -69,7 +76,7 @@ const STYLE_MODE_KEYS = new Set([
   "surface",
   "density",
 ]);
-const TOOLS_KEYS = new Set(["demucsBin", "sfxLibrary"]);
+const TOOLS_KEYS = new Set(["demucsBin", "sfxLibrary", "fontRegistry"]);
 const PROVIDER_KEYS = {
   minimax: new Set(["credentialEnv", "region", "baseUrl"]),
   pixabay: new Set(["credentialEnv"]),
@@ -91,7 +98,13 @@ const FORBIDDEN_AUTH_KEYS = new Set([
   "overwritesource",
   "uploadallowed",
 ]);
-const BEAUTY_PREFERENCE_KEYS = new Set(["enabled", "engine", "profile"]);
+const BEAUTY_PREFERENCE_KEYS = new Set(["enabled", "engine", "profile", "tuning"]);
+const BEAUTY_TUNING_KEYS = new Set([
+  "smoothing",
+  "whitening",
+  "toneEvening",
+  "nasolabialSoftening",
+]);
 
 function isPlainObject(value) {
   return Boolean(
@@ -255,6 +268,13 @@ function validateBeautyPreference(value, label, { complete = false } = {}) {
       throw new Error(`${label}.profile 必须为 natural 或 visible`);
     }
   }
+  if (value.tuning !== undefined) {
+    assertPlainObject(value.tuning, `${label}.tuning`);
+    rejectUnknownKeys(value.tuning, BEAUTY_TUNING_KEYS, `${label}.tuning`);
+    for (const key of BEAUTY_TUNING_KEYS) {
+      assertNumber(value.tuning[key], `${label}.tuning.${key}`, 0, 100);
+    }
+  }
 }
 
 function validateConfigLayer(value, label) {
@@ -406,6 +426,149 @@ function validateEffectiveConfig(config) {
     250,
     true,
   );
+  const netstyle = config.execution.netstyle;
+  rejectUnknownKeys(
+    netstyle,
+    new Set([
+      "automaticPlanning",
+      "maximumPrimaryEffectsPer10Seconds",
+      "minimumGapSeconds",
+      "maximumConcurrentPrimaryEffects",
+      "representativeValidationCountPerEffect",
+      "renderCrf",
+    ]),
+    "execution.netstyle",
+  );
+  if (typeof netstyle.automaticPlanning !== "boolean") {
+    throw new Error("execution.netstyle.automaticPlanning 必须是 boolean");
+  }
+  assertNumber(
+    netstyle.maximumPrimaryEffectsPer10Seconds,
+    "execution.netstyle.maximumPrimaryEffectsPer10Seconds",
+    0.5,
+    6,
+  );
+  assertNumber(
+    netstyle.minimumGapSeconds,
+    "execution.netstyle.minimumGapSeconds",
+    0,
+    5,
+  );
+  assertNumber(
+    netstyle.maximumConcurrentPrimaryEffects,
+    "execution.netstyle.maximumConcurrentPrimaryEffects",
+    1,
+    1,
+    true,
+  );
+  assertNumber(
+    netstyle.representativeValidationCountPerEffect,
+    "execution.netstyle.representativeValidationCountPerEffect",
+    1,
+    1,
+    true,
+  );
+  assertNumber(netstyle.renderCrf, "execution.netstyle.renderCrf", 0, 28, true);
+  const breathing = config.execution.visualBreathing;
+  rejectUnknownKeys(
+    breathing,
+    new Set([
+      "automaticPlanning",
+      "maximumPrimaryEventsPer10Seconds",
+      "minimumGapSeconds",
+      "maximumMotionCoverageRatio",
+      "minimumStillCoverageRatio",
+      "renderCrf",
+    ]),
+    "execution.visualBreathing",
+  );
+  if (typeof breathing.automaticPlanning !== "boolean") {
+    throw new Error("execution.visualBreathing.automaticPlanning 必须是 boolean");
+  }
+  assertNumber(
+    breathing.maximumPrimaryEventsPer10Seconds,
+    "execution.visualBreathing.maximumPrimaryEventsPer10Seconds",
+    0.25,
+    4,
+  );
+  assertNumber(
+    breathing.minimumGapSeconds,
+    "execution.visualBreathing.minimumGapSeconds",
+    0.2,
+    8,
+  );
+  assertNumber(
+    breathing.maximumMotionCoverageRatio,
+    "execution.visualBreathing.maximumMotionCoverageRatio",
+    0.1,
+    0.8,
+  );
+  assertNumber(
+    breathing.minimumStillCoverageRatio,
+    "execution.visualBreathing.minimumStillCoverageRatio",
+    0.2,
+    0.9,
+  );
+  if (
+    breathing.maximumMotionCoverageRatio + breathing.minimumStillCoverageRatio < 0.99
+    || breathing.maximumMotionCoverageRatio + breathing.minimumStillCoverageRatio > 1.01
+  ) {
+    throw new Error("visualBreathing 的运动与停稳覆盖率必须合计为 1");
+  }
+  assertNumber(breathing.renderCrf, "execution.visualBreathing.renderCrf", 0, 28, true);
+  const captions = config.execution.spokenCaptions;
+  rejectUnknownKeys(
+    captions,
+    new Set([
+      "automaticLayout",
+      "defaultLayout",
+      "maximumSimultaneousReadingZones",
+      "ordinarySubtitleSfx",
+      "renderCrf",
+    ]),
+    "execution.spokenCaptions",
+  );
+  if (typeof captions.automaticLayout !== "boolean") {
+    throw new Error("execution.spokenCaptions.automaticLayout 必须是 boolean");
+  }
+  assertString(captions.defaultLayout, "execution.spokenCaptions.defaultLayout");
+  assertNumber(
+    captions.maximumSimultaneousReadingZones,
+    "execution.spokenCaptions.maximumSimultaneousReadingZones",
+    1,
+    3,
+    true,
+  );
+  if (captions.ordinarySubtitleSfx !== "none") {
+    throw new Error("execution.spokenCaptions.ordinarySubtitleSfx 必须为 none");
+  }
+  assertNumber(captions.renderCrf, "execution.spokenCaptions.renderCrf", 0, 28, true);
+  const fonts = config.execution.fonts;
+  rejectUnknownKeys(
+    fonts,
+    new Set([
+      "autoDiscoverProjectFonts",
+      "directories",
+      "allowRestrictedByDefault",
+      "publicRedistribution",
+      "routingProfile",
+    ]),
+    "execution.fonts",
+  );
+  if (typeof fonts.autoDiscoverProjectFonts !== "boolean") {
+    throw new Error("execution.fonts.autoDiscoverProjectFonts 必须是 boolean");
+  }
+  normalizeStringArray(fonts.directories, "execution.fonts.directories");
+  if (typeof fonts.allowRestrictedByDefault !== "boolean") {
+    throw new Error("execution.fonts.allowRestrictedByDefault 必须是 boolean");
+  }
+  if (fonts.allowRestrictedByDefault) {
+    throw new Error("execution.fonts.allowRestrictedByDefault 必须保持 false");
+  }
+  if (fonts.publicRedistribution !== false) {
+    throw new Error("execution.fonts.publicRedistribution 必须保持 false");
+  }
+  assertString(fonts.routingProfile, "execution.fonts.routingProfile");
   rejectUnknownKeys(
     config.execution.visualEvidence,
     new Set(["defaultMode", "maxFrames", "sceneThreshold", "workers", "maxImageEdge"]),
@@ -570,6 +733,7 @@ function validateEffectiveConfig(config) {
   assertNumber(stock.downloadTimeoutSeconds, "execution.stockMedia.downloadTimeoutSeconds", 5, 900, true);
   assertPathOrNull(config.tools.demucsBin, "tools.demucsBin");
   assertPathOrNull(config.tools.sfxLibrary, "tools.sfxLibrary");
+  assertPathOrNull(config.tools.fontRegistry, "tools.fontRegistry");
   for (const provider of ["minimax", "pixabay", "pexels"]) {
     assertString(
       config.providers[provider].credentialEnv,
@@ -941,7 +1105,7 @@ function userConfigTemplate() {
     schemaVersion: "1.0",
     style: {
       system: "dahui-video-system",
-      profile: "warm-editorial",
+      profile: "xingzhe",
       modes: {
         show: "tool-share",
         aspectRatio: "landscape-16x9",

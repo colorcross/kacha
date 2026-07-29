@@ -18,6 +18,7 @@ media/
 assets/private/
 inputs/
 outputs/
+output/
 renders/
 exports/
 tmp/
@@ -43,6 +44,7 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 node_modules/
+.playwright-cli/
 
 # Editors and OS
 .DS_Store

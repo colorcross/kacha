@@ -92,9 +92,11 @@ def candidates() -> list[Path]:
         ]
     ignored_parts = {
         ".git",
+        ".playwright-cli",
         "__pycache__",
         "node_modules",
         "models",
+        "output",
         "outputs",
         "renders",
         "tmp",

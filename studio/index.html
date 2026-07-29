@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="咔嚓本地视频生产台：选择素材、配置风格、指定效果并生成可执行剪辑项目。"
+    />
+    <title>咔嚓 · 本地生产台</title>
+    <link rel="icon" type="image/png" href="/brand/kacha-logo.png" />
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark">
+            <img src="/brand/kacha-logo.png" alt="" />
+          </span>
+          <span class="brand-copy">
+            <strong>咔嚓</strong>
+            <span>本地视频生产台</span>
+          </span>
+        </div>
+        <div class="runtime-status" id="runtimeStatus">
+          <span class="runtime-dot"></span>
+          正在连接本地引擎
+        </div>
+      </header>
+
+      <aside class="step-rail" aria-label="生产步骤">
+        <p class="rail-label">PRODUCTION</p>
+        <nav>
+          <a href="#source" class="is-active" data-step-link="source"><span>01</span>素材</a>
+          <a href="#style" data-step-link="style"><span>02</span>风格</a>
+          <a href="#sound" data-step-link="sound"><span>03</span>声音</a>
+          <a href="#direction" data-step-link="direction"><span>04</span>效果</a>
+          <a href="#delivery" data-step-link="delivery"><span>05</span>交付</a>
+        </nav>
+        <div class="rail-rule">
+          <span>LOCAL ONLY</span>
+          <p>素材、配置与项目文件只在本机处理。</p>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <section class="workspace-intro">
+          <div>
+            <p class="eyebrow">KACHA PRODUCTION CONSOLE</p>
+            <h1>把一条视频，组织成<br />可执行的剪辑项目。</h1>
+          </div>
+          <p class="intro-note">
+            先选素材和风格，再处理声音、指定效果与交付。没有指定的区间，
+            咔嚓会按内容、人物安全区和声音逻辑做专业判断。
+          </p>
+        </section>
+
+        <form id="productionForm" novalidate>
+          <section class="work-section" id="source">
+            <div class="section-index">01</div>
+            <div class="section-content">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">SOURCE</p>
+                  <h2>选择要剪辑的视频</h2>
+                </div>
+                <span class="section-state" id="sourceState">等待选择</span>
+              </div>
+
+              <div class="path-control">
+                <label for="videoPath">视频绝对路径</label>
+                <div class="path-row">
+                  <input
+                    id="videoPath"
+                    name="videoPath"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="/Volumes/Media/source.mov"
+                  />
+                  <button type="button" class="button secondary" id="chooseVideo">
+                    选择视频
+                  </button>
+                  <button type="button" class="button ghost" id="probeVideo">
+                    读取规格
+                  </button>
+                </div>
+              </div>
+
+              <div class="media-strip is-empty" id="mediaStrip">
+                <div>
+                  <span>画面</span>
+                  <strong id="mediaGeometry">—</strong>
+                </div>
+                <div>
+                  <span>帧率</span>
+                  <strong id="mediaFps">—</strong>
+                </div>
+                <div>
+                  <span>时长</span>
+                  <strong id="mediaDuration">—</strong>
+                </div>
+                <div>
+                  <span>视频 / 音频</span>
+                  <strong id="mediaCodecs">—</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="work-section" id="style">
+            <div class="section-index">02</div>
+            <div class="section-content">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">STYLE SYSTEM</p>
+                  <h2>选择视频风格</h2>
+                </div>
+                <button type="button" class="text-action" id="openStyleEditor">
+                  ＋ 新建风格
+                </button>
+              </div>
+
+              <div class="style-list" id="styleList" aria-label="视频风格"></div>
+
+              <div class="style-editor" id="styleEditor" hidden>
+                <div class="editor-head">
+                  <div>
+                    <p class="eyebrow">CUSTOM STYLE</p>
+                    <h3>新建可复用风格</h3>
+                  </div>
+                  <button type="button" class="icon-button" id="closeStyleEditor" aria-label="关闭">
+                    ×
+                  </button>
+                </div>
+
+                <div class="editor-grid">
+                  <label>
+                    <span>风格名称</span>
+                    <input id="customStyleName" type="text" placeholder="例如：灰常AI·冷调版" />
+                  </label>
+                  <label>
+                    <span>一句话气质</span>
+                    <input id="customStyleTagline" type="text" placeholder="例如：冷静、锋利、界面感" />
+                  </label>
+                  <label>
+                    <span>基于</span>
+                    <select id="customBaseStyle"></select>
+                  </label>
+                  <label>
+                    <span>字幕模板</span>
+                    <select id="customCaptionTemplate"></select>
+                  </label>
+                  <label class="color-field">
+                    <span>强调色</span>
+                    <input id="customAccent" type="color" value="#E9A92F" />
+                  </label>
+                  <label class="color-field">
+                    <span>表面色</span>
+                    <input id="customSurface" type="color" value="#FFF8EA" />
+                  </label>
+                  <label class="color-field">
+                    <span>正文色</span>
+                    <input id="customInk" type="color" value="#24150F" />
+                  </label>
+                  <label>
+                    <span>人声处理</span>
+                    <select id="customAudioPreset"></select>
+                  </label>
+                  <label>
+                    <span>背景音乐</span>
+                    <select id="customBgmPreset"></select>
+                  </label>
+                  <label>
+                    <span>默认开场</span>
+                    <select id="customOpening"></select>
+                  </label>
+                  <label>
+                    <span>整体效果密度</span>
+                    <select id="customDensity">
+                      <option value="restrained">克制</option>
+                      <option value="balanced" selected>平衡</option>
+                      <option value="active">活跃</option>
+                    </select>
+                  </label>
+                  <label class="range-field">
+                    <span>字幕字号 <output id="fontSizeOutput">4.8%</output></span>
+                    <input id="customFontSize" type="range" min="3.4" max="6.4" step="0.1" value="4.8" />
+                  </label>
+                  <label class="range-field">
+                    <span>字幕高度 <output id="baselineOutput">76%</output></span>
+                    <input id="customBaseline" type="range" min="58" max="80" step="1" value="76" />
+                  </label>
+                  <label class="range-field">
+                    <span>字幕阴影 <output id="shadowOutput">60%</output></span>
+                    <input id="customShadow" type="range" min="0" max="90" step="5" value="60" />
+                  </label>
+                </div>
+
+                <div class="beauty-editor">
+                  <div class="toggle-line">
+                    <div>
+                      <strong>Beauty v2</strong>
+                      <span>本地磨皮、美白、匀肤、法令纹弱化</span>
+                    </div>
+                    <label class="switch">
+                      <input id="customBeautyEnabled" type="checkbox" />
+                      <span></span>
+                    </label>
+                  </div>
+                  <div class="beauty-controls" id="beautyControls">
+                    <label class="range-field">
+                      <span>磨皮 <output id="smoothingOutput">35</output></span>
+                      <input id="customSmoothing" type="range" min="0" max="100" value="35" />
+                    </label>
+                    <label class="range-field">
+                      <span>美白 <output id="whiteningOutput">22</output></span>
+                      <input id="customWhitening" type="range" min="0" max="100" value="22" />
+                    </label>
+                    <label class="range-field">
+                      <span>匀肤 <output id="toneOutput">30</output></span>
+                      <input id="customTone" type="range" min="0" max="100" value="30" />
+                    </label>
+                    <label class="range-field">
+                      <span>法令纹弱化 <output id="nasolabialOutput">24</output></span>
+                      <input id="customNasolabial" type="range" min="0" max="100" value="24" />
+                    </label>
+                  </div>
+                  <p>
+                    美颜仍默认关闭。启用后必须先做同帧 A/B 和动态人脸复核；滑杆不会授权云端处理或改变脸型。
+                  </p>
+                </div>
+
+                <div class="editor-actions">
+                  <button type="button" class="button primary" id="saveStyle">
+                    保存并使用这套风格
+                  </button>
+                  <span id="styleSaveStatus"></span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="work-section" id="sound">
+            <div class="section-index">03</div>
+            <div class="section-content">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">SOUND &amp; PORTRAIT</p>
+                  <h2>调整当前视频</h2>
+                </div>
+                <span class="section-state">仅影响本次项目</span>
+              </div>
+
+              <div class="project-tuning">
+                <div class="tuning-group">
+                  <div class="subsection-label">
+                    <span>人声气质</span>
+                    <p>先做人声分离与降噪，再应用听感预设；不靠抬高音量制造清晰。</p>
+                  </div>
+                  <div class="preset-choice-grid" id="projectAudioPresets"></div>
+                </div>
+
+                <div class="tuning-group">
+                  <div class="subsection-label">
+                    <span>背景音乐</span>
+                    <p>默认低于人声，并随口播轻度闪避。关闭后仍保留必要音效。</p>
+                  </div>
+                  <select id="projectBgmPreset" aria-label="本次项目的背景音乐风格"></select>
+                </div>
+
+                <div class="tuning-group beauty-project">
+                  <div class="subsection-label">
+                    <span>Beauty v2</span>
+                    <p>默认关闭。只处理磨皮、美白、匀肤和法令纹，不改脸型。</p>
+                  </div>
+                  <div>
+                    <label class="switch-line">
+                      <input id="projectBeautyEnabled" type="checkbox" />
+                      <span>为本次视频开启本地美颜</span>
+                    </label>
+                    <div class="beauty-controls project-beauty-controls" id="projectBeautyControls">
+                      <label class="range-field">
+                        <span>磨皮 <output id="projectSmoothingOutput">35</output></span>
+                        <input id="projectSmoothing" type="range" min="0" max="100" value="35" />
+                      </label>
+                      <label class="range-field">
+                        <span>美白 <output id="projectWhiteningOutput">22</output></span>
+                        <input id="projectWhitening" type="range" min="0" max="100" value="22" />
+                      </label>
+                      <label class="range-field">
+                        <span>匀肤 <output id="projectToneOutput">30</output></span>
+                        <input id="projectTone" type="range" min="0" max="100" value="30" />
+                      </label>
+                      <label class="range-field">
+                        <span>法令纹弱化 <output id="projectNasolabialOutput">24</output></span>
+                        <input id="projectNasolabial" type="range" min="0" max="100" value="24" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="tuning-group">
+                  <div class="subsection-label">
+                    <span>效果密度</span>
+                    <p>控制包装频率，不改变“每个效果都要有理由”的原则。</p>
+                  </div>
+                  <div class="density-choice" id="projectDensity">
+                    <label><input type="radio" name="effectDensity" value="restrained" />克制</label>
+                    <label><input type="radio" name="effectDensity" value="balanced" checked />平衡</label>
+                    <label><input type="radio" name="effectDensity" value="active" />活跃</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="work-section" id="direction">
+            <div class="section-index">04</div>
+            <div class="section-content">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">DIRECTION</p>
+                  <h2>开场与指定效果</h2>
+                </div>
+                <label class="auto-director-toggle">
+                  <input id="autoDirector" type="checkbox" checked />
+                  <span>未指定区间由咔嚓判断</span>
+                </label>
+              </div>
+
+              <div class="subsection">
+                <div class="subsection-label">
+                  <span>开场效果</span>
+                  <p>默认从第一句有效声音或动作开始，不增加静态封面。</p>
+                </div>
+                <div class="opening-list" id="openingList"></div>
+              </div>
+
+              <div class="subsection effect-builder">
+                <div class="subsection-label">
+                  <span>指定位置使用指定效果</span>
+                  <p>位置用自然语言描述，咔嚓会在最终校准文稿中定位到帧。</p>
+                </div>
+                <div>
+                  <div class="effect-library-toolbar">
+                    <input
+                      id="effectSearch"
+                      type="search"
+                      placeholder="搜索效果名称或适用场景"
+                      aria-label="搜索效果"
+                    />
+                    <select id="effectGroup" aria-label="筛选效果类别"></select>
+                  </div>
+                  <div class="effect-library" id="effectLibrary"></div>
+                  <p class="effect-library-count" id="effectLibraryCount"></p>
+                  <div class="effect-assignment-list" id="effectAssignments"></div>
+                </div>
+              </div>
+
+              <div class="subsection">
+                <div class="subsection-label">
+                  <span>补充说明</span>
+                  <p>也可以直接写给 Codex / Claude Code 的自然语言要求。</p>
+                </div>
+                <textarea
+                  id="notes"
+                  rows="4"
+                  placeholder="例如：开头节奏紧一点；讲到结论时先停稳，再用一次重音；不要遮住人物头部。"
+                ></textarea>
+              </div>
+            </div>
+          </section>
+
+          <section class="work-section" id="delivery">
+            <div class="section-index">05</div>
+            <div class="section-content">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">DELIVERY</p>
+                  <h2>平台与输出</h2>
+                </div>
+                <span class="section-state">源素材只读</span>
+              </div>
+
+              <div class="delivery-grid">
+                <label>
+                  <span>项目名称</span>
+                  <input id="projectName" type="text" placeholder="默认使用视频文件名" />
+                </label>
+                <label>
+                  <span>任务类型</span>
+                  <select id="task">
+                    <option value="source_edit">从原片全流程剪辑</option>
+                    <option value="local_optimization">已有版本局部优化</option>
+                    <option value="content_generation">从内容生成视频</option>
+                  </select>
+                </label>
+                <label>
+                  <span>发布平台</span>
+                  <select id="platform">
+                    <option value="general">通用</option>
+                    <option value="douyin">抖音</option>
+                    <option value="xiaohongshu">小红书</option>
+                    <option value="wechat-channels">视频号</option>
+                    <option value="bilibili">Bilibili</option>
+                    <option value="youtube">YouTube</option>
+                  </select>
+                </label>
+                <label>
+                  <span>栏目</span>
+                  <select id="show">
+                    <option value="tool-share">工具分享</option>
+                    <option value="book-talk">解读好书</option>
+                    <option value="infinite-game">有限的无限游戏</option>
+                    <option value="very-ai">灰常AI</option>
+                  </select>
+                </label>
+                <label>
+                  <span>字幕语言</span>
+                  <select id="language">
+                    <option value="zh">中文</option>
+                    <option value="en">英文</option>
+                    <option value="bilingual">中英双语</option>
+                  </select>
+                </label>
+                <label>
+                  <span>输出规格</span>
+                  <select id="outputPreset"></select>
+                </label>
+                <label>
+                  <span>目标时长（可选）</span>
+                  <input id="targetDuration" type="text" placeholder="例如：5分钟以内 / 保持内容完整" />
+                </label>
+                <label class="wide-field">
+                  <span>项目输出目录</span>
+                  <div class="path-row">
+                    <input id="outputDirectory" type="text" placeholder="默认与源视频同目录" />
+                    <button type="button" class="button secondary" id="chooseOutput">
+                      选择目录
+                    </button>
+                  </div>
+                </label>
+              </div>
+
+              <div class="delivery-switches">
+                <label>
+                  <input id="preserveSource" type="checkbox" checked />
+                  <span>保持原尺寸、宽高比和有效帧率</span>
+                </label>
+                <label>
+                  <input id="bgmEnabled" type="checkbox" checked />
+                  <span>使用当前风格的背景音乐策略</span>
+                </label>
+              </div>
+            </div>
+          </section>
+        </form>
+      </main>
+
+      <aside class="inspector">
+        <div class="inspector-sticky">
+          <p class="eyebrow">LIVE CONTRACT</p>
+          <h2>当前剪辑合同</h2>
+
+          <div class="video-preview" id="stylePreview">
+            <span class="preview-label" id="previewLabel">工具分享</span>
+            <div class="preview-title">内容先行</div>
+            <div class="preview-caption">
+              <span>工具降低门槛，</span><em>品味决定上限</em>
+            </div>
+            <i></i>
+          </div>
+
+          <dl class="contract-list">
+            <div>
+              <dt>源视频</dt>
+              <dd id="summarySource">未选择</dd>
+            </div>
+            <div>
+              <dt>风格</dt>
+              <dd id="summaryStyle">行者风</dd>
+            </div>
+            <div>
+              <dt>字幕字体</dt>
+              <dd id="summaryFont">真正金陵体 · 待验证</dd>
+            </div>
+            <div>
+              <dt>人声</dt>
+              <dd id="summaryAudio">温暖柔声版</dd>
+            </div>
+            <div>
+              <dt>BGM</dt>
+              <dd id="summaryBgm">轻知识氛围</dd>
+            </div>
+            <div>
+              <dt>美颜</dt>
+              <dd id="summaryBeauty">关闭</dd>
+            </div>
+            <div>
+              <dt>指定效果</dt>
+              <dd id="summaryEffects">0 组</dd>
+            </div>
+            <div>
+              <dt>平台 / 输出</dt>
+              <dd id="summaryDelivery">通用 · 保持原片</dd>
+            </div>
+          </dl>
+
+          <div class="auto-note" id="autoNote">
+            <strong>专业自动判断已开启</strong>
+            <p>未指定区间会根据内容、景别、语义关系、人物安全区和声音功能选择最简合适效果。</p>
+          </div>
+
+          <div class="readiness-panel" id="readinessPanel">
+            <div data-ready="source"><span></span>源视频已读取</div>
+            <div data-ready="style"><span></span>风格与字体可解析</div>
+            <div data-ready="delivery"><span></span>输出目录可写</div>
+            <div data-ready="contract"><span></span>合同预检通过</div>
+          </div>
+
+          <div class="inspector-actions">
+            <button type="button" class="button ghost-light" id="validateProject">
+              检查配置
+            </button>
+            <button type="button" class="button primary generate-button" id="generateProject">
+              生成剪辑项目
+            </button>
+          </div>
+          <p class="authority-note">
+            这一步不会开始上传、付费生成、发布或覆盖源文件。
+          </p>
+
+          <div class="preflight-panel" id="preflightPanel" hidden>
+            <strong>配置检查通过</strong>
+            <p id="preflightSummary"></p>
+          </div>
+
+          <div class="result-panel" id="resultPanel" hidden>
+            <strong>项目配置已生成</strong>
+            <p id="resultPath"></p>
+            <button type="button" class="text-action" id="copyResultPath">
+              复制项目路径
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

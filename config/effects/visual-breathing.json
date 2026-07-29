@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "1.0",
+  "id": "visual-breathing",
+  "name": "咔嚓画面呼吸系统",
+  "principles": [
+    "呼吸感来自运动与停稳、密与疏、近与远的交替，不是持续缩放",
+    "先保护语义、口型、头部、手势、字幕和证据，再决定是否运动",
+    "慢推拉通常保持安静，只有动作峰值或方向变化清楚时才使用音效",
+    "每个运动都必须有进入、停稳和释放，连续两段同方向运动视为失败",
+    "真实机位、动作切和B-roll优先于数字重构；数字运动只补足固定机位的节奏层次"
+  ],
+  "policy": {
+    "maximumMotionCoverageRatio": 0.55,
+    "minimumStillCoverageRatio": 0.45,
+    "maximumPrimaryEventsPer10Seconds": 1.5,
+    "minimumGapSeconds": 1.2,
+    "minimumMotionSeconds": 1.8,
+    "maximumMotionSeconds": 4.5,
+    "maximumScale": 1.08,
+    "defaultFocusXRatio": 0.5,
+    "defaultFocusYRatio": 0.42,
+    "headSafetyReviewRequired": true,
+    "ordinarySlowMotionSfx": "none"
+  },
+  "motions": [
+    {
+      "id": "slow_push_in",
+      "label": "慢推近",
+      "function": "逐步收紧注意力，进入问题、判断或情绪靠近",
+      "trigger": "开场承诺、真实问题、观点逐渐明确",
+      "startScale": 1,
+      "endScale": 1.055,
+      "curve": "sine_in_out",
+      "soundTrigger": null,
+      "fallback": "still_hold",
+      "failureModes": ["头顶余量不足", "上一段已经推近", "事实密集字幕正在阅读"]
+    },
+    {
+      "id": "slow_pull_back",
+      "label": "慢拉远",
+      "function": "释放压迫感，给反思、余味或章节结束留空间",
+      "trigger": "反思、总结后的留白、情绪由紧到松",
+      "startScale": 1.055,
+      "endScale": 1,
+      "curve": "sine_in_out",
+      "soundTrigger": null,
+      "fallback": "still_hold",
+      "failureModes": ["源画面本来已经过远", "人物动作需要细节", "与上一段同向变化"]
+    },
+    {
+      "id": "lateral_drift",
+      "label": "克制横移",
+      "function": "把视线从人物移向负空间中的信息，或反向带回人物",
+      "trigger": "人物侧向注视、信息卡位于一侧、空间关系真实成立",
+      "startScale": 1.045,
+      "endScale": 1.045,
+      "maximumTravelRatio": 0.035,
+      "curve": "sine_in_out",
+      "soundTrigger": null,
+      "fallback": "still_hold",
+      "failureModes": ["没有负空间或视线依据", "横移裁掉手势或头部", "只为避免静态而漂移"]
+    },
+    {
+      "id": "emphasis_punch_settle",
+      "label": "重音冲击后停稳",
+      "function": "把极短结论、数字或笑点落在明确终点",
+      "trigger": "可见逻辑重音与口播峰值同时成立",
+      "startScale": 1,
+      "peakScale": 1.08,
+      "endScale": 1.045,
+      "curve": "fast_out_slow_in",
+      "soundTrigger": "knowledge",
+      "fallback": "slow_push_in",
+      "failureModes": ["长句仍在持续阅读", "音效盖住尾字", "连续多次冲击造成疲劳"]
+    },
+    {
+      "id": "still_hold",
+      "label": "停稳与释放",
+      "function": "让观众读取、观察表情并感受上一动作的余味",
+      "trigger": "信息密集、自然表演、证据画面或前后运动之间",
+      "startScale": 1,
+      "endScale": 1,
+      "curve": "none",
+      "soundTrigger": null,
+      "fallback": "none",
+      "failureModes": ["无意义长停顿", "停稳区间存在姿态跳切", "以冻结帧代替自然表演"]
+    }
+  ],
+  "soundPalette": {
+    "knowledge": {
+      "preferredAssetIds": ["knowledge-local-point"],
+      "levelRelativeToDialogueDb": -13,
+      "purpose": "重音镜头到达峰值"
+    }
+  }
+}

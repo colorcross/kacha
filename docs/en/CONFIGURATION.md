@@ -11,6 +11,23 @@ authorize uploads, paid calls, publishing, source overwrites, or bypassing QC
 and human review. Per-project manifests and contexts remain the only
 authorization source.
 
+## Local production studio
+
+`node scripts/kacha.mjs studio serve` exposes the validated configuration
+system through a localhost-only interface. Reusable styles come from
+`config/production-studio.json` and local custom styles live under
+`~/.config/kacha/studio/styles/`.
+
+One-off `projectOverrides` may select the voice and BGM presets, effect
+density, and the enabled/profile/tuning fields for Beauty v2 without creating
+or mutating a permanent style. A custom style name cannot silently overwrite
+an existing file.
+
+Before project generation, the studio and
+`node scripts/kacha.mjs studio preview --request REQUEST.json` validate the
+read-only source, writable output destination, authorized local font, resolved
+design digest, registered effects, and delivery contract.
+
 ## Layers and precedence
 
 Lowest to highest:
@@ -139,7 +156,7 @@ and optional token overrides:
   "schemaVersion": "1.0",
   "style": {
     "system": "dahui-video-system",
-    "profile": "warm-editorial",
+    "profile": "xingzhe",
     "modes": {
       "show": "tool-share",
       "aspectRatio": "landscape-16x9",
