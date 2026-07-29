@@ -12,7 +12,13 @@ Kacha is not a universal renderer. It coordinates verified tools such as FFmpeg,
 
 ## Official site and product design
 
-The bilingual official-site source lives in [`website/`](website/). Logo usage,
+Official site: **[https://colorcross.github.io/kacha/](https://colorcross.github.io/kacha/)**
+
+Chinese: [https://colorcross.github.io/kacha/](https://colorcross.github.io/kacha/) ·
+English: [https://colorcross.github.io/kacha/en/](https://colorcross.github.io/kacha/en/)
+
+The bilingual official-site source lives in [`website/`](website/) and is
+built and deployed to GitHub Pages by GitHub Actions. Logo usage,
 color, typography, grid, components, motion, accessibility, and copy boundaries
 are governed by the
 [product brand and website system](docs/en/PRODUCT_BRAND_AND_WEBSITE.md).

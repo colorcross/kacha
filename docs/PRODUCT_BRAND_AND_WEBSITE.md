@@ -4,6 +4,11 @@
 动效和维护边界。它服务于官网、GitHub、文档、社交分享图和未来产品界面，
 不替代 `docs/VIDEO_DESIGN_SYSTEM_V1.md` 中用于成片的“视频设计系统”。
 
+正式官网：
+
+- 中文：<https://colorcross.github.io/kacha/>
+- 英文：<https://colorcross.github.io/kacha/en/>
+
 ## 1. 品牌定位
 
 **产品类别：** 本地专业 AI 视频工作流 skill。
@@ -180,13 +185,15 @@ website/public/brand/             官网 Logo 副本
 website/public/og.png             官网社交分享图
 website/app/globals.css           官网 token 与组件样式
 website/app/site-content.ts       中英文内容事实源
+.github/workflows/pages.yml       GitHub Pages 自动发布
 ```
 
 发布前必须：
 
-1. 运行官网 lint、typecheck、构建和服务端渲染测试；
+1. 运行官网 lint、typecheck、构建、服务端渲染测试和 Pages 子路径测试；
 2. 检查中文与英文首页；
 3. 运行仓库回归测试、安装器测试和隐私扫描；
 4. 校对 README 中的能力数字与官网一致；
 5. 复核 Logo 和社交分享图没有文字错误、遮挡或授权问题；
-6. 在真实部署后再填写正式官网 URL。
+6. 检查 GitHub Pages workflow 成功、正式 URL 返回 200 且资源无 404；
+7. 核对仓库 About 的 Website 指向正式官网。

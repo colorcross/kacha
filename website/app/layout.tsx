@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+const officialSiteUrl = "https://colorcross.github.io/kacha/";
+const socialImageUrl = `${officialSiteUrl}og.png`;
+
 export const metadata: Metadata = {
   title: {
     default: "咔嚓 Kacha｜本地专业 AI 视频工作流",
@@ -20,6 +23,7 @@ export const metadata: Metadata = {
   creator: "行者大灰",
   openGraph: {
     type: "website",
+    url: officialSiteUrl,
     locale: "zh_CN",
     siteName: "咔嚓 Kacha",
     title: "咔嚓 Kacha｜把视频工作流做完，也把质量说清楚",
@@ -27,7 +31,7 @@ export const metadata: Metadata = {
       "本地优先、可审计、可返工的专业 AI 视频工作流 skill。",
     images: [
       {
-        url: "https://raw.githubusercontent.com/colorcross/kacha/main/website/public/og.png",
+        url: socialImageUrl,
         width: 1731,
         height: 909,
         alt: "咔嚓 Kacha 本地专业 AI 视频工作流",
@@ -38,9 +42,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "咔嚓 Kacha｜本地专业 AI 视频工作流",
     description: "从策划到质量门禁，把视频工作流变成可验证的过程。",
-    images: [
-      "https://raw.githubusercontent.com/colorcross/kacha/main/website/public/og.png",
-    ],
+    images: [socialImageUrl],
   },
   icons: {
     icon: "/brand/kacha-logo.png",

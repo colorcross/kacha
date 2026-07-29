@@ -4,6 +4,7 @@ import type { SiteContent } from "../site-content";
 
 const installCommand =
   "curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh | bash -s -- --agent codex";
+const siteBasePath = process.env.NEXT_PUBLIC_SITE_BASE_PATH ?? "";
 
 export function SiteShell({
   content,
@@ -29,7 +30,7 @@ export function SiteShell({
         <div className="header-actions">
           <a
             className="language-link"
-            href={locale === "zh" ? "/en" : "/"}
+            href={`${siteBasePath}${locale === "zh" ? "/en/" : "/"}`}
             lang={locale === "zh" ? "en" : "zh-CN"}
           >
             {locale === "zh" ? "EN" : "中文"}

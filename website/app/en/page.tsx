@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "Local-first professional AI video workflow",
   description:
     "Kacha turns video planning, editing, sound, visuals, captions, revisions, and QC into an auditable local workflow.",
-  alternates: { canonical: "/en" },
+  alternates: { canonical: "https://colorcross.github.io/kacha/en/" },
 };
 
 export default function EnglishHome() {

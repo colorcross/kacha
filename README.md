@@ -1,316 +1,231 @@
 # 咔嚓（Kacha）
 
 [![CI](https://github.com/colorcross/kacha/actions/workflows/ci.yml/badge.svg)](https://github.com/colorcross/kacha/actions/workflows/ci.yml)
+[![Website](https://github.com/colorcross/kacha/actions/workflows/pages.yml/badge.svg)](https://colorcross.github.io/kacha/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
   <img src="assets/brand/kacha-og.png" alt="咔嚓 Kacha：本地专业 AI 视频工作流" width="100%">
 </p>
 
-一个同时支持 **Codex** 和 **Claude Code** 的本地专业视频工作流 skill。它不承诺“一键出片”，而是把视频策划、精剪、包装、技术检查和人工审片组织成可验证的流程。
+**咔嚓是一套支持 Codex 与 Claude Code 的本地专业视频工作流 skill。**
 
-核心原则很简单：先解决内容、连接和同步，再做包装；每个效果都要有理由；自动检查不能代替人工通看。
+它把策划、精剪、声音、视觉包装、字幕、增量返工和质量检查组织成一条
+可执行、可审计、可复现的流程。
 
-> English documentation starts at [README.en.md](README.en.md).
+[官网](https://colorcross.github.io/kacha/) ·
+[English site](https://colorcross.github.io/kacha/en/) ·
+[English README](README.en.md) ·
+[快速开始](docs/QUICKSTART.md) ·
+[安装说明](docs/INSTALLATION.md)
 
-## 官网与产品设计
+<p align="center">
+  <a href="https://colorcross.github.io/kacha/">
+    <img src="assets/screenshots/kacha-official-site.png" alt="咔嚓官网桌面端首页" width="100%">
+  </a>
+</p>
 
-官网源码位于 [`website/`](website/)，提供中文首页与英文页面。产品品牌、Logo、
-色彩、字体、栅格、组件、动效、无障碍和文案边界统一记录在
-[产品品牌与官网设计规范](docs/PRODUCT_BRAND_AND_WEBSITE.md)。
-本轮完整完成度与真实验证证据见
-[2026-07-29 完成度复核](docs/COMPLETION_REVIEW_2026-07-29.md)。
+## 它解决什么问题
 
-Logo 的剪刀代表选择与精剪，播放/K 几何代表视频与 Kacha，橙色圆点代表
-当前切点和可验证动作。官网沿用这套语义，不使用无关的紫色渐变、霓虹或
-“一键魔法”式宣传。
+很多 AI 剪辑方案只会生成效果，缺少完整工程闭环。咔嚓关注的是：
 
-## 看看实际剪辑效果
+- **先把内容剪对**：删除无效停顿、口误和重复，同时保住完整语义与自然强弱；
+- **再把声音和画面做好**：人声分离、降噪、增强、BGM/SFX、字幕、信息卡、
+  PIP、蒙版、转场和主体感知重构图按同一套合同执行；
+- **返工只动该动的部分**：冻结无关音视频流，复用已有产物，只重渲染受影响层；
+- **结果必须可验证**：媒体解码、轨道、尺寸、响度、黑帧、冻帧、静音、
+  资源哈希和人工审片分别留证，不把技术通过冒充可发布。
 
-扫码关注「行者大灰」，查看咔嚓的视频剪辑效果、前后对比和工作流演示。点击图片可以打开原图扫码。
+它不是新的剪辑软件，而是协调 FFmpeg、NLE、Remotion、HyperFrames 或项目
+指定引擎的专业工作流层。
 
-<table>
-  <tr>
-    <th align="center">视频号</th>
-    <th align="center">抖音</th>
-    <th align="center">小红书</th>
-  </tr>
-  <tr>
-    <td align="center" valign="top">
-      <a href="assets/social/wechat-channels.jpg">
-        <img src="assets/social/wechat-channels.jpg" alt="行者大灰视频号二维码" width="240">
-      </a>
-    </td>
-    <td align="center" valign="top">
-      <a href="assets/social/douyin.png">
-        <img src="assets/social/douyin.png" alt="行者大灰抖音二维码" width="240">
-      </a>
-    </td>
-    <td align="center" valign="top">
-      <a href="assets/social/xiaohongshu.jpg">
-        <img src="assets/social/xiaohongshu.jpg" alt="行者大灰小红书二维码" width="240">
-      </a>
-    </td>
-  </tr>
-</table>
+## 核心特点
 
-## 它能做什么
+| 能力 | 价值 |
+| --- | --- |
+| 本地优先 | 默认不上传素材；外传、付费生成和发布需要单独授权 |
+| 完整工作流 | 从方案、精剪、声音、视觉、字幕一直走到候选版与发布门禁 |
+| 增量返工 | 通过依赖图、产物指纹和冻结流哈希减少重复渲染 |
+| 视频设计系统 | 统一栏目、画幅、语言、字幕、卡片、PIP、流程图、封面和运动语言 |
+| 有理由的剪辑 | 切镜、转场、蒙版、音效和强调效果都必须对应信息、情绪或视角变化 |
+| 本地 Beauty v2 | 只做磨皮、美白、匀肤和法令纹弱化；默认关闭，不改变五官和身份 |
+| 双 Agent 支持 | 同一套 skill、安装器、配置和门禁同时支持 Codex 与 Claude Code |
+| 失败即停 | 输入、授权、能力或 QC 不满足时停止，不用预览伪装最终成片 |
 
-- 在执行前建立可审计的剪辑方案、输入清单、授权边界和回退路径；
-- 对已有成片使用 v3 增量返工：只记录本轮差异，按依赖图复用产物，只渲染
-  受影响层，并用冻结流哈希证明无关层没有变化；
-- 为较低能力模型提供 `prepare → next` 确定性执行协议和稳定错误码，避免依赖
-  高推理强度临场拼合同、猜状态；
-- 统一管理可版本化参数、用户/项目默认剪辑要求和本机密钥；默认要求同时支持
-  结构化参数与自然语言，密钥值不进入工程产物或日志；
-- 通过完整视频设计系统统一栏目/画幅/语言/明暗/密度模式、52 个组件、
-  63 个场景以及字幕、字体、色板、弹窗、信息卡、PIP、品牌和运动语言；
-- 内置本地 Beauty v2，仅处理磨皮、美白、匀肤和法令纹弱化；默认关闭，
-  不依赖 GPUPixel、云端美颜或生成式人脸修复；
-- 内置可执行的开场与转场效果库，每个效果都带适用理由、handle、声音功能、
-  fallback 和真实本地预览，不把“酷炫”当作使用理由；
-- 为 Claude Code 生成本地关键帧、人物、人脸、OCR、亮度和时间码证据；只有
-  外传、付费服务和显式命令均获授权后，才用 MiniMax 增强少量关键帧语义，
-  不上传整段视频；
-- 检查内容完整性、切点顺序、同一主体的景别变化和效果合同；
-- 处理 dialogue 分离、人声增强、BGM/SFX、响度与音画同步；
-- 支持字幕、封面、插镜、画中画、蒙版、人物后文字和主体感知重构图；
-- 信息卡、流程图、弹窗、风格化转场和蒙版先做本地样式帧或条件式 Figma 设计预检，再进入实现；
-- 对整片 SFX 建立功能调色板和事件审计，拒绝从头到尾反复套用一个音效；
-- 含口播的音频处理先做人声/非人声源分离，只让验收通过的独立人声进入后续链路；
-- 自动识别项目是否属于既有系列；系列视频的封面和正片共同继承系列标识；
-- 用户未明确要求改画幅时，默认保持原视频像素尺寸和宽高比；
-- 出片后提供两级中间产物清理：例行阶段只删除用户不需要且可快速重建的缓存；最终清理必须得到“不再修改”的明确确认；
-- 对 MiniMax、Seedance 等生成镜头建立能力快照、素材哈希、付费授权和失败回退；
-- 对最终媒体执行解码、轨道、尺寸、帧率、响度、黑帧、冻帧和静音线索检查；
-- 内置 12 个由行者大灰原创并确认可分发的音效，按标题、ID 和哈希精确选择；
-- 只有自动技术 QC、人工审片证据和 release gate 全部通过，才把本地成片标记为可交付。
+当前版本包含 52 个设计组件、63 个复用场景、10 种转场、5 种开场和
+73 项回归检查。详细能力边界见[架构说明](docs/ARCHITECTURE.md)与
+[视频设计系统](docs/VIDEO_DESIGN_SYSTEM_V1.md)。
 
-## 不是什么
+## 最快安装
 
-- 不是通用视频渲染器，也不替代 Premiere、Resolve、FFmpeg、Remotion 或其他时间线引擎；
-- 不会在没有授权时上传素材、调用付费模型或发布内容；
-- 不承诺修复严重失焦、削波、运动模糊等源素材缺陷；
-- 不承诺流量、完播率或“爆款”；
-- 不包含音乐、字体、模型权重、API 密钥或第三方库存素材。
-
-## 最简单的安装方法
-
-把下面这句话复制给你正在使用的 Codex 或 Claude Code：
+把下面这段话复制给 Codex 或 Claude Code：
 
 ```text
-请帮我安装“咔嚓”skill：从 https://github.com/colorcross/kacha.git 获取最新版；先判断你当前是 Codex 还是 Claude Code，再检查并运行仓库的 scripts/install.sh，安装到对应的用户级 skills 目录。不要覆盖已有安装或修改，不要上传或提交我的任何本地文件、密钥和素材；如果目标已经存在，只报告现状，不做覆盖。安装后运行隐私扫描与回归测试，立即完整读取已安装的 SKILL.md 和任务所需 references，然后告诉我安装路径、版本、验证结果以及现在是否可以直接使用。
+请从 https://github.com/colorcross/kacha.git 安装最新版“咔嚓”skill。
+先识别当前 Agent，再检查并运行 scripts/install.sh，安装到对应的用户级
+skills 目录；不要覆盖已有安装，不上传或提交我的本地文件、密钥和素材。
+安装后运行隐私扫描与回归测试，读取已安装的 SKILL.md，并报告安装路径、
+版本和验证结果。
 ```
 
-Agent 会自动下载、安装、验证，并在当前会话直接读取 skill。完整说明见[一句话安装](docs/AGENT_INSTALL.md)。
-
-## 命令行安装
-
-安装器只需要 `curl`、`tar` 和 Python 3；实际运行门禁需要 Node.js 20+，核心媒体检查还需要 FFmpeg。完整依赖见[安装说明](docs/INSTALLATION.md)。
-
-Codex：
+也可以直接安装：
 
 ```bash
+# Codex
 curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
   | bash -s -- --agent codex
-```
 
-Claude Code：
-
-```bash
+# Claude Code
 curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
   | bash -s -- --agent claude
 ```
 
-安装位置分别为 `~/.codex/skills/kacha` 和 `~/.claude/skills/kacha`。仓库根目录的 `SKILL.md` 是两个 Agent 共用的入口。
+安装位置分别为 `~/.codex/skills/kacha` 和 `~/.claude/skills/kacha`。安装器
+不会覆盖已有目标。详见[一句话安装](docs/AGENT_INSTALL.md)。
 
-## 配置默认剪辑要求
+## 工作方式
 
-```bash
-node scripts/kacha.mjs config init --scope user
-node scripts/kacha.mjs config show --anchor /path/to/project
-node scripts/kacha.mjs design validate
-node scripts/kacha.mjs design list --kind scene
-node scripts/kacha.mjs design qc --matrix --output /tmp/design-system-qc.json
-node scripts/kacha.mjs effects validate
-node scripts/kacha.mjs effects list --kind transition
+```text
+任务与授权
+   ↓
+方案与输入哈希
+   ↓
+结构精剪 → 声音处理 → 视觉包装 → 字幕校准
+   ↓
+自动技术 QC
+   ↓
+候选版与同源人工审片
+   ↓
+发布门禁
 ```
 
-用户配置位于 `~/.config/kacha/config.json`，项目可提交
-`kacha.config.json`，本机覆盖使用已忽略的 `kacha.local.json`。默认剪辑要求
-同时支持结构化 `parameters`、自然语言 `instructions` 和增量配方
-`recipeParameters`。MiniMax、Pixabay 和 Pexels 密钥放在权限为 `0600` 的
-`~/.config/kacha/secrets.json`，环境变量和现有 mmx 凭证仍可继续使用。
-自动发现的项目配置不能改写 provider 地址、凭证环境名或本机工具路径；这些
-敏感连接项只接受用户配置或显式 `--config`。
+四条任务路径：
 
-视觉使用 `style.system + style.profile + style.modes + style.overrides`。
-默认是 `dahui-video-system + warm-editorial`；解析后的 design digest 会
-与解析器/渲染器 implementation digest 一同进入设计和增量返工合同，变更后
-只让依赖旧摘要的视觉产物失效。完整规范见
-`docs/VIDEO_DESIGN_SYSTEM_V1.md`，开场/转场列表与本地预览见
-`references/style-effects-library.md`。美颜默认关闭，需明确启用 Beauty v2。
-Beauty 渲染还必须提供逐帧 Vision manifest；技术报告通过后仍需同源同帧
-动态 A/B 人工复核，报告同时冻结 Beauty 配置与完整实现链 digest。
+| 路径 | 适用情况 | 停止条件 |
+| --- | --- | --- |
+| `proposal_review` | 只要剪辑方案 | `gate-plan` 后停止 |
+| `source_edit` | 从原片剪出成片 | 继续到候选版、QC 与人工审片 |
+| `content_generation` | 从文稿和素材生成新视频 | 逐项记录素材来源、授权与验收 |
+| `local_optimization` | 修改已有版本的指定层或区间 | 冻结无关层，只重建受影响部分 |
 
-配置不能授予上传、付费、发布或跳过门禁的权限。完整字段、优先级和示例见
-[配置说明](docs/CONFIGURATION.md)。
-
-## 最短使用路径
-
-### 较弱模型或 Claude Code
-
-```bash
-node scripts/kacha.mjs doctor --profile claude-vision
-node scripts/kacha.mjs prepare \
-  --task local_optimization --modules beauty \
-  --agent claude --model-tier economy --project /path/to/project.json \
-  --output /path/to/agent-packet.json
-node scripts/kacha.mjs next /path/to/project.json
-```
-
-代理完整读取 packet 的 `readOrder`，但每次只执行一个 `nextAction`。常见返工
-可用 `examples/change-request.json` 和 `compile-change` 编译成增量项目。
-Claude Code 先读本地 `visual-evidence.md/.json`；MiniMax 是条件增强，不是
-默认依赖。`prepare` 会自动补齐弱模型/Claude 支持 reference，并对中文友好
-的 token 预算做超限阻断。详见
-[V4 工程化优化](docs/ENGINEERING_OPTIMIZATION_V4.md)。
-
-### 首剪或结构重做
-
-1. 让代理完整读取 `SKILL.md`，并按任务读取对应 `references/`。
-2. 从 `examples/edit-proposal.json`、`examples/edit-plan.json` 和 `examples/project-manifest.json` 复制项目文件。
-3. 将模板中的占位值替换为真实文件、SHA-256、目标规格和授权证据。
-4. 依次运行门禁：
+最短命令路径：
 
 ```bash
 node scripts/kacha.mjs gate-plan PROJECT.json
 scripts/capability_probe.sh --profile core --output capabilities.json
 node scripts/kacha.mjs gate-render PROJECT.json
+
+# 由项目选定的引擎完成真实渲染后
 node scripts/kacha.mjs qc PROJECT.json
 node scripts/kacha.mjs gate-release PROJECT.json
 ```
 
-`gate-render` 只表示项目具备执行条件，不会替你渲染视频。`qc` 只做自动技术检查，不等于人工审片完成。
+`gate-render` 只证明具备执行条件，不会替你渲染视频；`qc` 是自动技术检查，
+不能代替人工通看。
 
-可先用 `route_references.mjs` 根据任务和模块生成最小 reference 清单，避免把
-所有文档一次性放进上下文。
+已有成片的局部返工从
+[v3 增量工作流](docs/INCREMENTAL_WORKFLOW_V3.md)开始。较弱模型或
+Claude Code 可使用 `prepare → next` 确定性执行协议，详见
+[V4 工程化优化](docs/ENGINEERING_OPTIMIZATION_V4.md)。
 
-### 已有基线上的局部返工
-
-```bash
-node scripts/init_incremental_project.mjs BASE.mov \
-  --project-id my-video --output-dir /path/to/project
-
-node scripts/create_version_delta.mjs /path/to/project/project-context.json \
-  --write /path/to/project/v2-delta.json --new-version v2 \
-  --type beauty_adjust --output-video /path/to/project/v2.mov
-
-node scripts/create_incremental_manifest.mjs \
-  /path/to/project/project-context.json /path/to/project/v2-delta.json \
-  /path/to/project/artifact-index.json \
-  --output /path/to/project/v2-project.json
-
-node scripts/kacha.mjs gate-plan /path/to/project/v2-project.json
-node scripts/kacha.mjs qc /path/to/project/v2-project.json
-node scripts/create_incremental_review.mjs /path/to/project/v2-project.json
-node scripts/kacha.mjs gate-candidate /path/to/project/v2-project.json
-```
-
-只改画面时会校验音频流 SHA-256 未变；只改声音时会校验视频流未变。候选版
-不能冒充最终版，只有 `release_candidate` 完成全量人工审片后才能通过
-`gate-release`。完整说明见
-[v3 增量工作流](docs/INCREMENTAL_WORKFLOW_V3.md)。
-
-用户反馈涉及风格不统一、动效抢跑、弹窗遮挡或连接生硬时，优先用
-`compile-change` 的 `style`、`timing_sync`、`popup_layout`、`connections`
-配方。配方会要求扫描全片同类问题；连接候选还可以先用：
+## 配置与依赖
 
 ```bash
-node scripts/kacha.mjs connections FINAL.mov \
-  --output connection-candidates.json --cut-list timeline-cuts.json
+node scripts/kacha.mjs config init --scope user
+node scripts/kacha.mjs config show --anchor /path/to/project
+node scripts/kacha.mjs doctor --profile core
 ```
 
-完整示例见[快速开始](docs/QUICKSTART.md)。
+- 核心门禁需要 Node.js 20+；
+- 媒体链路需要 FFmpeg 与 FFprobe；
+- 用户配置位于 `~/.config/kacha/config.json`；
+- 项目配置使用 `kacha.config.json`，本机覆盖使用已忽略的
+  `kacha.local.json`；
+- 密钥可放在权限为 `0600` 的 `~/.config/kacha/secrets.json`；
+- 配置不能授予上传、付费、发布、覆盖文件或跳过门禁的权限。
 
-真实生产中反复出现的问题与对应门禁见[生产流程加固](docs/PRODUCTION_HARDENING.md)。
+完整字段和优先级见[配置说明](docs/CONFIGURATION.md)与
+[隐私安全](docs/PRIVACY_SECURITY.md)。
 
-## 四条任务路径
+## 质量与安全
 
-| 路径 | 用途 | 是否修改文件 |
-| --- | --- | --- |
-| `proposal_review` | 只给方案或 review | 否 |
-| `source_edit` | 精剪现有音视频 | 是 |
-| `content_generation` | 从文稿、书籍、笔记或主题生成内容 | 是 |
-| `local_optimization` | 只改指定字幕、声音、封面、插镜或版本 | 是 |
+- 默认保持原视频像素尺寸和宽高比；
+- 含口播的音频先做人声/非人声分离，只让验收通过的人声进入后续处理；
+- 自动发现的项目配置不能改写 provider、凭证入口或本机工具路径；
+- 网络素材、生成镜头、字体、音乐和音效必须记录来源、授权与哈希；
+- Beauty v2 默认关闭，启用后仍需同源同帧动态 A/B 人工复核；
+- 只有自动技术 QC、人工审片证据与 release gate 全部通过，才可标记为可交付；
+- 仓库不包含用户密钥、第三方库存素材、模型权重或项目私有音效库。
 
-双语、AI 镜头、第三方素材、专用人像模型、上传和发布都是按需模块，不自动启用。
+## 查看实际效果
 
-## 仓库结构
+官网展示产品能力和工作流；「行者大灰」账号发布真实剪辑效果、前后对比和
+使用演示。
 
-```text
-.
-├── SKILL.md                 # skill 入口与不可降低的原则
-├── agents/openai.yaml       # OpenAI/Codex 展示配置
-├── assets/brand/            # Logo 与社交分享图
-├── references/              # 按任务加载的详细合同
-├── assets/sfx/              # 12 个原创音效、工作副本、哈希与资产许可
-├── config/                  # 无密钥的内置运行默认值
-├── examples/                # v2 首剪与 v3 增量 JSON 模板
-├── scripts/                 # 确定性状态机、视觉证据、门禁、媒体处理与 QC
-├── tests/run_tests.mjs      # 无第三方 npm 依赖的回归测试
-├── docs/                    # 安装、架构、设计系统和安全文档
-└── website/                 # 中英文官网源码（不进入用户级 skill bundle）
-```
+<details>
+  <summary>展开视频号、抖音和小红书二维码</summary>
 
-设计与数据流见[架构说明](docs/ARCHITECTURE.md)。
+  <table>
+    <tr>
+      <th align="center">视频号</th>
+      <th align="center">抖音</th>
+      <th align="center">小红书</th>
+    </tr>
+    <tr>
+      <td align="center" valign="top">
+        <a href="assets/social/wechat-channels.jpg">
+          <img src="assets/social/wechat-channels.jpg" alt="行者大灰视频号二维码" width="220">
+        </a>
+      </td>
+      <td align="center" valign="top">
+        <a href="assets/social/douyin.png">
+          <img src="assets/social/douyin.png" alt="行者大灰抖音二维码" width="220">
+        </a>
+      </td>
+      <td align="center" valign="top">
+        <a href="assets/social/xiaohongshu.jpg">
+          <img src="assets/social/xiaohongshu.jpg" alt="行者大灰小红书二维码" width="220">
+        </a>
+      </td>
+    </tr>
+  </table>
+</details>
 
-## 隐私与安全
+## 文档与验证
 
-咔嚓默认本地处理。仓库不需要、也不应提交任何真实密钥。
+| 文档 | 用途 |
+| --- | --- |
+| [快速开始](docs/QUICKSTART.md) | 从模板到门禁的完整示例 |
+| [安装与依赖](docs/INSTALLATION.md) | 环境、平台与可选能力 |
+| [配置说明](docs/CONFIGURATION.md) | 用户、项目、本机和密钥配置 |
+| [架构说明](docs/ARCHITECTURE.md) | 工作流、证据链与模块边界 |
+| [视频设计系统](docs/VIDEO_DESIGN_SYSTEM_V1.md) | 视觉 token、组件、场景和 QC |
+| [Beauty v2](docs/BEAUTY_V2.md) | 本地美颜能力、门禁与人工复核 |
+| [增量返工](docs/INCREMENTAL_WORKFLOW_V3.md) | 依赖复用与冻结流证明 |
+| [隐私安全](docs/PRIVACY_SECURITY.md) | 上传、付费、发布与凭证边界 |
 
-- 安装器通过 GitHub 公开源码归档下载，不读取 Git 凭据；
-- API 凭据只通过环境变量、mmx 凭证库或权限受控的本机密钥文件提供；
-- `.env`、私钥、素材、模型、输出和本机能力快照已加入 `.gitignore`；
-- 发布前运行 `python3 scripts/scan_secrets.py`；
-- 示例中的 `PIXABAY_API_KEY`、`PEXELS_API_KEY` 只是变量名，不是密钥值；
-- 生成、上传、购买授权和发布仍需单独授权。
-
-详见[配置说明](docs/CONFIGURATION.md)、[隐私与安全](docs/PRIVACY_SECURITY.md)
-和[安全政策](SECURITY.md)。
-
-## 测试
+仓库验证：
 
 ```bash
-node tests/run_tests.mjs --suite incremental
-node tests/run_tests.mjs --suite audio
-node tests/run_tests.mjs --suite visual
 node tests/run_tests.mjs
 bash tests/test_installer.sh
 python3 scripts/scan_secrets.py
-cd website && npm run lint && npm run typecheck && npm test && npm audit --audit-level=high
 ```
 
-分层测试只生成当前套件需要的媒体夹具；全量测试不会读取或修改你的真实项目
-素材。官网测试是独立门禁，不替代 skill 本体测试。运行
-`node tests/run_tests.mjs --list` 可查看套件归属。
+官网验证：
 
-## 平台说明
+```bash
+cd website
+npm ci
+npm run lint
+npm run typecheck
+npm test
+npm run test:pages
+npm audit --audit-level=high
+```
 
-- 核心 JSON 门禁和多数 FFmpeg 流程可在 macOS/Linux 使用；
-- `generate_vision_masks.swift` 依赖 macOS 的 Vision、AVFoundation 和 CoreImage；
-- Claude Code 可通过 `visual-evidence` 使用 Apple Vision 本地语义证据；Apple
-  Vision 不可用时可在明确授权后使用 `mmx vision describe`；
-- Demucs、MiniMax/mmx、素材平台 API、Resolve 等均为可选能力，必须在当前机器上真实探测；
-- 不同 FFmpeg 构建包含的 filter 不同，应以 `capability_probe.sh` 的结果为准。
+## 贡献与许可
 
-## 贡献
-
-欢迎提交 issue 和 pull request。修改媒体链路时必须保留“失败即停”、源素材只读、输出不覆盖和自动 QC 不冒充人工审片这些边界。详见[贡献指南](CONTRIBUTING.md)。
-
-## 许可证
-
-代码与文档采用 [MIT License](LICENSE)。`assets/sfx` 中的原创音效采用其目录内的
-[音频资产许可](assets/sfx/LICENSE.md)；Logo 与社交分享图适用
-[品牌资产规则](assets/brand/README.md)，不包含在 MIT 授权中。第三方素材、
-字体、模型和平台内容不随本仓库授权。
+提交问题或改动前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 和
+[SECURITY.md](SECURITY.md)。代码使用 [MIT License](LICENSE)；仓库内原创
+音效适用独立的 [Kacha SFX Asset License](assets/sfx/LICENSE.md)。

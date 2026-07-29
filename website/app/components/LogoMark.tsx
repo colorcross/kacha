@@ -2,6 +2,8 @@ type LogoMarkProps = {
   compact?: boolean;
 };
 
+const siteBasePath = process.env.NEXT_PUBLIC_SITE_BASE_PATH ?? "";
+
 export function LogoMark({ compact = false }: LogoMarkProps) {
   return (
     <span className={`logo-mark${compact ? " logo-mark--compact" : ""}`}>
@@ -10,7 +12,7 @@ export function LogoMark({ compact = false }: LogoMarkProps) {
         alt=""
         aria-hidden="true"
         className="logo-mark__image"
-        src="/brand/kacha-logo.png"
+        src={`${siteBasePath}/brand/kacha-logo.png`}
       />
     </span>
   );

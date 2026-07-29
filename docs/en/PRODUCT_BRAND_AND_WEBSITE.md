@@ -5,6 +5,11 @@ GitHub, documentation, social cards, and future product UI. It is separate from
 the runtime video design system in
 [`VIDEO_DESIGN_SYSTEM_V1.md`](../VIDEO_DESIGN_SYSTEM_V1.md).
 
+Production site:
+
+- Chinese: <https://colorcross.github.io/kacha/>
+- English: <https://colorcross.github.io/kacha/en/>
+
 ## Positioning
 
 Kacha is a local-first professional AI video workflow skill. It coordinates
@@ -100,5 +105,7 @@ website/app/site-content.ts
 ```
 
 Before release, run website lint, typecheck, build, rendered-page tests, the
-full Kacha regression suite, the installer test, and the secret scanner.
-Review both language routes and keep all version counts synchronized.
+GitHub Pages subpath tests, the full Kacha regression suite, the installer
+test, and the secret scanner. Review both language routes, keep all version
+counts synchronized, verify the live Pages workflow and assets, and confirm the
+repository About website points to the production URL.

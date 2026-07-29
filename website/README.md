@@ -16,12 +16,31 @@ npm run dev
 默认地址为 `http://localhost:3000/`，英文页面为
 `http://localhost:3000/en`。
 
+## GitHub Pages
+
+公开官网：
+
+- 中文：[https://colorcross.github.io/kacha/](https://colorcross.github.io/kacha/)
+- 英文：[https://colorcross.github.io/kacha/en/](https://colorcross.github.io/kacha/en/)
+
+GitHub Pages 使用仓库子路径 `/kacha/`。本地执行：
+
+```bash
+npm run test:pages
+```
+
+命令会完成预渲染、为 GitHub Pages 写入正确的资源前缀、打包
+`pages-dist/`，并检查双语路由、Logo、脚本、样式和 404 回退。构建目录被
+忽略，不提交到 Git；`.github/workflows/pages.yml` 在 `main` 的官网源码
+变化后自动上传并发布该目录，也支持手动触发。
+
 ## 验证
 
 ```bash
 npm run lint
 npm run typecheck
 npm test
+npm run test:pages
 npm audit --audit-level=high
 ```
 
@@ -38,6 +57,7 @@ app/site-content.ts      中英文内容
 app/globals.css          产品 token、布局与动效
 public/brand/            Logo
 public/og.png            社交分享图
+.github/workflows/       GitHub Pages 自动发布（仓库根目录）
 .openai/hosting.json     Sites 项目标识与绑定
 ```
 
