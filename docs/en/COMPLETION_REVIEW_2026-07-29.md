@@ -13,6 +13,7 @@ Only repository evidence and real generated artifacts count.
 | Beauty v2 | Complete | local four-treatment pipeline, frame-accurate masks, QC, default off |
 | Product identity | Complete | logo, color, type, grid, component, motion, accessibility, and copy rules |
 | Bilingual website | Complete | `/` and `/en`, responsive UI, SEO, social card, install interaction |
+| GitHub Pages | Complete | public bilingual site, Actions deployment, About URL, and live asset checks |
 | Repository gates | Pass | 73/73 regression checks, installer test, secret scan, website checks |
 
 ## Beauty v2 evidence
@@ -36,14 +37,18 @@ conflict; Kacha now serves its local logo directly and includes a regression
 test for that boundary. Production and full development dependency audits both
 report zero vulnerabilities.
 
+The production routes are
+<https://colorcross.github.io/kacha/> and
+<https://colorcross.github.io/kacha/en/>. The GitHub Pages workflow passed,
+the live logo, social image, CSS, and five JavaScript assets were fetched
+successfully, and the repository About website points to the production URL.
+
 The GitHub archive installer now removes `website/` before installing the
 runtime skill, matching the local Codex/Claude sync boundary. Installer tests
 assert that neither target contains the website tree.
 
 ## Remaining boundaries
 
-- Owner-only deployment is safe by default; public access needs explicit
-  approval.
 - Every real video still needs project-specific human review and release gates.
 - Beauty profiles need same-source dynamic A/B validation for each actual
   camera, lighting setup, and movement pattern.

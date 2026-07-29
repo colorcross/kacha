@@ -18,6 +18,7 @@
 | Beauty v2 | 完成 | 本地四项处理、默认关闭、逐帧遮罩、技术 QC 与人工复核门禁闭环 |
 | 产品品牌规范 | 完成 | Logo、色彩、字体、栅格、组件、动效、无障碍和文案边界落盘 |
 | 中英文官网 | 完成 | 中文 `/`、英文 `/en`、安装交互、SEO、分享图和响应式页面完成 |
+| GitHub Pages | 完成 | 公开双语官网、Actions 自动部署、About 官网地址和线上资源复核闭环 |
 | 文档 | 完成 | 中英文 README、设计规范、Beauty、架构与变更记录已同步 |
 | 仓库门禁 | 完成 | 73/73 回归、安装器、隐私扫描、官网检查均通过 |
 | 人工动态审片 | 按项目执行 | 不能由工具仓库一次性替代；Beauty 正确停在 `pass_with_review` |
@@ -79,6 +80,8 @@ Logo 使用用户提供的原文件，不重新描摹。基于原图采样建立
 
 官网完成：
 
+- 正式地址：<https://colorcross.github.io/kacha/>，英文页面为
+  <https://colorcross.github.io/kacha/en/>；
 - 中文首页和完整英文页面；
 - Hero 时间线、能力证据、系统能力、六步工作流、三条原则、Beauty 默认关闭
   状态与真实安装命令；
@@ -86,7 +89,9 @@ Logo 使用用户提供的原文件，不重新描摹。基于原图采样建立
 - 键盘焦点、减少动态偏好、对比度和状态冗余；
 - Logo、favicon、Open Graph 和社交分享图；
 - GitHub、文档、许可和中英文切换；
-- 产品品牌设计规范的中英文文档。
+- 产品品牌设计规范的中英文文档；
+- GitHub Pages 子路径打包、`.nojekyll`、404 回退和 Actions 自动发布；
+- GitHub 仓库 About 的 Website 已指向正式官网。
 
 开发时发现 vinext 的 `next/image` 客户端 hydration 会触发 React hook
 冲突。实现已改为直接读取仓库内 Logo，并新增回归检查，防止该运行时问题
@@ -100,7 +105,9 @@ typecheck：通过
 production build：通过
 server-rendered routes：/ 和 /en 通过
 页面/资产回归：4/4 通过
+GitHub Pages 子路径回归：3/3 通过
 本地客户端加载：中英文无 hydration 错误
+线上 Pages：中英文、Logo、社交图、CSS 和 5 个 JS 资源通过
 生产依赖审计：0 vulnerabilities
 完整开发依赖审计：0 vulnerabilities
 ```
@@ -123,7 +130,6 @@ Beauty 真实样本技术链：通过并要求人工审片
 
 ## 5. 剩余边界
 
-- 官网默认以仅所有者可访问方式部署；公开访问必须再获得明确授权；
 - 真实视频是否可发布，仍需要该项目的完整人工通看和 release gate；
 - Beauty v2 的“自然/可见”档位要在每个真实机位上做同源动态 A/B，不能把
   本轮短样本结论外推到所有光线、角度和运动；
