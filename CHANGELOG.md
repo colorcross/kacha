@@ -88,6 +88,9 @@
 
 ### Changed
 
+- 默认字体栈增加 Noto CJK 与 DejaVu 的跨平台回退；Linux CI 安装
+  `librsvg2-bin` 和 Noto CJK 字体，使 SVG 预览与设计系统矩阵使用真实、
+  可验证的渲染依赖，不再依赖 macOS 本机字体。
 - 官网依赖升级到已修复的 Next/React/Vite/Cloudflare 版本，改用 Oxlint，
   并通过生产与完整开发依赖的零漏洞审计。
 - GitHub 归档安装器现在和本地同步器一样排除 `website/`，安装器测试同时

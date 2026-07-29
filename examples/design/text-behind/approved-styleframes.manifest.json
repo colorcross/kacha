@@ -3,7 +3,7 @@
   "status": "rendered",
   "designSystemId": "dahui-video-system",
   "designSystemVersion": "1.1.0",
-  "designDigest": "690062bbcaf7143b177710c354b7c48431ffe35410b7b5c0da7463e4e5f77051",
+  "designDigest": "cf98d1efee4321cc96c76f0ea599cb74b787fcc75b435bc29004afa2c63de7d3",
   "implementationDigest": "8a51684e14431cbe91aad691f7ec04631999d3608fc74ef8b1321f7756502b8e",
   "rendererCodeSha256": "34d26116dd76af9bcaf00610bd84a50f4a84e4d38225c3b96b3eeea2d8beebed",
   "sceneId": "text_behind_subject_scene",
@@ -35,7 +35,9 @@
         "requested": [
           "华光标题黑",
           "Source Han Sans SC",
-          "PingFang SC"
+          "PingFang SC",
+          "Noto Sans CJK SC",
+          "DejaVu Sans"
         ],
         "resolved": "PingFang SC",
         "verified": true,
@@ -45,7 +47,10 @@
         "requested": [
           "金陵体",
           "STSong",
-          "Songti SC"
+          "Songti SC",
+          "Noto Serif CJK SC",
+          "Noto Sans CJK SC",
+          "DejaVu Sans"
         ],
         "resolved": "STSong",
         "verified": true,
@@ -55,7 +60,10 @@
         "requested": [
           "金陵体",
           "STSong",
-          "Songti SC"
+          "Songti SC",
+          "Noto Serif CJK SC",
+          "Noto Sans CJK SC",
+          "DejaVu Sans"
         ],
         "resolved": "STSong",
         "verified": true,
@@ -65,7 +73,9 @@
         "requested": [
           "Avenir Next",
           "Source Han Sans SC",
-          "PingFang SC"
+          "PingFang SC",
+          "Noto Sans CJK SC",
+          "DejaVu Sans"
         ],
         "resolved": "Avenir Next",
         "verified": true,
@@ -75,7 +85,9 @@
         "requested": [
           "Avenir Next",
           "Source Han Sans SC",
-          "PingFang SC"
+          "PingFang SC",
+          "Noto Sans CJK SC",
+          "DejaVu Sans"
         ],
         "resolved": "Avenir Next",
         "verified": true,
@@ -83,7 +95,7 @@
       }
     },
     "warnings": [],
-    "digest": "9d6987ad5399b0df64692f7e77a6bd31dc2d83edc58eecd8865ba88f182b1f49"
+    "digest": "7cad43acd00114e4ff85017a4b3bdc11ffa12461580cf97a4295e4a871c87a70"
   },
   "scene": {
     "trigger": "章节题眼或记忆点适合空间层级",
@@ -133,7 +145,7 @@
   ],
   "qc": {
     "stateRendered": "peak",
-    "guidesRendered": false,
+    "guidesRendered": true,
     "textOverflowPolicy": "truncate_with_ellipsis",
     "fullFrameFlashPolicy": "forbid_except_explicit_flash_motivation"
   }

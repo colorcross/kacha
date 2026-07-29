@@ -24,31 +24,31 @@
   },
   "typography": {
     "display": {
-      "families": ["华光标题黑", "Source Han Sans SC", "PingFang SC"],
+      "families": ["华光标题黑", "Source Han Sans SC", "PingFang SC", "Noto Sans CJK SC", "DejaVu Sans"],
       "weight": 800,
       "sizeRatio": 0.072,
       "letterSpacingEm": -0.02
     },
     "subtitlePrimary": {
-      "families": ["金陵体", "STSong", "Songti SC"],
+      "families": ["金陵体", "STSong", "Songti SC", "Noto Serif CJK SC", "Noto Sans CJK SC", "DejaVu Sans"],
       "weight": 400,
       "sizeRatio": 0.048,
       "letterSpacingEm": 0
     },
     "subtitleSecondary": {
-      "families": ["金陵体", "STSong", "Songti SC"],
+      "families": ["金陵体", "STSong", "Songti SC", "Noto Serif CJK SC", "Noto Sans CJK SC", "DejaVu Sans"],
       "weight": 400,
       "sizeRatio": 0.032,
       "letterSpacingEm": 0
     },
     "label": {
-      "families": ["Avenir Next", "Source Han Sans SC", "PingFang SC"],
+      "families": ["Avenir Next", "Source Han Sans SC", "PingFang SC", "Noto Sans CJK SC", "DejaVu Sans"],
       "weight": 700,
       "sizeRatio": 0.025,
       "letterSpacingEm": 0.025
     },
     "body": {
-      "families": ["Avenir Next", "Source Han Sans SC", "PingFang SC"],
+      "families": ["Avenir Next", "Source Han Sans SC", "PingFang SC", "Noto Sans CJK SC", "DejaVu Sans"],
       "weight": 500,
       "sizeRatio": 0.036,
       "letterSpacingEm": 0
