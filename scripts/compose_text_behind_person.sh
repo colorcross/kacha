@@ -23,8 +23,18 @@ for file in "$base" "$mask" "$text_layer"; do
   [[ -f "$file" ]] || { printf 'Input not found: %s\n' "$file" >&2; exit 2; }
 done
 [[ ! -e "$output" ]] || { printf 'Output already exists: %s\n' "$output" >&2; exit 2; }
-command -v ffmpeg >/dev/null || { printf '%s\n' "ffmpeg is required" >&2; exit 2; }
-command -v ffprobe >/dev/null || { printf '%s\n' "ffprobe is required" >&2; exit 2; }
+ffmpeg_bin=${KACHA_FFMPEG_BIN:-}
+if [[ -z "$ffmpeg_bin" && -x /opt/homebrew/opt/ffmpeg-full/bin/ffmpeg ]]; then
+  ffmpeg_bin=/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg
+fi
+if [[ -z "$ffmpeg_bin" ]]; then ffmpeg_bin=$(command -v ffmpeg || true); fi
+ffprobe_bin=${KACHA_FFPROBE_BIN:-}
+if [[ -z "$ffprobe_bin" && -n "$ffmpeg_bin" && -x "$(dirname "$ffmpeg_bin")/ffprobe" ]]; then
+  ffprobe_bin="$(dirname "$ffmpeg_bin")/ffprobe"
+fi
+if [[ -z "$ffprobe_bin" ]]; then ffprobe_bin=$(command -v ffprobe || true); fi
+[[ -n "$ffmpeg_bin" ]] || { printf '%s\n' "ffmpeg is required" >&2; exit 2; }
+[[ -n "$ffprobe_bin" ]] || { printf '%s\n' "ffprobe is required" >&2; exit 2; }
 command -v node >/dev/null || { printf '%s\n' "node is required" >&2; exit 2; }
 
 base_resolved=$(node -e 'console.log(require("node:path").resolve(process.argv[1]))' "$base")
@@ -42,10 +52,10 @@ node "$script_dir/assert_media_alignment.mjs" \
   --allow-size-mismatch \
   --duration-tolerance-frames 1 >/dev/null
 
-width=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$base")
-height=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$base")
-duration=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$base")
-text_pixel_format=$(ffprobe -v error -select_streams v:0 -show_entries stream=pix_fmt -of csv=p=0 "$text_layer")
+width=$("$ffprobe_bin" -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$base")
+height=$("$ffprobe_bin" -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$base")
+duration=$("$ffprobe_bin" -v error -show_entries format=duration -of csv=p=0 "$base")
+text_pixel_format=$("$ffprobe_bin" -v error -select_streams v:0 -show_entries stream=pix_fmt -of csv=p=0 "$text_layer")
 [[ "$text_pixel_format" =~ ^(rgba|bgra|argb|abgr|yuva|gbrap|ya) ]] || {
   printf 'Text layer has no verified alpha channel: %s\n' "$text_pixel_format" >&2
   exit 2
@@ -59,7 +69,7 @@ work_dir=$(mktemp -d "${TMPDIR:-/tmp}/kacha-text-behind.XXXXXX")
 trap 'rm -rf "$work_dir"' EXIT
 temporary_output="$work_dir/output.mov"
 
-ffmpeg -hide_banner -loglevel error -nostdin -y \
+"$ffmpeg_bin" -hide_banner -loglevel error -nostdin -y \
   -i "$base" \
   -i "$mask" \
   -i "$text_layer" \

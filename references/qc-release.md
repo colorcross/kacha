@@ -126,6 +126,12 @@ release gate 通过不等于自动获得删除中间产物的授权。每次出�
 - dialogue 处理没有金属声、抽吸、齿音损伤和声道破坏；
 - 参考版本同源同响度 A/B；
 - BGM 可感知但不抢人声；
+- 要求 BGM 的项目必须保留闪避后的 dialogue/BGM/SFX 组件 stem 和 mix
+  stem；自动 QC 校验相对响度、时长覆盖、组件重建及最终视频解码音频与 mix
+  的残差信噪比，不能用“轨道存在”替代“最终可听且确实混入”；
+- 增量音频返工必须在 manifest 登记组件/mix stems，并执行同一套
+  `bgm_perceptibility`、`bgm_duration_coverage`、
+  `mix_stem_reconstruction` 与 `final_audio_matches_mix_stem` 检查；
 - 每个计划内 SFX 在最终成片可听；
 - SFX 与 `sfxPlan.events` 一一对应，功能、音色和落点有区分，无整片单一音效滥用；
 - 响度、true peak、声道和 48 kHz 合同通过；

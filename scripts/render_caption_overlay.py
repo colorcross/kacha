@@ -3,6 +3,7 @@
 import argparse
 import json
 import math
+import os
 import subprocess
 from functools import lru_cache
 from pathlib import Path
@@ -322,7 +323,8 @@ def main():
         "dark": hex_color(palette.get("textOnLight", "#1A100B")),
     }
     command = [
-        "ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+        os.environ.get("KACHA_FFMPEG_BIN", "ffmpeg"),
+        "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
         "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{width}x{height}",
         "-r", str(fps), "-i", "-", "-an", "-c:v", "qtrle", "-pix_fmt", "argb",
         "-frames:v", str(total_frames), args.output,

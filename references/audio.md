@@ -54,6 +54,25 @@ Demucs model、device、时长容差和可选二进制路径默认从咔嚓配�
 
 如果源分离候选损伤人声，项目必须标记 `blocked`。只有用户明确授权降低目标后，才能另建“原始参考降噪”方案；该方案不得标记为已完成人声分离。任何情况下都不能一边声称“只保留人声”，一边悄悄把 residual 混回去补质感。
 
+## 缓存、转写与资源合同
+
+人声链的高成本步骤不得在同一源、同一参数和同一实现上重复运行：
+
+- `separate_dialogue.sh` 以源 SHA、Demucs model/device、Demucs 与 Torch
+  运行时版本、启动器/入口模块实现 SHA 和输出 schema 复用
+  `source_separation` 缓存；运行时变化必须使旧结果失效；
+- `kacha transcribe INPUT --output transcript.json` 默认调用配置中的本机
+  loopback Whisper MLX 服务，并以模型、语言、转写参数和实现 SHA 复用 ASR；
+- 完整转写和逐词时间戳留在文件中；agent 先用
+  `transcript index`，再按最多 180 秒的 `transcript slice` 读取；
+- CPU Demucs 占用 `cpuHeavy`，MPS Demucs 占用 `mps`。同一时刻只允许一个
+  重型 MPS 任务，避免与 Beauty、Vision 或视频编码争抢内存；
+- 所有真实执行使用 `metrics run` 记录墙钟时间、缓存命中、Token、日志和
+  产物。完整日志写文件并脱敏，不把模型或 FFmpeg 大日志塞回 agent 上下文。
+
+缓存命中仍校验输出文件、目录清单与 SHA-256。分离或 ASR 的模型、实现、
+参数、源内容变化时必须失效；不能为了提速复用旧证据。
+
 ## 人声诊断
 
 先提取并检查：
@@ -163,6 +182,16 @@ preset、降噪、declick、目标响度、true peak 和声道策略均可放入
 BGM 应能感知但不抢注意力：
 
 - 连续口播中，人声通常比闪避后的 BGM 高约 12–18 dB，再按频谱和设备实听；
+- 最终混音必须导出独立 dialogue/BGM/SFX 组件 stem 与 mix stem，并测量
+  **闪避之后**的综合响度；不能只检查 BGM 源文件存在、混音命令执行成功或
+  最终母带总响度；
+- 项目要求 BGM 时，在 `outputs.audioStems` 声明组件和 mix stem，并在
+  `expectedMedia.audioMix` 设置 `bgmRequired=true`。`qc` 会检查 BGM 时长
+  覆盖和人声/BGM 实际差值、重建 mix，并将最终视频解码音频与 mix stem
+  比对；差值高于上限或成片漏混都直接失败；
+- 增量返工创建 manifest 时传入 `--dialogue-stem <post-mix.wav>` 与
+  `--bgm-stem <post-sidechain.wav>`、`--mix-stem <final-mix.wav>`（有 SFX
+  时再传 `--sfx-stem`），沿用同一门禁，不能因“只改音频”而绕过；
 - 用户说“再低一点”时，以认可版本为基线，每轮只降低 BGM 约 0.5–1.0 dB；
 - 同时冻结人声、SFX、sidechain 和母带；
 - 禁止降低整片音量冒充 BGM 变小；

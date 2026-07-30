@@ -41,6 +41,22 @@ node scripts/validate_generated_shot_plan.mjs PLAN.json --template
 node scripts/validate_generated_shot_plan.mjs PLAN.json --for-execution
 ```
 
+通过门禁后，必须从内容指纹缓存入口执行生成命令：
+
+```bash
+node scripts/kacha.mjs generated-cache run \
+  --plan PLAN.json --shot SHOT_ID \
+  --output PROJECT/assets/generated/SHOT_ID.mp4 \
+  -- GENERATOR [ARGS...]
+```
+
+缓存键冻结镜头合同、编译提示词、参考素材与实现哈希、provider/model/transport
+和生成器版本，但会把纯交付路径归一化。相同镜头即使换一个本地输出路径，也
+应直接物化已验证的缓存文件，不再次提交付费任务。命中报告的
+`paidCallExecuted` 必须为 `false`；缓存失效、产物哈希不一致或生成器实现
+变化时才允许重新执行。凭证只能通过环境、钥匙串、secret manager 或 mmx
+凭证库注入，不能出现在生成命令、计划、缓存键和日志中。
+
 默认预检会检查参考文件、哈希、能力快照有效期、模型、transport、模式、时长、分辨率和画幅。只有 `--template` 可以跳过文件和时效检查；模板通过不代表可调用。
 
 `--for-execution` 还要求 `executionAuthorization.status=authorized` 及证据。
@@ -101,12 +117,13 @@ node scripts/validate_generated_shot_plan.mjs PLAN.json --for-execution
 2. 审首帧、尾帧和角色卡；
 3. 确认模型、区域、额度、路由、输出和计费；
 4. 用户授权后才提交；
-5. 先用最低充分规格；
-6. 记录任务 ID、请求摘要和计费不确定性；
-7. 下载后本地冻结并 ffprobe；
-8. 失败按语义、身份、几何、物理、镜头、时间、风格、构图、音频或 transport 分类；
-9. 一次只改变一个主变量；
-10. 达到 `maxPaidAttempts` 后停止并走 fallback。
+5. 通过 `generated-cache run` 提交，缓存命中不得再次付费；
+6. 先用最低充分规格；
+7. 记录任务 ID、请求摘要和计费不确定性；
+8. 下载后本地冻结并 ffprobe；
+9. 失败按语义、身份、几何、物理、镜头、时间、风格、构图、音频或 transport 分类；
+10. 一次只改变一个主变量；
+11. 达到 `maxPaidAttempts` 后停止并走 fallback。
 
 错误人物、物体、动作、身份、关键几何或事实边界必须拒收，不能通过裁切、调色或变速勉强放行。
 

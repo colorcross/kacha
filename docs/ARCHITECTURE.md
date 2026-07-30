@@ -28,6 +28,27 @@
 
 把 proposal、plan、能力快照、输入、输出和 QC 报告连接起来，是统一门禁入口。
 
+### `Timeline IR + Render Graph`
+
+`timeline.ir.json` 是正式时间线唯一事实源，记录源 SHA、EDL、画面呼吸、叠加
+层、字幕、人声、BGM、SFX 和输出合同。`render-graph.json` 是从它确定性编译
+的执行图，冻结配置、事件、几何、编码器、decision digest，以及 proposal /
+edit plan、overlay、字幕、dialogue、BGM、SFX 与字体目录的真实内容身份。
+正式视觉版本在一个 FFmpeg filter graph 内最多完成一次视频编码；只有 graph、
+所有输入身份、输出及全部声明 stem 同时匹配时才复用。同路径素材原地替换会
+改变 graph digest；已有正式输出不会被失效 graph 静默覆盖。
+
+### `.kacha/metrics + cache + project-state`
+
+- `metrics/events.jsonl`：逐阶段墙钟时间、真实/估算 Token 来源、缓存、编码
+  次数、产物和日志；
+- `cache/`：源 SHA、实现 SHA、模型权重/服务 SHA、参数、操作版本与输出
+  schema 的内容指纹产物；
+- `project-state.json`：v2 十三阶段、决定、问题、当前文件证据哈希与唯一
+  下一步；五种 packet 只负责上下文路由，不冒充执行状态。
+
+三者都是执行证据，不由对话历史代替。
+
 ### `generatedShotPlan`
 
 描述生成镜头的参考素材、哈希、provider/model/transport、能力快照、动作节拍、规格、授权和 QC 目标。
@@ -124,6 +145,44 @@ editProposal + editPlan + inputs
 冒充渲染、自动 QC 冒充审片。详细合同见
 `references/agent-execution.md` 和 `references/visual-evidence.md`。
 
+## V5 性能与弱模型执行层
+
+V5 在 V4 状态机之上增加四个确定性边界：
+
+1. **阶段 packet**：`inventory / content / edit / visual_audio / release`
+   分开路由；每阶段 reference 不超过 12k tokens，完整 packet 不超过 16k；
+2. **转写分窗**：完整逐词 JSON 留在文件，agent 用 `transcript index/slice`
+   按 90 秒窗口读取，单次上限 180 秒；
+3. **规则与升级**：`rules query/compile/apply` 只返回 1–3 个候选；低置信度
+   或冲突只能做局部预览并升级，不能 final；
+4. **统一执行**：`timeline` 编译、`render` 一次正式编码、`cache` 内容复用、
+   `resources` 主机级跨项目调度、`metrics` 自动观测。
+
+```text
+stage packet + transcript window + semantic cues
+                         │
+                         ▼
+              deterministic rules
+                         │
+                  Timeline IR
+                         │
+                  Render Graph
+                         │
+       cache + resource leases + telemetry
+                         │
+             preview / one final encode
+                         │
+                    QC + human
+```
+
+模型只负责意图、内容结构、候选选择和短预览比较；文件身份、状态、依赖、编码、
+缓存和技术 QC 由代码负责。实现和运维命令见
+`docs/PERFORMANCE_TOKEN_STABILITY_V5.md`。
+
+要求 BGM 的最终 QC 不止检查独立 stem：它先用 dialogue/BGM/SFX 重建 mix，
+再比较最终视频解码音频与 mix stem 的残差信噪比。因此“组件文件正确但最终
+成片漏混”会被阻断。
+
 ## 配置边界
 
 `scripts/kacha_config.mjs` 把内置、用户、项目、本机和显式配置合并成一份
@@ -183,6 +242,9 @@ FFmpeg/SVG 预览证明实现可运行，不证明效果适合当前内容。正
 - 人工审片证据缺失：不得 release。
 - 显式缓存请求与依赖失效冲突：拒绝复用；
 - `candidate` 试图进入最终发布：停止；
+- 局部预览试图占用正式输出、final 带未解决升级项或正式编码超过一次：停止；
+- 缓存键已存在但内容/哈希失效、缓存超过容量或凭证试图进入缓存：停止；
+- 多个重型 MPS/视频编码任务争用资源：等待或停止，不静默并行；
 
 ## 扩展方式
 

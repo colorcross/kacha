@@ -7,6 +7,10 @@
     "netstyleTimelines": [],
     "visualBreathingTimelines": [],
     "captionTimelines": [],
+    "timeline": {
+      "path": "./timeline-ir.json",
+      "mode": "template"
+    },
     "localChange": {
       "path": "./local-change-plan.json",
       "mode": "template"
@@ -38,7 +42,13 @@
     "maxAvDriftFrames": 1,
     "integratedLufsMin": -21.5,
     "integratedLufsMax": -19.0,
-    "truePeakMax": -3.0
+    "truePeakMax": -3.0,
+    "audioMix": {
+      "bgmRequired": true,
+      "bgmBelowDialogueDbMin": 12,
+      "bgmBelowDialogueDbMax": 18,
+      "bgmMinimumCoverageRatio": 0.85
+    }
   },
   "requiredCoverAspectRatios": [
     "3:4",
@@ -68,6 +78,20 @@
         "sha256": "replace-after-render"
       }
     ],
+    "audioStems": {
+      "dialogue": {
+        "path": "./output/dialogue-stem.wav"
+      },
+      "bgm": {
+        "path": "./output/bgm-stem.wav"
+      },
+      "sfx": {
+        "path": "./output/sfx-stem.wav"
+      },
+      "mix": {
+        "path": "./output/final-mix-stem.wav"
+      }
+    },
     "technicalQcReport": {
       "path": "./output/technical-qc.json"
     },

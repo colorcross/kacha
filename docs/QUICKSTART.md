@@ -40,6 +40,14 @@ node scripts/kacha.mjs prepare \
 涉及画面时先生成本地 `visual-evidence`；MiniMax 必须同时获得外传、付费服务
 和命令行显式上传授权。
 
+长转写不要整份放进 packet：
+
+```bash
+node scripts/kacha.mjs transcript index transcript.json
+node scripts/kacha.mjs transcript slice transcript.json \
+  --start 0 --end 90
+```
+
 ## 1. 创建项目目录
 
 ```bash
@@ -103,7 +111,27 @@ scripts/capability_probe.sh \
 node scripts/kacha.mjs gate-render my-video-project/contracts/project-manifest.json
 ```
 
-通过后，使用项目选定的 FFmpeg、NLE、Remotion、HyperFrames 或其他时间线引擎执行。咔嚓负责合同和门禁，不会自动生成通用时间线。
+通过后可继续使用项目选定的 NLE/Remotion/HyperFrames；如果项目登记了
+`plans.timeline`，咔嚓可直接执行统一时间线：
+
+```bash
+node scripts/kacha.mjs timeline validate \
+  --plan my-video-project/contracts/timeline.json
+node scripts/kacha.mjs render \
+  my-video-project/contracts/project-manifest.json
+```
+
+EDL、画面呼吸、叠加层、字幕、dialogue、BGM 和 SFX 会在一个 Render Graph
+中完成，正式视觉版本最多一次完整视频编码。
+
+参数探索先做局部代理：
+
+```bash
+node scripts/kacha.mjs timeline render \
+  --plan my-video-project/contracts/timeline.json \
+  --mode preview --range-start 42 --range-end 50 \
+  --output my-video-project/preview/42-50.mp4
+```
 
 ## 6. 执行 v2 阶段
 
@@ -163,6 +191,16 @@ node scripts/kacha.mjs captions plan \
 把计划加入项目 manifest 的 `plans.netstyleTimelines`。字幕与最终混音必须在
 这个输出之后执行。cue 字段和全部门禁见
 [`references/z-en-editing-system.md`](../references/z-en-editing-system.md)。
+
+高成本分析和素材生成使用统一缓存入口：
+
+```bash
+node scripts/kacha.mjs transcribe source.mov --output transcript.json
+node scripts/kacha.mjs masks source.mov --output-dir masks
+node scripts/kacha.mjs styleframe render \
+  --scene process_progressive --output design/process.svg
+node scripts/kacha.mjs cache inspect --project-root my-video-project
+```
 
 ## 7. 自动技术 QC
 
@@ -228,3 +266,6 @@ node scripts/kacha.mjs compile-change change-request.json --dry-run
 node scripts/kacha.mjs compile-change change-request.json
 node scripts/kacha.mjs next /path/to/compiled/incremental-project.json
 ```
+
+性能、Token、缓存和弱模型完整说明见
+[V5 性能与稳定生产](PERFORMANCE_TOKEN_STABILITY_V5.md)。

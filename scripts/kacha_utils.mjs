@@ -197,6 +197,56 @@ export function fileIdentity(file, { includeHash = true } = {}) {
   };
 }
 
+export function directoryIdentity(directory, { includeHash = true } = {}) {
+  const root = path.resolve(directory);
+  if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
+    throw new Error(`directory does not exist: ${root}`);
+  }
+  const entries = [];
+  const visit = (current) => {
+    const children = fs.readdirSync(current, { withFileTypes: true })
+      .sort((left, right) => left.name.localeCompare(right.name));
+    for (const child of children) {
+      const absolute = path.join(current, child.name);
+      const relative = path.relative(root, absolute).split(path.sep).join("/");
+      if (child.isDirectory()) {
+        entries.push({ path: `${relative}/`, kind: "directory" });
+        visit(absolute);
+      } else if (child.isFile()) {
+        const stat = fs.statSync(absolute);
+        entries.push({
+          path: relative,
+          kind: "file",
+          sizeBytes: stat.size,
+          ...(includeHash ? { sha256: sha256File(absolute) } : {}),
+        });
+      } else if (child.isSymbolicLink()) {
+        entries.push({
+          path: relative,
+          kind: "symlink",
+          target: fs.readlinkSync(absolute),
+        });
+      }
+    }
+  };
+  visit(root);
+  return {
+    path: root,
+    entries: entries.length,
+    sha256: sha256Value(entries),
+  };
+}
+
+export function fileIdentityMatches(file, identity) {
+  if (!identity || !fs.existsSync(file) || !fs.statSync(file).isFile()) return false;
+  try {
+    return fastIdentityMatches(file, identity)
+      && (!identity.sha256 || sha256File(file) === identity.sha256);
+  } catch {
+    return false;
+  }
+}
+
 export function fastIdentityMatches(file, identity) {
   if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return false;
   const stat = fs.statSync(file);
@@ -307,21 +357,88 @@ export function rationalToNumber(value) {
   return denominator ? numerator / denominator : NaN;
 }
 
+export function resolveRuntimeCommand(command) {
+  if (command === "ffmpeg") {
+    const candidates = [
+      process.env.KACHA_FFMPEG_BIN,
+      "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg",
+      "/usr/local/opt/ffmpeg-full/bin/ffmpeg",
+    ].filter(Boolean);
+    const preferred = candidates.find(
+      (candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile(),
+    );
+    if (preferred) return preferred;
+  }
+  if (command === "ffprobe") {
+    const candidates = [
+      process.env.KACHA_FFPROBE_BIN,
+      process.env.KACHA_FFMPEG_BIN
+        ? path.join(path.dirname(process.env.KACHA_FFMPEG_BIN), "ffprobe")
+        : null,
+      "/opt/homebrew/opt/ffmpeg-full/bin/ffprobe",
+      "/usr/local/opt/ffmpeg-full/bin/ffprobe",
+    ].filter(Boolean);
+    const preferred = candidates.find(
+      (candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile(),
+    );
+    if (preferred) return preferred;
+  }
+  return command;
+}
+
+export function runtimeEnvironment(requestedEnvironment = {}) {
+  const environment = {
+    ...process.env,
+    ...requestedEnvironment,
+  };
+  const ffmpeg = resolveRuntimeCommand("ffmpeg");
+  const ffprobe = resolveRuntimeCommand("ffprobe");
+  if (path.isAbsolute(ffmpeg)) {
+    const runtimeDirectory = path.dirname(ffmpeg);
+    environment.PATH = [
+      runtimeDirectory,
+      ...(environment.PATH ?? "").split(path.delimiter)
+        .filter((entry) => entry && entry !== runtimeDirectory),
+    ].join(path.delimiter);
+    environment.KACHA_FFMPEG_BIN ??= ffmpeg;
+  }
+  if (path.isAbsolute(ffprobe)) environment.KACHA_FFPROBE_BIN ??= ffprobe;
+  return environment;
+}
+
 export function commandExists(command) {
-  if (commandCache.has(command)) return commandCache.get(command);
-  const result = spawnSync("/usr/bin/env", ["bash", "-lc", `command -v "${command}"`], {
-    encoding: "utf8",
-  });
-  const available = result.status === 0;
-  commandCache.set(command, available);
+  const resolved = resolveRuntimeCommand(command);
+  const cacheKey = `${command}:${resolved}`;
+  if (commandCache.has(cacheKey)) return commandCache.get(cacheKey);
+  let available;
+  if (["ffmpeg", "ffprobe"].includes(command)) {
+    available = spawnSync(resolved, ["-version"], {
+      encoding: "utf8",
+      env: runtimeEnvironment(),
+    }).status === 0;
+  } else {
+    available = path.isAbsolute(resolved)
+      ? fs.existsSync(resolved) && fs.statSync(resolved).isFile()
+      : spawnSync("/usr/bin/env", ["bash", "-lc", `command -v "${resolved}"`], {
+          encoding: "utf8",
+          env: runtimeEnvironment(),
+        }).status === 0;
+  }
+  commandCache.set(cacheKey, available);
   return available;
 }
 
 export function run(command, args, options = {}) {
-  const result = spawnSync(command, args, {
+  const {
+    env: requestedEnvironment,
+    ...spawnOptions
+  } = options;
+  const environment = runtimeEnvironment(requestedEnvironment ?? {});
+  const result = spawnSync(resolveRuntimeCommand(command), args, {
     encoding: "utf8",
     maxBuffer: 64 * 1024 * 1024,
-    ...options,
+    ...spawnOptions,
+    env: environment,
   });
   return {
     ...result,

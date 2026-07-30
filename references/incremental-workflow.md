@@ -56,6 +56,17 @@ node scripts/kacha.mjs gate-release incremental-project.json
 重新分析全片和重编码冻结层。节省时间不能降低当前版本连接点、变化层和最终
 发布门禁。
 
+L2 代表性预览使用变化区间加 `handleFrames`，再传给统一时间线：
+
+```bash
+node scripts/kacha.mjs timeline render \
+  --plan timeline.ir.json --mode preview \
+  --range-start HANDLE_START --range-end HANDLE_END \
+  --output versions/v2/preview/changed-range.mp4
+```
+
+参数冻结后才扩展到受影响区间；L3 结构变化从最高质量源一次构建正式时间线。
+
 ## 文件角色
 
 - `project-context.json`：项目和基线的稳定事实；
@@ -109,6 +120,21 @@ SHA-256。任何一个文件发生变化，旧 delta QC 和人工报告立即失
 
 显式 `reuseRequests` 必须提供 artifact ID 与精确 fingerprint。请求命中仍不
 能覆盖依赖传播的失效结果；变更类型判定该 artifact 已失效时直接拒绝。
+
+执行层的内容缓存使用：
+
+```bash
+node scripts/kacha.mjs cache inspect --project-root PROJECT_DIR
+node scripts/kacha.mjs transcribe INPUT.mov --output transcript.json
+node scripts/kacha.mjs masks INPUT.mov --output-dir masks
+node scripts/kacha.mjs styleframe render --scene info_single --output frame.svg
+node scripts/kacha.mjs generated-cache run \
+  --plan generated.json --shot SHOT_ID --output shot.mp4 -- GENERATOR...
+```
+
+键同时包含源 SHA、实现 SHA、参数、操作版本和输出 schema；命中仍验证
+SHA。缓存总量超过配置时停止，不自动删除需要付费、长时间重建或人工校准的
+资产。
 
 ## 分层测试
 

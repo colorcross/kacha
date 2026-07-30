@@ -10,6 +10,8 @@ usage() {
   --model NAME                 Demucs 模型，默认读取咔嚓配置
   --device DEVICE              auto/cpu/cuda/mps，默认读取咔嚓配置
   --max-duration-diff SECONDS  分离前后允许的最大时长差，默认读取咔嚓配置
+  --project-root DIR           内容指纹缓存根目录，默认 OUTPUT_DIR 的上一级
+  --no-cache                   内部/诊断用：绕过内容指纹缓存
   --config FILE                显式咔嚓配置；默认读取用户/项目配置
   -h, --help
 
@@ -44,6 +46,8 @@ model=""
 device=""
 max_duration_diff=""
 config_file=""
+project_root=""
+no_cache=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -63,6 +67,14 @@ while [[ $# -gt 0 ]]; do
       config_file=${2:?--config 缺少参数}
       shift 2
       ;;
+    --project-root)
+      project_root=${2:?--project-root 缺少参数}
+      shift 2
+      ;;
+    --no-cache)
+      no_cache=true
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -75,7 +87,37 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-for command_name in node ffmpeg ffprobe jq shasum; do
+ffmpeg_bin=${KACHA_FFMPEG_BIN:-}
+if [[ -z "$ffmpeg_bin" && -x /opt/homebrew/opt/ffmpeg-full/bin/ffmpeg ]]; then
+  ffmpeg_bin=/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg
+fi
+if [[ -z "$ffmpeg_bin" ]]; then ffmpeg_bin=$(command -v ffmpeg || true); fi
+ffprobe_bin=${KACHA_FFPROBE_BIN:-}
+if [[ -z "$ffprobe_bin" && -n "$ffmpeg_bin" && -x "$(dirname "$ffmpeg_bin")/ffprobe" ]]; then
+  ffprobe_bin="$(dirname "$ffmpeg_bin")/ffprobe"
+fi
+if [[ -z "$ffprobe_bin" ]]; then ffprobe_bin=$(command -v ffprobe || true); fi
+if [[ -z "$ffmpeg_bin" || ! -x "$ffmpeg_bin" ]]; then
+  echo "缺少可执行的 ffmpeg 运行时。" >&2
+  exit 3
+fi
+if ! "$ffmpeg_bin" -version >/dev/null 2>&1; then
+  echo "ffmpeg 运行时存在但无法启动。" >&2
+  exit 3
+fi
+if [[ -z "$ffprobe_bin" || ! -x "$ffprobe_bin" ]]; then
+  echo "缺少可执行的 ffprobe 运行时。" >&2
+  exit 3
+fi
+if ! "$ffprobe_bin" -version >/dev/null 2>&1; then
+  echo "ffprobe 运行时存在但无法启动。" >&2
+  exit 3
+fi
+export KACHA_FFMPEG_BIN="$ffmpeg_bin"
+export KACHA_FFPROBE_BIN="$ffprobe_bin"
+export PATH="$(dirname "$ffmpeg_bin"):$PATH"
+
+for command_name in node jq shasum; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "缺少必需命令：$command_name" >&2
     exit 3
@@ -109,6 +151,8 @@ max_duration_diff=${max_duration_diff:-$(printf '%s' "$separation_config" | jq -
 
 runner=()
 engine=""
+runtime_launcher=""
+runtime_python=""
 managed_data_root=${XDG_DATA_HOME:-"${HOME}/.local/share"}
 tool_config_args=(
   "$script_dir/kacha_config.mjs"
@@ -126,23 +170,146 @@ legacy_managed_demucs_bin="$managed_data_root/kacha-kacha/demucs-venv/bin/demucs
 if [[ -x "$managed_demucs_bin" ]] && "$managed_demucs_bin" --help >/dev/null 2>&1; then
   runner=("$managed_demucs_bin")
   engine="kacha-managed-demucs"
+  runtime_launcher="$managed_demucs_bin"
+  runtime_python="$(dirname "$managed_demucs_bin")/python"
 elif [[ -z "${KACHA_DEMUCS_BIN:-}" ]] \
   && [[ -x "$legacy_managed_demucs_bin" ]] \
   && "$legacy_managed_demucs_bin" --help >/dev/null 2>&1; then
   runner=("$legacy_managed_demucs_bin")
   managed_demucs_bin="$legacy_managed_demucs_bin"
   engine="kacha-managed-demucs-legacy-path"
+  runtime_launcher="$legacy_managed_demucs_bin"
+  runtime_python="$(dirname "$legacy_managed_demucs_bin")/python"
 elif command -v demucs >/dev/null 2>&1 && demucs --help >/dev/null 2>&1; then
-  runner=(demucs)
+  runtime_launcher=$(command -v demucs)
+  runner=("$runtime_launcher")
   engine="demucs-command"
+  runtime_python="$(dirname "$runtime_launcher")/python"
 elif command -v python3 >/dev/null 2>&1 \
   && python3 -m demucs --help >/dev/null 2>&1; then
-  runner=(python3 -m demucs)
+  runtime_python=$(command -v python3)
+  runner=("$runtime_python" -m demucs)
   engine="python3-module-demucs"
 else
   echo "缺少真实人声分离引擎 Demucs。请先通过 capability_probe.sh --profile voice。" >&2
   echo "FFmpeg dialoguenhance、中心声道提取和普通降噪不能冒充人声分离。" >&2
   exit 5
+fi
+
+if [[ ! -x "$runtime_python" ]] && command -v python3 >/dev/null 2>&1; then
+  runtime_python=$(command -v python3)
+fi
+runtime_demucs_version="unknown"
+runtime_torch_version="unknown"
+runtime_demucs_module=""
+runtime_demucs_entry_module=""
+if [[ -x "$runtime_python" ]]; then
+  runtime_probe=$(
+    "$runtime_python" -c \
+      'import importlib.metadata as m, demucs, demucs.separate, torch; print("\t".join((m.version("demucs"), str(getattr(torch, "__version__", "unknown")), str(demucs.__file__ or ""), str(demucs.separate.__file__ or ""))))' \
+      2>/dev/null || true
+  )
+  if [[ -n "$runtime_probe" ]]; then
+    IFS=$'\t' read -r runtime_demucs_version runtime_torch_version \
+      runtime_demucs_module runtime_demucs_entry_module <<< "$runtime_probe"
+  fi
+fi
+runtime_fingerprint="demucs=${runtime_demucs_version};torch=${runtime_torch_version}"
+model_cache_root=""
+model_cache_base=${XDG_CACHE_HOME:-"${HOME}/.cache"}
+if [[ -d "$model_cache_base/huggingface/hub/models--adefossez--HTDemucs" ]]; then
+  model_cache_root="$model_cache_base/huggingface/hub/models--adefossez--HTDemucs"
+elif [[ -d "$model_cache_base/torch/hub/checkpoints" ]]; then
+  model_cache_root="$model_cache_base/torch/hub/checkpoints"
+fi
+runtime_model_sha=""
+if [[ -n "$model_cache_root" ]]; then
+  runtime_model_sha=$(
+    node "$script_dir/model_fingerprint.mjs" "$model_cache_root" \
+      | jq -er '.sha256' 2>/dev/null || true
+  )
+fi
+if [[ -z "$runtime_model_sha" && "$no_cache" != true ]]; then
+  echo "无法冻结 Demucs 权重内容指纹，本次分离将绕过缓存。" >&2
+  no_cache=true
+fi
+runtime_fingerprint="${runtime_fingerprint};model_sha=${runtime_model_sha:-unresolved}"
+cache_implementation_args=(--implementation "${BASH_SOURCE[0]}")
+if [[ -f "$runtime_launcher" ]]; then
+  cache_implementation_args+=(--implementation "$runtime_launcher")
+fi
+if [[ -f "$runtime_demucs_module" ]]; then
+  cache_implementation_args+=(--implementation "$runtime_demucs_module")
+fi
+if [[ -f "$runtime_demucs_entry_module" ]]; then
+  cache_implementation_args+=(--implementation "$runtime_demucs_entry_module")
+fi
+
+if [[ "$no_cache" != true ]]; then
+  project_root=${project_root:-$(dirname "$output_dir")}
+  separation_resource=mps
+  if [[ "$device" == "cpu" ]]; then
+    separation_resource=cpuHeavy
+  fi
+  cache_parameters=$(jq -cn \
+    --arg model "$model" \
+    --arg device "$device" \
+    --arg maxDurationDiffSeconds "$max_duration_diff" \
+    --arg engine "$engine" \
+    --arg runtimeFingerprint "$runtime_fingerprint" \
+    --arg modelContentSha256 "$runtime_model_sha" \
+    '{
+      model:$model,
+      device:$device,
+      maxDurationDiffSeconds:($maxDurationDiffSeconds|tonumber),
+      engine:$engine,
+      runtimeFingerprint:$runtimeFingerprint,
+      modelContentSha256:$modelContentSha256
+    }')
+  cache_command=(
+    node "$script_dir/artifact_cache.mjs" run
+    --project-root "$project_root"
+    --kind source_separation
+    --input "$input"
+    "${cache_implementation_args[@]}"
+    --operation-version "demucs-two-stems-v2"
+    --parameters "$cache_parameters"
+    --output "reference=$output_dir/original_reference.wav"
+    --output "dialogue=$output_dir/dialogue_isolated.wav"
+    --output "residual=$output_dir/non_dialogue_residual.wav"
+    --output "report=$output_dir/separation-report.json"
+    --resource "$separation_resource"
+    --
+    bash "${BASH_SOURCE[0]}" "$input" "$output_dir"
+    --model "$model"
+    --device "$device"
+    --max-duration-diff "$max_duration_diff"
+    --no-cache
+  )
+  if [[ -n "$config_file" ]]; then
+    cache_command=(node "$script_dir/artifact_cache.mjs" run
+      --project-root "$project_root"
+      --config "$config_file"
+      --kind source_separation
+      --input "$input"
+      "${cache_implementation_args[@]}"
+      --operation-version "demucs-two-stems-v2"
+      --parameters "$cache_parameters"
+      --output "reference=$output_dir/original_reference.wav"
+      --output "dialogue=$output_dir/dialogue_isolated.wav"
+      --output "residual=$output_dir/non_dialogue_residual.wav"
+      --output "report=$output_dir/separation-report.json"
+      --resource "$separation_resource"
+      --
+      bash "${BASH_SOURCE[0]}" "$input" "$output_dir"
+      --model "$model"
+      --device "$device"
+      --max-duration-diff "$max_duration_diff"
+      --config "$config_file"
+      --no-cache)
+  fi
+  "${cache_command[@]}"
+  exit $?
 fi
 
 mkdir -p "$output_dir"
@@ -166,7 +333,7 @@ trap cleanup EXIT
 
 demucs_args=(--two-stems vocals -n "$model" -o "$work_dir" --float32)
 resolved_device=$device
-if [[ "$resolved_device" == "auto" && "$engine" == "kacha-managed-demucs" ]]; then
+if [[ "$resolved_device" == "auto" && "$engine" == kacha-managed-demucs* ]]; then
   managed_python="$(dirname "$managed_demucs_bin")/python"
   if [[ -x "$managed_python" ]] \
     && "$managed_python" -c "import torch,sys; sys.exit(0 if torch.backends.mps.is_available() else 1)"; then
@@ -192,9 +359,9 @@ if [[ ${#vocal_candidates[@]} -ne 1 || ${#residual_candidates[@]} -ne 1 ]]; then
   exit 7
 fi
 
-source_duration=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$input")
-dialogue_duration=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "${vocal_candidates[0]}")
-residual_duration=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "${residual_candidates[0]}")
+source_duration=$("$ffprobe_bin" -v error -show_entries format=duration -of default=nw=1:nk=1 "$input")
+dialogue_duration=$("$ffprobe_bin" -v error -show_entries format=duration -of default=nw=1:nk=1 "${vocal_candidates[0]}")
+residual_duration=$("$ffprobe_bin" -v error -show_entries format=duration -of default=nw=1:nk=1 "${residual_candidates[0]}")
 
 duration_check=$(awk -v source="$source_duration" -v dialogue="$dialogue_duration" \
   -v residual="$residual_duration" -v tolerance="$max_duration_diff" \
@@ -211,7 +378,7 @@ fi
 normalize_audio() {
   local source_file=$1
   local output_file=$2
-  ffmpeg -v error -i "$source_file" -map 0:a:0 \
+  "$ffmpeg_bin" -v error -i "$source_file" -map 0:a:0 \
     -af "aresample=48000:async=0:first_pts=0,apad=whole_dur=${source_duration},atrim=0:${source_duration}" \
     -c:a pcm_s24le "$output_file"
 }
@@ -229,6 +396,8 @@ jq -n \
   --arg status "candidate_requires_ab" \
   --arg engine "$engine" \
   --arg model "$model" \
+  --arg runtimeFingerprint "$runtime_fingerprint" \
+  --arg modelContentSha256 "$runtime_model_sha" \
   --arg device "$resolved_device" \
   --arg input "$input" \
   --arg inputSha256 "$input_hash" \
@@ -242,6 +411,10 @@ jq -n \
     status: $status,
     engine: $engine,
     model: $model,
+    runtime: {
+      fingerprint: $runtimeFingerprint,
+      modelContentSha256: $modelContentSha256
+    },
     device: $device,
     input: {
       path: $input,

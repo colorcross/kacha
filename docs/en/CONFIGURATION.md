@@ -202,7 +202,16 @@ user-level example for trusted provider and tool settings is available at
 The `execution` section currently covers:
 
 - model tier and reference token budgets;
+- five context-packet budgets, automatic child-usage telemetry, and
+  transcript-window limits;
 - incremental handle frames;
+- unified preview/final render encoders, proxy geometry, and the single-final-
+  encode contract;
+- content-addressed cache capacity, strong model/service fingerprints, and
+  high-value artifact kinds;
+- host-scoped cross-process CPU, MPS, video-encode, network, and I/O resource
+  capacities;
+- local loopback Whisper ASR;
 - visual-evidence sampling, concurrency, and image size;
 - MiniMax frame limit, timeout, image-size limit, and network mode;
 - black/freeze/silence detection and loudness measurement;
@@ -210,9 +219,31 @@ The `execution` section currently covers:
 - voice-enhancement preset, denoise, declick, loudness, peak, and channels;
 - stock-media batch size and timeouts.
 
+When BGM is required, `outputs.audioStems` must declare dialogue/BGM/SFX
+component stems and a final mix stem. QC checks BGM at 12–18 dB below dialogue
+with at least 85% duration coverage, reconstructs the mix at a default minimum
+70 dB residual SNR, and compares decoded final audio with the mix stem at a
+default minimum 24 dB. This catches both inaudible music and a final mux that
+omitted the music.
+
 `tools.demucsBin` and `tools.sfxLibrary` in a user or explicit config may
 contain machine-local absolute paths. `KACHA_DEMUCS_BIN` and
 `KACHA_SFX_LIBRARY` remain available as temporary environment overrides.
+
+HDR/wide-gamut chains require the `zscale` filter. Runtime command resolution
+prefers `KACHA_FFMPEG_BIN`/`KACHA_FFPROBE_BIN`, then a Homebrew keg-only
+`ffmpeg-full`, then the regular PATH. `doctor --profile full` must block an HDR
+job when `filter:zscale` is unavailable; it cannot silently claim an SDR
+fallback is equivalent.
+The resolved FFmpeg/FFprobe directory is propagated to cache workers, resource
+schedulers, telemetry, asynchronous frame extraction, and Python/Shell child
+renderers. Capability checks execute `-version`; file existence or
+`command -v` alone is not accepted as proof that the binary can start.
+
+Non-negotiable performance contracts include host-scoped resource scheduling,
+`mps=1`, `videoEncode=1`, cache SHA verification, compact mandatory telemetry,
+a loopback-only Whisper endpoint, one final visual encode, and Beauty v2
+disabled by default.
 
 Authorization, source immutability, output isolation, semantic integrity,
 shared PTS boundaries, and release gates are not configurable.

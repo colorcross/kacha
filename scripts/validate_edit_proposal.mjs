@@ -488,7 +488,7 @@ function validateSeriesIdentity(plan, errors) {
   }
 }
 
-function validateFlow(plan, errors) {
+function validateFlow(plan, proposalFile, errors) {
   const flow = plan.executionFlow;
   if (!Array.isArray(flow)) {
     errors.push("executionFlow: 必须是数组");
@@ -528,8 +528,28 @@ function validateFlow(plan, errors) {
     if (stage.status === "not_applicable" && !hasValue(stage.notApplicableReason)) {
       errors.push(`${label}: not_applicable 必须提供 notApplicableReason`);
     }
-    if (stage.status === "passed" && !hasValue(stage.evidence)) {
-      errors.push(`${label}: passed 必须提供 evidence`);
+    if (stage.status === "passed") {
+      const evidence = stage.evidence;
+      if (
+        !evidence
+        || typeof evidence !== "object"
+        || Array.isArray(evidence)
+        || !hasValue(evidence.path)
+        || !SHA256.test(evidence.sha256 ?? "")
+      ) {
+        errors.push(`${label}: passed 必须提供 {path, sha256} 文件证据`);
+      } else {
+        const evidenceFile = resolveFrom(proposalFile, evidence.path);
+        if (
+          !evidenceFile
+          || !fs.existsSync(evidenceFile)
+          || !fs.statSync(evidenceFile).isFile()
+        ) {
+          errors.push(`${label}: evidence 文件不存在`);
+        } else if (sha256File(evidenceFile) !== evidence.sha256) {
+          errors.push(`${label}: evidence SHA-256 已失效`);
+        }
+      }
     }
   });
   if (inProgressCount > 1) {
@@ -606,7 +626,7 @@ function validateProposal(plan, proposalFile) {
   );
   validateModules(plan, errors);
   validateDialogueSeparation(plan, errors);
-  validateFlow(plan, errors);
+  validateFlow(plan, proposalFile, errors);
 
   for (const field of [
     "approvedScope",

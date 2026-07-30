@@ -18,6 +18,7 @@ import {
   firstPositional,
   loadKachaConfig,
 } from "./kacha_config.mjs";
+import { evaluateAudioStems } from "./audio_stem_qc.mjs";
 
 function check(id, pass, actual, expected, severity = "error") {
   return {
@@ -112,6 +113,7 @@ const detectorFindings = {
 let summary = null;
 let loudness = null;
 let candidateIdentity = null;
+let audioStemQc = null;
 
 if (
   plan.inputHashes.projectContext !== sha256File(contextFile)
@@ -376,6 +378,17 @@ if (delta.deliverables.video) {
   });
 }
 
+if (audioChanged && summary) {
+  audioStemQc = evaluateAudioStems({
+    projectFile,
+    project,
+    qcConfig,
+    finalDurationSeconds: summary.duration,
+    finalVideo: candidateVideo,
+  });
+  if (audioStemQc) checks.push(...audioStemQc.checks);
+}
+
 for (const cover of delta.deliverables.covers ?? []) {
   const file = resolveFrom(deltaFile, cover.path);
   if (!file || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
@@ -478,6 +491,7 @@ const report = {
   deliverableEvidence,
   deliverableDigest: sha256Value(deliverableEvidence),
   loudness,
+  audioStemQc,
   detectorFindings,
   configuration: {
     digest: loadedConfig.digest,

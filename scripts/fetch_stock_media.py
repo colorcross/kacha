@@ -145,7 +145,7 @@ def validate_media(path: Path, kind: str) -> dict:
     try:
         result = subprocess.run(
             [
-                "ffprobe",
+                os.environ.get("KACHA_FFPROBE_BIN", "ffprobe"),
                 "-v",
                 "error",
                 "-show_streams",

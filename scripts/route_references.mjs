@@ -15,6 +15,13 @@ const TASKS = new Set([
   "content_generation",
   "local_optimization",
 ]);
+const STAGES = new Set([
+  "inventory",
+  "content",
+  "edit",
+  "visual_audio",
+  "release",
+]);
 const MODULE_REFERENCES = {
   audio: ["references/audio.md"],
   dialogue: ["references/audio.md"],
@@ -134,13 +141,19 @@ const modules = option(args, "--modules", "")
   .map((item) => item.trim())
   .filter(Boolean);
 const release = args.includes("--release");
+const stage = option(args, "--stage");
 const output = option(args, "--output");
 if (!TASKS.has(task)) {
   console.error(
     "用法：route_references.mjs --task "
       + "proposal_review|source_edit|content_generation|local_optimization "
+      + "[--stage inventory|content|edit|visual_audio|release] "
       + "[--modules audio,sfx,beauty,covers,...] [--release] [--output FILE]",
   );
+  process.exit(2);
+}
+if (stage && !STAGES.has(stage)) {
+  console.error(`未知 stage：${stage}；可用值：${[...STAGES].join(", ")}`);
   process.exit(2);
 }
 for (const module of modules) {
@@ -152,17 +165,22 @@ for (const module of modules) {
   }
 }
 
-const selected = new Set(["SKILL.md"]);
-if (task === "local_optimization") {
-  selected.add("references/incremental-workflow.md");
-  if (release) selected.add("references/qc-release.md");
+const selected = new Set();
+if (stage) {
+  selected.add(`references/stages/${stage}.md`);
 } else {
-  selected.add("references/project-workflow.md");
-  selected.add("references/editing-theory.md");
-  if (release) selected.add("references/qc-release.md");
-}
-for (const module of modules) {
-  for (const reference of MODULE_REFERENCES[module]) selected.add(reference);
+  selected.add("SKILL.md");
+  if (task === "local_optimization") {
+    selected.add("references/incremental-workflow.md");
+    if (release) selected.add("references/qc-release.md");
+  } else {
+    selected.add("references/project-workflow.md");
+    selected.add("references/editing-theory.md");
+    if (release) selected.add("references/qc-release.md");
+  }
+  for (const module of modules) {
+    for (const reference of MODULE_REFERENCES[module]) selected.add(reference);
+  }
 }
 
 const files = [...selected].map((relative) => {
@@ -184,6 +202,7 @@ const totalCharacters = files.reduce((sum, file) => sum + file.characters, 0);
 const report = {
   schemaVersion: "1.0",
   task,
+  stage,
   modules,
   release,
   files,
@@ -196,7 +215,9 @@ const report = {
       0,
     ),
   },
-  note: "token 为保守启发式预算：非 ASCII 字符按 1 token、ASCII 按 4 字符/token；不是实际计费结果",
+  note: stage
+    ? "阶段包是完整 SKILL 已加载后的紧凑执行合同；详细规则由确定性规则检索按需返回"
+    : "token 为保守启发式预算：非 ASCII 字符按 1 token、ASCII 按 4 字符/token；不是实际计费结果",
 };
 if (output) writeJsonAtomic(path.resolve(output), report);
 console.log(JSON.stringify(report, null, 2));

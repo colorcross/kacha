@@ -162,10 +162,32 @@ chmod 600 ~/.config/kacha/secrets.json
 - 人声使用更暖、更柔、不过分强调 2–5 kHz 的知识口播音色；
 - 最终 LRA 从 `4.5–5.5 LU` 起步；
 - 连续口播 BGM 默认在人声下约 `18 dB`，立体声宽度约 `0.5`；
+- 要求 BGM 的正式项目在 `outputs.audioStems` 声明闪避后的
+  dialogue/BGM/SFX 组件 stem 与 mix stem，并在 `expectedMedia.audioMix`
+  声明可听性合同。自动 QC 默认要求 BGM 低于 dialogue `12–18 dB` 且覆盖
+  至少 85% 成片时长，同时要求组件重建 mix 的残差信噪比不低于 `70 dB`、
+  最终视频解码音频匹配 mix stem 不低于 `24 dB`；音乐过低或成片漏混都会
+  失败；
 - SFX 默认在人声下约 `12 dB`，并轻收 `4.5 kHz` 以上高频。
 
 这是经同响度 A/B 批准的默认起点，不替代具体录音的人声诊断。人声已经处理
 过时不得重复整链；源声音偏闷、女声、儿童声或音乐主导内容需要项目级覆盖。
+
+增量音频返工可在创建项目时登记最终混音分轨：
+
+```bash
+node scripts/create_incremental_manifest.mjs \
+  project-context.json version-delta.json artifact-index.json \
+  --output incremental-project.json \
+  --dialogue-stem output/dialogue-post-mix.wav \
+  --bgm-stem output/bgm-post-sidechain.wav \
+  --sfx-stem output/sfx-post-mix.wav \
+  --mix-stem output/final-mix-stem.wav
+```
+
+提供 `--bgm-stem` 会自动启用 `bgmRequired`，并强制同时提供 dialogue 与
+mix stem。后续 `qc incremental` 会测量闪避后的实际分轨、重建组件混音并
+核对候选成片，拒绝“轨道存在但听不见”或“stem 有音乐、成片漏混”。
 
 ## 风格配置
 
@@ -243,6 +265,12 @@ node scripts/kacha.mjs effects show --kind opening \
 `execution` 当前覆盖：
 
 - 模型档位和 reference token 预算；
+- 自动遥测目录、紧凑输出、完整日志上限、失败摘要长度和 usage 自动采集；
+- 统一 Timeline IR 的代理/正式编码器、代理最大宽度、CRF 和一次正式编码；
+- 内容指纹缓存目录、SHA 校验、物化方式、总容量和高价值产物类型；
+- CPU、MPS、视频编码、网络和 I/O 的主机级跨进程资源槽；
+- 本地 Whisper MLX 的语言、逐词时间戳、超时、低置信度阈值、模型/服务强
+  指纹和缓存；
 - 增量返工的默认 handle 帧数；
 - 语义网感规划开关、每 10 秒主效果密度、最小间隔、并发主效果数、代表验证
   次数与正式渲染 CRF；
@@ -261,6 +289,14 @@ node scripts/kacha.mjs effects show --kind opening \
 本机绝对路径。环境变量
 `KACHA_DEMUCS_BIN`、`KACHA_SFX_LIBRARY` 仍可用于临时覆盖。
 
+HDR/广色域链需要 `zscale`。运行时依次使用 `KACHA_FFMPEG_BIN` /
+`KACHA_FFPROBE_BIN`、Homebrew keg-only `ffmpeg-full`，最后才回退 PATH 中的
+FFmpeg。`doctor --profile full` 缺少 `filter:zscale` 时必须阻断 HDR 任务，
+不能静默按 SDR 处理后宣称等效。
+解析后的 FFmpeg/FFprobe 目录会传递给缓存任务、资源调度、遥测、异步抽帧和
+Python/Shell 子渲染器；能力探测会实际运行 `-version`，不能只凭文件存在或
+`command -v` 判定可用。
+
 口播字幕计划未显式提供 `--font-registry` 时，先读取
 `tools.fontRegistry`，再从素材路径向上查找
 `.kacha/fonts/authorized.json` 或 `.work/kacha-font-registry-authorized.json`；
@@ -269,6 +305,22 @@ node scripts/kacha.mjs effects show --kind opening \
 
 安全合同、授权、源文件只读、输出不覆盖、完整语义、PTS 共边界和 release
 门禁不是可调参数。
+
+以下性能合同也不可通过项目配置关闭：
+
+- `unifiedRender.singleFinalVideoEncode=true`；
+- `artifactCache` 必须包含 source separation、ASR、mask、tracking、Beauty、
+  styleframe 和 generated media；
+- `artifactCache.verifySha256=true`，缓存命中不能退化为只看文件名或大小；
+- `telemetry.enabled=true` 且 `telemetry.compactToolOutput=true`，真实执行必须留下
+  可审计指标，同时不能把完整日志灌入 agent 上下文；
+- `resourceScheduling.scope=host`，且 `capacities.mps=1` 与
+  `videoEncode=1`；
+- Whisper endpoint 只能指向 loopback；
+- Beauty v2 仍默认关闭。
+
+运行和审计方法见
+[`PERFORMANCE_TOKEN_STABILITY_V5.md`](PERFORMANCE_TOKEN_STABILITY_V5.md)。
 
 `execution.netstyle` 的默认值会限制正式时间线密度和并发，但不能绕过内容
 触发、人物蒙版、真实证据素材或计划摘要门禁。代表验证次数固定为每个效果

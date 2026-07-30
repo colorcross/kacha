@@ -2,10 +2,10 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
 import {
   mediaSummary,
   readJson,
+  run,
   sha256File,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
@@ -44,14 +44,11 @@ if (!(fps > 0)) {
   process.exit(1);
 }
 
-const scene = spawnSync("ffmpeg", [
+const scene = run("ffmpeg", [
   "-hide_banner", "-nostats", "-i", inputFile,
   "-vf", `select='gt(scene,${threshold})',metadata=print`,
   "-an", "-f", "null", "-",
-], {
-  encoding: "utf8",
-  stdio: ["ignore", "pipe", "pipe"],
-});
+]);
 if (scene.status !== 0) {
   console.error(scene.stderr || "FFmpeg 场景候选扫描失败");
   process.exit(1);
@@ -117,8 +114,7 @@ candidates.forEach((item, index) => {
   item.reviewRequired = true;
 });
 
-const adaptiveDetector = spawnSync("scenedetect", ["--version"], {
-  encoding: "utf8",
+const adaptiveDetector = run("scenedetect", ["--version"], {
   stdio: ["ignore", "pipe", "pipe"],
 });
 const report = {

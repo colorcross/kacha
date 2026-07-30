@@ -11,6 +11,7 @@ import {
   sha256File,
   sha256Value,
 } from "../scripts/kacha_utils.mjs";
+import { resolveResourceDirectory } from "../scripts/resource_pool.mjs";
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillDirectory = path.dirname(testDirectory);
@@ -271,6 +272,19 @@ await test("reference router loads only task-relevant context", () => {
   ) {
     throw new Error("netstyle route did not load the editing-system reference");
   }
+  const compactRoute = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "route_references.mjs"),
+    "--task", "source_edit",
+    "--stage", "edit",
+    "--modules", "audio,beauty,covers,generated,netstyle,subtitles",
+  ]).stdout);
+  if (
+    compactRoute.files.length !== 1
+    || compactRoute.files[0].path !== "references/stages/edit.md"
+    || compactRoute.totals.approximateInputTokens > 12_000
+  ) {
+    throw new Error("stage router did not produce a compact bounded execution contract");
+  }
 });
 
 await test("doctor and low-model packet expose deterministic execution", () => {
@@ -297,15 +311,13 @@ await test("doctor and low-model packet expose deterministic execution", () => {
     "economy",
   ]);
   const packet = JSON.parse(prepared.stdout);
-  for (const expected of [
-    "references/incremental-workflow.md",
-    "references/visuals-masks.md",
-    "references/agent-execution.md",
-    "references/visual-evidence.md",
-  ]) {
-    if (!packet.readOrder.some((file) => file.endsWith(expected))) {
-      throw new Error(`agent packet missing ${expected}`);
-    }
+  if (
+    packet.stage !== "edit"
+    || packet.readOrder.length !== 1
+    || !packet.readOrder[0].endsWith("references/stages/edit.md")
+    || packet.ruleRetrieval === null
+  ) {
+    throw new Error("economy packet did not default to the compact edit stage");
   }
   if (
     packet.modelTier !== "economy"
@@ -335,6 +347,291 @@ await test("doctor and low-model packet expose deterministic execution", () => {
     throw new Error("over-budget packet did not fail closed");
   }
 }, "core");
+
+await test("resolved media runtime propagates to nested child processes", () => {
+  const nested = run(process.execPath, [
+    "-e",
+    "const {spawnSync}=require('node:child_process');"
+      + "const results=['ffmpeg','ffprobe'].map(command=>{"
+      + "const value=spawnSync(command,['-version'],{encoding:'utf8'});"
+      + "return {command,status:value.status,firstLine:String(value.stdout||'').split(/\\r?\\n/)[0]};"
+      + "});console.log(JSON.stringify(results));"
+      + "process.exit(results.every(item=>item.status===0)?0:1);",
+  ], { cwd: temporary });
+  if (nested.status !== 0) {
+    throw new Error(`nested media runtime was not executable: ${nested.stderr}`);
+  }
+  const results = JSON.parse(nested.stdout);
+  if (
+    results.length !== 2
+    || !results.every(
+      (item) => item.status === 0 && item.firstLine.startsWith(`${item.command} version`),
+    )
+  ) {
+    throw new Error("nested media runtime did not expose verified ffmpeg and ffprobe");
+  }
+}, "core");
+
+await test("transcript windows keep long ASR text out of low-token packets", () => {
+  const transcript = path.join(temporary, "long-transcript.json");
+  const segments = Array.from({ length: 100 }, (_, index) => ({
+    id: `segment-${String(index + 1).padStart(4, "0")}`,
+    start: index * 6,
+    end: (index + 1) * 6,
+    text: `第${index + 1}段这是需要按窗口读取而不是全部进入提示词的口播内容。`,
+    confidence: index < 25 ? "low" : "normal",
+    reasons: index < 25 ? ["synthetic_low_confidence"] : [],
+    words: [{
+      start: index * 6,
+      end: index * 6 + 0.5,
+      word: "测试",
+      probability: 0.9,
+    }],
+  }));
+  writeJson(transcript, {
+    schemaVersion: "1.0",
+    status: "pass_with_review",
+    language: "zh",
+    durationSeconds: 600,
+    text: segments.map((segment) => segment.text).join(""),
+    segments,
+  });
+  const index = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "transcript",
+    "index",
+    transcript,
+    "--window-seconds",
+    "90",
+  ]).stdout);
+  const slice = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "transcript",
+    "slice",
+    transcript,
+    "--start",
+    "90",
+    "--end",
+    "180",
+  ]).stdout);
+  const packet = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "prepare",
+    "--task",
+    "local_optimization",
+    "--model-tier",
+    "economy",
+    "--stage",
+    "edit",
+    "--transcript",
+    transcript,
+  ]).stdout);
+  const windowPacket = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "prepare",
+    "--task",
+    "local_optimization",
+    "--model-tier",
+    "economy",
+    "--stage",
+    "edit",
+    "--transcript",
+    transcript,
+    "--transcript-window",
+    "90:180",
+  ]).stdout);
+  if (
+    index.windows.length !== 7
+    || index.textIncluded !== false
+    || slice.segmentCount !== 15
+    || slice.wordsIncluded !== false
+    || packet.transcriptEvidence.semanticCues !== undefined
+    || packet.transcriptEvidence.fullTextOmittedFromPacket !== true
+    || packet.transcriptEvidence.lowConfidenceSegments.length !== 20
+    || packet.transcriptEvidence.lowConfidenceOmittedCount !== 5
+    || windowPacket.transcriptEvidence.selectedWindow.segmentCount !== 15
+    || packet.packetBudget.withinBudget !== true
+    || packet.packetBudget.approximateInputTokens > 16_000
+  ) {
+    throw new Error("long transcript was not bounded into explicit low-token windows");
+  }
+}, "core");
+
+await test("deterministic rule engine gives weak models stable scored decisions", () => {
+  const validation = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "rules",
+    "validate",
+  ]).stdout);
+  if (validation.ruleCount < 18) {
+    throw new Error("decision registry does not cover the required production rules");
+  }
+  const query = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "rules",
+    "query",
+    "--stage",
+    "edit",
+    "--modules",
+    "cut,transition",
+    "--signals",
+    JSON.stringify(["information_change", "connection"]),
+    "--limit",
+    "5",
+  ]).stdout);
+  if (
+    query.rules.length < 2
+    || query.rules.some((rule) => rule.candidates.length > 3)
+    || query.rules[0].priority !== "required"
+  ) {
+    throw new Error("rule retrieval did not return bounded, priority-scored candidates");
+  }
+  const first = path.join(temporary, "decision-plan-first.json");
+  const second = path.join(temporary, "decision-plan-second.json");
+  const compile = (output) => JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "rules",
+    "compile",
+    "--cues",
+    path.join(examples, "semantic-cues.json"),
+    "--output",
+    output,
+    "--model-tier",
+    "economy",
+    "--seed",
+    "7",
+  ]).stdout);
+  const firstResult = compile(first);
+  const secondResult = compile(second);
+  const relocatedCues = path.join(temporary, "relocated-semantic-cues.json");
+  const relocatedPlan = path.join(temporary, "relocated-decision-plan.json");
+  fs.copyFileSync(path.join(examples, "semantic-cues.json"), relocatedCues);
+  const relocatedResult = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "rules",
+    "compile",
+    "--cues",
+    relocatedCues,
+    "--output",
+    relocatedPlan,
+    "--model-tier",
+    "economy",
+    "--seed",
+    "7",
+  ]).stdout);
+  const plan = readJson(first);
+  if (
+    firstResult.digest !== secondResult.digest
+    || firstResult.digest !== relocatedResult.digest
+    || plan.digest !== firstResult.digest
+  ) {
+    throw new Error(
+      "same cue content/rules/config/seed did not produce the same decision digest",
+    );
+  }
+  const expectedCuts = [true, true, true, false, true];
+  const passedChecks = plan.decisions.filter(
+    (decision, index) => decision.cut.apply === expectedCuts[index],
+  ).length;
+  if (passedChecks / expectedCuts.length < 0.95) {
+    throw new Error("economy decision golden pass rate fell below 95%");
+  }
+  const cutScales = plan.decisions
+    .filter((decision) => decision.cut.apply)
+    .map((decision) => decision.cut.shotScale);
+  if (cutScales.some((scale, index) => index > 0 && scale === cutScales[index - 1])) {
+    throw new Error("deterministic decision plan repeated the same adjacent shot scale");
+  }
+  if (
+    plan.quality.escalationCount !== 1
+    || plan.decisions.find((decision) => decision.id === "uncertain-name")
+      ?.execution.finalRenderAllowed !== false
+  ) {
+    throw new Error("weak-model uncertainty did not trigger preview/escalation");
+  }
+  const invalidCues = path.join(temporary, "invalid-semantic-cues.json");
+  writeJson(invalidCues, {
+    cues: [
+      { id: "first", start: 0, end: 2, confidence: 0.9, signals: [] },
+      { id: "overlap", start: 1.5, end: 3, confidence: "unknown", signals: [] },
+    ],
+  });
+  const invalidCompile = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "rules",
+    "compile",
+    "--cues",
+    invalidCues,
+    "--output",
+    path.join(temporary, "invalid-decision-plan.json"),
+  ]);
+  if (!/乱序|重叠|confidence/.test(invalidCompile.stderr)) {
+    throw new Error("decision compiler accepted invalid weak-model cue timing");
+  }
+  const decisionSource = path.join(temporary, "decision-source.mp4");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "testsrc2=size=160x90:rate=25:duration=9",
+    "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+    decisionSource,
+  ]);
+  const baseTimeline = path.join(temporary, "decision-base-timeline.json");
+  writeJson(baseTimeline, {
+    schemaVersion: "1.0",
+    projectId: "decision-apply",
+    mode: "final",
+    source: { path: decisionSource, sha256: sha256File(decisionSource) },
+    edl: [{ id: "full", sourceStart: 0, sourceEnd: 8.5 }],
+    visual: { breathing: [], overlays: [] },
+    audio: { sfx: [] },
+    output: {
+      path: path.join(temporary, "decision-final.mp4"),
+      width: 160,
+      height: 90,
+      fps: 25,
+    },
+  });
+  const blockedApply = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "rules",
+    "apply",
+    "--decision-plan",
+    first,
+    "--timeline",
+    baseTimeline,
+    "--output",
+    path.join(temporary, "decision-final-timeline.json"),
+  ]);
+  if (!blockedApply.stderr.includes("升级项")) {
+    throw new Error("final timeline accepted unresolved weak-model escalation");
+  }
+  const previewTimeline = path.join(temporary, "decision-preview-timeline.json");
+  const previewVideo = path.join(temporary, "decision-preview.mp4");
+  const applied = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "rules",
+    "apply",
+    "--decision-plan",
+    first,
+    "--timeline",
+    baseTimeline,
+    "--output",
+    previewTimeline,
+    "--preview-only",
+    "--video-output",
+    previewVideo,
+  ]).stdout);
+  const appliedTimeline = readJson(previewTimeline);
+  if (
+    applied.mode !== "preview"
+    || applied.finalRenderAllowed !== false
+    || appliedTimeline.edl.length !== 5
+    || appliedTimeline.visual.breathing.length !== 3
+    || appliedTimeline.decisionPlan.digest !== plan.digest
+  ) {
+    throw new Error("decision plan did not compile into a guarded executable Timeline IR");
+  }
+});
 
 await test("configuration merges parameters, natural language and redacted credentials", async () => {
   fs.mkdirSync(isolatedConfigHome, { recursive: true });
@@ -498,6 +795,32 @@ await test("configuration merges parameters, natural language and redacted crede
   ]);
   if (!unsafe.stderr.includes("不能由默认配置设置")) {
     throw new Error("configuration accepted a per-project authorization override");
+  }
+  const weakenedExecutionConfig = path.join(
+    temporary,
+    "weakened-execution-config.json",
+  );
+  writeJson(weakenedExecutionConfig, {
+    schemaVersion: "1.0",
+    execution: {
+      telemetry: {
+        enabled: false,
+      },
+      artifactCache: {
+        verifySha256: false,
+      },
+    },
+  });
+  const weakenedExecution = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config",
+    "validate",
+    "--config",
+    weakenedExecutionConfig,
+    "--no-secrets",
+  ]);
+  if (!weakenedExecution.stderr.includes("必须保持 true")) {
+    throw new Error("configuration allowed telemetry or cache verification to be disabled");
   }
   const untrustedProjectRoot = path.join(temporary, "untrusted-config-project");
   fs.mkdirSync(untrustedProjectRoot, { recursive: true });
@@ -782,6 +1105,40 @@ await test("video design system validates, resolves every mode and renders produ
   ) {
     throw new Error("video design system styleframe was not rendered");
   }
+  const cachedStyleframe = path.join(temporary, "design-system-cached.svg");
+  const cachedStyleframeManifest = `${cachedStyleframe}.manifest.json`;
+  const cachedStyleframeArguments = [
+    path.join(scripts, "kacha.mjs"),
+    "styleframe",
+    "render",
+    "--scene",
+    "process_progressive",
+    "--aspect",
+    "portrait-9x16",
+    "--language",
+    "bilingual",
+    "--output",
+    cachedStyleframe,
+    "--project-root",
+    temporary,
+    "--no-guides",
+  ];
+  const cachedStyleframeMiss = JSON.parse(
+    execute(process.execPath, cachedStyleframeArguments).stdout,
+  );
+  fs.unlinkSync(cachedStyleframe);
+  fs.unlinkSync(cachedStyleframeManifest);
+  const cachedStyleframeHit = JSON.parse(
+    execute(process.execPath, cachedStyleframeArguments).stdout,
+  );
+  if (
+    cachedStyleframeMiss.cache?.status !== "miss"
+    || cachedStyleframeHit.cache?.status !== "hit"
+    || !fs.existsSync(cachedStyleframe)
+    || !fs.existsSync(cachedStyleframeManifest)
+  ) {
+    throw new Error("video design styleframe did not use content-addressed reuse");
+  }
 
   const matrixReportFile = path.join(temporary, "design-system-matrix-qc.json");
   const matrix = JSON.parse(execute(process.execPath, [
@@ -1033,6 +1390,37 @@ await test("Beauty v2 Vision generator typechecks and can verify a real-face fix
   }
   if (process.platform === "darwin") {
     execute("swiftc", ["-typecheck", generator]);
+    const visionMaskSource = path.join(temporary, "vision-mask-source.mp4");
+    execute("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-y",
+      "-f", "lavfi", "-i", "testsrc2=size=160x90:rate=10:duration=1",
+      "-an", "-c:v", "libx264", "-preset", "ultrafast",
+      "-pix_fmt", "yuv420p", visionMaskSource,
+    ]);
+    const cachedMasks = path.join(temporary, "cached-vision-masks");
+    const maskArguments = [
+      path.join(scripts, "kacha.mjs"),
+      "masks",
+      visionMaskSource,
+      "--output-dir",
+      cachedMasks,
+      "--sample-fps",
+      "1",
+      "--quality",
+      "fast",
+      "--project-root",
+      temporary,
+    ];
+    const maskMiss = JSON.parse(execute(process.execPath, maskArguments).stdout);
+    fs.rmSync(cachedMasks, { recursive: true, force: true });
+    const maskHit = JSON.parse(execute(process.execPath, maskArguments).stdout);
+    if (
+      maskMiss.cache?.status !== "miss"
+      || maskHit.cache?.status !== "hit"
+      || !fs.existsSync(path.join(cachedMasks, "manifest.json"))
+    ) {
+      throw new Error("Vision masks wrapper did not reuse its content-addressed output");
+    }
   }
   const realFixture = process.env.KACHA_REAL_FACE_FIXTURE;
   if (!realFixture) return;
@@ -1112,6 +1500,24 @@ await test("proposal rejects invalid stage status", () => {
   const file = path.join(temporary, "proposal-bad-status.json");
   writeJson(file, proposal);
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
+});
+
+await test("proposal passed stages require current file-backed evidence", () => {
+  const proposal = readJson(ensureValidProposalFixture());
+  proposal.executionFlow[0] = {
+    ...proposal.executionFlow[0],
+    status: "passed",
+    evidence: "claimed without a file",
+  };
+  const file = path.join(temporary, "proposal-fabricated-stage-evidence.json");
+  writeJson(file, proposal);
+  const failed = expectFailure(process.execPath, [
+    path.join(scripts, "validate_edit_proposal.mjs"),
+    file,
+  ]);
+  if (!failed.stderr.includes("{path, sha256}")) {
+    throw new Error("proposal validator did not require file-backed stage evidence");
+  }
 });
 
 await test("proposal rejects task and authorization mismatch", () => {
@@ -1702,6 +2108,73 @@ await test("generated execution validates real files, hashes and authorization",
     process.execPath,
     [path.join(scripts, "validate_generated_shot_plan.mjs"), file, "--for-execution"],
   );
+  const generatedOutput = path.join(temporary, "generated-cached.mp4");
+  const generatedArguments = [
+    path.join(scripts, "kacha.mjs"),
+    "generated-cache",
+    "run",
+    "--plan",
+    file,
+    "--shot",
+    plan.generatedShots[0].id,
+    "--output",
+    generatedOutput,
+    "--project-root",
+    temporary,
+    "--",
+    "/bin/cp",
+    video,
+    generatedOutput,
+  ];
+  const generatedMiss = JSON.parse(
+    execute(process.execPath, generatedArguments).stdout,
+  );
+  fs.unlinkSync(generatedOutput);
+  const generatedHit = JSON.parse(
+    execute(process.execPath, generatedArguments).stdout,
+  );
+  const alternateGeneratedOutput = path.join(
+    temporary,
+    "generated-cached-alternate-destination.mp4",
+  );
+  const alternateGeneratedArguments = generatedArguments.map((value) => (
+    value === generatedOutput ? alternateGeneratedOutput : value
+  ));
+  const alternateGeneratedHit = JSON.parse(
+    execute(process.execPath, alternateGeneratedArguments).stdout,
+  );
+  if (
+    generatedMiss.cache?.status !== "miss"
+    || generatedMiss.paidCallExecuted !== true
+    || generatedHit.cache?.status !== "hit"
+    || generatedHit.paidCallExecuted !== false
+    || !fs.existsSync(generatedOutput)
+    || alternateGeneratedHit.cache?.status !== "hit"
+    || alternateGeneratedHit.paidCallExecuted !== false
+    || !fs.existsSync(alternateGeneratedOutput)
+  ) {
+    throw new Error(
+      "generated media wrapper did not reuse the same shot across output destinations",
+    );
+  }
+  const secretFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "generated-cache",
+    "run",
+    "--plan",
+    file,
+    "--shot",
+    plan.generatedShots[0].id,
+    "--output",
+    path.join(temporary, "generated-secret.mp4"),
+    "--",
+    "/bin/cp",
+    "--api-token",
+    "forbidden",
+  ]);
+  if (!secretFailure.stderr.includes("不得携带凭证")) {
+    throw new Error("generated media wrapper accepted a credential-bearing command");
+  }
 });
 
 await test("reframe fails closed on multiple unlocked subjects", () => {
@@ -2310,6 +2783,454 @@ await test("semantic netstyle production plan renders real timeline events witho
   }
 }, "visual");
 
+await test("unified timeline renders EDL, motion, overlays, subtitles and audio in one encode", () => {
+  const directory = path.join(temporary, "unified-timeline");
+  fs.mkdirSync(directory, { recursive: true });
+  const source = path.join(directory, "source.mp4");
+  const overlay = path.join(directory, "overlay.png");
+  const bgm = path.join(directory, "bgm.wav");
+  const sfx = path.join(directory, "sfx.wav");
+  const subtitles = path.join(directory, "subtitles.mov");
+  const output = path.join(directory, "preview.mp4");
+  const graph = path.join(directory, "render-graph.json");
+  const dialogueStem = path.join(directory, "dialogue.wav");
+  const bgmStem = path.join(directory, "bgm-stem.wav");
+  const sfxStem = path.join(directory, "sfx-stem.wav");
+  const mixStem = path.join(directory, "mix-stem.wav");
+  const timeline = path.join(directory, "timeline.json");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=25:duration=4",
+    "-f", "lavfi", "-i", "sine=frequency=220:duration=4:sample_rate=48000",
+    "-shortest", "-c:v", "libx264", "-preset", "ultrafast",
+    "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", source,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "color=c=0xF6A21A:s=70x50:d=0.1",
+    "-frames:v", "1", "-threads", "1", overlay,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "sine=frequency=330:duration=3:sample_rate=48000",
+    "-c:a", "pcm_s24le", bgm,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "sine=frequency=880:duration=0.12:sample_rate=48000",
+    "-c:a", "pcm_s24le", sfx,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i",
+    "color=c=black@0.0:s=320x180:r=25:d=3,format=rgba,"
+      + "drawbox=x=85:y=145:w=150:h=18:color=white@0.85:t=fill",
+    "-an", "-c:v", "qtrle", "-pix_fmt", "argb", subtitles,
+  ]);
+  writeJson(path.join(directory, "kacha.config.json"), {
+    schemaVersion: "1.0",
+    execution: {
+      unifiedRender: {
+        preview: {
+          encoder: "libx264",
+          fallbackEncoder: "libx264",
+          preset: "ultrafast",
+          crf: 23,
+        },
+        final: {
+          encoder: "libx264",
+          fallbackEncoder: "libx264",
+          preset: "ultrafast",
+          crf: 18,
+        },
+      },
+    },
+  });
+  writeJson(timeline, {
+    schemaVersion: "1.0",
+    projectId: "unified-timeline-smoke",
+    mode: "preview",
+    source: {
+      path: source,
+      sha256: sha256File(source),
+    },
+    edl: [
+      { id: "first", sourceStart: 0, sourceEnd: 1.5 },
+      { id: "second", sourceStart: 2, sourceEnd: 3.5 },
+    ],
+    visual: {
+      breathing: [{
+        start: 0.1,
+        end: 0.9,
+        scale: 1.05,
+        anchorX: 0.5,
+        anchorY: 0.45,
+        entryRatio: 0.3,
+        exitRatio: 0.3,
+      }],
+      overlays: [{
+        kind: "image",
+        path: overlay,
+        start: 0.5,
+        end: 1.3,
+        x: 230,
+        y: 20,
+        width: 70,
+        height: 50,
+        opacity: 0.85,
+      }],
+      subtitles: { kind: "overlay_video", path: subtitles },
+    },
+    audio: {
+      bgm: {
+        path: bgm,
+        levelBelowDialogueDb: 16,
+        sidechain: true,
+      },
+      sfx: [{
+        path: sfx,
+        time: 1,
+        levelBelowDialogueDb: 8,
+      }],
+    },
+    output: {
+      path: output,
+      width: 320,
+      height: 180,
+      fps: 25,
+      dialogueStem,
+      bgmStem,
+      sfxStem,
+      mixStem,
+    },
+  });
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "timeline",
+    "validate",
+    "--plan",
+    timeline,
+  ]);
+  const rendered = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "timeline",
+    "render",
+    "--plan",
+    timeline,
+    "--graph",
+    graph,
+  ]);
+  const result = JSON.parse(rendered.stdout);
+  const manifest = readJson(`${output}.manifest.json`);
+  const summary = mediaSummary(output);
+  if (
+    result.videoEncodes !== 1
+    || manifest.execution.videoEncodes !== 1
+    || manifest.execution.fullDecodePerformed !== false
+    || summary.width !== 320
+    || summary.height !== 180
+    || Math.abs(summary.videoDuration - 3) > 0.06
+    || !summary.audio
+  ) {
+    throw new Error("unified renderer did not preserve its one-encode media contract");
+  }
+  for (const stem of [dialogueStem, bgmStem, sfxStem, mixStem]) {
+    if (!fs.existsSync(stem) || !mediaSummary(stem).audio) {
+      throw new Error(`unified renderer did not emit declared stem ${stem}`);
+    }
+  }
+  const reused = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "timeline",
+    "render",
+    "--plan",
+    timeline,
+    "--graph",
+    graph,
+  ]);
+  const reuseResult = JSON.parse(reused.stdout);
+  if (reuseResult.status !== "reused" || reuseResult.videoEncodes !== 0) {
+    throw new Error("exact unified timeline rerun did not reuse its verified output");
+  }
+  const originalGraphDigest = readJson(graph).digest;
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "color=c=0x2367FF:s=70x50:d=0.1",
+    "-frames:v", "1", "-threads", "1", overlay,
+  ]);
+  const changedGraph = path.join(directory, "changed-asset.render-graph.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "timeline",
+    "compile",
+    "--plan",
+    timeline,
+    "--graph",
+    changedGraph,
+  ]);
+  if (readJson(changedGraph).digest === originalGraphDigest) {
+    throw new Error("in-place overlay content change did not invalidate the render graph");
+  }
+  const changedRender = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "timeline",
+    "render",
+    "--plan",
+    timeline,
+    "--graph",
+    changedGraph,
+  ]);
+  if (!changedRender.stderr.includes("拒绝覆盖已有输出")) {
+    throw new Error("changed asset was neither invalidated nor rejected fail-closed");
+  }
+  const proxyConfig = path.join(directory, "proxy.config.json");
+  const rangeTimeline = path.join(directory, "range-timeline.json");
+  const rangeOutput = path.join(directory, "range-preview.mp4");
+  const rangeGraph = path.join(directory, "range-preview.render-graph.json");
+  const rangeTimelineValue = readJson(timeline);
+  rangeTimelineValue.output = {
+    ...rangeTimelineValue.output,
+    width: 640,
+    height: 360,
+  };
+  writeJson(rangeTimeline, rangeTimelineValue);
+  writeJson(proxyConfig, {
+    schemaVersion: "1.0",
+    execution: {
+      unifiedRender: {
+        preview: {
+          maxWidth: 320,
+          encoder: "libx264",
+          fallbackEncoder: "libx264",
+          preset: "ultrafast",
+          crf: 25,
+        },
+      },
+    },
+  });
+  const rangeResult = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "timeline",
+    "render",
+    "--plan",
+    rangeTimeline,
+    "--output",
+    rangeOutput,
+    "--graph",
+    rangeGraph,
+    "--mode",
+    "preview",
+    "--range-start",
+    "0.75",
+    "--range-end",
+    "1.35",
+    "--config",
+    proxyConfig,
+  ]).stdout);
+  const rangeSummary = mediaSummary(rangeOutput);
+  const rangeManifest = readJson(`${rangeOutput}.manifest.json`);
+  const rangeGraphValue = readJson(rangeGraph);
+  if (
+    rangeResult.videoEncodes !== 1
+    || rangeSummary.width !== 320
+    || rangeSummary.height !== 180
+    || Math.abs(rangeSummary.videoDuration - 0.6) > 0.06
+    || rangeGraphValue.edl.length !== 1
+    || rangeGraphValue.previewRange?.start !== 0.75
+    || rangeGraphValue.visual.overlays[0]?.x !== 115
+    || rangeGraphValue.visual.overlays[0]?.width !== 35
+    || rangeManifest.execution.previewRange?.end !== 1.35
+    || rangeManifest.execution.stemOutputs.length !== 0
+  ) {
+    throw new Error("local proxy preview did not slice time, cap geometry or suppress final stems");
+  }
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "timeline",
+    "compile",
+    "--plan",
+    rangeTimeline,
+    "--mode",
+    "preview",
+    "--range-start",
+    "0.75",
+    "--range-end",
+    "1.35",
+  ]);
+  const offCanvasTimeline = path.join(directory, "off-canvas-timeline.json");
+  const offCanvasValue = readJson(timeline);
+  offCanvasValue.visual.overlays[0].x = 280;
+  offCanvasValue.visual.overlays[0].width = 70;
+  writeJson(offCanvasTimeline, offCanvasValue);
+  const offCanvas = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "timeline",
+    "validate",
+    "--plan",
+    offCanvasTimeline,
+  ]);
+  if (!offCanvas.stderr.includes("超出输出画布")) {
+    throw new Error("timeline accepted an overlay outside the output canvas");
+  }
+
+  const projectOutput = path.join(directory, "project-final.mp4");
+  const projectTimeline = path.join(directory, "project-timeline.json");
+  const projectDialogueStem = path.join(directory, "project-dialogue.wav");
+  const projectBgmStem = path.join(directory, "project-bgm.wav");
+  const projectSfxStem = path.join(directory, "project-sfx.wav");
+  const projectMixStem = path.join(directory, "project-mix.wav");
+  const projectTimelineValue = readJson(timeline);
+  projectTimelineValue.mode = "final";
+  projectTimelineValue.output = {
+    ...projectTimelineValue.output,
+    path: projectOutput,
+    dialogueStem: projectDialogueStem,
+    bgmStem: projectBgmStem,
+    sfxStem: projectSfxStem,
+    mixStem: projectMixStem,
+  };
+  writeJson(projectTimeline, projectTimelineValue);
+  const proposal = readJson(ensureValidProposalFixture());
+  proposal.sourceInventory = [{
+    path: source,
+    role: "synthetic source",
+    readOnly: true,
+    probeEvidence: ["ffprobe synthetic fixture"],
+    existsVerified: true,
+    probedAt: new Date().toISOString(),
+    sha256: sha256File(source),
+  }];
+  proposal.creativeLock.sourceWidth = 320;
+  proposal.creativeLock.sourceHeight = 180;
+  proposal.creativeLock.outputWidth = 320;
+  proposal.creativeLock.outputHeight = 180;
+  proposal.creativeLock.sourceAspectRatio = "16:9";
+  proposal.creativeLock.outputAspectRatio = "16:9";
+  proposal.goal.videoAspectRatios = ["16:9"];
+  const workflowEvidence = path.join(directory, "workflow-through-preview.json");
+  writeJson(workflowEvidence, {
+    status: "pass",
+    completedThrough: "preview_render",
+    checks: ["semantic-boundaries", "audio-stems", "visual-safety", "preview-review"],
+  });
+  const workflowEvidenceIdentity = {
+    path: workflowEvidence,
+    sha256: sha256File(workflowEvidence),
+  };
+  proposal.executionFlow = proposal.executionFlow.map((stage, index) => (
+    index <= 10
+      ? { ...stage, status: "passed", evidence: workflowEvidenceIdentity }
+      : stage
+  ));
+  const projectProposal = path.join(directory, "edit-proposal.json");
+  writeJson(projectProposal, proposal);
+  projectTimelineValue.contracts = {
+    proposal: {
+      path: projectProposal,
+      sha256: sha256File(projectProposal),
+    },
+    editPlan: {
+      path: path.join(examples, "edit-plan.json"),
+      sha256: sha256File(path.join(examples, "edit-plan.json")),
+    },
+  };
+  const assetProvenance = {
+    kind: "synthetic_test_fixture",
+    evidence: "generated locally by the unified renderer regression",
+  };
+  for (const asset of [
+    ...(projectTimelineValue.visual?.overlays ?? []),
+    ...(projectTimelineValue.visual?.subtitles
+      ? [projectTimelineValue.visual.subtitles]
+      : []),
+    ...(projectTimelineValue.audio?.bgm ? [projectTimelineValue.audio.bgm] : []),
+    ...(projectTimelineValue.audio?.sfx ?? []),
+  ]) {
+    asset.sha256 = sha256File(asset.path);
+    asset.provenance = assetProvenance;
+  }
+  writeJson(projectTimeline, projectTimelineValue);
+  const projectFile = path.join(directory, "project.json");
+  writeJson(projectFile, {
+    schemaVersion: "2.0",
+    projectId: "unified-project-render",
+    plans: {
+      proposal: projectProposal,
+      editPlan: path.join(examples, "edit-plan.json"),
+      timeline: projectTimeline,
+      generatedShotPlans: [],
+    },
+    outputs: {
+      finalVideo: { path: projectOutput },
+      audioStems: {
+        dialogue: { path: projectDialogueStem },
+        bgm: { path: projectBgmStem },
+        sfx: { path: projectSfxStem },
+        mix: { path: projectMixStem },
+      },
+      technicalQcReport: { path: path.join(directory, "technical-qc.json") },
+      releaseReport: { path: path.join(directory, "release-report.json") },
+    },
+    expectedMedia: {
+      width: 320,
+      height: 180,
+      aspectRatio: "16:9",
+      fps: 25,
+      fpsTolerance: 0.001,
+      audioSampleRate: 48000,
+      expectedChannels: 2,
+      maxAvDriftFrames: 1,
+      integratedLufsMin: -40,
+      integratedLufsMax: 0,
+      truePeakMax: 0,
+      audioMix: {
+        bgmRequired: true,
+        bgmBelowDialogueDbMin: 8,
+        bgmBelowDialogueDbMax: 30,
+        bgmMinimumCoverageRatio: 0.8,
+      },
+    },
+    requiredCoverAspectRatios: [],
+    requiredCapabilities: [],
+  });
+  const next = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "next",
+    projectFile,
+  ]).stdout);
+  if (
+    next.nextAction.id !== "render_unified_timeline"
+    || next.nextAction.safeToAutoExecute !== true
+  ) {
+    throw new Error("project workflow did not select the deterministic unified renderer");
+  }
+  const projectRender = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "render",
+    projectFile,
+  ]).stdout);
+  if (
+    projectRender.videoEncodes !== 1
+    || projectRender.completionBoundary !== "rendered_requires_final_qc"
+    || !fs.existsSync(projectRender.metrics)
+  ) {
+    throw new Error("project renderer did not execute and measure the unified final render");
+  }
+  const projectReuse = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "render",
+    projectFile,
+  ]).stdout);
+  const runMetrics = readJson(projectReuse.metrics);
+  if (
+    projectReuse.videoEncodes !== 0
+    || runMetrics.cache.hit < 1
+    || runMetrics.media.videoEncodes !== 1
+  ) {
+    throw new Error("project renderer did not measure exact cache reuse");
+  }
+}, "visual");
+
 await test("cross-process media probe cache reuses strong file identity", () => {
   const missingCommand = run("__kacha_missing_runtime_command__", []);
   if (missingCommand.status === 0 || !missingCommand.stderr) {
@@ -2896,6 +3817,125 @@ await test("next action advances only one deterministic project state", () => {
   }
 }, "incremental");
 
+await test("compact project state persists decisions and evidence outside chat history", () => {
+  const fixture = initializeIncrementalFixture("compact-state");
+  const current = createIncrementalCase(fixture, {
+    versionId: "v2",
+    type: "caption_layout",
+    outputVideo: path.join(fixture.root, "v2.mov"),
+  });
+  const stateFile = path.join(fixture.root, ".kacha", "project-state.json");
+  const evidence = path.join(fixture.root, "edit-evidence.json");
+  writeJson(evidence, {
+    status: "pass",
+    stage: "edit",
+    checks: ["sentence-boundary", "shot-scale-alternation"],
+  });
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "state",
+    "snapshot",
+    current.project,
+    "--output",
+    stateFile,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "state",
+    "record",
+    stateFile,
+    "--stage",
+    "edit",
+    "--status",
+    "complete",
+    "--evidence",
+    evidence,
+    "--decision",
+    "只按信息、情绪或视角变化切镜",
+  ]);
+  const recorded = readJson(stateFile);
+  const firstDigest = recorded.digest;
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "state",
+    "snapshot",
+    current.project,
+    "--output",
+    stateFile,
+  ]);
+  const refreshed = readJson(stateFile);
+  if (
+    refreshed.stages.edit?.status !== "complete"
+    || refreshed.stages.edit?.evidence?.sha256 !== sha256File(evidence)
+    || refreshed.decisions.length !== 1
+    || refreshed.digest !== firstDigest
+  ) {
+    throw new Error("compact project state did not preserve stable evidence-backed decisions");
+  }
+}, "incremental");
+
+await test("v2 workflow state resets completed stages when a bound contract changes", () => {
+  const root = path.join(temporary, "v2-state-contract-reset");
+  fs.mkdirSync(root, { recursive: true });
+  const editPlan = path.join(root, "edit-plan.json");
+  fs.copyFileSync(path.join(examples, "edit-plan.json"), editPlan);
+  const projectFile = path.join(root, "project.json");
+  writeJson(projectFile, {
+    schemaVersion: "2.0",
+    projectId: "v2-state-contract-reset",
+    plans: {
+      proposal: ensureValidProposalFixture(),
+      editPlan,
+      generatedShotPlans: [],
+    },
+    expectedMedia: { width: 2160, height: 3840 },
+    requiredCoverAspectRatios: [],
+    outputs: { finalVideo: { path: path.join(root, "final.mov") } },
+  });
+  const stateFile = path.join(root, ".kacha", "project-state.json");
+  const evidence = path.join(root, "inventory-evidence.json");
+  writeJson(evidence, { status: "pass", stage: "inventory" });
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "state", "snapshot", projectFile, "--output", stateFile,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "state", "record", stateFile,
+    "--stage", "inventory", "--status", "complete", "--evidence", evidence,
+  ]);
+  const before = readJson(stateFile);
+  const renderedProject = readJson(projectFile);
+  renderedProject.outputs.finalVideo.sha256 = "a".repeat(64);
+  writeJson(projectFile, renderedProject);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "state", "snapshot", projectFile, "--output", stateFile,
+  ]);
+  const afterRuntimeIdentity = readJson(stateFile);
+  if (
+    afterRuntimeIdentity.stages.inventory?.status !== "complete"
+    || afterRuntimeIdentity.contract.digest !== before.contract.digest
+  ) {
+    throw new Error("v2 state reset after only a rendered output identity changed");
+  }
+  const changedPlan = readJson(editPlan);
+  changedPlan.timelineDurationSeconds += 0.001;
+  writeJson(editPlan, changedPlan);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "state", "snapshot", projectFile, "--output", stateFile,
+  ]);
+  const after = readJson(stateFile);
+  if (
+    before.stages.inventory?.status !== "complete"
+    || after.stages.inventory?.status !== "pending"
+    || afterRuntimeIdentity.contract.digest === after.contract.digest
+  ) {
+    throw new Error("v2 state reused stage completion across a changed contract");
+  }
+});
+
 function renderVisualOnlyCandidate(base, output) {
   execute("ffmpeg", [
     "-hide_banner", "-loglevel", "error", "-y",
@@ -2928,6 +3968,532 @@ await test("mask effect rejects shorter mask instead of repeating last frame", (
     shortMask,
     path.join(temporary, "mask-should-fail.mov"),
     "face-light",
+  ]);
+});
+
+await test("content-addressed artifact cache reuses exact outputs and releases resources", () => {
+  const root = path.join(temporary, "artifact-cache-project");
+  fs.mkdirSync(root, { recursive: true });
+  const input = path.join(root, "input.txt");
+  const output = path.join(root, "materialized.txt");
+  fs.writeFileSync(input, "content-addressed fixture\n");
+  const baseArguments = [
+    path.join(scripts, "kacha.mjs"),
+    "cache",
+    "run",
+    "--project-root",
+    root,
+    "--kind",
+    "styleframe",
+    "--input",
+    input,
+    "--implementation",
+    path.join(scripts, "artifact_cache.mjs"),
+    "--operation-version",
+    "test-v1",
+    "--parameters",
+    JSON.stringify({ style: "xingzhe", state: "peak" }),
+    "--output",
+    `artifact=${output}`,
+    "--resource",
+    "ioHeavy",
+    "--",
+    "/bin/cp",
+    input,
+    output,
+  ];
+  const first = JSON.parse(execute(process.execPath, baseArguments).stdout);
+  if (first.cache.status !== "miss" || !fs.existsSync(output)) {
+    throw new Error("first content-addressed execution did not populate the cache");
+  }
+  fs.unlinkSync(output);
+  const second = JSON.parse(execute(process.execPath, baseArguments).stdout);
+  if (
+    second.cache.status !== "hit"
+    || second.cache.key !== first.cache.key
+    || fs.readFileSync(output, "utf8") !== fs.readFileSync(input, "utf8")
+  ) {
+    throw new Error("exact content-addressed rerun did not materialize a verified hit");
+  }
+  const status = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "resources",
+    "status",
+    "--project-root",
+    root,
+  ]).stdout);
+  if (Object.values(status.resources).some((resource) => resource.active !== 0)) {
+    throw new Error("resource scheduler leaked a lease after cache execution");
+  }
+  const directoryOutput = path.join(root, "mask-frames");
+  const directoryArguments = [
+    path.join(scripts, "kacha.mjs"),
+    "cache",
+    "run",
+    "--project-root",
+    root,
+    "--kind",
+    "tracking",
+    "--input",
+    input,
+    "--implementation",
+    path.join(scripts, "artifact_cache.mjs"),
+    "--operation-version",
+    "test-directory-v1",
+    "--parameters",
+    JSON.stringify({ sampleFps: 2, quality: "balanced" }),
+    "--output-dir",
+    `frames=${directoryOutput}`,
+    "--resource",
+    "ioHeavy",
+    "--",
+    process.execPath,
+    "-e",
+    "const fs=require('node:fs'),p=process.argv[1];"
+      + "fs.mkdirSync(p,{recursive:true});fs.writeFileSync(p+'/frame-1.txt','mask');",
+    directoryOutput,
+  ];
+  const directoryMiss = JSON.parse(
+    execute(process.execPath, directoryArguments).stdout,
+  );
+  fs.rmSync(directoryOutput, { recursive: true, force: true });
+  const directoryHit = JSON.parse(
+    execute(process.execPath, directoryArguments).stdout,
+  );
+  if (
+    directoryMiss.cache.status !== "miss"
+    || directoryHit.cache.status !== "hit"
+    || fs.readFileSync(path.join(directoryOutput, "frame-1.txt"), "utf8") !== "mask"
+  ) {
+    throw new Error("directory artifact cache did not preserve a mask/tracking tree");
+  }
+  const inspection = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "cache",
+    "inspect",
+    "--project-root",
+    root,
+  ]).stdout);
+  if (
+    inspection.entries !== 2
+    || !inspection.kinds.includes("styleframe")
+    || !inspection.kinds.includes("tracking")
+  ) {
+    throw new Error("cache inspection did not report the ready entry");
+  }
+  const sensitive = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "cache",
+    "key",
+    "--kind",
+    "asr",
+    "--input",
+    input,
+    "--parameters",
+    JSON.stringify({ apiToken: "must-not-be-recorded" }),
+  ]);
+  if (!sensitive.stderr.includes("禁止进入缓存键")) {
+    throw new Error("cache accepted sensitive parameters into its manifest contract");
+  }
+  const capacityRoot = path.join(temporary, "artifact-cache-capacity");
+  fs.mkdirSync(capacityRoot, { recursive: true });
+  const capacityConfig = path.join(capacityRoot, "capacity.config.json");
+  const capacityInput = path.join(capacityRoot, "large.bin");
+  fs.writeFileSync(capacityInput, Buffer.alloc(700 * 1024, 7));
+  writeJson(capacityConfig, {
+    schemaVersion: "1.0",
+    execution: {
+      artifactCache: {
+        maximumBytes: 1024 * 1024,
+      },
+    },
+  });
+  const cacheCapacityRun = (variant, destination) => run(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "cache",
+    "run",
+    "--project-root",
+    capacityRoot,
+    "--config",
+    capacityConfig,
+    "--kind",
+    "generated_media",
+    "--input",
+    capacityInput,
+    "--implementation",
+    path.join(scripts, "artifact_cache.mjs"),
+    "--operation-version",
+    "capacity-v1",
+    "--parameters",
+    JSON.stringify({ variant }),
+    "--output",
+    `artifact=${destination}`,
+    "--",
+    "/bin/cp",
+    capacityInput,
+    destination,
+  ], { cwd: temporary });
+  const firstCapacity = cacheCapacityRun(
+    "first",
+    path.join(capacityRoot, "first.bin"),
+  );
+  const secondCapacity = cacheCapacityRun(
+    "second",
+    path.join(capacityRoot, "second.bin"),
+  );
+  if (
+    firstCapacity.status !== 0
+    || secondCapacity.status === 0
+    || !secondCapacity.stderr.includes("缓存容量不足")
+  ) {
+    throw new Error("artifact cache did not enforce its cumulative maximumBytes limit");
+  }
+});
+
+await test("cache run creates a previously missing project root", () => {
+  const root = path.join(temporary, "artifact-cache-new-project");
+  const input = path.join(temporary, "artifact-cache-new-project-input.txt");
+  const output = path.join(root, "materialized.txt");
+  fs.writeFileSync(input, "new project root fixture\n");
+  if (fs.existsSync(root)) {
+    throw new Error("new-project cache fixture unexpectedly exists before the run");
+  }
+  const result = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "cache",
+    "run",
+    "--project-root",
+    root,
+    "--kind",
+    "asr",
+    "--input",
+    input,
+    "--implementation",
+    path.join(scripts, "artifact_cache.mjs"),
+    "--operation-version",
+    "new-project-root-v1",
+    "--parameters",
+    JSON.stringify({ language: "zh" }),
+    "--output",
+    `transcript=${output}`,
+    "--resource",
+    "ioHeavy",
+    "--",
+    "/bin/cp",
+    input,
+    output,
+  ]).stdout);
+  if (
+    result.cache.status !== "miss"
+    || !fs.statSync(root).isDirectory()
+    || fs.readFileSync(output, "utf8") !== fs.readFileSync(input, "utf8")
+  ) {
+    throw new Error("cache run did not bootstrap and materialize a new project root");
+  }
+});
+
+await test("host resource pool is shared across independent project roots", () => {
+  const config = readJson(path.join(skillDirectory, "config", "defaults.json"));
+  const firstRoot = path.join(temporary, "resource-project-a");
+  const secondRoot = path.join(temporary, "resource-project-b");
+  const runtimeRoot = path.join(temporary, "host-runtime");
+  process.env.KACHA_RUNTIME_HOME = runtimeRoot;
+  try {
+    const first = resolveResourceDirectory({ config, projectRoot: firstRoot });
+    const second = resolveResourceDirectory({ config, projectRoot: secondRoot });
+    if (first !== second || !first.startsWith(runtimeRoot)) {
+      throw new Error("host-scoped resource pools diverged across project roots");
+    }
+  } finally {
+    delete process.env.KACHA_RUNTIME_HOME;
+  }
+});
+
+await test("warm high-value cache rerun exceeds the 80 percent reuse target", () => {
+  const root = path.join(temporary, "high-value-cache-coverage");
+  fs.mkdirSync(root, { recursive: true });
+  const input = path.join(root, "input.bin");
+  fs.writeFileSync(input, Buffer.from("high-value cache fixture"));
+  const kinds = [
+    "source_separation",
+    "asr",
+    "mask",
+    "tracking",
+    "beauty",
+    "styleframe",
+    "generated_media",
+  ];
+  let hits = 0;
+  for (const kind of kinds) {
+    const destination = path.join(root, `${kind}.bin`);
+    const command = [
+      path.join(scripts, "kacha.mjs"),
+      "cache",
+      "run",
+      "--project-root",
+      root,
+      "--kind",
+      kind,
+      "--input",
+      input,
+      "--implementation",
+      path.join(scripts, "artifact_cache.mjs"),
+      "--operation-version",
+      "coverage-v1",
+      "--parameters",
+      JSON.stringify({ fixture: kind }),
+      "--output",
+      `artifact=${destination}`,
+      "--",
+      "/bin/cp",
+      input,
+      destination,
+    ];
+    const first = JSON.parse(execute(process.execPath, command).stdout);
+    fs.unlinkSync(destination);
+    const second = JSON.parse(execute(process.execPath, command).stdout);
+    if (first.cache.status !== "miss") {
+      throw new Error(`${kind} did not establish a cold baseline`);
+    }
+    if (second.cache.status === "hit") hits += 1;
+  }
+  if (hits / kinds.length < 0.8) {
+    throw new Error(
+      `high-value warm cache hit ratio ${(hits / kinds.length).toFixed(3)} is below 0.8`,
+    );
+  }
+});
+
+await test("dialogue separation cache fingerprints the actual Demucs runtime", () => {
+  const source = fs.readFileSync(
+    path.join(scripts, "separate_dialogue.sh"),
+    "utf8",
+  );
+  const engineResolution = source.indexOf('engine="kacha-managed-demucs"');
+  const cacheEntry = source.indexOf('if [[ "$no_cache" != true ]]');
+  const requiredFragments = [
+    'runtime_fingerprint="demucs=${runtime_demucs_version};torch=${runtime_torch_version}"',
+    '--operation-version "demucs-two-stems-v2"',
+    '--implementation "$runtime_launcher"',
+    '--implementation "$runtime_demucs_module"',
+    '--implementation "$runtime_demucs_entry_module"',
+    '--arg runtimeFingerprint "$runtime_fingerprint"',
+    '--arg modelContentSha256 "$runtime_model_sha"',
+    'modelContentSha256:$modelContentSha256',
+  ];
+  if (
+    engineResolution < 0
+    || cacheEntry < 0
+    || engineResolution > cacheEntry
+    || requiredFragments.some((fragment) => !source.includes(fragment))
+  ) {
+    throw new Error(
+      "source separation cache no longer freezes the resolved Demucs/Torch runtime",
+    );
+  }
+});
+
+await test("automatic telemetry records tokens, cache, artifacts and redacted commands", () => {
+  const root = path.join(temporary, "telemetry-project");
+  fs.mkdirSync(root, { recursive: true });
+  const artifact = path.join(root, "candidate.mov");
+  fs.writeFileSync(artifact, "synthetic candidate");
+  const childProgram = [
+    "const out=process.argv[1];",
+    "console.log(JSON.stringify({status:'reused',output:out,videoEncodes:0,"
+      + "durationSeconds:3,apiToken:'must-be-redacted-result'}));",
+    "console.error('Authorization: '+['Be','arer'].join('')+' must-be-redacted-log');",
+  ].join("");
+  const result = run(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "metrics",
+    "run",
+    "--stage",
+    "preview_render",
+    "--project-root",
+    root,
+    "--reference-tokens",
+    "402",
+    "--",
+    process.execPath,
+    "-e",
+    childProgram,
+    artifact,
+    "--api-token=must-be-redacted-inline",
+  ], {
+    cwd: temporary,
+    env: {
+      ...process.env,
+      KACHA_INPUT_TOKENS: "123",
+      KACHA_OUTPUT_TOKENS: "45",
+    },
+  });
+  if (result.status !== 0) {
+    throw new Error(`telemetry execution failed: ${result.stderr}`);
+  }
+  const compact = JSON.parse(result.stdout);
+  const report = readJson(compact.metrics);
+  const eventLine = fs.readFileSync(report.eventLog, "utf8").trim().split("\n").at(-1);
+  const event = JSON.parse(eventLine);
+  if (
+    report.tokens.input !== 123
+    || report.tokens.output !== 45
+    || report.tokens.references !== 402
+    || report.cache.hit !== 1
+    || report.media.videoEncodes !== 0
+    || report.bottlenecks.dominantTimeStage?.stage !== "preview_render"
+    || report.bottlenecks.dominantTokenStage?.totalTokens !== 570
+    || event.artifacts[0]?.exists !== true
+    || JSON.stringify(event.command).includes("must-be-redacted")
+    || !event.command.includes("[REDACTED]")
+    || compact.result.apiToken !== "[REDACTED]"
+    || fs.readFileSync(event.logs.stdout, "utf8").includes("must-be-redacted")
+    || fs.readFileSync(event.logs.stderr, "utf8").includes("must-be-redacted")
+    || !fs.readFileSync(event.logs.stderr, "utf8").includes("[REDACTED]")
+  ) {
+    throw new Error("automatic telemetry did not record or redact its execution evidence");
+  }
+});
+
+await test("telemetry captures model usage from child JSON without manual token flags", () => {
+  const root = path.join(temporary, "telemetry-child-usage");
+  fs.mkdirSync(root, { recursive: true });
+  const result = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "metrics",
+    "run",
+    "--stage",
+    "content_planning",
+    "--project-root",
+    root,
+    "--",
+    process.execPath,
+    "-e",
+    "console.log(JSON.stringify({status:'pass',usage:{input_tokens:321,"
+      + "output_tokens:87,reference_tokens:55}}));",
+  ]);
+  const compact = JSON.parse(result.stdout);
+  const report = readJson(compact.metrics);
+  const event = JSON.parse(
+    fs.readFileSync(report.eventLog, "utf8").trim().split("\n").at(-1),
+  );
+  if (
+    event.tokens.input !== 321
+    || event.tokens.output !== 87
+    || event.tokens.references !== 55
+    || event.tokens.measurement !== "actual"
+    || event.tokens.source !== "child_result_usage"
+    || report.tokens.measuredEvents !== 1
+  ) {
+    throw new Error("child model usage was not captured as actual token evidence");
+  }
+});
+
+await test("optimization audit rejects fabricated and stale engineering evidence", () => {
+  const root = path.join(temporary, "optimization-audit");
+  fs.mkdirSync(root, { recursive: true });
+  const golden = path.join(root, "golden.json");
+  const tests = path.join(root, "tests.json");
+  const asr = path.join(root, "asr.json");
+  const install = path.join(root, "install.json");
+  const output = path.join(root, "audit.json");
+  writeJson(golden, {
+    status: "pass_requires_human_visual_listening_review",
+    digest: "a".repeat(64),
+    checks: {
+      oneFullVideoEncode: true,
+      exactReuseZeroEncode: true,
+      geometryPreserved: true,
+      avDriftWithinOneFrame: true,
+      technicalQcPassed: true,
+      noSilentFallback: true,
+    },
+    remainingHumanEvidence: [
+      "normal-speed visual review",
+      "headphone review",
+      "phone speaker review",
+    ],
+    sample: { mode: "final" },
+    source: { sha256: "d".repeat(64) },
+    output: { sha256: "e".repeat(64) },
+  });
+  writeJson(tests, {
+    status: "pass",
+    tests: 88,
+    passed: 88,
+    passedTests: [
+      "warm high-value cache rerun exceeds the 80 percent reuse target",
+      "deterministic rule engine gives weak models stable scored decisions",
+    ],
+    failed: [],
+  });
+  writeJson(asr, {
+    schemaVersion: "1.0",
+    status: "pass",
+    provider: "local_whisper_mlx",
+    input: { sha256: "c".repeat(64) },
+    text: "咔嚓本机转写验证",
+    segments: [{
+      id: "segment-0001",
+      start: 0,
+      end: 1,
+      text: "咔嚓本机转写验证",
+    }],
+    provenance: {
+      externalUpload: false,
+      endpointScope: "loopback_only",
+    },
+  });
+  const bundleDigest = "b".repeat(64);
+  writeJson(install, {
+    status: "dry_run_pass",
+    bundleDigest,
+    targets: [
+      { agent: "codex", digest: bundleDigest, action: "unchanged" },
+      { agent: "claude", digest: bundleDigest, action: "unchanged" },
+    ],
+  });
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "optimization-audit",
+    "run",
+    "--golden-report",
+    golden,
+    "--test-report",
+    tests,
+    "--asr-report",
+    asr,
+    "--install-report",
+    install,
+    "--output",
+    output,
+  ]);
+  const report = readJson(output);
+  if (
+    report.status !== "fail"
+    || report.checks.evidenceProvenanceVerified !== false
+    || report.checks.fullRegressionPassed !== false
+  ) {
+    throw new Error("optimization audit accepted fabricated or stale report claims");
+  }
+  const incomplete = readJson(golden);
+  incomplete.checks.oneFullVideoEncode = false;
+  const incompleteFile = path.join(root, "incomplete-golden.json");
+  writeJson(incompleteFile, incomplete);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "optimization-audit",
+    "run",
+    "--golden-report",
+    incompleteFile,
+    "--test-report",
+    tests,
+    "--asr-report",
+    asr,
+    "--install-report",
+    install,
+    "--output",
+    path.join(root, "incomplete-audit.json"),
   ]);
 });
 
@@ -3042,6 +4608,49 @@ await test("Beauty v2 profiles preserve duration and produce distinct outputs", 
     "--report",
     naturalReport,
   ]);
+  const cachedNatural = path.join(temporary, "beauty-v2-cached-natural.mov");
+  const cachedNaturalReport = path.join(
+    temporary,
+    "beauty-v2-cached-natural-report.json",
+  );
+  const cachedBeautyArguments = [
+    path.join(scripts, "kacha.mjs"),
+    "beauty",
+    "render",
+    baseVideo,
+    "--skin-mask",
+    exactMask,
+    "--nasolabial-mask",
+    exactMask,
+    "--vision-manifest",
+    visionManifest,
+    "--output",
+    cachedNatural,
+    "--report",
+    cachedNaturalReport,
+    "--profile",
+    "natural",
+    "--config",
+    naturalConfig,
+    "--project-root",
+    temporary,
+  ];
+  const cachedBeautyMiss = JSON.parse(
+    execute(process.execPath, cachedBeautyArguments).stdout,
+  );
+  fs.unlinkSync(cachedNatural);
+  fs.unlinkSync(cachedNaturalReport);
+  const cachedBeautyHit = JSON.parse(
+    execute(process.execPath, cachedBeautyArguments).stdout,
+  );
+  if (
+    cachedBeautyMiss.cache?.status !== "miss"
+    || cachedBeautyHit.cache?.status !== "hit"
+    || !fs.existsSync(cachedNatural)
+    || !fs.existsSync(cachedNaturalReport)
+  ) {
+    throw new Error("Beauty v2 wrapper did not reuse its content-addressed render");
+  }
   execute(path.join(scripts, "apply_beauty_v2.sh"), [
     baseVideo,
     exactMask,
@@ -3560,6 +5169,52 @@ await test("incremental v3 templates validate without loading project media", ()
   ]);
 });
 
+await test("incremental BGM manifest requires component and final mix proof", () => {
+  const fixture = initializeIncrementalFixture("bgm-mix-contract");
+  const delta = path.join(fixture.root, "v2-delta.json");
+  execute(process.execPath, [
+    path.join(scripts, "create_version_delta.mjs"),
+    fixture.context,
+    "--write", delta,
+    "--new-version", "v2",
+    "--type", "bgm_adjust",
+    "--output-video", path.join(fixture.root, "v2.mov"),
+  ]);
+  const dialogue = path.join(fixture.root, "dialogue.wav");
+  const bgm = path.join(fixture.root, "bgm.wav");
+  const sfx = path.join(fixture.root, "sfx.wav");
+  const mix = path.join(fixture.root, "mix.wav");
+  for (const file of [dialogue, bgm, sfx, mix]) fs.writeFileSync(file, "fixture\n");
+  const incomplete = path.join(fixture.root, "incomplete-project.json");
+  expectFailure(process.execPath, [
+    path.join(scripts, "create_incremental_manifest.mjs"),
+    fixture.context, delta, fixture.index,
+    "--output", incomplete,
+    "--dialogue-stem", dialogue,
+    "--bgm-stem", bgm,
+  ]);
+  const complete = path.join(fixture.root, "complete-project.json");
+  execute(process.execPath, [
+    path.join(scripts, "create_incremental_manifest.mjs"),
+    fixture.context, delta, fixture.index,
+    "--output", complete,
+    "--dialogue-stem", dialogue,
+    "--bgm-stem", bgm,
+    "--sfx-stem", sfx,
+    "--mix-stem", mix,
+  ]);
+  const project = readJson(complete);
+  if (
+    project.expectedMedia?.audioMix?.bgmRequired !== true
+    || !project.outputs?.audioStems?.dialogue
+    || !project.outputs?.audioStems?.bgm
+    || !project.outputs?.audioStems?.sfx
+    || !project.outputs?.audioStems?.mix
+  ) {
+    throw new Error("incremental BGM manifest did not retain full mix evidence");
+  }
+});
+
 await test("incremental visual-only QC proves inherited audio and candidate gate", () => {
   const fixture = initializeIncrementalFixture("visual-only");
   const output = path.join(fixture.root, "v2.mov");
@@ -4015,6 +5670,42 @@ await test("voice enhancer preserves distinct stereo channels by default", () =>
 
 await test("technical QC decodes media and writes a report", () => {
   ensureMediaFixtures();
+  const dialogueStem = path.join(temporary, "qc-dialogue-stem.wav");
+  const bgmStem = path.join(temporary, "qc-bgm-stem.wav");
+  const mixStem = path.join(temporary, "qc-mix-stem.wav");
+  const finalWithMix = path.join(temporary, "qc-final-with-mix.mov");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "sine=frequency=220:duration=2:sample_rate=48000",
+    "-c:a", "pcm_s24le",
+    dialogueStem,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "sine=frequency=440:duration=2:sample_rate=48000",
+    "-af", "volume=-14dB",
+    "-c:a", "pcm_s24le",
+    bgmStem,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-i", dialogueStem,
+    "-i", bgmStem,
+    "-filter_complex",
+    "[0:a]aformat=sample_rates=48000:channel_layouts=stereo[d];"
+      + "[1:a]aformat=sample_rates=48000:channel_layouts=stereo[b];"
+      + "[d][b]amix=inputs=2:normalize=0:duration=longest:dropout_transition=0,"
+      + "atrim=0:2,alimiter=limit=0.95[m]",
+    "-map", "[m]", "-c:a", "pcm_s24le", mixStem,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-i", baseVideo,
+    "-i", mixStem,
+    "-map", "0:v:0", "-map", "1:a:0",
+    "-c:v", "copy", "-c:a", "aac", "-b:a", "256k",
+    "-t", "2", finalWithMix,
+  ]);
   const project = {
     schemaVersion: "2.0",
     projectId: "synthetic-qc",
@@ -4027,14 +5718,25 @@ await test("technical QC decodes media and writes a report", () => {
       fps: 25,
       fpsTolerance: 0.001,
       audioSampleRate: 48000,
-      expectedChannels: 1,
+      expectedChannels: 2,
       maxAvDriftFrames: 1,
       integratedLufsMin: -40,
       integratedLufsMax: 0,
       truePeakMax: 0,
+      audioMix: {
+        bgmRequired: true,
+        bgmBelowDialogueDbMin: 12,
+        bgmBelowDialogueDbMax: 18,
+        bgmMinimumCoverageRatio: 0.85,
+      },
     },
     outputs: {
-      finalVideo: { path: baseVideo },
+      finalVideo: { path: finalWithMix },
+      audioStems: {
+        dialogue: { path: dialogueStem },
+        bgm: { path: bgmStem },
+        mix: { path: mixStem },
+      },
       technicalQcReport: { path: path.join(temporary, "technical-qc.json") },
     },
   };
@@ -4064,8 +5766,150 @@ await test("technical QC decodes media and writes a report", () => {
   if (
     report.configuration?.detectorParameters?.blackDurationSeconds !== 0.12
     || report.configuration?.detectorParameters?.silenceDurationSeconds !== 0.7
+    || report.audioStemQc?.status !== "pass"
+    || report.audioStemQc?.bgmBelowDialogueDb < 12
+    || report.audioStemQc?.bgmBelowDialogueDb > 18
   ) {
-    throw new Error("technical QC did not record effective configured detectors");
+    throw new Error("technical QC did not enforce configured detectors and BGM audibility");
+  }
+});
+
+await test("technical QC rejects valid stems when the final video omits their mix", () => {
+  ensureMediaFixtures();
+  const dialogue = path.join(temporary, "qc-omitted-dialogue.wav");
+  const bgm = path.join(temporary, "qc-omitted-bgm.wav");
+  const mix = path.join(temporary, "qc-omitted-mix.wav");
+  for (const [frequency, level, output] of [
+    [220, "0dB", dialogue],
+    [440, "-14dB", bgm],
+  ]) {
+    execute("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-y",
+      "-f", "lavfi", "-i", `sine=frequency=${frequency}:duration=2:sample_rate=48000`,
+      "-af", `volume=${level},aformat=channel_layouts=stereo`,
+      "-c:a", "pcm_s24le", output,
+    ]);
+  }
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-i", dialogue, "-i", bgm,
+    "-filter_complex",
+    "[0:a][1:a]amix=inputs=2:normalize=0:duration=longest:dropout_transition=0,"
+      + "atrim=0:2,alimiter=limit=0.95[m]",
+    "-map", "[m]", "-c:a", "pcm_s24le", mix,
+  ]);
+  const report = path.join(temporary, "technical-qc-omitted-mix.json");
+  const projectFile = path.join(temporary, "qc-project-omitted-mix.json");
+  const baseSummary = mediaSummary(baseVideo);
+  writeJson(projectFile, {
+    schemaVersion: "2.0",
+    projectId: "synthetic-qc-omitted-final-mix",
+    plans: {},
+    requiredCoverAspectRatios: [],
+    expectedMedia: {
+      width: baseSummary.width,
+      height: baseSummary.height,
+      aspectRatio: `${baseSummary.width}:${baseSummary.height}`,
+      fps: baseSummary.averageFps,
+      fpsTolerance: 0.001,
+      audioSampleRate: 48000,
+      expectedChannels: baseSummary.channels,
+      maxAvDriftFrames: 1,
+      integratedLufsMin: -40,
+      integratedLufsMax: 0,
+      truePeakMax: 0,
+      audioMix: {
+        bgmRequired: true,
+        bgmBelowDialogueDbMin: 12,
+        bgmBelowDialogueDbMax: 18,
+        bgmMinimumCoverageRatio: 0.85,
+      },
+    },
+    outputs: {
+      finalVideo: { path: baseVideo },
+      audioStems: {
+        dialogue: { path: dialogue },
+        bgm: { path: bgm },
+        mix: { path: mix },
+      },
+      technicalQcReport: { path: report },
+    },
+  });
+  expectFailure(process.execPath, [path.join(scripts, "qc_media.mjs"), projectFile]);
+  const qc = readJson(report);
+  if (
+    qc.automaticChecks.find(
+      (item) => item.id === "mix_stem_reconstruction",
+    )?.status !== "pass"
+    || qc.automaticChecks.find(
+      (item) => item.id === "final_audio_matches_mix_stem",
+    )?.status !== "fail"
+  ) {
+    throw new Error("QC did not distinguish valid stems from an omitted final mix");
+  }
+});
+
+await test("technical QC rejects a declared BGM stem that is effectively inaudible", () => {
+  ensureMediaFixtures();
+  const dialogueStem = path.join(temporary, "qc-dialogue-audible.wav");
+  const bgmStem = path.join(temporary, "qc-bgm-inaudible.wav");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "sine=frequency=220:duration=2:sample_rate=48000",
+    "-c:a", "pcm_s24le",
+    dialogueStem,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "sine=frequency=440:duration=2:sample_rate=48000",
+    "-af", "volume=-30dB",
+    "-c:a", "pcm_s24le",
+    bgmStem,
+  ]);
+  const report = path.join(temporary, "technical-qc-inaudible-bgm.json");
+  const projectFile = path.join(temporary, "qc-project-inaudible-bgm.json");
+  writeJson(projectFile, {
+    schemaVersion: "2.0",
+    projectId: "synthetic-qc-inaudible-bgm",
+    plans: {},
+    requiredCoverAspectRatios: [],
+    expectedMedia: {
+      width: 320,
+      height: 180,
+      aspectRatio: "16:9",
+      fps: 25,
+      fpsTolerance: 0.001,
+      audioSampleRate: 48000,
+      expectedChannels: 2,
+      maxAvDriftFrames: 1,
+      integratedLufsMin: -40,
+      integratedLufsMax: 0,
+      truePeakMax: 0,
+      audioMix: {
+        bgmRequired: true,
+        bgmBelowDialogueDbMin: 12,
+        bgmBelowDialogueDbMax: 18,
+        bgmMinimumCoverageRatio: 0.85,
+      },
+    },
+    outputs: {
+      finalVideo: { path: baseVideo },
+      audioStems: {
+        dialogue: { path: dialogueStem },
+        bgm: { path: bgmStem },
+      },
+      technicalQcReport: { path: report },
+    },
+  });
+  expectFailure(process.execPath, [
+    path.join(scripts, "qc_media.mjs"),
+    projectFile,
+  ]);
+  if (
+    readJson(report).automaticChecks
+      .find((item) => item.id === "bgm_perceptibility")?.status !== "fail"
+  ) {
+    throw new Error("inaudible BGM did not fail the perceptibility gate");
   }
 });
 
@@ -4092,11 +5936,33 @@ await test("release gate verifies hashes, cover ratios and manual evidence", () 
   );
   const technicalQc = path.join(outputDirectory, "technical-qc.json");
   const releaseReport = path.join(outputDirectory, "release-report.json");
+  const releaseStageEvidence = path.join(outputDirectory, "release-stage-evidence.json");
+  writeJson(releaseStageEvidence, {
+    status: "pass",
+    completedThrough: "final_qc",
+  });
+  const releaseProposalValue = readJson(ensureValidProposalFixture());
+  releaseProposalValue.executionFlow = releaseProposalValue.executionFlow.map(
+    (stage, index) => (
+      index <= 11
+        ? {
+            ...stage,
+            status: "passed",
+            evidence: {
+              path: releaseStageEvidence,
+              sha256: sha256File(releaseStageEvidence),
+            },
+          }
+        : stage
+    ),
+  );
+  const releaseProposal = path.join(outputDirectory, "edit-proposal.json");
+  writeJson(releaseProposal, releaseProposalValue);
   const project = {
     schemaVersion: "2.0",
     projectId: "synthetic-release",
     plans: {
-      proposal: ensureValidProposalFixture(),
+      proposal: releaseProposal,
       editPlan: path.join(examples, "edit-plan.json"),
       generatedShotPlans: [],
     },
@@ -4168,8 +6034,20 @@ await test("release gate verifies hashes, cover ratios and manual evidence", () 
     "next",
     projectFile,
   ]);
-  if (JSON.parse(afterReview.stdout).nextAction.id !== "gate_release") {
-    throw new Error("v2 next did not advance to release gate");
+  const recordRelease = JSON.parse(afterReview.stdout).nextAction;
+  if (recordRelease.id !== "record_release_package") {
+    throw new Error("v2 next did not require evidence-backed release stage recording");
+  }
+  execute(recordRelease.command ? "/bin/sh" : process.execPath, recordRelease.command
+    ? ["-c", recordRelease.command]
+    : []);
+  const finalNext = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "next",
+    projectFile,
+  ]).stdout);
+  if (finalNext.nextAction.id !== "gate_release") {
+    throw new Error("v2 next did not advance to release gate after stage evidence");
   }
   execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
@@ -4193,22 +6071,22 @@ try {
     process.exitCode = 0;
   } else {
   const failed = results.filter((result) => result.status === "fail");
-  console.log(
-    JSON.stringify(
-      {
-        status: failed.length === 0 ? "pass" : "fail",
-        suites: [...requestedSuites],
-        match: nameMatch || null,
-        discovered: discovered.length,
-        tests: results.length,
-        skipped: skipped.length,
-        passed: results.length - failed.length,
-        failed,
-      },
-      null,
-      2,
-    ),
-  );
+  const report = {
+    status: failed.length === 0 ? "pass" : "fail",
+    suites: [...requestedSuites],
+    match: nameMatch || null,
+    discovered: discovered.length,
+    tests: results.length,
+    skipped: skipped.length,
+    passed: results.length - failed.length,
+    passedTests: results
+      .filter((result) => result.status === "pass")
+      .map((result) => result.name),
+    failed,
+  };
+  const reportOutput = option("--report");
+  if (reportOutput) writeJson(path.resolve(reportOutput), report);
+  console.log(JSON.stringify(report, null, 2));
   process.exitCode = failed.length === 0 ? 0 : 1;
   }
 } finally {

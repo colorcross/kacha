@@ -11,7 +11,9 @@ import {
   commandExists,
   fileIdentity,
   mediaSummary,
+  resolveRuntimeCommand,
   run,
+  runtimeEnvironment,
   sha256File,
   sha256Value,
   writeJsonAtomic,
@@ -257,8 +259,9 @@ const timestamps = spread(deduplicated, maxFrames);
 
 function runAsync(command, commandArgs) {
   return new Promise((resolve) => {
-    const child = spawn(command, commandArgs, {
+    const child = spawn(resolveRuntimeCommand(command), commandArgs, {
       stdio: ["ignore", "pipe", "pipe"],
+      env: runtimeEnvironment(),
     });
     let stdout = "";
     let stderr = "";

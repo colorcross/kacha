@@ -91,8 +91,18 @@ done
 
 [[ -f "$input" ]] || { printf 'Input not found: %s\n' "$input" >&2; exit 2; }
 [[ ! -e "$output" ]] || { printf 'Output already exists: %s\n' "$output" >&2; exit 2; }
-command -v ffmpeg >/dev/null || { printf 'ffmpeg is required\n' >&2; exit 2; }
-command -v ffprobe >/dev/null || { printf 'ffprobe is required\n' >&2; exit 2; }
+ffmpeg_bin=${KACHA_FFMPEG_BIN:-}
+if [[ -z "$ffmpeg_bin" && -x /opt/homebrew/opt/ffmpeg-full/bin/ffmpeg ]]; then
+  ffmpeg_bin=/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg
+fi
+if [[ -z "$ffmpeg_bin" ]]; then ffmpeg_bin=$(command -v ffmpeg || true); fi
+ffprobe_bin=${KACHA_FFPROBE_BIN:-}
+if [[ -z "$ffprobe_bin" && -n "$ffmpeg_bin" && -x "$(dirname "$ffmpeg_bin")/ffprobe" ]]; then
+  ffprobe_bin="$(dirname "$ffmpeg_bin")/ffprobe"
+fi
+if [[ -z "$ffprobe_bin" ]]; then ffprobe_bin=$(command -v ffprobe || true); fi
+[[ -n "$ffmpeg_bin" ]] || { printf 'ffmpeg is required\n' >&2; exit 2; }
+[[ -n "$ffprobe_bin" ]] || { printf 'ffprobe is required\n' >&2; exit 2; }
 command -v jq >/dev/null || { printf 'jq is required\n' >&2; exit 2; }
 command -v node >/dev/null || { printf 'node is required\n' >&2; exit 2; }
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -132,16 +142,16 @@ case "$channel_mode" in
     ;;
 esac
 
-input_channels=$(ffprobe -v error -select_streams a:0 -show_entries stream=channels -of csv=p=0 "$input" | head -n 1)
+input_channels=$("$ffprobe_bin" -v error -select_streams a:0 -show_entries stream=channels -of csv=p=0 "$input" | head -n 1)
 [[ "$input_channels" =~ ^[1-9][0-9]*$ ]] || {
   printf 'Could not determine input channel count\n' >&2
   exit 2
 }
-input_channel_layout=$(ffprobe -v error -select_streams a:0 -show_entries stream=channel_layout -of csv=p=0 "$input" | head -n 1)
+input_channel_layout=$("$ffprobe_bin" -v error -select_streams a:0 -show_entries stream=channel_layout -of csv=p=0 "$input" | head -n 1)
 
-input_duration=$(ffprobe -v error -select_streams a:0 -show_entries stream=duration -of csv=p=0 "$input" | head -n 1)
+input_duration=$("$ffprobe_bin" -v error -select_streams a:0 -show_entries stream=duration -of csv=p=0 "$input" | head -n 1)
 if [[ ! "$input_duration" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
-  input_duration=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$input" | head -n 1)
+  input_duration=$("$ffprobe_bin" -v error -show_entries format=duration -of csv=p=0 "$input" | head -n 1)
 fi
 [[ "$input_duration" =~ ^[0-9]+([.][0-9]+)?$ ]] || {
   printf 'Could not determine input audio duration\n' >&2
@@ -226,7 +236,7 @@ case "$channel_mode" in
     ;;
 esac
 
-ffmpeg -hide_banner -loglevel error -nostdin -y \
+"$ffmpeg_bin" -hide_banner -loglevel error -nostdin -y \
   -i "$input" \
   -map 0:a:0 \
   -af "$voice_chain" \
@@ -234,7 +244,7 @@ ffmpeg -hide_banner -loglevel error -nostdin -y \
   -c:a pcm_s24le -ar 48000 "${channel_args[@]}" \
   "$pre_master"
 
-ffmpeg -hide_banner -nostats -nostdin \
+"$ffmpeg_bin" -hide_banner -nostats -nostdin \
   -i "$pre_master" \
   -af "loudnorm=I=${target_lufs}:TP=${true_peak}:LRA=6:print_format=json" \
   -f null - 2>"$loudness_log"
@@ -247,15 +257,15 @@ gain_db=$(awk -v target="$target_lufs" -v measured="$measured_i" \
 limiter_linear=$(awk -v peak="$true_peak" \
   'BEGIN { printf "%.8f", exp(log(10) * peak / 20) }')
 
-ffmpeg -hide_banner -loglevel error -nostdin -y \
+"$ffmpeg_bin" -hide_banner -loglevel error -nostdin -y \
   -i "$pre_master" \
   -af "volume=${gain_db}dB,alimiter=limit=${limiter_linear}:attack=5:release=80:level=false" \
   "${duration_args[@]}" \
   -c:a pcm_s24le -ar 48000 "${channel_args[@]}" \
   "$final_output"
 
-output_duration=$(ffprobe -v error -select_streams a:0 -show_entries stream=duration -of csv=p=0 "$final_output" | head -n 1)
-output_channels=$(ffprobe -v error -select_streams a:0 -show_entries stream=channels -of csv=p=0 "$final_output" | head -n 1)
+output_duration=$("$ffprobe_bin" -v error -select_streams a:0 -show_entries stream=duration -of csv=p=0 "$final_output" | head -n 1)
+output_channels=$("$ffprobe_bin" -v error -select_streams a:0 -show_entries stream=channels -of csv=p=0 "$final_output" | head -n 1)
 duration_delta=$(awk -v a="$input_duration" -v b="$output_duration" 'BEGIN { d=a-b; if (d<0) d=-d; print d }')
 awk -v d="$duration_delta" 'BEGIN { exit !(d <= 0.0025) }' || {
   printf 'Output duration drifted by %ss\n' "$duration_delta" >&2

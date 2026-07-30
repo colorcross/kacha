@@ -16,6 +16,7 @@ import {
   firstPositional,
   loadKachaConfig,
 } from "./kacha_config.mjs";
+import { evaluateAudioStems } from "./audio_stem_qc.mjs";
 
 function usage() {
   console.error(
@@ -273,6 +274,15 @@ const findings = {
     .map((line) => line.trim()),
 };
 
+const audioStemQc = evaluateAudioStems({
+  projectFile,
+  project,
+  qcConfig,
+  finalDurationSeconds: summary.duration,
+  finalVideo,
+});
+if (audioStemQc) checks.push(...audioStemQc.checks);
+
 const failures = checks.filter((item) => item.status === "fail");
 const reviewFindings = Object.values(findings).flat().length;
 const finalIdentity = fileIdentity(finalVideo);
@@ -308,6 +318,7 @@ const report = {
     channelLayout: summary.channelLayout,
   },
   loudness,
+  audioStemQc,
   automaticChecks: checks,
   detectorFindings: findings,
   configuration: {

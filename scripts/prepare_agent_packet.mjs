@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import {
   fileIdentity,
   mediaSummary,
+  readJson,
+  sha256File,
   run,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
@@ -23,6 +25,17 @@ function option(name, fallback = null) {
   return index >= 0 ? args[index + 1] : fallback;
 }
 
+function approximateTokens(value) {
+  const text = typeof value === "string" ? value : JSON.stringify(value);
+  let ascii = 0;
+  let nonAscii = 0;
+  for (const character of text) {
+    if (character.codePointAt(0) <= 0x7f) ascii += 1;
+    else nonAscii += 1;
+  }
+  return Math.ceil(ascii / 4 + nonAscii / 1.6);
+}
+
 const task = option("--task");
 const modules = option("--modules", "")
   .split(",")
@@ -32,6 +45,8 @@ const agent = option("--agent", "codex");
 const source = option("--source");
 const project = option("--project");
 const output = option("--output");
+const transcriptInput = option("--transcript");
+const transcriptWindow = option("--transcript-window");
 let loadedConfig;
 try {
   loadedConfig = loadKachaConfig({
@@ -47,11 +62,29 @@ try {
   process.exit(1);
 }
 const modelTier = option("--model-tier", loadedConfig.config.execution.modelTier);
+const STAGES = new Set(["inventory", "content", "edit", "visual_audio", "release"]);
+const DEFAULT_STAGE_BY_TASK = {
+  proposal_review: "inventory",
+  source_edit: "edit",
+  content_generation: "content",
+  local_optimization: "edit",
+};
+const stage = option(
+  "--stage",
+  modelTier === "economy" ? DEFAULT_STAGE_BY_TASK[task] : null,
+);
+if (stage && !STAGES.has(stage)) {
+  console.error(`--stage 无效：${stage}`);
+  process.exit(2);
+}
 const MODEL_TOKEN_LIMITS = loadedConfig.config.execution.referenceTokenLimits;
 const explicitTokenLimit = option("--max-reference-tokens");
-const referenceTokenLimit = explicitTokenLimit === null
+const configuredReferenceTokenLimit = explicitTokenLimit === null
   ? MODEL_TOKEN_LIMITS[modelTier]
   : Number(explicitTokenLimit);
+const referenceTokenLimit = stage
+  ? Math.min(configuredReferenceTokenLimit, 12_000)
+  : configuredReferenceTokenLimit;
 const release = args.includes("--release");
 const fullHash = args.includes("--full-hash");
 
@@ -65,8 +98,11 @@ if (
   console.error(
     "用法：kacha.mjs prepare --task proposal_review|source_edit|content_generation|local_optimization "
       + "[--modules audio,beauty,...] [--agent codex|claude] "
+      + "[--stage inventory|content|edit|visual_audio|release] "
       + "[--model-tier economy|balanced|frontier] [--max-reference-tokens N] "
-      + "[--source FILE] [--project PROJECT.json] [--release] [--full-hash] "
+      + "[--source FILE] [--transcript TRANSCRIPT.json] "
+      + "[--transcript-window START:END] "
+      + "[--project PROJECT.json] [--release] [--full-hash] "
       + "[--config FILE] [--secrets FILE] "
       + "[--output packet.json]",
   );
@@ -107,6 +143,7 @@ const route = run(process.execPath, [
   task,
   "--modules",
   [...routedModules].join(","),
+  ...(stage ? ["--stage", stage] : []),
   ...(release ? ["--release"] : []),
 ]);
 if (route.status !== 0) {
@@ -198,6 +235,99 @@ if (project) {
   }
 }
 
+let transcriptEvidence = null;
+if (transcriptInput) {
+  const transcriptFile = path.resolve(transcriptInput);
+  if (!fs.existsSync(transcriptFile) || !fs.statSync(transcriptFile).isFile()) {
+    console.error(JSON.stringify({
+      status: "blocked",
+      diagnostics: [diagnostic("KACHA-E100", `转写文件不存在：${transcriptFile}`)],
+    }, null, 2));
+    process.exit(1);
+  }
+  try {
+    const transcript = readJson(transcriptFile);
+    const segments = Array.isArray(transcript.segments) ? transcript.segments : [];
+    const lowConfidence = segments.filter(
+      (segment) => segment.confidence === "low"
+        || (segment.reasons ?? []).length > 0,
+    );
+    const indexResult = run(process.execPath, [
+      path.join(scriptsDirectory, "transcript_window.mjs"),
+      "index",
+      transcriptFile,
+      "--window-seconds",
+      "90",
+    ]);
+    if (indexResult.status !== 0) {
+      throw new Error(indexResult.stderr.trim() || "转写窗口索引失败");
+    }
+    const index = JSON.parse(indexResult.stdout);
+    let selectedWindow = null;
+    if (transcriptWindow) {
+      const match = /^([0-9]+(?:\.[0-9]+)?):([0-9]+(?:\.[0-9]+)?)$/
+        .exec(transcriptWindow);
+      if (!match) throw new Error("--transcript-window 必须是 START:END");
+      const sliceResult = run(process.execPath, [
+        path.join(scriptsDirectory, "transcript_window.mjs"),
+        "slice",
+        transcriptFile,
+        "--start",
+        match[1],
+        "--end",
+        match[2],
+      ]);
+      if (sliceResult.status !== 0) {
+        throw new Error(sliceResult.stderr.trim() || "转写窗口读取失败");
+      }
+      selectedWindow = JSON.parse(sliceResult.stdout);
+    }
+    const maximumInlineReviewSegments = 20;
+    transcriptEvidence = {
+      path: transcriptFile,
+      sha256: sha256File(transcriptFile),
+      status: transcript.status ?? "unknown",
+      language: transcript.language ?? null,
+      durationSeconds: transcript.durationSeconds ?? null,
+      segmentCount: segments.length,
+      index: {
+        windowSeconds: index.windowSeconds,
+        windows: index.windows,
+      },
+      selectedWindow,
+      lowConfidenceSegments: lowConfidence
+        .slice(0, maximumInlineReviewSegments)
+        .map((segment) => ({
+        id: segment.id,
+        start: segment.start,
+        end: segment.end,
+        text: segment.text,
+        reasons: segment.reasons ?? [],
+        })),
+      lowConfidenceCount: lowConfidence.length,
+      lowConfidenceOmittedCount: Math.max(
+        0,
+        lowConfidence.length - maximumInlineReviewSegments,
+      ),
+      access: {
+        indexCommand: `node ${path.join(scriptsDirectory, "kacha.mjs")} `
+          + `transcript index ${transcriptFile}`,
+        sliceCommand: `node ${path.join(scriptsDirectory, "kacha.mjs")} `
+          + `transcript slice ${transcriptFile} --start SEC --end SEC`,
+        maximumSliceSeconds: 180,
+      },
+      fullTextOmittedFromPacket: true,
+      wordsOmittedFromPacket: true,
+    };
+  } catch (error) {
+    console.error(JSON.stringify({
+      status: "blocked",
+      diagnostics: [diagnostic("KACHA-E140", `转写 JSON 无效：${error.message}`)],
+    }, null, 2));
+    process.exit(1);
+  }
+}
+
 const workflow = task === "local_optimization" ? "v3_incremental" : "v2_full";
 const artifactProtocol = task === "local_optimization"
   ? {
@@ -239,6 +369,7 @@ const packet = {
   purpose: "low-capability-model execution packet",
   agent,
   modelTier,
+  stage,
   task,
   workflow,
   modules,
@@ -251,6 +382,7 @@ const packet = {
     withinBudget: true,
   },
   sourceEvidence,
+  transcriptEvidence,
   projectState,
   artifactProtocol,
   configuration: {
@@ -278,6 +410,18 @@ const packet = {
   ],
   executionProtocol: [
     "完整读取 readOrder 中的文件。",
+    ...(stage
+      ? [
+          `只处理 ${stage} 阶段；完成后写入项目状态文件，再进入下一阶段。`,
+          "需要效果或剪辑规则时先运行 rules query，只接收每条规则的 1–3 个候选。",
+          ...(transcriptEvidence
+            ? [
+                "按 transcriptEvidence.index 逐个读取最多 180 秒的转写窗口；"
+                  + "不得把完整 transcript 或逐词 JSON 放回提示词。",
+              ]
+            : []),
+        ]
+      : []),
     "若 projectState 存在，只执行 projectState.nextAction。",
     "每完成一步重新运行 kacha.mjs next；不要自行跳级。",
     "遇到 diagnostics 按 code/remediation 处理，不用猜测填空。",
@@ -308,6 +452,54 @@ const packet = {
     "不得静默更换美颜、人声分离、视觉分析或生成媒体后端。",
     "不得上传整段视频补偿 Claude 的视觉缺口。",
   ],
+  ruleRetrieval: stage
+    ? {
+        registry: path.join(
+          path.dirname(scriptsDirectory),
+          "config",
+          "decision-rules.json",
+        ),
+        commandTemplate: [
+          process.execPath,
+          path.join(scriptsDirectory, "kacha.mjs"),
+          "rules",
+          "query",
+          "--stage",
+          stage,
+          "--modules",
+          modules.join(",") || "decision",
+          "--signals",
+          "SIGNALS.json",
+          "--limit",
+          "3",
+        ].map((item) => JSON.stringify(item)).join(" "),
+      }
+    : null,
 };
+const packetTokenLimit = stage ? 16_000 : referenceTokenLimit + 8_000;
+const packetTokenEstimate = approximateTokens(packet);
+packet.packetBudget = {
+  approximateInputTokens: packetTokenEstimate,
+  limit: packetTokenLimit,
+  withinBudget: packetTokenEstimate <= packetTokenLimit,
+  excludes: [
+    "按需读取的 transcript window",
+    "工具完整日志",
+    "完整逐词时间戳",
+  ],
+};
+if (!packet.packetBudget.withinBudget) {
+  packet.status = "blocked";
+  packet.diagnostics = [
+    diagnostic(
+      "KACHA-E140",
+      `agent packet 约 ${packetTokenEstimate} tokens，超过 ${packetTokenLimit}；`
+        + "请缩小转写窗口、阶段或模块范围。",
+    ),
+  ];
+  if (output) writeJsonAtomic(path.resolve(output), packet);
+  console.error(JSON.stringify(packet, null, 2));
+  process.exit(1);
+}
 if (output) writeJsonAtomic(path.resolve(output), packet);
 console.log(JSON.stringify(packet, null, 2));

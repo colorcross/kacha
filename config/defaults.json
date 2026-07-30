@@ -57,6 +57,76 @@
   },
   "execution": {
     "modelTier": "balanced",
+    "telemetry": {
+      "enabled": true,
+      "directory": ".kacha/metrics",
+      "compactToolOutput": true,
+      "maxLogBytes": 67108864,
+      "maxFailureSummaryCharacters": 1200
+    },
+    "unifiedRender": {
+      "enabled": true,
+      "singleFinalVideoEncode": true,
+      "preview": {
+        "maxWidth": 1920,
+        "encoder": "h264_videotoolbox",
+        "fallbackEncoder": "libx264",
+        "preset": "veryfast",
+        "crf": 23
+      },
+      "final": {
+        "encoder": "libx264",
+        "fallbackEncoder": "libx264",
+        "preset": "slow",
+        "crf": 16
+      }
+    },
+    "artifactCache": {
+      "enabled": true,
+      "directory": ".kacha/cache",
+      "materialization": "copy",
+      "verifySha256": true,
+      "maximumBytes": 53687091200,
+      "highValueKinds": [
+        "source_separation",
+        "asr",
+        "mask",
+        "tracking",
+        "beauty",
+        "styleframe",
+        "generated_media"
+      ]
+    },
+    "resourceScheduling": {
+      "enabled": true,
+      "scope": "host",
+      "directory": "kacha/resource-locks",
+      "waitTimeoutSeconds": 1800,
+      "pollIntervalMs": 250,
+      "capacities": {
+        "cpuHeavy": 2,
+        "mps": 1,
+        "videoEncode": 1,
+        "network": 2,
+        "ioHeavy": 2
+      }
+    },
+    "asr": {
+      "enabled": true,
+      "provider": "local_whisper_mlx",
+      "language": "auto",
+      "responseFormat": "verbose_json",
+      "wordTimestamps": true,
+      "temperature": 0,
+      "conditionOnPreviousText": true,
+      "timeoutSeconds": 3600,
+      "cache": true,
+      "lowConfidence": {
+        "averageLogProbabilityBelow": -0.65,
+        "noSpeechProbabilityAbove": 0.5,
+        "compressionRatioAbove": 2.4
+      }
+    },
     "referenceTokenLimits": {
       "economy": 28000,
       "balanced": 56000,
@@ -122,7 +192,12 @@
       "silenceDurationSeconds": 0.5,
       "measurementTargetLufs": -20,
       "measurementTruePeakDbtp": -2,
-      "measurementLoudnessRange": 7
+      "measurementLoudnessRange": 7,
+      "bgmBelowDialogueMinDb": 12,
+      "bgmBelowDialogueMaxDb": 18,
+      "bgmMinimumCoverageRatio": 0.85,
+      "mixStemReconstructionPsnrMinDb": 70,
+      "finalMixPsnrMinDb": 24
     },
     "sourceSeparation": {
       "model": "htdemucs",
@@ -147,7 +222,8 @@
   "tools": {
     "demucsBin": null,
     "sfxLibrary": null,
-    "fontRegistry": null
+    "fontRegistry": null,
+    "whisperEndpoint": "http://127.0.0.1:8000/v1/audio/transcriptions"
   },
   "providers": {
     "minimax": {

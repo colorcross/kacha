@@ -41,6 +41,14 @@ time. Build local `visual-evidence` for visual tasks. MiniMax remains blocked
 without external-upload authorization, paid-service authorization, and the
 explicit upload flag.
 
+Do not put a full word-level transcript in the packet:
+
+```bash
+node scripts/kacha.mjs transcript index transcript.json
+node scripts/kacha.mjs transcript slice transcript.json \
+  --start 0 --end 90
+```
+
 ## 1. Create a separate project directory
 
 ```bash
@@ -103,7 +111,30 @@ Use the relevant profile or add `--require` when the project needs masks, source
 node scripts/kacha.mjs gate-render my-video-project/contracts/project-manifest.json
 ```
 
-After it passes, execute the approved plan with the project-selected FFmpeg, NLE, Remotion, HyperFrames, or other verified timeline engine. Kacha validates contracts and gates; `gate-render` does not build or render a universal timeline.
+After it passes, a project with `plans.timeline` can execute the supported
+unified timeline directly:
+
+```bash
+node scripts/kacha.mjs timeline validate \
+  --plan my-video-project/contracts/timeline.json
+node scripts/kacha.mjs render \
+  my-video-project/contracts/project-manifest.json
+```
+
+EDL, breathing motion, overlays, captions, dialogue, BGM, and SFX are compiled
+into one Render Graph. A final visual version uses at most one full video
+encode. For parameter exploration, render a separate local proxy range:
+
+```bash
+node scripts/kacha.mjs timeline render \
+  --plan my-video-project/contracts/timeline.json \
+  --mode preview --range-start 42 --range-end 50 \
+  --output my-video-project/preview/42-50.mp4
+```
+
+Work outside the unified contract may still use a project-selected NLE,
+Remotion, HyperFrames, or another verified engine. `gate-render` itself only
+checks readiness.
 
 ## 6. Execute the 13 stages in order
 
@@ -145,6 +176,18 @@ Register the plan under `plans.netstyleTimelines` in the project manifest.
 Subtitles and final mixing run after this output. See the
 [semantic net-style reference](../../references/z-en-editing-system.md) for
 cue fields and fail-closed gates.
+
+Use the shared cache for high-cost analysis and generation:
+
+```bash
+node scripts/kacha.mjs transcribe source.mov --output transcript.json
+node scripts/kacha.mjs masks source.mov --output-dir masks
+node scripts/kacha.mjs styleframe render \
+  --scene process_progressive --output design/process.svg
+node scripts/kacha.mjs cache inspect --project-root my-video-project
+```
+
+See [Performance, token, and weak-model production](PERFORMANCE_TOKEN_STABILITY_V5.md).
 
 ## 7. Run automated technical QC
 

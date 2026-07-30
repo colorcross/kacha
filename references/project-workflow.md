@@ -80,6 +80,7 @@ node scripts/validate_edit_proposal.mjs edit-proposal.json
 以 `examples/project-manifest.json` 为结构模板。它集中记录：
 
 - proposal、edit plan、generated shot plan；
+- 唯一 `timeline.ir.json` 与确定性 Render Graph；
 - 能力探测 manifest 和项目所需能力；
 - 最终视频的尺寸、画幅、帧率、声道、采样率、响度和 true peak 合同；
 - 视频、封面、字幕、技术 QC 和 release report 路径。
@@ -89,11 +90,27 @@ node scripts/validate_edit_proposal.mjs edit-proposal.json
 ```bash
 node scripts/kacha.mjs gate-plan PROJECT.json
 node scripts/kacha.mjs gate-render PROJECT.json
+node scripts/kacha.mjs render PROJECT.json
 node scripts/kacha.mjs qc PROJECT.json
 node scripts/kacha.mjs gate-release PROJECT.json
 ```
 
-`gate-render` 只表示具备渲染条件，不冒充已经渲染。`qc` 只完成可自动化的技术检查，不能替代正常速度通看。`gate-release` 同时要求真实文件哈希、技术 QC 和人工审片清单。
+`gate-render` 只表示具备渲染条件，不冒充已经渲染。`render` 会再次执行门禁，
+把 EDL、画面、字幕与混音编译为同一个 Render Graph，并最多完成一次正式
+视频编码。`qc` 只完成可自动化的技术检查，不能替代正常速度通看。
+`gate-release` 同时要求真实文件哈希、技术 QC 和人工审片清单。
+
+探索阶段只做独立局部代理：
+
+```bash
+node scripts/kacha.mjs timeline render \
+  --plan timeline.ir.json --mode preview \
+  --range-start 42 --range-end 50 \
+  --output preview/42-50.mp4
+```
+
+区间、叠加层、字幕、dialogue、BGM 和 SFX 共用偏移后的 PTS；局部预览不写
+正式 stems，也不得占用正式成片路径。
 
 ## 局部迭代
 
@@ -120,6 +137,7 @@ v3 是默认路径，具体合同见 `references/incremental-workflow.md`。每�
 - 默认继承有效源帧率和 48 kHz 音频；
 - 用户未明确指定新尺寸或画幅时，默认继承源宽度、源高度和源宽高比；
 - 从最高质量源素材直接构建最终时间线；
-- 尽量只做一次最终编码，不从低清中间片放大；
+- 正式视觉时间线最多一次最终编码，不从低清中间片放大；
+- 完全相同的 Render Graph 与输出哈希直接复用，编码次数为 0；
 - 禁止静默覆盖正式成片、降低分辨率、改帧率或改变声道；
 - 付费、上传、发布和不可逆操作需要明确授权。

@@ -45,6 +45,8 @@ description: |
 - 字幕/封面/品牌/系列：`references/subtitles-covers-brand.md`
 - MiniMax/Seedance/网络素材：`references/generated-media-assets.md`
 - 较弱模型/低推理强度/长任务续跑：`references/agent-execution.md`
+- 性能、Token、统一渲染与弱模型稳定生产：
+  `docs/PERFORMANCE_TOKEN_STABILITY_V5.md`
 - Claude Code 视觉补偿/关键帧证据：`references/visual-evidence.md`
 - 缓存与清理：`references/cleanup-retention.md`
 - 复盘生产缺陷或改门禁：`docs/PRODUCTION_HARDENING.md`
@@ -70,6 +72,7 @@ node scripts/kacha.mjs prepare --task local_optimization \
   --project PROJECT.json
 node scripts/kacha.mjs next PROJECT.json
 node scripts/kacha.mjs compile-change change-request.json
+node scripts/kacha.mjs state snapshot PROJECT.json
 node scripts/kacha.mjs visual-evidence INPUT.mov \
   --output-dir output/visual-evidence --mode review
 ```
@@ -79,6 +82,15 @@ node scripts/kacha.mjs visual-evidence INPUT.mov \
 关键帧。`prepare` 会自动补入弱模型执行协议和 Claude 视觉 reference，并
 阻止 reference 超过所选模型档位预算。详细配方、错误码和授权见对应
 reference。
+
+弱模型的上下文按 `inventory / content / edit / visual_audio / release`
+五种 packet 路由；这只是省 Token 的读取边界，不替代 v2 十三阶段执行状态。
+每个 packet 只读一个紧凑合同。完整转写和逐词 JSON 不进入 packet，使用
+`transcript index` 与最多 180 秒的 `transcript slice` 按需读取。剪辑与效果
+先用 `rules query` 取 1–3 个候选；相同 cues、配置、规则和 seed 必须得到
+相同 decision digest。低置信度或规则冲突只能生成局部预览并升级给强模型或
+人工，不能直接 final。项目状态、证据和决定写入 `.kacha/project-state.json`，
+长任务不得依赖对话历史重建。
 
 ## 统一配置与默认剪辑要求
 
@@ -193,6 +205,15 @@ picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共�
   声像和语气强弱；只对齐 LUFS 不算完成。知识口播默认采用
   `references/audio.md` 的“自然口播参考基准”和 `warm-soft` 长听感预设。
 - SFX 按功能建立调色板并与事件逐一映射；禁止整片反复套一个声音。
+- 用户要求 BGM 时，最终混音必须保留闪避后的 dialogue/BGM/SFX 组件 stem
+  和最终 mix stem，并在项目 manifest 声明 `outputs.audioStems` 与
+  `expectedMedia.audioMix.bgmRequired=true`。最终 `qc` 直接测量 BGM 相对
+  dialogue 的响度差和时长覆盖，重建组件混音，并把最终视频解码音频与 mix
+  stem 做残差信噪比比对；只检查音乐文件存在、轨道已连接或母带总响度不算
+  完成。默认 12–18 dB，超过上限或成片漏混都直接阻断。
+- 增量音频返工创建 manifest 时传入 `--dialogue-stem`、`--bgm-stem` 与
+  `--mix-stem`（有 SFX 时再传 `--sfx-stem`），沿用相同 BGM 可感知和成片
+  漏混门禁，不能把局部返工当成例外。
 - 美颜默认关闭。明确启用时只使用本地 Beauty v2，并且只做磨皮、美白、匀肤
   和法令纹弱化；不得回退 GPUPixel、生成式人脸修复或云端美颜。
 - Beauty v2 渲染必须由当前项目配置显式 `enabled=true`，携带逐帧 Vision
@@ -203,6 +224,22 @@ picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共�
   路径。发布前运行 `design qc --matrix` 覆盖全部 mode 取值和组件/场景状态。
 - 检测到系列时，视频和封面使用同一系列标识、层级和安全区。
 - 自动技术 QC、当前版本人工审片和对应门禁全部通过前，不能称为可发布成片。
+- 正式视觉时间线必须编译为统一 Timeline IR/Render Graph，从最高质量源最多
+  一次完整视频编码；局部探索只渲染独立代理/区间。相同 graph 与输出哈希
+  命中时编码数为 0，禁止用低清代理放大成正式版本。graph 必须冻结 source、
+  合同、overlay、字幕、dialogue、BGM、SFX 和字体目录的真实内容身份；同一路径
+  文件原地替换后必须失效，不能按路径误复用。
+- Demucs、ASR、蒙版、跟踪、Beauty、样式帧和生成素材必须使用源 SHA、实现
+  SHA、参数和输出 schema 构成的内容指纹缓存；缓存命中仍校验产物 SHA。
+  Demucs 和 ASR 还必须冻结真实模型权重/目录内容 SHA、运行时版本与服务实现
+  SHA；替换权重、升级服务或无法取得强指纹时不得命中旧 stem/转写。
+  付费生成命中时不得再次调用，容量不足时停止而不是静默清理高价值资产。
+- 所有真实执行阶段用 `metrics run` 记录墙钟时间、Token、缓存、渲染范围、
+  视频编码数和产物；优先从子进程 JSON 的 usage 字段自动采集 Token，无真实
+  usage 时必须标记 estimated/unavailable，不能把估算伪装成实测。完整日志写
+  文件并脱敏，不把大日志返回给模型。
+- 重型 MPS 和视频编码在同一台主机上默认各只运行一个，多个项目也共享锁池。
+  资源不足时等待/阻断，不能并发抢占导致换页、掉帧或静默 fallback。
 - 上传、发布、付费生成、购买授权与不可逆删除必须在明确授权内。
 
 ## v2：首剪与结构重做
@@ -220,16 +257,25 @@ picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共�
 node scripts/kacha.mjs gate-plan project-manifest.json
 scripts/capability_probe.sh --profile core --output capabilities.json
 node scripts/kacha.mjs gate-render project-manifest.json
+node scripts/kacha.mjs render project-manifest.json
 ```
 
 十三阶段为：`inventory → transcript_structure → rough_cut →
 dialogue_preprocess → connection_qc → fine_cut → visual_packaging →
 subtitles → final_mix → cover → preview_render → final_qc →
 release_package`。前一阶段没有证据，不得把后一阶段写成完成。
+阶段完成证据必须是当前真实文件的 `{path, sha256}`；`next` 与
+`.kacha/project-state.json` 共用这套状态机。proposal/edit plan/timeline、
+能力合同或媒体合同变化时重置失效阶段；仅回填成片 SHA 不得误清空进度。
 
 方案模板见 `examples/edit-proposal.json`、`examples/edit-plan.json` 和
 `examples/project-manifest.json`。具体合同以 `references/project-workflow.md`
 为准。
+
+完整项目必须把 `plans.timeline` 登记为唯一时间线事实源。预览显式使用独立
+输出，可加 `--range-start/--range-end`；正式 `render` 先通过
+`gate-render`，再在一个 filter graph 中完成 EDL、画面、字幕和混音。纯音频
+与封面返工继续走 v3 零视频编码路径。
 
 ## v3：增量返工
 

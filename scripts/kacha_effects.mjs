@@ -3,12 +3,15 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
 import {
   applicableEditingDefaults,
   firstPositional,
   loadKachaConfig,
 } from "./kacha_config.mjs";
+import {
+  commandExists,
+  run as runCommand,
+} from "./kacha_utils.mjs";
 import {
   listStyleProfiles,
   loadEffectRegistry,
@@ -29,14 +32,9 @@ function fail(message, code = 1) {
   process.exit(code);
 }
 
-function commandExists(command) {
-  return spawnSync(command, ["--version"], { encoding: "utf8" }).status === 0;
-}
-
 function run(command, commandArgs, cwd = process.cwd()) {
-  const result = spawnSync(command, commandArgs, {
+  const result = runCommand(command, commandArgs, {
     cwd,
-    encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
   if (result.status !== 0) {

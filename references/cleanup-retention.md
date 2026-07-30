@@ -21,7 +21,7 @@
 - 当前及最近认可版本的成片、封面和字幕；
 - NLE/时间线工程、proposal、edit plan、project manifest、release report 和 QC 报告；
 - 转写、字幕校准日志、cut sheet、关键时间码和设计预检；
-- 已批准的 dialogue/BGM/SFX stems；
+- 已批准的 dialogue/BGM/SFX 组件 stems 与最终 mix stem；
 - 仍可能用于返工的蒙版视频、关键帧、生成镜头原件和许可记录。
 
 ## 2. 用户确认完成后的最终清理

@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "1.0",
+  "projectId": "replace-with-project-id",
+  "mode": "preview",
+  "contracts": {
+    "proposal": {
+      "path": "./edit-proposal.json",
+      "sha256": "replace-with-real-sha256"
+    },
+    "editPlan": {
+      "path": "./edit-plan.json",
+      "sha256": "replace-with-real-sha256"
+    }
+  },
+  "source": {
+    "path": "/absolute/path/to/source.mov",
+    "sha256": "replace-with-real-sha256"
+  },
+  "edl": [
+    {
+      "id": "segment-001",
+      "sourceStart": 0,
+      "sourceEnd": 5
+    }
+  ],
+  "visual": {
+    "breathing": [
+      {
+        "id": "emphasis-001",
+        "start": 1,
+        "end": 2.2,
+        "scale": 1.06,
+        "anchorX": 0.5,
+        "anchorY": 0.42,
+        "entryRatio": 0.35,
+        "exitRatio": 0.3
+      }
+    ],
+    "overlays": [
+      {
+        "id": "card-001",
+        "path": "./assets/card.png",
+        "sha256": "replace-with-real-sha256",
+        "provenance": {
+          "kind": "licensed_local_asset",
+          "evidence": "./assets/card.license.json"
+        },
+        "kind": "image",
+        "start": 2.5,
+        "end": 4.5,
+        "x": 120,
+        "y": 120,
+        "width": 720,
+        "height": 405,
+        "opacity": 1
+      }
+    ],
+    "subtitles": {
+      "path": "./subtitles.ass",
+      "sha256": "replace-with-real-sha256",
+      "provenance": {
+        "kind": "project_generated_subtitles",
+        "evidence": "./subtitle-qc.json"
+      },
+      "fontsDirectory": "./Fonts"
+    }
+  },
+  "audio": {
+    "dialogue": null,
+    "bgm": {
+      "path": "./assets/bgm.wav",
+      "sha256": "replace-with-real-sha256",
+      "provenance": {
+        "kind": "licensed_local_audio",
+        "evidence": "./assets/bgm.license.json"
+      },
+      "levelBelowDialogueDb": 16,
+      "sidechain": true
+    },
+    "sfx": [
+      {
+        "id": "sfx-001",
+        "path": "./assets/click.wav",
+        "sha256": "replace-with-real-sha256",
+        "provenance": {
+          "kind": "project_sfx_library",
+          "evidence": "./assets/click.license.json"
+        },
+        "time": 2.5,
+        "levelBelowDialogueDb": 10
+      }
+    ]
+  },
+  "output": {
+    "path": "./output/preview.mp4",
+    "width": 1920,
+    "height": 1080,
+    "fps": 25,
+    "dialogueStem": "./output/dialogue.wav",
+    "bgmStem": "./output/bgm.wav",
+    "sfxStem": "./output/sfx.wav",
+    "mixStem": "./output/final-mix.wav"
+  }
+}

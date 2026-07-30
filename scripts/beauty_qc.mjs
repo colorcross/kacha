@@ -2,9 +2,13 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
 import { loadBeautyV2 } from "./beauty_v2.mjs";
-import { readJson, sha256File, sha256Value } from "./kacha_utils.mjs";
+import {
+  readJson,
+  run,
+  sha256File,
+  sha256Value,
+} from "./kacha_utils.mjs";
 
 const args = process.argv.slice(2);
 const option = (name, fallback = null) => {
@@ -41,7 +45,7 @@ function fail(message, code = 2) {
 }
 
 function probe(file, countFrames = false) {
-  const invocation = spawnSync("ffprobe", [
+  const invocation = run("ffprobe", [
     "-v", "error",
     ...(countFrames ? ["-count_frames"] : []),
     "-show_streams",
@@ -49,7 +53,7 @@ function probe(file, countFrames = false) {
     "-show_chapters",
     "-of", "json",
     file,
-  ], { encoding: "utf8" });
+  ]);
   if (invocation.status !== 0) {
     throw new Error(`ffprobe 失败：${file}\n${invocation.stderr}`);
   }
@@ -259,7 +263,7 @@ function extractAB(source, output, duration, directory) {
       directory,
       `same-frame-ab-${String(index + 1).padStart(2, "0")}.png`,
     );
-    const result = spawnSync("ffmpeg", [
+    const result = run("ffmpeg", [
       "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
       "-ss", time.toFixed(6), "-i", source,
       "-ss", time.toFixed(6), "-i", output,
@@ -268,7 +272,7 @@ function extractAB(source, output, duration, directory) {
         + "[1:v]scale=iw/2:ih/2:flags=lanczos[b];"
         + "[a][b]hstack=inputs=2",
       "-frames:v", "1", destination,
-    ], { encoding: "utf8" });
+    ]);
     if (result.status !== 0) {
       throw new Error(`同帧 A/B 生成失败：${result.stderr}`);
     }

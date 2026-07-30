@@ -16,6 +16,11 @@ import {
   classifyFailure,
   diagnostic,
 } from "./kacha_error_catalog.mjs";
+import {
+  firstIncompleteV2Stage,
+  loadOrInitializeV2State,
+  V2_STAGE_IDS,
+} from "./workflow_state.mjs";
 
 const scriptsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -401,8 +406,100 @@ function nextV2() {
     const result = runValidator(script, [file]);
     if (!result.pass) blockedFromValidation(label, result);
   }
+  let workflow;
+  try {
+    workflow = loadOrInitializeV2State(projectFile);
+  } catch (error) {
+    blockedFromValidation("workflow state", {
+      pass: false,
+      stdout: "",
+      stderr: error.message,
+    });
+  }
+  const incompleteStage = firstIncompleteV2Stage(workflow.state);
+  if (incompleteStage?.entry?.status === "blocked") {
+    return action(
+      "resolve_blocked_stage",
+      "blocked",
+      `解决阶段 ${incompleteStage.id} 的阻断后再继续`,
+      null,
+      {
+        owner: "human",
+        safeToAutoExecute: false,
+        stage: incompleteStage.id,
+        stateFile: workflow.stateFile,
+      },
+    );
+  }
+  const previewStageIndex = V2_STAGE_IDS.indexOf("preview_render");
+  const incompleteIndex = incompleteStage
+    ? V2_STAGE_IDS.indexOf(incompleteStage.id)
+    : V2_STAGE_IDS.length;
+  if (incompleteIndex <= previewStageIndex) {
+    return action(
+      "complete_workflow_stage",
+      "stage_pending",
+      `完成 ${incompleteStage.id}，生成真实文件证据后按顺序登记`,
+      null,
+      {
+        owner: "agent",
+        safeToAutoExecute: false,
+        stage: incompleteStage.id,
+        stateFile: workflow.stateFile,
+        recordCommandTemplate: shellCommand([
+          process.execPath,
+          path.join(scriptsDirectory, "kacha.mjs"),
+          "state",
+          "record",
+          workflow.stateFile,
+          "--stage",
+          incompleteStage.id,
+          "--status",
+          "complete",
+          "--evidence",
+          "EVIDENCE_FILE",
+        ]),
+      },
+    );
+  }
   const finalVideo = resolveEntry(projectFile, project.outputs?.finalVideo);
   if (!fileReady(finalVideo)) {
+    const unifiedTimeline = resolveEntry(
+      projectFile,
+      project.plans?.timeline ?? project.plans?.timelineIr,
+    );
+    if (fileReady(unifiedTimeline)) {
+      return action(
+        "render_unified_timeline",
+        "plan_ready",
+        "通过 render gate 后，用统一 Render Graph 一次编码完整候选",
+        [
+          process.execPath,
+          path.join(scriptsDirectory, "kacha.mjs"),
+          "render",
+          projectFile,
+          "--mode",
+          "final",
+        ],
+        {
+          owner: "render_engine",
+          safeToAutoExecute: true,
+          preflightCommand: shellCommand([
+            process.execPath,
+            path.join(scriptsDirectory, "kacha.mjs"),
+            "gate-render",
+            projectFile,
+          ]),
+          timeline: unifiedTimeline,
+          expectedOutput: finalVideo,
+          qualityContract: {
+            fullVideoEncodesMaximum: 1,
+            finalQcRequired: true,
+            silentMultiPassFallbackForbidden: true,
+          },
+        },
+      );
+    }
     const netstyleTimelines = (project.plans?.netstyleTimelines ?? [])
       .map((entry) => resolveEntry(projectFile, entry))
       .filter(Boolean);
@@ -523,6 +620,32 @@ function nextV2() {
       },
     );
   }
+  if (workflow.state.stages?.final_qc?.status !== "complete") {
+    return action(
+      "record_final_qc",
+      "technical_qc_ready",
+      "将当前成片的技术 QC 报告登记为 final_qc 阶段证据",
+      [
+        process.execPath,
+        path.join(scriptsDirectory, "kacha.mjs"),
+        "state",
+        "record",
+        workflow.stateFile,
+        "--stage",
+        "final_qc",
+        "--status",
+        "complete",
+        "--evidence",
+        qcFile,
+      ],
+      {
+        owner: "agent",
+        safeToAutoExecute: true,
+        stage: "final_qc",
+        stateFile: workflow.stateFile,
+      },
+    );
+  }
   const releaseFile = resolveEntry(projectFile, project.outputs?.releaseReport);
   if (!fileReady(releaseFile)) {
     return action(
@@ -535,6 +658,32 @@ function nextV2() {
         safeToAutoExecute: false,
         expectedOutput: releaseFile,
         diagnostics: [diagnostic("KACHA-E300", "release report 尚未创建")],
+      },
+    );
+  }
+  if (workflow.state.stages?.release_package?.status !== "complete") {
+    return action(
+      "record_release_package",
+      "review_ready",
+      "将当前发布审片报告登记为 release_package 阶段证据",
+      [
+        process.execPath,
+        path.join(scriptsDirectory, "kacha.mjs"),
+        "state",
+        "record",
+        workflow.stateFile,
+        "--stage",
+        "release_package",
+        "--status",
+        "complete",
+        "--evidence",
+        releaseFile,
+      ],
+      {
+        owner: "agent",
+        safeToAutoExecute: true,
+        stage: "release_package",
+        stateFile: workflow.stateFile,
       },
     );
   }

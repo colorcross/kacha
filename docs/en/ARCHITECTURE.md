@@ -29,6 +29,29 @@ design system.
 
 Connects the proposal, plan, capability snapshot, inputs, outputs, and QC reports. It is the unified gate entry point.
 
+### `Timeline IR + Render Graph`
+
+`timeline.ir.json` is the execution truth for the source hash, EDL, breathing
+motion, overlays, captions, dialogue, BGM, SFX, and output contract.
+`render-graph.json` is compiled deterministically from it and freezes geometry,
+events, configuration, encoder selection, decision digests, proposal/edit-plan
+contracts, every media layer, and the font directory by content identity. A
+supported final visual version uses at most one full video encode. Reuse
+requires the graph, all inputs, the final output, and every declared stem to
+remain current; replacing an asset in place invalidates reuse.
+
+### `.kacha/metrics + cache + project-state`
+
+- `metrics/` records stage wall time, measured/estimated token provenance,
+  cache outcomes, render scope, video encode count, artifacts, and redacted
+  logs.
+- `cache/` stores artifacts keyed by source, implementation, operation,
+  model/service content, parameters, and output schema digests.
+- `project-state.json` persists the ordered 13-stage v2 state, decisions,
+  issues, current file-backed evidence hashes, and the one legal next action
+  outside chat history. The five packets route context; they do not replace
+  execution state.
+
 ### `generatedShotPlan`
 
 Records reference assets and hashes, provider/model/transport, capability snapshot, action beats, specifications, authorization, and QC targets for generated shots.
@@ -119,6 +142,28 @@ Eight stable commands reduce model-reasoning dependence:
 human review. See `references/agent-execution.md` and
 `references/visual-evidence.md`.
 
+## V5 performance and weak-model execution layer
+
+V5 adds four deterministic boundaries:
+
+1. five bounded packets: `inventory`, `content`, `edit`, `visual_audio`, and
+   `release`;
+2. transcript indexing and explicit windows, with a hard 180-second slice
+   maximum;
+3. scored rules that return one to three candidates and force uncertain work
+   into preview/escalation instead of final output;
+4. unified timeline/render commands backed by content-addressed cache,
+   host-level cross-project resource leases, and automatic telemetry.
+
+The model handles intent, content structure, candidate selection, and short
+preview comparison. Code handles file identity, state, dependencies, caching,
+encoding, and technical QC. See
+[`PERFORMANCE_TOKEN_STABILITY_V5.md`](PERFORMANCE_TOKEN_STABILITY_V5.md).
+
+For required BGM, technical QC reconstructs the mix from dialogue/BGM/SFX
+stems and compares decoded final audio with the declared mix stem. Correct
+component files cannot hide a final mux that omitted the music.
+
 ## Configuration boundary
 
 `scripts/kacha_config.mjs` merges built-in, user, project, machine-local, and
@@ -158,6 +203,11 @@ not prove that a scene is narratively appropriate.
 - Human-review evidence missing: do not release.
 - Explicit cache reuse conflicts with dependency invalidation: reject it.
 - A `candidate` attempts to pass final release: stop.
+- A partial preview targets the final output, a final plan still contains an
+  unresolved escalation, or a final visual render would exceed one full video
+  encode: stop.
+- Cache contents or hashes fail verification, capacity is exhausted, or a
+  credential appears in cache parameters: stop.
 
 ## Extending Kacha
 

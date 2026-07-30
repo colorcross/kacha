@@ -196,10 +196,22 @@ const overlayInput = option(args, "--overlay");
 const overlay = overlayInput ? path.resolve(overlayInput) : null;
 const agent = option(args, "--agent", "both");
 const apply = args.includes("--apply");
+const verifyOnly = args.includes("--verify-only");
 const home = path.resolve(option(args, "--home", os.homedir()));
+const outputInput = option(args, "--output");
+const output = outputInput ? path.resolve(outputInput) : null;
+function emit(report) {
+  if (output) {
+    fs.mkdirSync(path.dirname(output), { recursive: true });
+    const temporaryOutput = `${output}.tmp-${process.pid}-${Date.now()}`;
+    fs.writeFileSync(temporaryOutput, `${JSON.stringify(report, null, 2)}\n`);
+    fs.renameSync(temporaryOutput, output);
+  }
+  console.log(JSON.stringify(report, null, 2));
+}
 if (!["codex", "claude", "both"].includes(agent)) {
   fail("用法：sync_skill_installs.mjs [--source REPO] [--overlay DIR] "
-    + "[--agent codex|claude|both] [--home HOME] [--apply]", 2);
+    + "[--agent codex|claude|both] [--home HOME] [--apply] [--output FILE]", 2);
 }
 if (!fs.existsSync(path.join(source, "SKILL.md"))) {
   fail(`source 不是咔嚓仓库：${source}`, 2);
@@ -234,7 +246,7 @@ try {
       "",
     ].join("\n"),
   );
-  verifyBundle(bundle);
+  if (!verifyOnly) verifyBundle(bundle);
   const bundleDigest = treeDigest(bundle);
   const before = targets.map((target) => ({
     ...target,
@@ -242,7 +254,7 @@ try {
     digest: fs.existsSync(target.path) ? treeDigest(target.path) : null,
   }));
   if (!apply) {
-    console.log(JSON.stringify({
+    emit({
       status: "dry_run_pass",
       source,
       core: identity,
@@ -252,7 +264,7 @@ try {
         ...target,
         action: target.digest === bundleDigest ? "unchanged" : "replace_with_backup",
       })),
-    }, null, 2));
+    });
   } else {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const backupRoot = path.join(home, ".kacha-backups", `${timestamp}-${process.pid}`);
@@ -313,7 +325,7 @@ try {
       throw error;
     }
 
-    console.log(JSON.stringify({
+    emit({
       status: "applied",
       source,
       core: identity,
@@ -327,7 +339,7 @@ try {
           ? "replaced"
           : "unchanged",
       })),
-    }, null, 2));
+    });
   }
 } catch (error) {
   console.error(`同步失败，当前安装未被无证据覆盖：${error.message}`);

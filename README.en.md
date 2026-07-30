@@ -2,13 +2,16 @@
 
 **Kacha** (`kacha`) is a local-first professional video workflow skill for **Codex** and **Claude Code**. It turns planning, editing, packaging, technical QC, and human review into explicit, auditable, fail-closed gates.
 
-[中文说明](README.md) · [Production Studio in Figma](https://www.figma.com/design/uXfiviOI5rgi56awnD3Iut?node-id=1-2) · [One-prompt install](docs/en/AGENT_INSTALL.md) · [Quick start](docs/en/QUICKSTART.md) · [Privacy and security](docs/en/PRIVACY_SECURITY.md)
+[中文说明](README.md) · [Production Studio in Figma](https://www.figma.com/design/uXfiviOI5rgi56awnD3Iut?node-id=1-2) · [One-prompt install](docs/en/AGENT_INSTALL.md) · [Quick start](docs/en/QUICKSTART.md) · [Performance and weak-model production](docs/en/PERFORMANCE_TOKEN_STABILITY_V5.md) · [Privacy and security](docs/en/PRIVACY_SECURITY.md)
 
 <p align="center">
   <img src="assets/brand/kacha-og.png" alt="Kacha local AI video workflow" width="100%">
 </p>
 
-Kacha is not a universal renderer. It coordinates verified tools such as FFmpeg, an NLE, Remotion, HyperFrames, or another project-selected engine. Your project still owns the actual timeline implementation and final creative decisions.
+Kacha is not a universal NLE. For supported contracts it compiles a unified
+Timeline IR into a deterministic FFmpeg Render Graph; projects may still use a
+verified NLE, Remotion, HyperFrames, or another selected engine for work outside
+that contract. Final creative decisions and human approval remain explicit.
 
 ## Official site and product design
 
@@ -68,6 +71,22 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Gives lower-capability models a deterministic `prepare → next` protocol,
   stable error codes, and compiled change recipes instead of relying on
   high-reasoning improvisation.
+- Routes context through five bounded packets while an ordered 13-stage state
+  machine accepts only current file-backed evidence. Full word-level
+  transcripts stay out of prompts; Agents read at most 180 seconds at a time.
+- Compiles EDL, breathing motion, overlays, captions, dialogue, BGM, and SFX
+  into one Render Graph, with at most one full video encode for a final visual
+  version and zero encodes for an exact verified reuse. Every contract, media
+  layer, caption file, and font directory is frozen by content identity.
+- Reuses content-addressed Demucs, ASR, mask/tracking, Beauty, styleframe, and
+  generated-media artifacts with model/service fingerprints; paid generation
+  is not resubmitted on an exact cache hit.
+- Records wall time, measured/estimated token provenance, cache hits, render
+  range, video encode count, artifacts, and redacted logs. Heavy GPU/encode
+  leases are host-scoped across projects.
+- Proves required BGM reached the final file by measuring audibility,
+  reconstructing component stems, and comparing decoded final audio with the
+  declared mix stem.
 - Merges versioned parameters, user/project editing defaults, and local
   credentials through one validated configuration system. Editing defaults
   accept structured parameters and natural language without leaking keys into
@@ -265,12 +284,17 @@ Typical commands:
 node scripts/kacha.mjs gate-plan /path/to/project-manifest.json
 scripts/capability_probe.sh --profile core --output /path/to/capabilities.json
 node scripts/kacha.mjs gate-render /path/to/project-manifest.json
-# Execute the approved timeline with the project's verified render engine.
+node scripts/kacha.mjs render /path/to/project-manifest.json
 node scripts/kacha.mjs qc /path/to/project-manifest.json
 node scripts/kacha.mjs gate-release /path/to/project-manifest.json
 ```
 
-`gate-render` checks readiness; it does **not** render a timeline. `qc` performs automated technical analysis; it does **not** create human-review evidence. See [Quick start](docs/en/QUICKSTART.md) and [Architecture and boundaries](docs/en/ARCHITECTURE.md).
+`gate-render` checks readiness; it does **not** render a timeline.
+`render` executes a registered unified Timeline IR when the project has one.
+`qc` performs automated technical analysis; it does **not** create human-review
+evidence. See [Quick start](docs/en/QUICKSTART.md),
+[Architecture and boundaries](docs/en/ARCHITECTURE.md), and
+[Performance and weak-model production](docs/en/PERFORMANCE_TOKEN_STABILITY_V5.md).
 
 Use `route_references.mjs` to derive the minimum reference set for the selected
 task and modules instead of loading every document into context.
@@ -327,7 +351,7 @@ From the repository root:
 node tests/run_tests.mjs --suite incremental
 node tests/run_tests.mjs --suite audio
 node tests/run_tests.mjs --suite visual
-node tests/run_tests.mjs
+node tests/run_tests.mjs --report /tmp/kacha-tests.json
 bash tests/test_installer.sh
 python3 scripts/scan_secrets.py
 cd website && npm run lint && npm run typecheck && npm test && npm audit --audit-level=high
@@ -360,6 +384,7 @@ The scanner reduces risk but cannot prove that a repository contains no sensitiv
 - [Quick start](docs/en/QUICKSTART.md)
 - [Configuration and credentials](docs/en/CONFIGURATION.md)
 - [Architecture and design boundaries](docs/en/ARCHITECTURE.md)
+- [Performance, token, and weak-model production](docs/en/PERFORMANCE_TOKEN_STABILITY_V5.md)
 - [Product brand and website system](docs/en/PRODUCT_BRAND_AND_WEBSITE.md)
 - [2026-07-29 completion review](docs/en/COMPLETION_REVIEW_2026-07-29.md)
 - [Privacy and security](docs/en/PRIVACY_SECURITY.md)

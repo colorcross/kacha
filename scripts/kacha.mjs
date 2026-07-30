@@ -9,6 +9,7 @@ import {
   readJson,
   resolveFrom,
   run,
+  sha256File,
 } from "./kacha_utils.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -19,7 +20,8 @@ function usage() {
       + "  kacha.mjs doctor [--profile core|claude-vision|full]\n"
       + "  kacha.mjs config show|validate|get|init [options]\n"
       + "  kacha.mjs design validate|list|show|resolve|preview|render|qc [options]\n"
-      + "  kacha.mjs beauty validate|show|authorize|qc [options]\n"
+      + "  kacha.mjs styleframe render --scene ID --output FILE [options]\n"
+      + "  kacha.mjs beauty validate|show|authorize|render|qc [options]\n"
       + "  kacha.mjs effects list|show|validate|preview [options]\n"
       + "  kacha.mjs fonts scan|validate|resolve|preview [options]\n"
       + "  kacha.mjs captions plan|validate|render [options]\n"
@@ -33,6 +35,20 @@ function usage() {
       + "  kacha.mjs compile-change <change-request.json> [--output-dir DIR]\n"
       + "  kacha.mjs visual-evidence <video> --output-dir DIR [--mode fast|review|release]\n"
       + "  kacha.mjs vision-enrich <visual-evidence.json> --context CONTEXT --allow-external-upload\n"
+      + "  kacha.mjs metrics run|summarize [options]\n"
+      + "  kacha.mjs resources status|run [options]\n"
+      + "  kacha.mjs cache key|run|inspect [options]\n"
+      + "  kacha.mjs transcribe INPUT --output TRANSCRIPT.json [options]\n"
+      + "  kacha.mjs transcript index|slice TRANSCRIPT.json [options]\n"
+      + "  kacha.mjs masks INPUT --output-dir DIR [options]\n"
+      + "  kacha.mjs generated-cache run --plan PLAN --shot ID --output VIDEO -- COMMAND\n"
+      + "  kacha.mjs rules validate|query|compile|apply [options]\n"
+      + "  kacha.mjs state snapshot|record [options]\n"
+      + "  kacha.mjs golden real --video VIDEO --output-dir DIR [options]\n"
+      + "  kacha.mjs optimization-audit run --golden-report FILE --test-report FILE "
+        + "--asr-report FILE --install-report FILE\n"
+      + "  kacha.mjs timeline validate|compile|render --plan TIMELINE.json [options]\n"
+      + "  kacha.mjs render <project-manifest.json> [--mode preview|final]\n"
       + "  kacha.mjs gate-plan <project-manifest.json>\n"
       + "  kacha.mjs gate-render <project-manifest.json>\n"
       + "  kacha.mjs qc <project-manifest.json>\n"
@@ -91,6 +107,7 @@ const delegatedCommands = {
   doctor: "kacha_doctor.mjs",
   config: "kacha_config.mjs",
   design: "kacha_design.mjs",
+  styleframe: "render_styleframe_cached.mjs",
   beauty: "kacha_beauty.mjs",
   effects: "kacha_effects.mjs",
   fonts: "kacha_fonts.mjs",
@@ -104,6 +121,19 @@ const delegatedCommands = {
   "compile-change": "compile_change_request.mjs",
   "visual-evidence": "build_visual_evidence.mjs",
   "vision-enrich": "enrich_visual_evidence_minimax.mjs",
+  metrics: "run_telemetry.mjs",
+  resources: "resource_scheduler.mjs",
+  cache: "artifact_cache.mjs",
+  transcribe: "transcribe_local.mjs",
+  transcript: "transcript_window.mjs",
+  masks: "generate_masks_cached.mjs",
+  "generated-cache": "run_generated_media_cached.mjs",
+  rules: "decision_rules.mjs",
+  state: "project_state.mjs",
+  golden: "golden_regression.mjs",
+  "optimization-audit": "optimization_audit.mjs",
+  timeline: "timeline_ir.mjs",
+  render: "render_project.mjs",
 };
 if (Object.hasOwn(delegatedCommands, command)) {
   if (command === "studio" && projectInput === "serve") {
@@ -192,6 +222,130 @@ function gatePlanV2() {
       "plans.visualBreathingTimelines",
     );
     invoke("visual_breathing.mjs", ["validate", "--plan", plan]);
+  }
+
+  if (project.plans.timeline ?? project.plans.timelineIr) {
+    const timeline = requireProjectPath(
+      projectFile,
+      project.plans.timeline ?? project.plans.timelineIr,
+      "plans.timeline",
+    );
+    invoke("timeline_ir.mjs", ["validate", "--plan", timeline]);
+    const timelinePlan = readJson(timeline);
+    const proposalPlan = readJson(proposal);
+    const editPlanIdentity = sha256File(editPlan);
+    const proposalIdentity = sha256File(proposal);
+    for (const [name, file, expected] of [
+      ["proposal", proposal, proposalIdentity],
+      ["editPlan", editPlan, editPlanIdentity],
+    ]) {
+      const contract = timelinePlan.contracts?.[name];
+      const contractFile = contract
+        ? resolveFrom(timeline, entryPath(contract))
+        : null;
+      if (
+        !contractFile
+        || path.resolve(contractFile) !== path.resolve(file)
+        || contract.sha256 !== expected
+      ) {
+        console.error(
+          `Timeline IR contracts.${name} 必须绑定当前项目文件及其真实 SHA-256`,
+        );
+        process.exit(1);
+      }
+    }
+    const timelineAssets = [
+      ...(timelinePlan.visual?.overlays ?? []),
+      ...(timelinePlan.visual?.subtitles ? [timelinePlan.visual.subtitles] : []),
+      ...(timelinePlan.audio?.dialogue ? [timelinePlan.audio.dialogue] : []),
+      ...(timelinePlan.audio?.bgm ? [timelinePlan.audio.bgm] : []),
+      ...(timelinePlan.audio?.sfx ?? []),
+    ];
+    for (const [index, asset] of timelineAssets.entries()) {
+      const assetFile = resolveFrom(timeline, entryPath(asset));
+      if (
+        !assetFile
+        || !asset.sha256
+        || asset.sha256 !== sha256File(assetFile)
+        || !hasValue(asset.provenance?.kind)
+        || !hasValue(asset.provenance?.evidence)
+      ) {
+        console.error(
+          `Timeline IR 外部素材[${index}] 必须记录真实 sha256 与 provenance.kind/evidence`,
+        );
+        process.exit(1);
+      }
+    }
+    const timelineSource = resolveFrom(timeline, entryPath(timelinePlan.source));
+    const approvedSources = new Set(
+      (proposalPlan.sourceInventory ?? [])
+        .map((entry) => resolveFrom(proposal, entryPath(entry)))
+        .filter(Boolean)
+        .map((entry) => path.resolve(entry)),
+    );
+    if (!timelineSource || !approvedSources.has(path.resolve(timelineSource))) {
+      console.error("Timeline IR 的源视频不在 editProposal 已授权 sourceInventory 中");
+      process.exit(1);
+    }
+    if (timelinePlan.mode !== "final") {
+      console.error("登记到完整项目的 Timeline IR 必须声明 mode=final");
+      process.exit(1);
+    }
+    const timelineOutput = resolveFrom(timeline, entryPath(timelinePlan.output));
+    const projectOutput = projectPath(
+      projectFile,
+      project.outputs.finalVideo,
+      "outputs.finalVideo",
+    );
+    if (path.resolve(timelineOutput) !== path.resolve(projectOutput)) {
+      console.error("Timeline IR output.path 必须与 project.outputs.finalVideo.path 一致");
+      process.exit(1);
+    }
+    for (const [field, expected] of [
+      ["width", project.expectedMedia.width],
+      ["height", project.expectedMedia.height],
+      ["fps", project.expectedMedia.fps],
+    ]) {
+      if (
+        Number.isFinite(Number(expected))
+        && Number(timelinePlan.output?.[field]) !== Number(expected)
+      ) {
+        console.error(`Timeline IR output.${field} 与 project.expectedMedia.${field} 不一致`);
+        process.exit(1);
+      }
+    }
+    for (const [timelineField, projectField] of [
+      ["dialogueStem", "dialogue"],
+      ["bgmStem", "bgm"],
+      ["sfxStem", "sfx"],
+      ["mixStem", "mix"],
+    ]) {
+      const expectedEntry = project.outputs?.audioStems?.[projectField];
+      if (!expectedEntry && !timelinePlan.output?.[timelineField]) continue;
+      const timelineStem = resolveFrom(timeline, timelinePlan.output?.[timelineField]);
+      const projectStem = projectPath(
+        projectFile,
+        expectedEntry,
+        `outputs.audioStems.${projectField}`,
+      );
+      if (
+        !timelineStem
+        || !projectStem
+        || path.resolve(timelineStem) !== path.resolve(projectStem)
+      ) {
+        console.error(
+          `Timeline IR output.${timelineField} 必须与 outputs.audioStems.${projectField} 一致`,
+        );
+        process.exit(1);
+      }
+    }
+    if (
+      project.expectedMedia?.audioMix?.bgmRequired === true
+      && (!timelinePlan.audio?.bgm || !timelinePlan.output?.mixStem)
+    ) {
+      console.error("项目要求 BGM 时，Timeline IR 必须声明 audio.bgm 与 output.mixStem");
+      process.exit(1);
+    }
   }
 
   if (project.plans.localChange) {

@@ -75,8 +75,18 @@ done
   exit 2
 }
 [[ ! -e "$output" ]] || { printf 'Output already exists: %s\n' "$output" >&2; exit 2; }
-command -v ffmpeg >/dev/null || { printf '%s\n' "ffmpeg is required" >&2; exit 2; }
-command -v ffprobe >/dev/null || { printf '%s\n' "ffprobe is required" >&2; exit 2; }
+ffmpeg_bin=${KACHA_FFMPEG_BIN:-}
+if [[ -z "$ffmpeg_bin" && -x /opt/homebrew/opt/ffmpeg-full/bin/ffmpeg ]]; then
+  ffmpeg_bin=/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg
+fi
+if [[ -z "$ffmpeg_bin" ]]; then ffmpeg_bin=$(command -v ffmpeg || true); fi
+ffprobe_bin=${KACHA_FFPROBE_BIN:-}
+if [[ -z "$ffprobe_bin" && -n "$ffmpeg_bin" && -x "$(dirname "$ffmpeg_bin")/ffprobe" ]]; then
+  ffprobe_bin="$(dirname "$ffmpeg_bin")/ffprobe"
+fi
+if [[ -z "$ffprobe_bin" ]]; then ffprobe_bin=$(command -v ffprobe || true); fi
+[[ -n "$ffmpeg_bin" ]] || { printf '%s\n' "ffmpeg is required" >&2; exit 2; }
+[[ -n "$ffprobe_bin" ]] || { printf '%s\n' "ffprobe is required" >&2; exit 2; }
 command -v node >/dev/null || { printf '%s\n' "node is required" >&2; exit 2; }
 
 input_resolved=$(node -e 'console.log(require("node:path").resolve(process.argv[1]))' "$input")
@@ -126,9 +136,9 @@ IFS=$'\t' read -r \
   naso_sigma_s naso_sigma_r naso_brightness naso_gamma \
   naso_mask_blur naso_temporal_frames <<<"$parameter_line"
 
-width=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$input")
-height=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$input")
-source_frames=$(ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames -of csv=p=0 "$input")
+width=$("$ffprobe_bin" -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$input")
+height=$("$ffprobe_bin" -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$input")
+source_frames=$("$ffprobe_bin" -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames -of csv=p=0 "$input")
 [[ "$width" =~ ^[0-9]+$ && "$height" =~ ^[0-9]+$ ]] || {
   printf '%s\n' "Could not determine source dimensions" >&2
   exit 2
@@ -138,10 +148,10 @@ source_frames=$(ffprobe -v error -count_frames -select_streams v:0 -show_entries
   exit 2
 }
 
-color_primaries=$(ffprobe -v error -select_streams v:0 -show_entries stream=color_primaries -of csv=p=0 "$input")
-color_transfer=$(ffprobe -v error -select_streams v:0 -show_entries stream=color_transfer -of csv=p=0 "$input")
-color_space=$(ffprobe -v error -select_streams v:0 -show_entries stream=color_space -of csv=p=0 "$input")
-color_range=$(ffprobe -v error -select_streams v:0 -show_entries stream=color_range -of csv=p=0 "$input")
+color_primaries=$("$ffprobe_bin" -v error -select_streams v:0 -show_entries stream=color_primaries -of csv=p=0 "$input")
+color_transfer=$("$ffprobe_bin" -v error -select_streams v:0 -show_entries stream=color_transfer -of csv=p=0 "$input")
+color_space=$("$ffprobe_bin" -v error -select_streams v:0 -show_entries stream=color_space -of csv=p=0 "$input")
+color_range=$("$ffprobe_bin" -v error -select_streams v:0 -show_entries stream=color_range -of csv=p=0 "$input")
 color_args=()
 if [[ -n "$color_primaries" && "$color_primaries" != "unknown" && "$color_primaries" != "reserved" ]]; then
   color_args+=(-color_primaries "$color_primaries")
@@ -173,7 +183,7 @@ temporal_weights() {
 skin_weights=$(temporal_weights "$skin_temporal_frames")
 naso_weights=$(temporal_weights "$naso_temporal_frames")
 
-ffmpeg -hide_banner -loglevel error -nostdin -y \
+"$ffmpeg_bin" -hide_banner -loglevel error -nostdin -y \
   -i "$input" \
   -i "$skin_mask" \
   -i "$nasolabial_mask" \
@@ -218,7 +228,7 @@ ffmpeg -hide_banner -loglevel error -nostdin -y \
   "${color_args[@]}" \
   "$temporary_output"
 
-output_frames=$(ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames -of csv=p=0 "$temporary_output")
+output_frames=$("$ffprobe_bin" -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames -of csv=p=0 "$temporary_output")
 [[ "$output_frames" == "$source_frames" ]] || {
   printf 'Beauty v2 frame-count mismatch: source=%s output=%s\n' "$source_frames" "$output_frames" >&2
   exit 4

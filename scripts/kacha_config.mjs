@@ -54,6 +54,11 @@ const TOP_LEVEL_KEYS = new Set([
 ]);
 const EXECUTION_KEYS = new Set([
   "modelTier",
+  "telemetry",
+  "unifiedRender",
+  "artifactCache",
+  "resourceScheduling",
+  "asr",
   "referenceTokenLimits",
   "incremental",
   "netstyle",
@@ -76,7 +81,12 @@ const STYLE_MODE_KEYS = new Set([
   "surface",
   "density",
 ]);
-const TOOLS_KEYS = new Set(["demucsBin", "sfxLibrary", "fontRegistry"]);
+const TOOLS_KEYS = new Set([
+  "demucsBin",
+  "sfxLibrary",
+  "fontRegistry",
+  "whisperEndpoint",
+]);
 const PROVIDER_KEYS = {
   minimax: new Set(["credentialEnv", "region", "baseUrl"]),
   pixabay: new Set(["credentialEnv"]),
@@ -400,6 +410,249 @@ function validateEffectiveConfig(config) {
   if (!["economy", "balanced", "frontier"].includes(config.execution.modelTier)) {
     throw new Error("execution.modelTier 必须为 economy、balanced 或 frontier");
   }
+  const telemetry = config.execution.telemetry;
+  rejectUnknownKeys(
+    telemetry,
+    new Set([
+      "enabled",
+      "scope",
+      "directory",
+      "compactToolOutput",
+      "maxLogBytes",
+      "maxFailureSummaryCharacters",
+    ]),
+    "execution.telemetry",
+  );
+  if (telemetry.enabled !== true) {
+    throw new Error("execution.telemetry.enabled 必须保持 true");
+  }
+  assertString(telemetry.directory, "execution.telemetry.directory");
+  if (path.isAbsolute(telemetry.directory) || telemetry.directory.split(/[\\/]/).includes("..")) {
+    throw new Error("execution.telemetry.directory 必须是项目内安全相对路径");
+  }
+  if (telemetry.compactToolOutput !== true) {
+    throw new Error("execution.telemetry.compactToolOutput 必须保持 true");
+  }
+  assertNumber(telemetry.maxLogBytes, "execution.telemetry.maxLogBytes", 1024, 1_073_741_824, true);
+  assertNumber(
+    telemetry.maxFailureSummaryCharacters,
+    "execution.telemetry.maxFailureSummaryCharacters",
+    120,
+    10_000,
+    true,
+  );
+  const unifiedRender = config.execution.unifiedRender;
+  rejectUnknownKeys(
+    unifiedRender,
+    new Set(["enabled", "singleFinalVideoEncode", "preview", "final"]),
+    "execution.unifiedRender",
+  );
+  if (unifiedRender.enabled !== true) {
+    throw new Error("execution.unifiedRender.enabled 必须保持 true");
+  }
+  if (unifiedRender.singleFinalVideoEncode !== true) {
+    throw new Error("execution.unifiedRender.singleFinalVideoEncode 必须保持 true");
+  }
+  for (const profile of ["preview", "final"]) {
+    const current = unifiedRender[profile];
+    const keys = profile === "preview"
+      ? ["maxWidth", "encoder", "fallbackEncoder", "preset", "crf"]
+      : ["encoder", "fallbackEncoder", "preset", "crf"];
+    rejectUnknownKeys(current, new Set(keys), `execution.unifiedRender.${profile}`);
+    if (profile === "preview") {
+      assertNumber(current.maxWidth, "execution.unifiedRender.preview.maxWidth", 320, 3840, true);
+    }
+    assertString(current.encoder, `execution.unifiedRender.${profile}.encoder`);
+    assertString(current.fallbackEncoder, `execution.unifiedRender.${profile}.fallbackEncoder`);
+    assertString(current.preset, `execution.unifiedRender.${profile}.preset`);
+    assertNumber(current.crf, `execution.unifiedRender.${profile}.crf`, 0, 40, true);
+  }
+  const artifactCache = config.execution.artifactCache;
+  rejectUnknownKeys(
+    artifactCache,
+    new Set([
+      "enabled",
+      "directory",
+      "materialization",
+      "verifySha256",
+      "maximumBytes",
+      "highValueKinds",
+    ]),
+    "execution.artifactCache",
+  );
+  if (artifactCache.enabled !== true) {
+    throw new Error("execution.artifactCache.enabled 必须保持 true");
+  }
+  assertString(artifactCache.directory, "execution.artifactCache.directory");
+  if (
+    path.isAbsolute(artifactCache.directory)
+    || artifactCache.directory.split(/[\\/]/).includes("..")
+  ) {
+    throw new Error("execution.artifactCache.directory 必须是项目内安全相对路径");
+  }
+  if (!["copy", "hardlink"].includes(artifactCache.materialization)) {
+    throw new Error("execution.artifactCache.materialization 必须为 copy 或 hardlink");
+  }
+  if (artifactCache.verifySha256 !== true) {
+    throw new Error("execution.artifactCache.verifySha256 必须保持 true");
+  }
+  assertNumber(
+    artifactCache.maximumBytes,
+    "execution.artifactCache.maximumBytes",
+    1024 * 1024,
+    Number.MAX_SAFE_INTEGER,
+    true,
+  );
+  const cacheKinds = normalizeStringArray(
+    artifactCache.highValueKinds,
+    "execution.artifactCache.highValueKinds",
+  );
+  for (const required of [
+    "source_separation",
+    "asr",
+    "mask",
+    "tracking",
+    "beauty",
+    "styleframe",
+    "generated_media",
+  ]) {
+    if (!cacheKinds.includes(required)) {
+      throw new Error(`artifactCache.highValueKinds 缺少 ${required}`);
+    }
+  }
+  const resourceScheduling = config.execution.resourceScheduling;
+  rejectUnknownKeys(
+    resourceScheduling,
+    new Set([
+      "enabled",
+      "scope",
+      "directory",
+      "waitTimeoutSeconds",
+      "pollIntervalMs",
+      "capacities",
+    ]),
+    "execution.resourceScheduling",
+  );
+  if (resourceScheduling.enabled !== true) {
+    throw new Error("execution.resourceScheduling.enabled 必须保持 true");
+  }
+  if (!["host", "project"].includes(resourceScheduling.scope)) {
+    throw new Error("execution.resourceScheduling.scope 必须为 host 或 project");
+  }
+  assertString(resourceScheduling.directory, "execution.resourceScheduling.directory");
+  if (
+    path.isAbsolute(resourceScheduling.directory)
+    || resourceScheduling.directory.split(/[\\/]/).includes("..")
+  ) {
+    throw new Error("execution.resourceScheduling.directory 必须是安全相对路径");
+  }
+  assertNumber(
+    resourceScheduling.waitTimeoutSeconds,
+    "execution.resourceScheduling.waitTimeoutSeconds",
+    1,
+    86_400,
+    true,
+  );
+  assertNumber(
+    resourceScheduling.pollIntervalMs,
+    "execution.resourceScheduling.pollIntervalMs",
+    25,
+    5_000,
+    true,
+  );
+  rejectUnknownKeys(
+    resourceScheduling.capacities,
+    new Set(["cpuHeavy", "mps", "videoEncode", "network", "ioHeavy"]),
+    "execution.resourceScheduling.capacities",
+  );
+  for (const resource of ["cpuHeavy", "mps", "videoEncode", "network", "ioHeavy"]) {
+    assertNumber(
+      resourceScheduling.capacities[resource],
+      `execution.resourceScheduling.capacities.${resource}`,
+      1,
+      64,
+      true,
+    );
+  }
+  if (resourceScheduling.capacities.mps !== 1) {
+    throw new Error("resourceScheduling.capacities.mps 必须保持 1");
+  }
+  if (resourceScheduling.capacities.videoEncode !== 1) {
+    throw new Error("resourceScheduling.capacities.videoEncode 必须保持 1");
+  }
+  const asr = config.execution.asr;
+  rejectUnknownKeys(
+    asr,
+    new Set([
+      "enabled",
+      "provider",
+      "language",
+      "responseFormat",
+      "wordTimestamps",
+      "temperature",
+      "conditionOnPreviousText",
+      "timeoutSeconds",
+      "cache",
+      "lowConfidence",
+    ]),
+    "execution.asr",
+  );
+  if (asr.enabled !== true || asr.provider !== "local_whisper_mlx") {
+    throw new Error("execution.asr 必须启用 local_whisper_mlx");
+  }
+  assertString(asr.language, "execution.asr.language");
+  if (!["json", "verbose_json"].includes(asr.responseFormat)) {
+    throw new Error("execution.asr.responseFormat 必须为 json 或 verbose_json");
+  }
+  if (
+    typeof asr.wordTimestamps !== "boolean"
+    || typeof asr.conditionOnPreviousText !== "boolean"
+    || asr.cache !== true
+  ) {
+    throw new Error("execution.asr 的 wordTimestamps/conditionOnPreviousText/cache 无效");
+  }
+  assertNumber(asr.temperature, "execution.asr.temperature", 0, 1);
+  assertNumber(asr.timeoutSeconds, "execution.asr.timeoutSeconds", 10, 86_400, true);
+  rejectUnknownKeys(
+    asr.lowConfidence,
+    new Set([
+      "averageLogProbabilityBelow",
+      "noSpeechProbabilityAbove",
+      "compressionRatioAbove",
+    ]),
+    "execution.asr.lowConfidence",
+  );
+  assertNumber(
+    asr.lowConfidence.averageLogProbabilityBelow,
+    "execution.asr.lowConfidence.averageLogProbabilityBelow",
+    -10,
+    0,
+  );
+  assertNumber(
+    asr.lowConfidence.noSpeechProbabilityAbove,
+    "execution.asr.lowConfidence.noSpeechProbabilityAbove",
+    0,
+    1,
+  );
+  assertNumber(
+    asr.lowConfidence.compressionRatioAbove,
+    "execution.asr.lowConfidence.compressionRatioAbove",
+    1,
+    10,
+  );
+  assertString(config.tools.whisperEndpoint, "tools.whisperEndpoint");
+  let whisperEndpoint;
+  try {
+    whisperEndpoint = new URL(config.tools.whisperEndpoint);
+  } catch {
+    throw new Error("tools.whisperEndpoint 必须是有效 URL");
+  }
+  if (
+    whisperEndpoint.protocol !== "http:"
+    || !["127.0.0.1", "localhost", "::1"].includes(whisperEndpoint.hostname)
+  ) {
+    throw new Error("tools.whisperEndpoint 必须是本机 loopback HTTP 地址");
+  }
   rejectUnknownKeys(
     config.execution.referenceTokenLimits,
     new Set(["economy", "balanced", "frontier"]),
@@ -668,6 +921,11 @@ function validateEffectiveConfig(config) {
       "measurementTargetLufs",
       "measurementTruePeakDbtp",
       "measurementLoudnessRange",
+      "bgmBelowDialogueMinDb",
+      "bgmBelowDialogueMaxDb",
+      "bgmMinimumCoverageRatio",
+      "mixStemReconstructionPsnrMinDb",
+      "finalMixPsnrMinDb",
     ]),
     "execution.qualityControl",
   );
@@ -680,6 +938,24 @@ function validateEffectiveConfig(config) {
   assertNumber(qc.measurementTargetLufs, "qualityControl.measurementTargetLufs", -70, -5);
   assertNumber(qc.measurementTruePeakDbtp, "qualityControl.measurementTruePeakDbtp", -20, 0);
   assertNumber(qc.measurementLoudnessRange, "qualityControl.measurementLoudnessRange", 1, 50);
+  assertNumber(qc.bgmBelowDialogueMinDb, "qualityControl.bgmBelowDialogueMinDb", 0, 40);
+  assertNumber(qc.bgmBelowDialogueMaxDb, "qualityControl.bgmBelowDialogueMaxDb", 0, 40);
+  if (qc.bgmBelowDialogueMinDb > qc.bgmBelowDialogueMaxDb) {
+    throw new Error("qualityControl 的 BGM 最小差值不能大于最大差值");
+  }
+  assertNumber(qc.bgmMinimumCoverageRatio, "qualityControl.bgmMinimumCoverageRatio", 0, 1);
+  assertNumber(
+    qc.mixStemReconstructionPsnrMinDb,
+    "qualityControl.mixStemReconstructionPsnrMinDb",
+    20,
+    200,
+  );
+  assertNumber(
+    qc.finalMixPsnrMinDb,
+    "qualityControl.finalMixPsnrMinDb",
+    10,
+    100,
+  );
   const sourceSeparation = config.execution.sourceSeparation;
   rejectUnknownKeys(
     sourceSeparation,

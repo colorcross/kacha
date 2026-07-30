@@ -33,6 +33,18 @@ QC 或人工审片，禁止一次自行推进多个不可逆阶段。
 若路由结果超过预算，命令直接阻塞，要求拆分阶段/模块，不能靠截断 reference
 强行执行。`--max-reference-tokens` 只用于明确知道模型上下文上限时覆盖。
 
+`economy` 默认把执行拆为 `inventory / content / edit / visual_audio /
+release`，每次只载入 `references/stages/` 中一个紧凑合同。也可显式指定：
+
+```bash
+node scripts/kacha.mjs prepare \
+  --task source_edit --stage visual_audio \
+  --model-tier economy --project PROJECT.json
+```
+
+阶段 reference 上限 12,000 tokens，完整 packet 上限 16,000 tokens；超限
+直接阻断，不静默删规则。
+
 执行包同时携带当前安全配置 digest，以及按 task/module 过滤后的结构化参数和
 自然语言默认要求。默认要求来自用户/项目配置，不需要模型从历史对话重建；
 但它们不构成上传、付费、发布、覆盖源文件或跳过门禁的授权。
@@ -96,6 +108,46 @@ node scripts/kacha.mjs compile-change change-request.json
 `safeToAutoExecute=true` 只表示动作本身是本地、确定性且在现有授权内，不表示
 可以跳过动作后的输出核验。
 
+项目状态写入文件，避免长任务从对话历史重建：
+
+```bash
+node scripts/kacha.mjs state snapshot PROJECT.json
+node scripts/kacha.mjs state record .kacha/project-state.json \
+  --stage fine_cut --status complete --evidence fine-cut-evidence.json \
+  --decision "切镜由信息变化触发"
+```
+
+v2 状态按十三阶段顺序记录并绑定当前 evidence SHA-256；五种 packet 是读取
+路由，不是阶段状态。重新 `snapshot` 会保留合同未变且证据仍当前的决定，并
+从真实文件重新推导唯一下一步。
+
+## 转写与规则按需读取
+
+完整 ASR 文本和逐词时间戳不进入 packet：
+
+```bash
+node scripts/kacha.mjs transcript index transcript.json
+node scripts/kacha.mjs transcript slice transcript.json \
+  --start 90 --end 180
+```
+
+默认窗口 90 秒，单次最多 180 秒。`prepare --transcript` 只内联最多 20 个
+低置信度片段；正文通过 `--transcript-window START:END` 按需读取。
+
+效果与剪辑不让弱模型遍历完整库：
+
+```bash
+node scripts/kacha.mjs rules query \
+  --stage edit --modules cut,transition \
+  --signals '["information_change","connection"]' --limit 3
+node scripts/kacha.mjs rules compile \
+  --cues semantic-cues.json --model-tier economy \
+  --seed 7 --output decision-plan.json
+```
+
+相同 cues、规则、配置和 seed 的 digest 必须一致。置信度低于门槛、规则冲突
+或复杂创意判断只允许 `rules apply --preview-only`，不得进入正式渲染。
+
 ## Token 与时间纪律
 
 - 主入口只负责选路，任务 reference 由 router 精确选择；
@@ -106,6 +158,10 @@ node scripts/kacha.mjs compile-change change-request.json
 - `prepare` 只携带事实、引用路径、硬合同和一个下一步，不复制整套文档；
 - 局部反馈只写变化，不复制旧 proposal、edit plan 和 release report；
 - 代表帧、短片、同源 A/B 先冻结参数，再做完整渲染；
+- 局部预览只编码指定区间和必要 handle，使用独立代理输出；
+- Demucs、ASR、蒙版、跟踪、Beauty、样式帧和生成素材按内容指纹复用；
+- `metrics run` 自动记录时间、Token、缓存、编码数与产物，完整日志不回填
+  提示词；
 - 媒体哈希、ffprobe 和流哈希在同一进程按文件身份复用；
 - Claude Code 只先读取视觉证据 JSON/Markdown，不把整批图片内容塞进上下文；
 - 远程视觉只对少量关键帧按需调用，并缓存相同帧、提示词和运行时的结果。

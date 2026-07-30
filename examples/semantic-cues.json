@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "1.0",
+  "cues": [
+    {
+      "id": "hook",
+      "start": 0.0,
+      "end": 1.2,
+      "text": "你看到的这条视频，是 AI 自己剪的。",
+      "signals": [
+        "information_change",
+        "logical_emphasis",
+        "spoken_video",
+        "human_subject"
+      ],
+      "confidence": 0.96
+    },
+    {
+      "id": "explain",
+      "start": 1.2,
+      "end": 3.5,
+      "text": "它先理解内容，再决定哪里该切。",
+      "signals": [
+        "information_change",
+        "ordinary_speech",
+        "connection"
+      ],
+      "confidence": 0.94
+    },
+    {
+      "id": "emotion",
+      "start": 3.5,
+      "end": 5.2,
+      "text": "但最难的，不是加效果。",
+      "signals": [
+        "emotion_change",
+        "logical_emphasis",
+        "effect_peak"
+      ],
+      "confidence": 0.91
+    },
+    {
+      "id": "uncertain-name",
+      "start": 5.2,
+      "end": 6.4,
+      "text": "这里有一个需要核对的专名。",
+      "signals": [
+        "low_confidence",
+        "ordinary_speech"
+      ],
+      "confidence": 0.52
+    },
+    {
+      "id": "conclusion",
+      "start": 6.4,
+      "end": 8.5,
+      "text": "工具降低门槛，品味决定上限。",
+      "signals": [
+        "viewpoint_change",
+        "logical_emphasis",
+        "chapter_change",
+        "effect_peak"
+      ],
+      "confidence": 0.98
+    }
+  ]
+}

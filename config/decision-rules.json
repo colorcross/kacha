@@ -1,0 +1,224 @@
+{
+  "schemaVersion": "1.0",
+  "id": "kacha-deterministic-decision-rules",
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "cut-information-change",
+      "stages": ["edit"],
+      "modules": ["cut", "transition"],
+      "signals": ["information_change"],
+      "priority": "required",
+      "decision": "允许切镜；新镜头必须提供不同信息。",
+      "candidates": [
+        {"recipe": "cut_to_detail", "score": 100},
+        {"recipe": "cut_to_context", "score": 88}
+      ],
+      "fallback": "hold_shot"
+    },
+    {
+      "id": "cut-emotion-change",
+      "stages": ["edit"],
+      "modules": ["cut", "transition"],
+      "signals": ["emotion_change"],
+      "priority": "required",
+      "decision": "允许切镜；通过景别或停顿体现情绪变化。",
+      "candidates": [
+        {"recipe": "emotional_close_in", "score": 100},
+        {"recipe": "reaction_hold", "score": 90}
+      ],
+      "fallback": "hold_shot"
+    },
+    {
+      "id": "cut-viewpoint-change",
+      "stages": ["edit"],
+      "modules": ["cut", "transition"],
+      "signals": ["viewpoint_change"],
+      "priority": "required",
+      "decision": "允许切镜；新镜头必须明确改变观察位置或主体视角。",
+      "candidates": [
+        {"recipe": "point_of_view_cut", "score": 100},
+        {"recipe": "split_perspective", "score": 86}
+      ],
+      "fallback": "hold_shot"
+    },
+    {
+      "id": "cut-no-reason",
+      "stages": ["edit"],
+      "modules": ["cut"],
+      "signals": ["no_narrative_change"],
+      "priority": "required",
+      "decision": "禁止为了热闹切镜。",
+      "candidates": [{"recipe": "hold_shot", "score": 100}],
+      "fallback": "hold_shot"
+    },
+    {
+      "id": "shot-scale-alternation",
+      "stages": ["edit"],
+      "modules": ["cut", "camera"],
+      "signals": ["always"],
+      "priority": "required",
+      "decision": "同主体相邻镜头不得使用相同景别。",
+      "candidates": [
+        {"recipe": "wide_medium_close_closeup_cycle", "score": 100}
+      ],
+      "fallback": "hold_shot"
+    },
+    {
+      "id": "connection-continuity",
+      "stages": ["edit", "visual_audio"],
+      "modules": ["transition"],
+      "signals": ["connection"],
+      "priority": "required",
+      "decision": "先修切点、PTS 和 handle，再选择连接机制。",
+      "candidates": [
+        {"recipe": "match_action_cut", "score": 100},
+        {"recipe": "audio_bridge", "score": 92},
+        {"recipe": "short_eased_transition", "score": 80}
+      ],
+      "fallback": "extend_handles_and_review"
+    },
+    {
+      "id": "breathing-emphasis",
+      "stages": ["edit", "visual_audio"],
+      "modules": ["breathing", "camera"],
+      "signals": ["logical_emphasis"],
+      "priority": "high",
+      "decision": "用短促克制推近并在结论后停稳。",
+      "candidates": [
+        {"recipe": "restrained_push_hold", "score": 100},
+        {"recipe": "scale_change_cut", "score": 86}
+      ],
+      "fallback": "deliberate_stillness"
+    },
+    {
+      "id": "typing-literal",
+      "stages": ["visual_audio"],
+      "modules": ["typing", "sfx"],
+      "signals": ["typing_requested"],
+      "priority": "high",
+      "decision": "逐字打出并让单击键盘音与字符落位对齐。",
+      "candidates": [{"recipe": "character_typing_single_key", "score": 100}],
+      "fallback": "plain_text_reveal"
+    },
+    {
+      "id": "pip-safe-frame",
+      "stages": ["visual_audio"],
+      "modules": ["pip"],
+      "signals": ["pip_requested"],
+      "priority": "required",
+      "decision": "PIP 完整适配、带设计系统边框且不遮头。",
+      "candidates": [
+        {"recipe": "bordered_corner_pip", "score": 100},
+        {"recipe": "subject_safe_round_pip", "score": 88}
+      ],
+      "fallback": "full_frame_hold"
+    },
+    {
+      "id": "caption-plain",
+      "stages": ["visual_audio"],
+      "modules": ["captions", "typography"],
+      "signals": ["ordinary_speech"],
+      "priority": "required",
+      "decision": "使用单行金陵体主字幕；不描边、无背景色、普通字幕无音效。",
+      "candidates": [{"recipe": "jinling_plain_single", "score": 100}],
+      "fallback": "plain_single"
+    },
+    {
+      "id": "caption-emphasis",
+      "stages": ["visual_audio"],
+      "modules": ["captions", "sfx"],
+      "signals": ["logical_emphasis"],
+      "priority": "high",
+      "decision": "只强调逻辑重音，动效和音效共享同一峰值。",
+      "candidates": [
+        {"recipe": "keyword_weight_and_scale", "score": 100},
+        {"recipe": "conclusion_card", "score": 84}
+      ],
+      "fallback": "jinling_plain_single"
+    },
+    {
+      "id": "caption-bright-surface",
+      "stages": ["visual_audio"],
+      "modules": ["captions", "card"],
+      "signals": ["bright_surface"],
+      "priority": "required",
+      "decision": "明亮或黄色底图必须使用深色字或显著可读阴影。",
+      "candidates": [{"recipe": "dark_caption_on_bright", "score": 100}],
+      "fallback": "move_caption_off_card"
+    },
+    {
+      "id": "head-safe-zone",
+      "stages": ["visual_audio"],
+      "modules": ["popup", "card", "pip"],
+      "signals": ["human_subject"],
+      "priority": "required",
+      "decision": "弹窗、卡片和提示不得进入人物头部安全区。",
+      "candidates": [{"recipe": "subject_aware_safe_placement", "score": 100}],
+      "fallback": "shrink_or_reposition"
+    },
+    {
+      "id": "bgm-required",
+      "stages": ["visual_audio", "release"],
+      "modules": ["bgm", "audio"],
+      "signals": ["spoken_video"],
+      "priority": "required",
+      "decision": "正式口播成片必须有可听但不抢人声的 BGM stem 和覆盖证据。",
+      "candidates": [{"recipe": "sidechained_low_bgm", "score": 100}],
+      "fallback": "block_release"
+    },
+    {
+      "id": "sfx-semantic",
+      "stages": ["visual_audio"],
+      "modules": ["sfx"],
+      "signals": ["effect_peak"],
+      "priority": "required",
+      "decision": "音效必须与动作/文字落位/转折同峰，且语义匹配。",
+      "candidates": [
+        {"recipe": "local_preferred_semantic_sfx", "score": 100},
+        {"recipe": "licensed_fallback_sfx", "score": 82}
+      ],
+      "fallback": "no_sfx"
+    },
+    {
+      "id": "beauty-default-off",
+      "stages": ["inventory", "visual_audio"],
+      "modules": ["beauty"],
+      "signals": ["always"],
+      "priority": "required",
+      "decision": "Beauty v2 默认关闭；只有项目显式启用才渲染。",
+      "candidates": [{"recipe": "beauty_disabled", "score": 100}],
+      "fallback": "beauty_disabled"
+    },
+    {
+      "id": "single-final-encode",
+      "stages": ["visual_audio", "release"],
+      "modules": ["render"],
+      "signals": ["always"],
+      "priority": "required",
+      "decision": "正式视觉时间线最多一次完整视频编码。",
+      "candidates": [{"recipe": "unified_timeline_render", "score": 100}],
+      "fallback": "block_multi_pass_render"
+    },
+    {
+      "id": "high-value-cache",
+      "stages": ["inventory", "visual_audio"],
+      "modules": ["cache"],
+      "signals": ["expensive_operation"],
+      "priority": "required",
+      "decision": "Demucs、ASR、蒙版、跟踪、Beauty、样式帧和生成素材使用内容指纹缓存。",
+      "candidates": [{"recipe": "content_addressed_cache", "score": 100}],
+      "fallback": "explicit_cache_bypass_with_reason"
+    },
+    {
+      "id": "uncertain-escalation",
+      "stages": ["content", "edit", "visual_audio"],
+      "modules": ["decision"],
+      "signals": ["low_confidence", "rule_conflict"],
+      "priority": "required",
+      "decision": "只做局部预览并升级给强模型或人工，不静默降低质量。",
+      "candidates": [{"recipe": "preview_then_escalate", "score": 100}],
+      "fallback": "block"
+    }
+  ]
+}

@@ -7,9 +7,23 @@
   "artifactIndex": "./artifact-index.json",
   "capabilityManifest": "./capabilities.json",
   "requiredCapabilities": [],
+  "expectedMedia": {
+    "audioMix": {
+      "bgmRequired": true,
+      "bgmBelowDialogueDbMin": 12,
+      "bgmBelowDialogueDbMax": 18,
+      "bgmMinimumCoverageRatio": 0.85
+    }
+  },
   "outputs": {
     "incrementalPlan": "./output/incremental-plan.json",
     "deltaQcReport": "./output/delta-qc.json",
-    "reviewReport": "./output/incremental-review.json"
+    "reviewReport": "./output/incremental-review.json",
+    "audioStems": {
+      "dialogue": "./output/dialogue-post-mix.wav",
+      "bgm": "./output/bgm-post-sidechain.wav",
+      "sfx": "./output/sfx-post-mix.wav",
+      "mix": "./output/final-mix-stem.wav"
+    }
   }
 }

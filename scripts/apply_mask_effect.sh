@@ -28,8 +28,18 @@ mode=$4
 [[ -f "$input" ]] || { printf 'Input not found: %s\n' "$input" >&2; exit 2; }
 [[ -f "$mask" ]] || { printf 'Mask not found: %s\n' "$mask" >&2; exit 2; }
 [[ ! -e "$output" ]] || { printf 'Output already exists: %s\n' "$output" >&2; exit 2; }
-command -v ffmpeg >/dev/null || { printf '%s\n' "ffmpeg is required" >&2; exit 2; }
-command -v ffprobe >/dev/null || { printf '%s\n' "ffprobe is required" >&2; exit 2; }
+ffmpeg_bin=${KACHA_FFMPEG_BIN:-}
+if [[ -z "$ffmpeg_bin" && -x /opt/homebrew/opt/ffmpeg-full/bin/ffmpeg ]]; then
+  ffmpeg_bin=/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg
+fi
+if [[ -z "$ffmpeg_bin" ]]; then ffmpeg_bin=$(command -v ffmpeg || true); fi
+ffprobe_bin=${KACHA_FFPROBE_BIN:-}
+if [[ -z "$ffprobe_bin" && -n "$ffmpeg_bin" && -x "$(dirname "$ffmpeg_bin")/ffprobe" ]]; then
+  ffprobe_bin="$(dirname "$ffmpeg_bin")/ffprobe"
+fi
+if [[ -z "$ffprobe_bin" ]]; then ffprobe_bin=$(command -v ffprobe || true); fi
+[[ -n "$ffmpeg_bin" ]] || { printf '%s\n' "ffmpeg is required" >&2; exit 2; }
+[[ -n "$ffprobe_bin" ]] || { printf '%s\n' "ffprobe is required" >&2; exit 2; }
 command -v node >/dev/null || { printf '%s\n' "node is required" >&2; exit 2; }
 
 input_resolved=$(node -e 'console.log(require("node:path").resolve(process.argv[1]))' "$input")
@@ -46,9 +56,9 @@ node "$script_dir/assert_media_alignment.mjs" \
   --allow-size-mismatch \
   --duration-tolerance-frames 1 >/dev/null
 
-width=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$input")
-height=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$input")
-duration=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$input")
+width=$("$ffprobe_bin" -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$input")
+height=$("$ffprobe_bin" -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$input")
+duration=$("$ffprobe_bin" -v error -show_entries format=duration -of csv=p=0 "$input")
 [[ "$duration" =~ ^[0-9]+([.][0-9]+)?$ ]] || {
   printf '%s\n' "Could not determine input duration" >&2
   exit 2
@@ -78,7 +88,7 @@ work_dir=$(mktemp -d "${TMPDIR:-/tmp}/kacha-mask-effect.XXXXXX")
 trap 'rm -rf "$work_dir"' EXIT
 temporary_output="$work_dir/output.mov"
 
-ffmpeg -hide_banner -loglevel error -nostdin -y \
+"$ffmpeg_bin" -hide_banner -loglevel error -nostdin -y \
   -i "$input" \
   -i "$mask" \
   -filter_complex "

@@ -16,6 +16,10 @@ const args = process.argv.slice(2);
 const positional = args.filter((item) => !item.startsWith("--"));
 const outputInput = option(args, "--output");
 const capabilityInput = option(args, "--capabilities");
+const dialogueStemInput = option(args, "--dialogue-stem");
+const bgmStemInput = option(args, "--bgm-stem");
+const sfxStemInput = option(args, "--sfx-stem");
+const mixStemInput = option(args, "--mix-stem");
 const requiredCapabilities = option(args, "--require", "")
   .split(",")
   .map((item) => item.trim())
@@ -24,7 +28,15 @@ if (positional.length < 3 || !outputInput) {
   console.error(
     "用法：create_incremental_manifest.mjs CONTEXT DELTA INDEX "
       + "--output incremental-project.json "
-      + "[--capabilities capabilities.json --require capability,...]",
+      + "[--capabilities capabilities.json --require capability,...] "
+      + "[--dialogue-stem FILE --bgm-stem FILE --sfx-stem FILE --mix-stem FILE]",
+  );
+  process.exit(2);
+}
+if (bgmStemInput && (!dialogueStemInput || !mixStemInput)) {
+  console.error(
+    "--bgm-stem 要求同时提供 --dialogue-stem 和 --mix-stem，"
+      + "以证明组件混音和最终成片都包含 BGM",
   );
   process.exit(2);
 }
@@ -70,7 +82,34 @@ const project = {
     incrementalPlan: "./output/incremental-plan.json",
     deltaQcReport: "./output/delta-qc.json",
     reviewReport: "./output/incremental-review.json",
+    ...(dialogueStemInput || bgmStemInput || sfxStemInput || mixStemInput
+      ? {
+          audioStems: {
+            ...(dialogueStemInput
+              ? { dialogue: relative(path.resolve(dialogueStemInput)) }
+              : {}),
+            ...(bgmStemInput
+              ? { bgm: relative(path.resolve(bgmStemInput)) }
+              : {}),
+            ...(sfxStemInput
+              ? { sfx: relative(path.resolve(sfxStemInput)) }
+              : {}),
+            ...(mixStemInput
+              ? { mix: relative(path.resolve(mixStemInput)) }
+              : {}),
+          },
+        }
+      : {}),
   },
+  ...(bgmStemInput
+    ? {
+        expectedMedia: {
+          audioMix: {
+            bgmRequired: true,
+          },
+        },
+      }
+    : {}),
 };
 writeJsonAtomic(outputFile, project);
 console.log(
@@ -80,6 +119,7 @@ console.log(
       output: outputFile,
       projectId: project.projectId,
       requiredCapabilities,
+      audioStems: project.outputs.audioStems ?? null,
     },
     null,
     2,

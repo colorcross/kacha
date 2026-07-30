@@ -25,9 +25,9 @@ function fail(message, code = 1) {
   process.exit(code);
 }
 
-if (!["validate", "show", "authorize", "parameters", "qc"].includes(action)) {
+if (!["validate", "show", "authorize", "parameters", "qc", "render"].includes(action)) {
   fail(
-    "用法：kacha.mjs beauty validate|show|authorize|parameters|qc "
+    "用法：kacha.mjs beauty validate|show|authorize|parameters|qc|render "
       + "[--profile natural|visible] [--config FILE] [--anchor PATH] "
       + "[--format json|tsv]",
     2,
@@ -35,6 +35,19 @@ if (!["validate", "show", "authorize", "parameters", "qc"].includes(action)) {
 }
 
 try {
+  if (action === "render") {
+    const result = spawnSync(
+      process.execPath,
+      [
+        path.join(path.dirname(fileURLToPath(import.meta.url)), "render_beauty_cached.mjs"),
+        ...args.slice(1),
+      ],
+      { encoding: "utf8" },
+    );
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    process.exit(result.status ?? 1);
+  }
   const loaded = loadBeautyV2();
   if (action === "validate" || action === "show") {
     console.log(JSON.stringify({

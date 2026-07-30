@@ -35,7 +35,7 @@
   PIP、蒙版、转场和主体感知重构图按同一套合同执行；
 - **返工只动该动的部分**：冻结无关音视频流，复用已有产物，只重渲染受影响层；
 - **结果必须可验证**：媒体解码、轨道、尺寸、响度、黑帧、冻帧、静音、
-  资源哈希和人工审片分别留证，不把技术通过冒充可发布。
+  全输入哈希、最终混音和人工审片分别留证，不把技术通过冒充可发布。
 
 它不是新的剪辑软件，而是协调 FFmpeg、NLE、Remotion、HyperFrames 或项目
 指定引擎的专业工作流层。
@@ -48,6 +48,11 @@
 | 本地生产台 | 选素材、风格、开场和指定效果，生成可交给 Agent 执行的项目合同 |
 | 完整工作流 | 从方案、精剪、声音、视觉、字幕一直走到候选版与发布门禁 |
 | 增量返工 | 通过依赖图、产物指纹和冻结流哈希减少重复渲染 |
+| 一次正式编码 | EDL、动效、字幕和混音编译成统一 Render Graph，并冻结所有输入内容身份 |
+| 高成本复用 | ASR、人声分离、蒙版、Beauty、样式帧和生成素材按模型/实现强指纹缓存 |
+| 弱模型稳定生产 | 五种紧凑 packet + 十三阶段文件证据状态机，减少上下文与临场猜测 |
+| 可观测性能 | 自动采集耗时、Token 来源、缓存和编码次数；重型资源跨项目共享主机锁 |
+| BGM 成片证明 | 测量可听性、重建组件混音，并验证最终视频没有漏混音乐 |
 | 视频设计系统 | 统一栏目、画幅、语言、字幕、卡片、PIP、流程图、封面和运动语言 |
 | 画面呼吸 | 用语义驱动的推近、停稳、释放、横移和重音冲击改善节奏，避免全片持续缩放 |
 | 口播字幕编排 | 普通单行优先，按真实信息关系使用左右、上下或人物前后景排版并联动功能音效 |
@@ -143,19 +148,21 @@ node scripts/kacha.mjs studio serve
 node scripts/kacha.mjs gate-plan PROJECT.json
 scripts/capability_probe.sh --profile core --output capabilities.json
 node scripts/kacha.mjs gate-render PROJECT.json
+node scripts/kacha.mjs render PROJECT.json
 
-# 由项目选定的引擎完成真实渲染后
 node scripts/kacha.mjs qc PROJECT.json
 node scripts/kacha.mjs gate-release PROJECT.json
 ```
 
-`gate-render` 只证明具备执行条件，不会替你渲染视频；`qc` 是自动技术检查，
-不能代替人工通看。
+登记了 `plans.timeline` 的项目可由 `render` 在一个执行图中完成真实渲染；
+`gate-render` 本身仍只证明具备执行条件。`qc` 是自动技术检查，不能代替
+人工通看。
 
 已有成片的局部返工从
 [v3 增量工作流](docs/INCREMENTAL_WORKFLOW_V3.md)开始。较弱模型或
 Claude Code 可使用 `prepare → next` 确定性执行协议，详见
-[V4 工程化优化](docs/ENGINEERING_OPTIMIZATION_V4.md)。
+[V4 工程化优化](docs/ENGINEERING_OPTIMIZATION_V4.md)与
+[V5 性能、Token 和弱模型稳定生产](docs/PERFORMANCE_TOKEN_STABILITY_V5.md)。
 
 ## 配置与依赖
 
@@ -233,8 +240,9 @@ node scripts/kacha.mjs doctor --profile core
 | [安装与依赖](docs/INSTALLATION.md) | 环境、平台与可选能力 |
 | [配置说明](docs/CONFIGURATION.md) | 用户、项目、本机和密钥配置 |
 | [架构说明](docs/ARCHITECTURE.md) | 工作流、证据链与模块边界 |
+| [性能与弱模型稳定生产](docs/PERFORMANCE_TOKEN_STABILITY_V5.md) | 一次编码、局部预览、缓存、Token 和审计 |
 | [视频设计系统](docs/VIDEO_DESIGN_SYSTEM_V1.md) | 视觉 token、组件、场景和 QC |
-| [Beauty v2](docs/BEAUTY_V2.md) | 本地美颜能力、门禁与人工复核 |
+| [Beauty v2](references/beauty-v2.md) | 本地美颜能力、门禁与人工复核 |
 | [增量返工](docs/INCREMENTAL_WORKFLOW_V3.md) | 依赖复用与冻结流证明 |
 | [隐私安全](docs/PRIVACY_SECURITY.md) | 上传、付费、发布与凭证边界 |
 
