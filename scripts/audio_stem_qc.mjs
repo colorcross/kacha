@@ -114,23 +114,30 @@ function measureResidualSimilarity(firstFile, referenceFile) {
   ]);
   const residualRmsDb = parseAstatsRms(residual.stderr);
   const referenceRmsDb = parseAstatsRms(reference.stderr);
-  const similaritySnrDb = residualRmsDb === Number.NEGATIVE_INFINITY
-    ? Number.POSITIVE_INFINITY
+  const exactMatch = residualRmsDb === Number.NEGATIVE_INFINITY;
+  const similaritySnrDb = exactMatch
+    ? null
     : Number.isFinite(referenceRmsDb) && Number.isFinite(residualRmsDb)
       ? Number((referenceRmsDb - residualRmsDb).toFixed(3))
       : null;
   return {
     status: residual.status === 0 && reference.status === 0 ? 0 : 1,
+    exactMatch,
     similaritySnrDb,
     referenceRmsDb,
-    residualRmsDb,
+    residualRmsDb: exactMatch ? null : residualRmsDb,
     diagnostic: residual.status === 0 && reference.status === 0
       ? null
       : `${residual.stderr}\n${reference.stderr}`.trim(),
   };
 }
 
-function compareReconstructedMix(files, mixFile, durationSeconds) {
+function compareReconstructedMix(
+  files,
+  mixFile,
+  durationSeconds,
+  masterTruePeakDb,
+) {
   const ordered = [
     ["dialogue", files.dialogue],
     ["bgm", files.bgm],
@@ -155,7 +162,8 @@ function compareReconstructedMix(files, mixFile, durationSeconds) {
     `${normalized.map((item) => `[${item.label}]`).join("")}`
       + `amix=inputs=${normalized.length}:normalize=0:duration=longest:`
       + `dropout_transition=0,atrim=0:${Number(durationSeconds).toFixed(6)},`
-      + "alimiter=limit=0.95[reconstructed]",
+      + `alimiter=limit=${(10 ** (Number(masterTruePeakDb) / 20)).toFixed(6)}:`
+      + "level=false[reconstructed]",
   ];
   const reconstructedFile = path.join(
     path.dirname(mixFile),
@@ -310,18 +318,25 @@ export function evaluateAudioStems({
     mixFile && fs.existsSync(mixFile) && fs.statSync(mixFile).isFile(),
   );
   if (mixExists) {
+    const masterTruePeakDb = Number(contract?.masterTruePeakDb ?? -4);
     const reconstruction = compareReconstructedMix(
       { dialogue: dialogueFile, bgm: bgmFile, sfx: sfxFile },
       mixFile,
       finalDurationSeconds,
+      masterTruePeakDb,
     );
     measurements.mixReconstruction = reconstruction;
     const threshold = Number(qcConfig.mixStemReconstructionPsnrMinDb);
     checks.push(check(
       "mix_stem_reconstruction",
       reconstruction.status === 0
-        && reconstruction.similaritySnrDb !== null
-        && reconstruction.similaritySnrDb >= threshold,
+        && (
+          reconstruction.exactMatch === true
+          || (
+            reconstruction.similaritySnrDb !== null
+            && reconstruction.similaritySnrDb >= threshold
+          )
+        ),
       reconstruction,
       `component stems reconstruct final mix at >= ${threshold} dB residual SNR`,
     ));
@@ -358,6 +373,7 @@ export function evaluateAudioStems({
     status: failures.length > 0 ? "fail" : "pass",
     contract: {
       bgmRequired: required,
+      masterTruePeakDb: Number(contract?.masterTruePeakDb ?? -4),
       bgmBelowDialogueDbMin: Number(
         contract?.bgmBelowDialogueDbMin
           ?? qcConfig.bgmBelowDialogueMinDb,

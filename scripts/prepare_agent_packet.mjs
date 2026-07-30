@@ -385,6 +385,20 @@ const packet = {
   transcriptEvidence,
   projectState,
   artifactProtocol,
+  agentControlPlane: {
+    primaryInterface: "natural_language_chat",
+    mutationDelta: "kacha.mjs delta apply",
+    localMediaSearch: "kacha.mjs media index|search",
+    asyncJobs: "kacha.mjs jobs submit|status|list|cancel|resume",
+    objectReferences: "kacha.mjs refs index|resolve|parse",
+    installStatus: "kacha.mjs install status|sync",
+    policy: [
+      "小合同修改只返回 mutation delta，不回传完整 before/after。",
+      "素材搜索只返回少量带语义和许可证据的候选。",
+      "耗时任务使用 placeholder；ready 前不得接入正式时间线。",
+      "对象引用必须绑定 owner SHA、JSON Pointer 和 object digest。",
+    ],
+  },
   configuration: {
     digest: loadedConfig.digest,
     sources: loadedConfig.sources,
@@ -423,6 +437,8 @@ const packet = {
         ]
       : []),
     "若 projectState 存在，只执行 projectState.nextAction。",
+    "已有对象先用 refs resolve 缩小读取；小合同修改用 delta apply。",
+    "耗时步骤可提交 jobs，但 placeholder ready 前不得假定产物存在。",
     "每完成一步重新运行 kacha.mjs next；不要自行跳级。",
     "遇到 diagnostics 按 code/remediation 处理，不用猜测填空。",
   ],

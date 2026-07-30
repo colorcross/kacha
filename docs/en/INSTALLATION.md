@@ -142,6 +142,17 @@ Source separation is lossy inference. A successful command does not prove that t
 
 `scripts/generate_vision_masks.swift` is macOS-only and requires Swift, Vision, AVFoundation, CoreImage, and AppKit. On Linux, mark mask generation unavailable or replace it with another verified engine.
 
+### FaceFusion
+
+Face swap, lip sync, face restoration, and frame post-processing are optional.
+Kacha does not install or modify FaceFusion; it connects only to an existing
+loopback Agent API configured with `tools.faceFusionEndpoint` and a `0600`
+`tools.faceFusionTokenFile`. Run
+`node scripts/kacha.mjs facefusion probe` to verify the service version,
+authentication, processors, and model profiles. A successful probe does not
+authorize identity processing: every run still needs a frozen, consent-backed
+plan and operation-specific manual QC.
+
 ### Stock-media providers
 
 `scripts/fetch_stock_media.py` supports Pixabay and Pexels. Credentials prefer

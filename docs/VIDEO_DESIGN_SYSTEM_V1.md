@@ -32,6 +32,8 @@ Style Profile
 69 个 Scene
     +
 33 个语义网感机制
+    +
+60 个预制效果模板 / 18 个公共核心资源
     ↓
 8 个生产 Renderer / 36 个 Layout / 75 个 Motion
     ↓
@@ -52,6 +54,8 @@ config/design-system/scenes.json
 config/design-system/implementations.json
 config/styles/xingzhe.json
 config/effects/z-en-netstyle.json
+config/effects/templates.json
+config/resources/core-catalog.json
 ```
 
 渲染代码只能消费解析后的令牌、组件 ID、场景 ID 和设计摘要。禁止在单个时间
@@ -164,6 +168,13 @@ showcase 的家族标签、效果名称和固定示例文字。项目在
 `captions plan → validate → render`；排版计划冻结实际字体文件 hash 与项目
 授权记录，前后景布局同时冻结逐帧人物蒙版。
 
+V1.4 把注册表进一步编译为 60 个预制效果模板。模板覆盖开场、转场、语义
+画面、贴纸/视线、空间纵深、关键帧、并列句、字幕布局和画面呼吸；每个模板
+统一声明场景、组件、进入/停稳/退出、字体角色、音效触发、人物/字幕/品牌
+安全区、资源槽位、失败条件和回退。18 个公共核心资源包括原创 SVG、品牌、
+原创音效入口和字体路由；项目私有目录只扩展授权字体、私有音效和按镜头取得
+的素材，不能覆盖核心许可。
+
 ## 6. 解析与检查
 
 ```bash
@@ -189,6 +200,16 @@ node scripts/kacha.mjs design render \
 node scripts/kacha.mjs design qc \
   --matrix \
   --output /tmp/design-system-qc.json
+```
+
+效果与资源解析：
+
+```bash
+node scripts/kacha.mjs templates validate
+node scripts/kacha.mjs templates list --category transition
+node scripts/kacha.mjs templates resolve \
+  --template effect-space_text_depth_wrap \
+  --output /tmp/effect-plan.json
 ```
 
 `design validate` 会检查注册表、ID、组件/场景降级链、令牌引用、默认模式和

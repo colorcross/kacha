@@ -29,6 +29,11 @@ struct TextResult: Codable {
     let bounds: NormalizedRect
 }
 
+struct ClassificationResult: Codable {
+    let identifier: String
+    let confidence: Float
+}
+
 struct FrameResult: Codable {
     let path: String
     let width: Int
@@ -36,6 +41,7 @@ struct FrameResult: Codable {
     let faces: [FaceResult]
     let humans: [HumanResult]
     let recognizedText: [TextResult]
+    let classifications: [ClassificationResult]
     let status: String
     let error: String?
 }
@@ -76,6 +82,7 @@ for file in files {
                 faces: [],
                 humans: [],
                 recognizedText: [],
+                classifications: [],
                 status: "fail",
                 error: "could not decode image"
             )
@@ -90,10 +97,11 @@ for file in files {
     textRequest.recognitionLevel = .accurate
     textRequest.usesLanguageCorrection = true
     textRequest.minimumTextHeight = 0.012
+    let classificationRequest = VNClassifyImageRequest()
 
     do {
         let handler = VNImageRequestHandler(cgImage: image, orientation: .up)
-        try handler.perform([faceRequest, humanRequest, textRequest])
+        try handler.perform([faceRequest, humanRequest, textRequest, classificationRequest])
 
         let faces = (faceRequest.results ?? []).map { observation in
             let bounds = topLeftRect(observation.boundingBox)
@@ -120,6 +128,15 @@ for file in files {
                 bounds: topLeftRect(observation.boundingBox)
             )
         }
+        let classifications: [ClassificationResult] = (classificationRequest.results ?? [])
+            .filter { $0.confidence >= 0.12 }
+            .prefix(8)
+            .map { observation in
+                ClassificationResult(
+                    identifier: observation.identifier,
+                    confidence: observation.confidence
+                )
+            }
 
         output.append(
             FrameResult(
@@ -129,6 +146,7 @@ for file in files {
                 faces: faces,
                 humans: humans,
                 recognizedText: recognizedText,
+                classifications: classifications,
                 status: "pass",
                 error: nil
             )
@@ -142,6 +160,7 @@ for file in files {
                 faces: [],
                 humans: [],
                 recognizedText: [],
+                classifications: [],
                 status: "fail",
                 error: error.localizedDescription
             )

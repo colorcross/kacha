@@ -9,6 +9,7 @@ import {
   readJson,
   resolveFrom,
   run,
+  sha256File,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
 import {
@@ -38,6 +39,16 @@ const RECIPES = {
     defaultAcceptance: [
       "同源同帧 A/B 中肤色更均匀，眼睛、眉毛、嘴唇、眼镜、发丝和背景保持清晰。",
       "脸、颈、耳、手臂连续，无闪烁、漂移、液化或身份变化。",
+    ],
+  },
+  facefusion: {
+    type: "facefusion_transform",
+    layers: ["visual", "dialogue"],
+    regressionClass: "facefusion_identity_temporal",
+    defaultAcceptance: [
+      "FaceFusion 计划绑定冻结输入哈希、显式项目授权、处理器、模型与模型许可。",
+      "自动媒体 QC 通过，逐镜人工检查身份、遮挡、边缘、口型和时序稳定。",
+      "候选结果不覆盖源文件，未完成人工专项 QC 前不得标记为可发布。",
     ],
   },
   color: {
@@ -407,10 +418,53 @@ const normalizedChanges = request.changes.map((change, index) => {
     }
     parameters.plan = plan;
   }
+  if (change.recipe === "facefusion" && !hasValue(parameters.plan)) {
+    fail(
+      "KACHA-E140",
+      `changes[${index}] recipe=facefusion 必须通过 parameters.plan 指定已授权计划`,
+    );
+  }
+  if (change.recipe === "facefusion" && hasValue(parameters.plan)) {
+    const plan = resolveFrom(requestFile, parameters.plan);
+    if (!plan || !fs.existsSync(plan)) {
+      fail("KACHA-E100", `changes[${index}] facefusion plan 不存在：${plan}`);
+    }
+    const validation = run(process.execPath, [
+      path.join(scriptsDirectory, "kacha_facefusion.mjs"),
+      "validate",
+      "--plan",
+      plan,
+      "--for-execution",
+    ]);
+    if (validation.status !== 0) {
+      fail(
+        "KACHA-E140",
+        `changes[${index}] facefusion plan 无效：`
+          + `${validation.stderr || validation.stdout}`,
+      );
+    }
+    const frozenPlan = readJson(plan);
+    const targetSha256 = sha256File(frozenPlan.inputs.target);
+    const allowedTargetHashes = new Set([
+      context.source?.sha256,
+      context.baseline?.video?.sha256,
+    ].filter(Boolean));
+    if (!allowedTargetHashes.has(targetSha256)) {
+      fail(
+        "KACHA-E110",
+        `changes[${index}] facefusion target 不是当前源片或增量基线`,
+      );
+    }
+    parameters.plan = plan;
+    parameters.operation = frozenPlan.operation;
+    parameters.profile = frozenPlan.profile;
+  }
   return {
     recipe: change.recipe,
     type: recipe.type,
-    layers: recipe.layers,
+    layers: change.recipe === "facefusion" && parameters.operation !== "lip_sync"
+      ? ["visual"]
+      : recipe.layers,
     reason: change.reason || `按 ${change.recipe} 稳定配方修改当前基线。`,
     intervals,
     parameters,

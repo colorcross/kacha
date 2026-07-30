@@ -146,6 +146,23 @@ if (summary.video) {
       ),
     );
   }
+  if (expected.appleQuickTimeCompatible === true) {
+    const codec = String(summary.video.codec_name ?? "");
+    const codecTag = String(summary.video.codec_tag_string ?? "");
+    const compatible = codec === "hevc"
+      ? codecTag === "hvc1"
+      : codec === "h264"
+        ? codecTag === "avc1"
+        : ["prores", "mpeg4"].includes(codec);
+    checks.push(
+      check(
+        "apple_quicktime_video_sample_entry",
+        compatible,
+        `${codec}/${codecTag || "(missing tag)"}`,
+        "HEVC=hvc1, H.264=avc1, or another explicitly supported Apple codec",
+      ),
+    );
+  }
 }
 if (summary.audio) {
   if (Number.isFinite(expected.audioSampleRate)) {
@@ -184,32 +201,42 @@ if (summary.video && summary.audio && summary.fps > 0) {
   );
 }
 
-const detectorArguments = [
-  "-hide_banner",
-  "-nostats",
-  "-xerror",
-  "-nostdin",
-  "-i",
-  finalVideo,
-];
-if (summary.video) {
-  detectorArguments.push(
-    "-vf",
-    `blackdetect=d=${qcConfig.blackDurationSeconds}:pix_th=${qcConfig.blackPixelThreshold},`
-      + `freezedetect=n=${qcConfig.freezeNoiseDb}dB:d=${qcConfig.freezeDurationSeconds}`,
-  );
+function detectorArguments(hardwareDecode) {
+  const command = [
+    "-hide_banner",
+    "-nostats",
+    "-xerror",
+    "-nostdin",
+  ];
+  if (hardwareDecode) command.push("-hwaccel", "videotoolbox");
+  command.push("-i", finalVideo);
+  if (summary.video) {
+    command.push(
+      "-vf",
+      `blackdetect=d=${qcConfig.blackDurationSeconds}:pix_th=${qcConfig.blackPixelThreshold},`
+        + `freezedetect=n=${qcConfig.freezeNoiseDb}dB:d=${qcConfig.freezeDurationSeconds}`,
+    );
+  }
+  if (summary.audio) {
+    command.push(
+      "-af",
+      `silencedetect=n=${qcConfig.silenceNoiseDb}dB:d=${qcConfig.silenceDurationSeconds},`
+        + `loudnorm=I=${qcConfig.measurementTargetLufs}:`
+        + `TP=${qcConfig.measurementTruePeakDbtp}:`
+        + `LRA=${qcConfig.measurementLoudnessRange}:print_format=json`,
+    );
+  }
+  command.push("-f", "null", "-");
+  return command;
 }
-if (summary.audio) {
-  detectorArguments.push(
-    "-af",
-    `silencedetect=n=${qcConfig.silenceNoiseDb}dB:d=${qcConfig.silenceDurationSeconds},`
-      + `loudnorm=I=${qcConfig.measurementTargetLufs}:`
-      + `TP=${qcConfig.measurementTruePeakDbtp}:`
-      + `LRA=${qcConfig.measurementLoudnessRange}:print_format=json`,
-  );
+
+const hardwareDecodeAttempted = process.platform === "darwin" && Boolean(summary.video);
+let detector = run("ffmpeg", detectorArguments(hardwareDecodeAttempted));
+let detectorFallbackUsed = false;
+if (detector.status !== 0 && hardwareDecodeAttempted) {
+  detector = run("ffmpeg", detectorArguments(false));
+  detectorFallbackUsed = true;
 }
-detectorArguments.push("-f", "null", "-");
-const detector = run("ffmpeg", detectorArguments);
 const detectorLog = `${detector.stdout}\n${detector.stderr}`;
 let loudness = null;
 if (summary.audio) {
@@ -308,6 +335,7 @@ const report = {
     declaredFps: summary.declaredFps,
     averageFps: summary.averageFps,
     videoCodec: summary.video?.codec_name ?? null,
+    videoCodecTag: summary.video?.codec_tag_string ?? null,
     pixelFormat: summary.video?.pix_fmt ?? null,
     colorSpace: summary.video?.color_space ?? null,
     colorTransfer: summary.video?.color_transfer ?? null,
@@ -325,6 +353,12 @@ const report = {
     digest: loadedConfig.digest,
     sources: loadedConfig.sources,
     detectorParameters: qcConfig,
+  },
+  execution: {
+    detectorDecoder: hardwareDecodeAttempted && !detectorFallbackUsed
+      ? "videotoolbox"
+      : "software",
+    detectorFallbackUsed,
   },
   manualReviewRequired: [
     "所有切点正常速度试听与完整语义检查",

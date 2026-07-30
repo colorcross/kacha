@@ -275,6 +275,28 @@ export function validateDesignSystem(bundle) {
   ) {
     errors.push("fontRouting 必须注册至少 8 个语义字体角色");
   }
+  const effectTemplates = capabilityRegistries?.effectTemplates;
+  if (
+    effectTemplates?.schemaVersion !== "1.0"
+    || effectTemplates?.id !== "kacha-effect-templates"
+    || !isObject(effectTemplates?.families)
+    || Object.keys(effectTemplates.families).length < 9
+    || !Array.isArray(effectTemplates?.bindingRules)
+    || effectTemplates.bindingRules.length < 5
+  ) {
+    errors.push("effectTemplates 必须注册至少 9 个效果家族和 5 组绑定规则");
+  }
+  const resourceCatalog = capabilityRegistries?.resourceCatalog;
+  if (
+    resourceCatalog?.schemaVersion !== "1.0"
+    || resourceCatalog?.id !== "kacha-core-resources"
+    || !Array.isArray(resourceCatalog?.assets)
+    || resourceCatalog.assets.length < 15
+    || !Array.isArray(resourceCatalog?.logicalSlots)
+    || resourceCatalog.logicalSlots.length < 8
+  ) {
+    errors.push("resourceCatalog 必须注册至少 15 个核心资源和 8 个逻辑槽位");
+  }
   const rendererIds = registryIds(
     implementations?.renderers,
     "implementations.renderers",

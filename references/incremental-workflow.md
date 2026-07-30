@@ -76,6 +76,11 @@ node scripts/kacha.mjs timeline render \
 - `delta-qc.json`：变化层检查与冻结层哈希证据；
 - `incremental-review.json`：当前候选或最终版本的人工证据。
 
+操作级 `mutation-delta.json` 只描述一次 JSON 合同修改，用于减少 Agent 工具
+返回和上下文 Token；它不能替代 `version-delta.json`。Agent 应先用
+`refs resolve` 定位对象，再以 `delta apply` 生成新合同和 mutation delta，
+随后仍由 `compile-change` 或本节流程推导版本级失效、渲染与 QC。
+
 ## 不变性证明
 
 旧报告不能复制成新报告。只有同时满足以下条件，冻结层才能继承结论：

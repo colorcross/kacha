@@ -30,6 +30,11 @@ const MODULE_REFERENCES = {
   visual: ["references/visuals-masks.md"],
   masks: ["references/visuals-masks.md"],
   beauty: ["references/beauty-v2.md", "references/visuals-masks.md"],
+  facefusion: [
+    "references/facefusion.md",
+    "references/visuals-masks.md",
+    "references/generated-media-assets.md",
+  ],
   pip: ["references/visuals-masks.md"],
   color: ["references/visuals-masks.md"],
   reframe: ["references/visuals-masks.md"],
@@ -54,6 +59,12 @@ const MODULE_REFERENCES = {
   ],
   style: [
     "references/style-effects-library.md",
+    "references/effect-templates-resources.md",
+    "docs/VIDEO_DESIGN_SYSTEM_V1.md",
+  ],
+  templates: [
+    "references/style-effects-library.md",
+    "references/effect-templates-resources.md",
     "docs/VIDEO_DESIGN_SYSTEM_V1.md",
   ],
   opening: ["references/style-effects-library.md"],
@@ -110,8 +121,20 @@ const MODULE_REFERENCES = {
   network_assets: ["references/generated-media-assets.md"],
   cleanup: ["references/cleanup-retention.md"],
   hardening: ["docs/PRODUCTION_HARDENING.md"],
-  low_model: ["references/agent-execution.md"],
-  agent_execution: ["references/agent-execution.md"],
+  low_model: [
+    "references/agent-execution.md",
+    "references/agent-chat-control-plane.md",
+  ],
+  agent_execution: [
+    "references/agent-execution.md",
+    "references/agent-chat-control-plane.md",
+  ],
+  agent_control: ["references/agent-chat-control-plane.md"],
+  mutation_delta: ["references/agent-chat-control-plane.md"],
+  media_search: ["references/agent-chat-control-plane.md"],
+  async_jobs: ["references/agent-chat-control-plane.md"],
+  object_refs: ["references/agent-chat-control-plane.md"],
+  install_status: ["references/agent-chat-control-plane.md"],
   visual_evidence: ["references/visual-evidence.md"],
   claude_visual: [
     "references/agent-execution.md",

@@ -2,9 +2,9 @@
   "schemaVersion": "1.0",
   "status": "rendered",
   "designSystemId": "dahui-video-system",
-  "designSystemVersion": "1.3.0",
-  "designDigest": "0db496d3a07c8b15e7d6e491192f6e69056bb99524643e896b06fd1e5fe38b2a",
-  "implementationDigest": "94b7be5e15ec4f2aea2cf45871310e78fff9b45627a685d2f5715bbf4e05a908",
+  "designSystemVersion": "1.4.0",
+  "designDigest": "00d7224fb5089627498798214e139ae83258843120d9b80dc693bee1507e8fe8",
+  "implementationDigest": "d6ea1c816caec800674402eafd7a713c46529fb546a6c9d02d9249d5d5fe06a3",
   "rendererCodeSha256": "34d26116dd76af9bcaf00610bd84a50f4a84e4d38225c3b96b3eeea2d8beebed",
   "sceneId": "text_behind_subject_scene",
   "layoutId": "negative_space_behind_subject",
@@ -147,7 +147,7 @@
   ],
   "qc": {
     "stateRendered": "peak",
-    "guidesRendered": true,
+    "guidesRendered": false,
     "textOverflowPolicy": "truncate_with_ellipsis",
     "fullFrameFlashPolicy": "forbid_except_explicit_flash_motivation"
   }

@@ -1,0 +1,263 @@
+{
+  "schemaVersion": "1.0",
+  "id": "kacha-effect-templates",
+  "version": "1.0.0",
+  "styleProfile": "xingzhe",
+  "resourceCatalog": "../resources/core-catalog.json",
+  "defaults": {
+    "status": "production",
+    "timing": {
+      "startBasis": "verified_spoken_or_visible_trigger",
+      "entryFrames": 8,
+      "holdMinimumFrames": 12,
+      "exitFrames": 7,
+      "audioVisualPeakToleranceFrames": 2,
+      "clearBeforeReturnFrames": 3
+    },
+    "safety": {
+      "preserveFaceSafeZone": true,
+      "preserveSubtitleSafeZone": true,
+      "preserveBrandSafeZone": true,
+      "maximumConcurrentPrimaryEffects": 1,
+      "maximumReadingZones": 3,
+      "noFullFrameFlash": true
+    },
+    "typography": {
+      "subtitleRole": "subtitle_primary",
+      "emphasisRole": "subtitle_emphasis",
+      "titleRole": "title_editorial"
+    },
+    "audio": {
+      "optional": true,
+      "onePrimarySfxPerBeat": true,
+      "peakAtVisibleSettle": true,
+      "fallback": "none"
+    },
+    "fallback": "hold_original_shot",
+    "failureConditions": [
+      "效果没有信息、情绪、视角、时间、空间或动作依据",
+      "效果遮挡头脸、字幕、品牌或平台UI安全区",
+      "资源语义、人物、动作、方向、状态或时态与口播不一致"
+    ]
+  },
+  "families": {
+    "opening": {
+      "category": "opening",
+      "sceneId": "open_result_first",
+      "componentIds": ["show_label", "issue_badge", "statement_title"],
+      "signals": ["opening_hook", "result_first", "question_or_contrast"],
+      "timing": {"entryFrames": 10, "holdMinimumFrames": 20, "exitFrames": 8},
+      "resourceRoles": ["background_motion", "icon"],
+      "audio": {"trigger": "hook", "startGainDb": -16, "maximumUsesPerMinute": 1},
+      "fallback": "opening-cold_open_marker"
+    },
+    "transition": {
+      "category": "transition",
+      "sceneId": "clean_cut_with_audio_bridge",
+      "componentIds": ["brand_bug"],
+      "signals": ["connection", "information_change", "emotion_change", "viewpoint_change"],
+      "timing": {"entryFrames": 0, "holdMinimumFrames": 0, "exitFrames": 0},
+      "resourceRoles": [],
+      "audio": {"trigger": "transition", "startGainDb": -18, "maximumUsesPerMinute": 3},
+      "fallback": "transition-clean_cut"
+    },
+    "semantic_motion": {
+      "category": "semantic_motion",
+      "sceneId": "netstyle_semantic_motion",
+      "componentIds": ["subtitle_emphasis", "screen_focus_callout"],
+      "signals": ["logical_emphasis", "semantic_direction", "evidence_or_viewpoint_change"],
+      "resourceRoles": ["real_evidence_image", "real_evidence_video", "focus-brackets", "underline-sweep"],
+      "audio": {"trigger": "emphasis", "startGainDb": -17, "maximumUsesPerMinute": 3},
+      "fallback": "effect-semantic_importance_zoom"
+    },
+    "sticker": {
+      "category": "sticker_and_gaze",
+      "sceneId": "netstyle_sticker_guidance",
+      "componentIds": ["subject_safe_popup", "screen_focus_callout"],
+      "signals": ["gaze_direction", "annotation", "light_humor", "stage_change"],
+      "resourceRoles": ["arrow-flow", "doodle-ring", "torn-paper-strip", "nested-frames"],
+      "audio": {"trigger": "pop", "startGainDb": -19, "maximumUsesPerMinute": 3},
+      "fallback": "effect-sticker_directional_arrows"
+    },
+    "spatial": {
+      "category": "spatial_depth",
+      "sceneId": "netstyle_spatial_depth",
+      "componentIds": ["pip_rect", "full_screen_insert", "text_behind_subject"],
+      "signals": ["foreground_background_relation", "depth_explanation", "focus_route"],
+      "resourceRoles": ["person_cutout", "nested-frames", "grain-overlay"],
+      "audio": {"trigger": "motion", "startGainDb": -20, "maximumUsesPerMinute": 2},
+      "fallback": "effect-space_focus_route"
+    },
+    "keyframe": {
+      "category": "keyframe_parameter",
+      "sceneId": "netstyle_keyframe_parameter",
+      "componentIds": ["pip_rect", "subtitle_emphasis"],
+      "signals": ["parameter_change", "position_change", "scale_change", "color_change"],
+      "resourceRoles": ["focus-brackets"],
+      "audio": {"trigger": "motion", "startGainDb": -20, "maximumUsesPerMinute": 3},
+      "fallback": "effect-keyframe_scale"
+    },
+    "parallel_layout": {
+      "category": "parallel_sentence_typography",
+      "sceneId": "netstyle_parallel_progressive",
+      "componentIds": ["subtitle_emphasis", "bullet_card"],
+      "signals": ["parallel_clause", "enumeration", "contrast", "progression"],
+      "resourceRoles": ["underline-sweep", "dotted-path"],
+      "audio": {"trigger": "info", "startGainDb": -20, "maximumUsesPerMinute": 3},
+      "fallback": "effect-parallel_progressive_row"
+    },
+    "caption_layout": {
+      "category": "spoken_caption_layout",
+      "sceneId": "subtitle_plain",
+      "componentIds": ["subtitle_single", "subtitle_emphasis"],
+      "signals": ["ordinary_speech", "logic_emphasis", "contrast_or_hierarchy"],
+      "resourceRoles": ["underline-sweep"],
+      "audio": {"trigger": "emphasis", "startGainDb": -21, "maximumUsesPerMinute": 2},
+      "fallback": "caption-plain_single"
+    },
+    "breathing": {
+      "category": "visual_breathing",
+      "sceneId": "narrative_statement",
+      "componentIds": ["brand_bug", "series_marker"],
+      "signals": ["paragraph_breath", "emotional_shift", "logical_emphasis"],
+      "resourceRoles": ["background_motion"],
+      "audio": {"trigger": "none", "startGainDb": -99, "maximumUsesPerMinute": 0},
+      "fallback": "breathing-still_hold"
+    }
+  },
+  "bindingRules": [
+    {
+      "registry": "openings",
+      "path": "openings.json",
+      "items": "effects",
+      "templatePrefix": "opening-",
+      "family": "opening"
+    },
+    {
+      "registry": "transitions",
+      "path": "transitions.json",
+      "items": "effects",
+      "templatePrefix": "transition-",
+      "family": "transition"
+    },
+    {
+      "registry": "semanticNetstyle",
+      "path": "z-en-netstyle.json",
+      "items": "effects",
+      "templatePrefix": "effect-",
+      "familyFromField": "family",
+      "familyMap": {
+        "opening": "opening",
+        "semantic_motion": "semantic_motion",
+        "sticker": "sticker",
+        "spatial": "spatial",
+        "keyframe": "keyframe",
+        "parallel_layout": "parallel_layout"
+      }
+    },
+    {
+      "registry": "spokenCaptionLayouts",
+      "path": "spoken-caption-layouts.json",
+      "items": "layouts",
+      "templatePrefix": "caption-",
+      "family": "caption_layout"
+    },
+    {
+      "registry": "visualBreathing",
+      "path": "visual-breathing.json",
+      "items": "motions",
+      "templatePrefix": "breathing-",
+      "family": "breathing"
+    }
+  ],
+  "overrides": {
+    "opening-typewriter_command": {
+      "sceneId": "open_typewriter",
+      "componentIds": ["show_label", "typewriter_text"],
+      "resourceRoles": ["warm-grid"],
+      "audio": {"trigger": "typing", "startGainDb": -22, "maximumUsesPerMinute": 1}
+    },
+    "opening-editorial_label_reveal": {
+      "sceneId": "open_clean_title",
+      "componentIds": ["show_label", "issue_badge", "statement_title"]
+    },
+    "opening-statement_punch": {
+      "sceneId": "open_keyword_stack",
+      "componentIds": ["numeric_punch", "statement_title"],
+      "audio": {"trigger": "emphasis", "startGainDb": -17, "maximumUsesPerMinute": 1}
+    },
+    "effect-hook_title_behind_subject": {
+      "sceneId": "text_behind_subject_scene",
+      "componentIds": ["text_behind_subject", "show_label"],
+      "resourceRoles": ["person_cutout", "speed-lines"]
+    },
+    "effect-hook_text_first_face_reveal": {
+      "sceneId": "open_typewriter",
+      "componentIds": ["typewriter_text", "pip_circle"],
+      "resourceRoles": ["person_cutout", "warm-grid"],
+      "audio": {"trigger": "typing", "startGainDb": -22, "maximumUsesPerMinute": 1}
+    },
+    "effect-semantic_evidence_insert": {
+      "sceneId": "bridge_insert_to_subject",
+      "componentIds": ["full_screen_insert", "source_tag", "subtitle_single"],
+      "resourceRoles": ["real_evidence_image", "real_evidence_video"]
+    },
+    "effect-sticker_torn_paper_stage": {
+      "resourceRoles": ["torn-paper-strip", "grain-overlay"]
+    },
+    "effect-sticker_directional_arrows": {
+      "resourceRoles": ["arrow-flow", "dotted-path"]
+    },
+    "effect-sticker_nested_frames": {
+      "resourceRoles": ["nested-frames", "focus-brackets"]
+    },
+    "effect-sticker_doodle_orbit": {
+      "resourceRoles": ["doodle-ring", "underline-sweep"]
+    },
+    "effect-space_frame_between_layers": {
+      "resourceRoles": ["person_cutout", "nested-frames", "grain-overlay"]
+    },
+    "effect-space_text_depth_wrap": {
+      "sceneId": "text_behind_subject_scene",
+      "componentIds": ["text_behind_subject", "subtitle_single"],
+      "resourceRoles": ["person_cutout", "light-sweep"]
+    },
+    "effect-space_paper_demo_stage": {
+      "resourceRoles": ["torn-paper-strip", "document-frame", "grain-overlay"]
+    },
+    "transition-radial_clock": {
+      "audio": {"trigger": "timer", "startGainDb": -22, "maximumUsesPerMinute": 1}
+    },
+    "transition-focus_blur": {
+      "sceneId": "bridge_scale_change",
+      "audio": {"trigger": "none", "startGainDb": -99, "maximumUsesPerMinute": 0}
+    },
+    "transition-narrow_band_wipe": {
+      "sceneId": "narrow_local_wipe",
+      "resourceRoles": ["light-sweep"]
+    },
+    "caption-front_back_phrase": {
+      "sceneId": "text_behind_subject_scene",
+      "componentIds": ["text_behind_subject", "subtitle_single"],
+      "resourceRoles": ["person_cutout", "underline-sweep"]
+    },
+    "caption-oversize_background_word": {
+      "sceneId": "subtitle_emphasis_only",
+      "componentIds": ["subtitle_emphasis", "text_behind_subject"],
+      "resourceRoles": ["person_cutout"]
+    },
+    "breathing-emphasis_punch_settle": {
+      "audio": {"trigger": "emphasis", "startGainDb": -19, "maximumUsesPerMinute": 2}
+    }
+  },
+  "selectionPolicy": {
+    "mustHaveNarrativeReason": true,
+    "exactUserInstructionWins": true,
+    "ordinarySpeechDefault": "caption-plain_single",
+    "ordinaryConnectionDefault": "transition-clean_cut",
+    "lowConfidenceFallback": "hold_original_shot",
+    "resourceMissingFallback": "use_design_system_card_or_no_effect",
+    "samePrimaryTemplateMinimumGapSeconds": 6,
+    "maximumPrimaryEffectsPer10Seconds": 2.5
+  }
+}

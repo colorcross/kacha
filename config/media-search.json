@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0",
+  "engine": "hybrid_local_v2",
+  "semantic": {
+    "provider": "apple_natural_language_sentence_embedding",
+    "weight": 5,
+    "minimumSimilarity": 0.4,
+    "maxCandidates": 5000,
+    "fallback": "explicit_lexical_only"
+  },
+  "fieldWeights": {
+    "tags": 3,
+    "description": 2.5,
+    "labels": 2.2,
+    "transcript": 1.9,
+    "ocr": 1.2,
+    "filename": 0.8
+  },
+  "synonymGroups": [
+    ["ai", "人工智能", "智能体", "agent", "模型", "科技"],
+    ["读书", "阅读", "书籍", "书架", "book", "reading"],
+    ["跑步", "奔跑", "运动", "疲惫", "操场", "run", "running", "exercise"],
+    ["城市", "都市", "街道", "建筑", "city", "urban", "street", "building"],
+    ["目标", "方向", "里程碑", "终点", "target", "goal", "milestone"],
+    ["时间", "时钟", "日历", "长期", "未来", "time", "clock", "calendar"],
+    ["对话", "聊天", "交流", "回复", "dialogue", "chat", "conversation"],
+    ["数据", "图表", "流程", "信息卡", "chart", "workflow", "diagram"],
+    ["转折", "变化", "切换", "转场", "change", "transition", "switch"],
+    ["轻松", "幽默", "好笑", "自嘲", "funny", "humor", "playful"],
+    ["严肃", "思考", "结论", "洞察", "serious", "insight", "conclusion"]
+  ]
+}

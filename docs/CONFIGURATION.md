@@ -230,6 +230,10 @@ node scripts/kacha.mjs design qc --matrix \
 node scripts/kacha.mjs effects validate --anchor PROJECT_DIR
 node scripts/kacha.mjs effects show --kind opening \
   --id editorial_label_reveal --anchor PROJECT_DIR
+node scripts/kacha.mjs templates validate
+node scripts/kacha.mjs templates resolve \
+  --template effect-semantic_evidence_insert
+node scripts/kacha.mjs facefusion probe
 ```
 
 `style.overrides` 不能写授权或绕过门禁字段。解析后的 design digest 会进入返工
@@ -269,8 +273,10 @@ node scripts/kacha.mjs effects show --kind opening \
 - 统一 Timeline IR 的代理/正式编码器、代理最大宽度、CRF 和一次正式编码；
 - 内容指纹缓存目录、SHA 校验、物化方式、总容量和高价值产物类型；
 - CPU、MPS、视频编码、网络和 I/O 的主机级跨进程资源槽；
-- 本地 Whisper MLX 的语言、逐词时间戳、超时、低置信度阈值、模型/服务强
-  指纹和缓存；
+- 本地 Whisper MLX 的语言、逐词时间戳、音轨索引、16 kHz/单声道规范化、
+  长片上下文继承开关、超时、低置信度阈值、模型/服务强指纹和缓存；默认关闭
+  `conditionOnPreviousText`，避免长停顿后的重复幻觉，有原稿时使用
+  `--prompt` 校准术语；
 - 增量返工的默认 handle 帧数；
 - 语义网感规划开关、每 10 秒主效果密度、最小间隔、并发主效果数、代表验证
   次数与正式渲染 CRF；
@@ -285,8 +291,10 @@ node scripts/kacha.mjs effects show --kind opening \
 - 网络素材的候选数量与超时。
 
 用户配置或显式配置中的 `tools.demucsBin`、`tools.sfxLibrary` 和
-`tools.fontRegistry` 可保存
-本机绝对路径。环境变量
+`tools.fontRegistry`、`tools.faceFusionTokenFile` 和
+`tools.resourceCatalog` 可保存本机绝对路径；
+`tools.faceFusionEndpoint` 只允许本机 loopback HTTP。FaceFusion token
+文件权限必须为 `0600`，不会进入配置摘要或日志。环境变量
 `KACHA_DEMUCS_BIN`、`KACHA_SFX_LIBRARY` 仍可用于临时覆盖。
 
 HDR/广色域链需要 `zscale`。运行时依次使用 `KACHA_FFMPEG_BIN` /

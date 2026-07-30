@@ -130,6 +130,7 @@ if [[ ! -f "$input" ]]; then
 fi
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+script_self="$script_dir/$(basename "${BASH_SOURCE[0]}")"
 config_args=(
   "$script_dir/kacha_config.mjs"
   get
@@ -234,7 +235,7 @@ if [[ -z "$runtime_model_sha" && "$no_cache" != true ]]; then
   no_cache=true
 fi
 runtime_fingerprint="${runtime_fingerprint};model_sha=${runtime_model_sha:-unresolved}"
-cache_implementation_args=(--implementation "${BASH_SOURCE[0]}")
+cache_implementation_args=(--implementation "$script_self")
 if [[ -f "$runtime_launcher" ]]; then
   cache_implementation_args+=(--implementation "$runtime_launcher")
 fi
@@ -280,7 +281,7 @@ if [[ "$no_cache" != true ]]; then
     --output "report=$output_dir/separation-report.json"
     --resource "$separation_resource"
     --
-    bash "${BASH_SOURCE[0]}" "$input" "$output_dir"
+    bash "$script_self" "$input" "$output_dir"
     --model "$model"
     --device "$device"
     --max-duration-diff "$max_duration_diff"
@@ -301,7 +302,7 @@ if [[ "$no_cache" != true ]]; then
       --output "report=$output_dir/separation-report.json"
       --resource "$separation_resource"
       --
-      bash "${BASH_SOURCE[0]}" "$input" "$output_dir"
+      bash "$script_self" "$input" "$output_dir"
       --model "$model"
       --device "$device"
       --max-duration-diff "$max_duration_diff"

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -143,7 +144,84 @@ function asrRuntimeIdentity(endpoint, health) {
   };
 }
 
-function normalizeResult(raw, input, health, config, runtimeIdentity) {
+function prepareAsrAudio(input, config, audioStreamIndex) {
+  const probe = run("ffprobe", [
+    "-v",
+    "error",
+    "-select_streams",
+    "a",
+    "-show_entries",
+    "stream=index,channels,sample_rate",
+    "-of",
+    "json",
+    input,
+  ]);
+  if (probe.status !== 0) {
+    throw new Error(probe.stderr.trim() || "无法探测 ASR 输入音轨");
+  }
+  let audioStreams;
+  try {
+    audioStreams = JSON.parse(probe.stdout).streams ?? [];
+  } catch (error) {
+    throw new Error(`ASR 音轨探测结果无效：${error.message}`);
+  }
+  if (!Number.isInteger(audioStreamIndex) || !audioStreams[audioStreamIndex]) {
+    throw new Error(
+      `ASR 音轨 ${audioStreamIndex} 不存在；输入共有 ${audioStreams.length} 条音轨`,
+    );
+  }
+  const temporaryDirectory = fs.mkdtempSync(
+    path.join(os.tmpdir(), "kacha-asr-audio-"),
+  );
+  const normalizedAudio = path.join(temporaryDirectory, "normalized.wav");
+  const extraction = run("ffmpeg", [
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-y",
+    "-i",
+    input,
+    "-map",
+    `0:a:${audioStreamIndex}`,
+    "-vn",
+    "-ac",
+    String(config.normalizationChannels),
+    "-ar",
+    String(config.normalizationSampleRate),
+    "-c:a",
+    "pcm_s16le",
+    normalizedAudio,
+  ]);
+  if (extraction.status !== 0) {
+    fs.rmSync(temporaryDirectory, { recursive: true, force: true });
+    throw new Error(extraction.stderr.trim() || "无法规范化 ASR 音轨");
+  }
+  const normalizedIdentity = fileIdentity(normalizedAudio);
+  return {
+    path: normalizedAudio,
+    temporaryDirectory,
+    evidence: {
+      audioStreamIndex,
+      sourceStreamIndex: audioStreams[audioStreamIndex].index,
+      sourceChannels: Number(audioStreams[audioStreamIndex].channels ?? 0),
+      sourceSampleRate: Number(audioStreams[audioStreamIndex].sample_rate ?? 0),
+      outputChannels: config.normalizationChannels,
+      outputSampleRate: config.normalizationSampleRate,
+      codec: "pcm_s16le",
+      sha256: normalizedIdentity.sha256,
+      sizeBytes: normalizedIdentity.sizeBytes,
+    },
+  };
+}
+
+function normalizeResult(
+  raw,
+  input,
+  health,
+  config,
+  runtimeIdentity,
+  audioPreparation,
+) {
   const thresholds = config.lowConfidence;
   const segments = (raw.segments ?? []).map((segment, index) => {
     const averageLogProbability = Number(segment.avg_logprob);
@@ -223,6 +301,7 @@ function normalizeResult(raw, input, health, config, runtimeIdentity) {
       endpointScope: "loopback_only",
       wordTimestamps: config.wordTimestamps,
       conditionOnPreviousText: config.conditionOnPreviousText,
+      audioPreparation,
       implementation: {
         client: fileIdentity(scriptFile),
         healthSha256: runtimeIdentity.healthSha256,
@@ -246,7 +325,8 @@ const outputValue = option("--output");
 if (!inputValue || !outputValue) {
   fail(
     "用法：kacha.mjs transcribe INPUT --output TRANSCRIPT.json "
-      + "[--language auto|zh|en] [--prompt MANUSCRIPT.txt] [--project-root DIR]",
+      + "[--language auto|zh|en] [--audio-stream N] "
+      + "[--prompt MANUSCRIPT.txt] [--project-root DIR]",
     2,
   );
 }
@@ -273,6 +353,10 @@ try {
   fail(`配置无效：${error.message}`, 2);
 }
 const asr = loaded.config.execution.asr;
+const audioStreamIndex = Number(option("--audio-stream", asr.audioStreamIndex));
+if (!Number.isInteger(audioStreamIndex) || audioStreamIndex < 0) {
+  fail("--audio-stream 必须是非负整数", 2);
+}
 const endpoint = loaded.config.tools.whisperEndpoint;
 let health;
 try {
@@ -283,13 +367,19 @@ try {
 const runtimeIdentity = asrRuntimeIdentity(endpoint, health);
 
 if (worker) {
+  let preparedAudio;
+  try {
+    preparedAudio = prepareAsrAudio(input, asr, audioStreamIndex);
+  } catch (error) {
+    fail(error.message);
+  }
   const curlArgs = [
     "-sS",
     "--fail-with-body",
     "--max-time",
     String(asr.timeoutSeconds),
     "-F",
-    `file=@${input}`,
+    `file=@${preparedAudio.path}`,
     "-F",
     `response_format=${asr.responseFormat}`,
     "-F",
@@ -309,6 +399,8 @@ if (worker) {
   }
   curlArgs.push(endpoint);
   const result = run("curl", curlArgs);
+  const audioPreparation = preparedAudio.evidence;
+  fs.rmSync(preparedAudio.temporaryDirectory, { recursive: true, force: true });
   if (result.status !== 0) {
     fail(
       [result.stdout.trim(), result.stderr.trim()]
@@ -323,7 +415,14 @@ if (worker) {
   } catch (error) {
     fail(`Whisper 响应不是有效 JSON：${error.message}`);
   }
-  const normalized = normalizeResult(raw, input, health, asr, runtimeIdentity);
+  const normalized = normalizeResult(
+    raw,
+    input,
+    health,
+    asr,
+    runtimeIdentity,
+    audioPreparation,
+  );
   writeJsonAtomic(output, normalized);
   console.log(JSON.stringify({
     status: normalized.status,
@@ -335,6 +434,14 @@ if (worker) {
 }
 
 const projectRoot = path.resolve(option("--project-root", path.dirname(output)));
+const workerConfigurationArguments = [
+  ...(option("--config")
+    ? ["--config", path.resolve(option("--config"))]
+    : []),
+  ...(option("--secrets")
+    ? ["--secrets", path.resolve(option("--secrets"))]
+    : []),
+];
 const parameters = {
   provider: asr.provider,
   model: health.model_repo ?? health.model,
@@ -346,6 +453,9 @@ const parameters = {
   wordTimestamps: asr.wordTimestamps,
   temperature: asr.temperature,
   conditionOnPreviousText: asr.conditionOnPreviousText,
+  audioStreamIndex,
+  normalizationSampleRate: asr.normalizationSampleRate,
+  normalizationChannels: asr.normalizationChannels,
   lowConfidence: asr.lowConfidence,
   promptSha256: promptFile ? sha256File(path.resolve(promptFile)) : null,
 };
@@ -363,7 +473,7 @@ const cacheArguments = [
   ...((runtimeIdentity.service?.implementationFiles ?? [])
     .flatMap((file) => ["--implementation", file])),
   "--operation-version",
-  "local-whisper-mlx-v2",
+  "local-whisper-mlx-v3-normalized-audio",
   "--parameters",
   JSON.stringify(parameters),
   "--output",
@@ -380,6 +490,9 @@ const cacheArguments = [
   output,
   "--language",
   option("--language", asr.language),
+  "--audio-stream",
+  String(audioStreamIndex),
+  ...workerConfigurationArguments,
   ...(promptFile ? ["--prompt", path.resolve(promptFile)] : []),
 ];
 const executionArguments = runtimeIdentity.cacheSafe
@@ -393,6 +506,9 @@ const executionArguments = runtimeIdentity.cacheSafe
       output,
       "--language",
       option("--language", asr.language),
+      "--audio-stream",
+      String(audioStreamIndex),
+      ...workerConfigurationArguments,
       ...(promptFile ? ["--prompt", path.resolve(promptFile)] : []),
     ];
 const cached = run(process.execPath, executionArguments);

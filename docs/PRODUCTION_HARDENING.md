@@ -197,6 +197,34 @@
    dialogue/BGM 的综合响度差和 BGM 时长覆盖，重建组件混音，并把最终视频
    解码音频与 mix stem 做残差信噪比比对。默认差值必须在 12–18 dB；音乐过低、
    组件无法重建或成片漏混均阻断交付。
+9. **前置验证通过、项目门禁才发现素材不可追溯**：`timeline validate` 对
+   final 模式提前要求 proposal/editPlan 合同、source SHA，以及字幕、外部
+   画面、dialogue、BGM、SFX 的 SHA 与 provenance；不能把同一错误推迟到
+   `gate-plan`。
+10. **旋转元数据被当成物理画幅**：探测同时记录 encoded/display geometry，
+    ±90° 素材先按显示几何计算构图；最终输出保持显示方向，景别裁切也按显示
+    坐标执行。
+11. **局部预览仍从源片开头解码**：局部 Render Graph 必须记录最早命中的
+    `sourceSeekSeconds` 并在输入前精确 seek；EDL、字幕、BGM、SFX 仍以输出
+    区间重新归零，避免为了看十几秒而解码几百秒。
+12. **各 stem 合规但最终总线峰值被抬高**：时间线用
+    `audio.masterTruePeakDb` 明确母带上限并写入渲染 manifest；默认
+    `-4 dBTP`，最终以解码成片实测为准。
+13. **转场只写在方案里，渲染仍是硬 concat**：Timeline IR 必须逐边界编译
+    `transitions[]`，画面使用实际 xfade/overlap，人声使用同长 acrossfade；
+    manifest 固化实际执行数和帧数，计划数与执行数不一致直接失败。
+14. **QuickTime 只有声音**：HEVC MP4/MOV 强制 `hvc1`，H.264 使用 `avc1`，
+    并启用 fast-start；技术 QC 读取 `codec_tag_string`。不能把能被 FFmpeg
+    解码误当成已通过 Apple 播放兼容。
+15. **语义音效绑定动画起点导致整体抢跑**：分别记录 `entryStartFrame`、
+    `visibleLandingFrame` 和 `sfxPeakFrame`；动画可提前建立运动，但文字在
+    触发词前不得完成可读，SFX 只绑定可见落位而不是入场第一帧。
+16. **同源 PIP 重复主画面**：普通真人 PIP 先 full-frame fit；细节型 PIP
+    只裁手部、物件、界面或证据并记录信息差。主画面与 PIP 展示同一内容时，
+    改用景别、虚拟机位、空间重构或移除 PIP。
+17. **中文路径下人声分离缓存递归失败**：高成本脚本进入缓存子进程前必须把
+    自身路径解析为绝对路径；不得把相对 `${BASH_SOURCE[0]}` 交给会切换 cwd
+    的缓存执行器。
 
 ## 13. 性能、Token 与弱模型生产门禁
 

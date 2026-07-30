@@ -31,13 +31,19 @@ Demucs model、device、时长容差和可选二进制路径默认从咔嚓配�
 
 处理顺序固定为：
 
-1. 粗剪冻结并从同一时间线导出待处理音轨；
+1. 先删除重说、口误、废句、异常噪声段和无意义停顿，冻结粗剪；再从同一组
+   音画边界导出待处理音轨，真实转场边界使用与画面等长的短 crossfade；
 2. 能力探测确认真实源分离引擎可用；
 3. 生成 `dialogue_isolated` 和 `non_dialogue_residual`；
 4. 对原始参考与独立人声做同响度 A/B；
 5. 检查 residual 中是否仍有清晰语音泄漏；
 6. 通过后只把 `dialogue_isolated` 送入降噪、人声增强和最终混音，`non_dialogue_residual` 不混回成片；
 7. 后期需要的 BGM 和 SFX 使用独立新 stem 重新加入。
+
+`separation-report.json` 中 `acceptance.approved=false` 或
+`status=candidate_requires_ab` 表示“待听审候选”，不能被最终时间线标为
+已验收 dialogue。自动频谱、时长和 residual 检查不能替代同响度 A/B；未完成
+听审时只能交付返修候选并明确保留风险。
 
 “人声”包括实际讲话、语义相关的自然换气和有表达作用的笑声/叹气；风扇、空调、交通、房间底噪、原有 BGM、碰撞声和无关环境声属于待剔除内容。口水音、爆音和齿音属于人声局部缺陷，在分离后单独修复，不能依赖源分离模型误删。
 
@@ -62,7 +68,11 @@ Demucs model、device、时长容差和可选二进制路径默认从咔嚓配�
   运行时版本、启动器/入口模块实现 SHA 和输出 schema 复用
   `source_separation` 缓存；运行时变化必须使旧结果失效；
 - `kacha transcribe INPUT --output transcript.json` 默认调用配置中的本机
-  loopback Whisper MLX 服务，并以模型、语言、转写参数和实现 SHA 复用 ASR；
+  loopback Whisper MLX 服务；视频输入先按 `audioStreamIndex` 选择真实音轨，
+  规范成 16 kHz 单声道 PCM 再提交识别，避免把 4K 多音轨容器直接送入服务。
+  `conditionOnPreviousText` 默认关闭，防止长停顿后的重复幻觉；有原稿时通过
+  `--prompt` 提供术语上下文，而不是让错误文本跨窗口自我强化。模型、语言、
+  音轨、规范化参数和实现 SHA 全部进入 ASR 缓存指纹；
 - 完整转写和逐词时间戳留在文件中；agent 先用
   `transcript index`，再按最多 180 秒的 `transcript slice` 读取；
 - CPU Demucs 占用 `cpuHeavy`，MPS Demucs 占用 `mps`。同一时刻只允许一个
@@ -148,6 +158,14 @@ preset、降噪、declick、目标响度、true peak 和声道策略均可放入
 在人声下约 `18 dB`，宽度约 `0.5`；SFX 通常在人声下约 `12 dB`，并从
 `4.5 kHz` 起轻收约 `1.5 dB`。这些是最终关系，不是把任意原始素材机械执行
 固定增益；每次仍需按 stem 实测和同响度 A/B。
+
+统一时间线的最终混音必须在 `audio.masterTruePeakDb` 显式声明母带峰值上限，
+默认沿用 `-4 dBTP`。渲染器把 dBTP 合同换算为线性 limiter 上限；不得在各
+stem 已按目标处理后又用接近 `0 dBFS` 的硬编码总线限制器抬高峰值。最终仍以
+解码后的成片实测 true peak 为准，而不是以滤镜参数代替验收。
+FFmpeg `alimiter` 必须显式设置 `level=false`，否则默认自动补偿会把限制后的
+信号重新抬高。QC 重建 component stems 时必须使用与时间线相同的 limiter
+上限和 `level=false`，否则会把正确母带误判为 stem 不一致。
 
 ## 自然口播参考基准（中文版标准）
 

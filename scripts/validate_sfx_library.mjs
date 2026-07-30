@@ -82,7 +82,10 @@ const requestedTitle = titleIndex >= 0 ? args[titleIndex + 1] : null;
 const assets = requestedId
   ? allAssets.filter((asset) => asset.id === requestedId)
   : requestedTitle
-    ? allAssets.filter((asset) => asset.title === requestedTitle)
+    ? allAssets.filter(
+      (asset) => asset.title === requestedTitle
+        || (Array.isArray(asset.aliases) && asset.aliases.includes(requestedTitle)),
+    )
     : allAssets;
 const errors = [];
 
@@ -96,8 +99,18 @@ if ((requestedId || requestedTitle) && assets.length !== 1) {
 }
 
 function distributionFor(asset) {
+  if (typeof asset.distribution === "string" && asset.distribution.trim()) {
+    return asset.distribution;
+  }
   if (asset.provider === "user_local" || asset.license_ref === "user_local") {
     return manifest.additional_sources?.user_local?.distribution
+      ?? "project_private_only";
+  }
+  if (
+    asset.provider === "user_project_private"
+    || asset.license_ref === "project_private"
+  ) {
+    return manifest.additional_sources?.user_project_private?.distribution
       ?? "project_private_only";
   }
   if (manifest.license?.standalone_redistribution_allowed === true) {
@@ -115,6 +128,30 @@ function publiclyDistributable(distribution) {
 
 const records = [];
 const seenIds = new Set();
+const seenNames = new Map();
+for (const [index, asset] of allAssets.entries()) {
+  if (seenIds.has(asset?.id)) {
+    errors.push(`assets[${index}]: id 重复：${asset?.id}`);
+  }
+  seenIds.add(asset?.id);
+  const names = [asset?.title, ...(Array.isArray(asset?.aliases) ? asset.aliases : [])]
+    .filter((value) => typeof value === "string" && value.trim());
+  const localNames = new Set();
+  for (const name of names) {
+    if (localNames.has(name)) {
+      errors.push(`assets[${index}]: title/aliases 内部重复：${name}`);
+      continue;
+    }
+    localNames.add(name);
+    if (seenNames.has(name) && seenNames.get(name) !== asset?.id) {
+      errors.push(
+        `assets[${index}]: title/alias 与 ${seenNames.get(name)} 冲突：${name}`,
+      );
+    } else {
+      seenNames.set(name, asset?.id);
+    }
+  }
+}
 for (const [index, asset] of assets.entries()) {
   const label = `assets[${index}]`;
   for (const field of [
@@ -130,8 +167,6 @@ for (const [index, asset] of assets.entries()) {
       errors.push(`${label}: 缺少 ${field}`);
     }
   }
-  if (seenIds.has(asset.id)) errors.push(`${label}: id 重复：${asset.id}`);
-  seenIds.add(asset.id);
   const readyFile = resolveFrom(manifestFile, asset.ready_file);
   const sourceFile = resolveFrom(manifestFile, asset.source_file);
   let summary = null;
@@ -181,6 +216,7 @@ for (const [index, asset] of assets.entries()) {
   records.push({
     id: asset.id,
     title: asset.title,
+    aliases: Array.isArray(asset.aliases) ? asset.aliases : [],
     provider: asset.provider ?? manifest.license?.provider ?? null,
     author: asset.author ?? manifest.author ?? null,
     sourceFile,

@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawn } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   mediaSummary,
@@ -70,7 +71,7 @@ function inferSuite(name) {
   if (/SFX|sound effect/i.test(name)) return "sfx";
   if (/technical QC|release gate|timing normalizer/i.test(name)) return "qc";
   if (
-    /mask|beauty|text-behind|reframe|information card|visual design|cropped head|style profile|transition|opening|connection scanner|netstyle|semantic motion|parallel layout|visual breathing|caption layout|font routing/i
+    /mask|beauty|text-behind|reframe|information card|visual design|cropped head|style profile|transition|opening|connection scanner|netstyle|semantic motion|parallel layout|visual breathing|caption layout|font routing|facefusion|effect template|resource catalog/i
       .test(name)
   ) {
     return "visual";
@@ -105,6 +106,46 @@ function expectFailure(command, args) {
     throw new Error(`${command} ${args.join(" ")} unexpectedly passed`);
   }
   return result;
+}
+
+async function startMockFaceFusionServer(resultFile, token) {
+  const child = spawn(
+    process.execPath,
+    [path.join(testDirectory, "fixtures", "mock_facefusion_server.mjs")],
+    {
+      env: {
+        ...process.env,
+        MOCK_FACEFUSION_RESULT_FILE: resultFile,
+        MOCK_FACEFUSION_TOKEN: token,
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+  let stdout = "";
+  let stderr = "";
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk.toString();
+  });
+  const ready = await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`mock FaceFusion server timeout\n${stderr}`));
+    }, 5000);
+    child.once("exit", (code) => {
+      clearTimeout(timer);
+      reject(new Error(`mock FaceFusion server exited ${code}\n${stderr}`));
+    });
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+      const newline = stdout.indexOf("\n");
+      if (newline < 0) return;
+      clearTimeout(timer);
+      resolve(JSON.parse(stdout.slice(0, newline)));
+    });
+  });
+  return {
+    child,
+    endpoint: `http://127.0.0.1:${ready.port}`,
+  };
 }
 
 function localDesignPreflight(name) {
@@ -316,6 +357,8 @@ await test("doctor and low-model packet expose deterministic execution", () => {
     || packet.readOrder.length !== 1
     || !packet.readOrder[0].endsWith("references/stages/edit.md")
     || packet.ruleRetrieval === null
+    || packet.agentControlPlane?.primaryInterface !== "natural_language_chat"
+    || packet.agentControlPlane?.mutationDelta !== "kacha.mjs delta apply"
   ) {
     throw new Error("economy packet did not default to the compact edit stage");
   }
@@ -456,6 +499,64 @@ await test("transcript windows keep long ASR text out of low-token packets", () 
     throw new Error("long transcript was not bounded into explicit low-token windows");
   }
 }, "core");
+
+await test("ASR normalizes the selected audio stream before transcription", () => {
+  const defaults = readJson(path.join(skillDirectory, "config", "defaults.json"));
+  const source = fs.readFileSync(path.join(scripts, "transcribe_local.mjs"), "utf8");
+  const asr = defaults.execution.asr;
+  const requiredFragments = [
+    '"-select_streams"',
+    '"-map"',
+    "`0:a:${audioStreamIndex}`",
+    '"pcm_s16le"',
+    '"local-whisper-mlx-v3-normalized-audio"',
+    "audioPreparation",
+    "normalizationSampleRate",
+    "normalizationChannels",
+    "workerConfigurationArguments",
+  ];
+  if (
+    asr.audioStreamIndex !== 0
+    || asr.normalizationSampleRate !== 16000
+    || asr.normalizationChannels !== 1
+    || asr.conditionOnPreviousText !== false
+    || requiredFragments.some((fragment) => !source.includes(fragment))
+  ) {
+    throw new Error("ASR no longer freezes its selected normalized audio input");
+  }
+}, "audio");
+
+await test("visual evidence prefers hardware decode with a software fallback", () => {
+  const source = fs.readFileSync(
+    path.join(scripts, "build_visual_evidence.mjs"),
+    "utf8",
+  );
+  const requiredFragments = [
+    '["-hwaccel", "videotoolbox"]',
+    '"videotoolbox_then_software"',
+    '"software_fallback"',
+    "extractionArguments(preferredHardwareDecode)",
+    "detectorArguments(preferredHardwareDecode)",
+  ];
+  if (requiredFragments.some((fragment) => !source.includes(fragment))) {
+    throw new Error("visual evidence lost its accelerated decode fallback contract");
+  }
+}, "visual");
+
+await test("timeline renderer prefers hardware decode with a software fallback", () => {
+  const source = fs.readFileSync(path.join(scripts, "timeline_ir.mjs"), "utf8");
+  const requiredFragments = [
+    'command.push("-hwaccel", "videotoolbox")',
+    'built.decoder === "videotoolbox"',
+    'buildRenderCommand(graph, { hardwareDecode: false })',
+    "decoderFallbackUsed",
+    'command.push("-tag:v", "hvc1")',
+    '"-movflags", "+faststart"',
+  ];
+  if (requiredFragments.some((fragment) => !source.includes(fragment))) {
+    throw new Error("timeline renderer lost its accelerated decode fallback contract");
+  }
+}, "visual");
 
 await test("deterministic rule engine gives weak models stable scored decisions", () => {
   const validation = JSON.parse(execute(process.execPath, [
@@ -1480,6 +1581,7 @@ await test("connection scanner finds edit joins and emits review handles", () =>
   if (
     report.count < 1
     || report.candidates[0].sources.includes("ffmpeg_scene_score") !== true
+    || !["videotoolbox", "software"].includes(report.detection.decoder)
     || !(report.candidates[0].handleEndSeconds > report.candidates[0].handleStartSeconds)
     || report.candidates[0].reviewRequired !== true
   ) {
@@ -2803,7 +2905,8 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
     "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=25:duration=4",
     "-f", "lavfi", "-i", "sine=frequency=220:duration=4:sample_rate=48000",
     "-shortest", "-c:v", "libx264", "-preset", "ultrafast",
-    "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", source,
+    "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k",
+    "-timecode", "01:02:03:04", source,
   ]);
   execute("ffmpeg", [
     "-hide_banner", "-loglevel", "error", "-y",
@@ -2855,7 +2958,14 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
       sha256: sha256File(source),
     },
     edl: [
-      { id: "first", sourceStart: 0, sourceEnd: 1.5 },
+      {
+        id: "first",
+        sourceStart: 0,
+        sourceEnd: 1.5,
+        scale: 1.08,
+        anchorX: 0.5,
+        anchorY: 0.42,
+      },
       { id: "second", sourceStart: 2, sourceEnd: 3.5 },
     ],
     visual: {
@@ -2882,6 +2992,7 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
       subtitles: { kind: "overlay_video", path: subtitles },
     },
     audio: {
+      masterTruePeakDb: -4,
       bgm: {
         path: bgm,
         levelBelowDialogueDb: 16,
@@ -2931,6 +3042,12 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
     || summary.height !== 180
     || Math.abs(summary.videoDuration - 3) > 0.06
     || !summary.audio
+    || readJson(graph).edl[0]?.scale !== 1.08
+    || readJson(graph).edl[0]?.anchorY !== 0.42
+    || readJson(graph).audio?.masterTruePeakDb !== -4
+    || manifest.execution.masterTruePeakDb !== -4
+    || manifest.execution.sourceTimecodeAndUnrequestedMetadataStripped !== true
+    || summary.probe.streams.some((stream) => stream.codec_type === "data")
   ) {
     throw new Error("unified renderer did not preserve its one-encode media contract");
   }
@@ -3036,6 +3153,7 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
     || rangeSummary.height !== 180
     || Math.abs(rangeSummary.videoDuration - 0.6) > 0.06
     || rangeGraphValue.edl.length !== 1
+    || rangeGraphValue.sourceSeekSeconds !== 0.75
     || rangeGraphValue.previewRange?.start !== 0.75
     || rangeGraphValue.visual.overlays[0]?.x !== 115
     || rangeGraphValue.visual.overlays[0]?.width !== 35
@@ -3228,6 +3346,131 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
     || runMetrics.media.videoEncodes !== 1
   ) {
     throw new Error("project renderer did not measure exact cache reuse");
+  }
+}, "visual");
+
+await test("timeline executes declared picture and sound transitions at real joins", () => {
+  const directory = path.join(temporary, "timeline-executed-transitions");
+  fs.mkdirSync(directory, { recursive: true });
+  const source = path.join(directory, "source.mp4");
+  const output = path.join(directory, "output.mp4");
+  const graph = path.join(directory, "render-graph.json");
+  const timeline = path.join(directory, "timeline.json");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=25:duration=4",
+    "-f", "lavfi", "-i", "sine=frequency=330:duration=4:sample_rate=48000",
+    "-shortest", "-c:v", "libx264", "-preset", "ultrafast",
+    "-pix_fmt", "yuv420p", "-c:a", "aac", source,
+  ]);
+  writeJson(path.join(directory, "kacha.config.json"), {
+    schemaVersion: "1.0",
+    execution: {
+      unifiedRender: {
+        preview: {
+          encoder: "libx264",
+          fallbackEncoder: "libx264",
+          preset: "ultrafast",
+          crf: 25
+        }
+      }
+    }
+  });
+  writeJson(timeline, {
+    schemaVersion: "1.0",
+    projectId: "executed-transition-smoke",
+    mode: "preview",
+    source: { path: source, sha256: sha256File(source) },
+    edl: [
+      { id: "before", sourceStart: 0, sourceEnd: 1.5 },
+      { id: "after", sourceStart: 2, sourceEnd: 3.5 }
+    ],
+    transitions: [{
+      boundaryIndex: 0,
+      effectId: "focus_blur",
+      durationFrames: 4
+    }],
+    visual: { breathing: [], overlays: [] },
+    audio: { masterTruePeakDb: -4, sfx: [] },
+    output: { path: output, width: 320, height: 180, fps: 25 }
+  });
+  const rendered = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "timeline", "render",
+    "--plan", timeline,
+    "--graph", graph,
+  ]).stdout);
+  const graphValue = readJson(graph);
+  const manifest = readJson(`${output}.manifest.json`);
+  const summary = mediaSummary(output);
+  if (
+    rendered.videoEncodes !== 1
+    || graphValue.transitions[0]?.transition !== "hblur"
+    || graphValue.transitions[0]?.durationFrames !== 4
+    || manifest.execution.transitions?.executedCount !== 1
+    || manifest.execution.transitions?.effects[0]?.boundaryIndex !== 0
+    || Math.abs(summary.videoDuration - 2.84) > 0.06
+    || !summary.audio
+  ) {
+    throw new Error("timeline declared a transition without executing the picture/sound overlap");
+  }
+  const safeZoomTimeline = readJson(timeline);
+  safeZoomTimeline.transitions[0].effectId = "zoom_punch";
+  writeJson(timeline, safeZoomTimeline);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "timeline", "compile",
+    "--plan", timeline,
+    "--graph", graph,
+  ]);
+  const safeZoomGraph = readJson(graph);
+  if (safeZoomGraph.transitions[0]?.transition !== "dissolve") {
+    throw new Error("short zoom_punch join regressed to the flashing xfade=zoomin implementation");
+  }
+}, "visual");
+
+await test("timeline preserves the displayed geometry of rotation-tagged source video", () => {
+  const directory = path.join(temporary, "timeline-rotation-metadata");
+  fs.mkdirSync(directory, { recursive: true });
+  const base = path.join(directory, "base.mp4");
+  const source = path.join(directory, "rotated.mp4");
+  const timeline = path.join(directory, "timeline.json");
+  const graph = path.join(directory, "render-graph.json");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "testsrc2=size=640x360:rate=25:duration=1",
+    "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", base,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-display_rotation", "90", "-i", base, "-c", "copy", source,
+  ]);
+  writeJson(timeline, {
+    schemaVersion: "1.0",
+    projectId: "rotation-aware-timeline",
+    mode: "preview",
+    source: { path: source, sha256: sha256File(source) },
+    edl: [{ id: "full", sourceStart: 0, sourceEnd: 1 }],
+    output: { path: path.join(directory, "output.mp4"), fps: 25 },
+  });
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "timeline",
+    "compile",
+    "--plan",
+    timeline,
+    "--graph",
+    graph,
+  ]);
+  const compiled = readJson(graph);
+  if (
+    compiled.geometry.width !== 360
+    || compiled.geometry.height !== 640
+    || compiled.sourceMedia.encodedWidth !== 640
+    || compiled.sourceMedia.encodedHeight !== 360
+    || Math.abs(compiled.sourceMedia.rotation) !== 90
+  ) {
+    throw new Error("rotation metadata no longer resolves to displayed output geometry");
   }
 }, "visual");
 
@@ -3538,6 +3781,72 @@ await test("low-model change compiler creates a safe incremental project", () =>
   ]);
   if (JSON.parse(recovered.stdout).status !== "dry_run" || fs.existsSync(recoveredLock)) {
     throw new Error("dead same-host operation lock was not safely recovered");
+  }
+}, "incremental");
+
+await test("FaceFusion change requests compile only authorized affected layers", () => {
+  const fixture = initializeIncrementalFixture("facefusion-change");
+  const planFile = path.join(fixture.root, "facefusion-plan.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "facefusion",
+    "template",
+    "--operation",
+    "post_process",
+    "--output",
+    planFile,
+  ]);
+  const plan = readJson(planFile);
+  plan.inputs.target = fixture.baseline;
+  plan.output.path = path.join(fixture.root, "facefusion-candidate.mp4");
+  plan.authorization.canExecute = true;
+  plan.authorization.postProcessingAuthorized = true;
+  plan.authorization.modelLicenseReviewed = true;
+  plan.authorization.evidence = "synthetic project authorization";
+  writeJson(planFile, plan);
+
+  const requestFile = path.join(fixture.root, "facefusion-change-request.json");
+  writeJson(requestFile, {
+    schemaVersion: "1.0",
+    projectContext: fixture.context,
+    newVersion: { id: "facefusion-v2", intent: "candidate" },
+    changes: [{
+      recipe: "facefusion",
+      reason: "repair visible compression damage",
+      parameters: { plan: planFile },
+    }],
+    render: { strategy: "auto" },
+    deliverables: { covers: [], subtitles: [] },
+  });
+  const compiled = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "compile-change",
+    requestFile,
+    "--output-dir",
+    path.join(fixture.root, "versions", "facefusion-v2"),
+    "--dry-run",
+  ]).stdout);
+  if (
+    compiled.derived.layers.length !== 1
+    || compiled.derived.layers[0] !== "visual"
+    || compiled.recipes[0].parameters.operation !== "post_process"
+    || compiled.recipes[0].parameters.profile !== "frame-postprocess-natural"
+  ) {
+    throw new Error("FaceFusion post-processing expanded beyond the visual layer");
+  }
+
+  plan.inputs.target = sourceFile;
+  writeJson(planFile, plan);
+  const mismatch = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "compile-change",
+    requestFile,
+    "--output-dir",
+    path.join(fixture.root, "versions", "facefusion-mismatch"),
+    "--dry-run",
+  ]);
+  if (!mismatch.stderr.includes("KACHA-E110")) {
+    throw new Error("FaceFusion target mismatch was rejected for the wrong reason");
   }
 }, "incremental");
 
@@ -3936,6 +4245,55 @@ await test("v2 workflow state resets completed stages when a bound contract chan
   }
 });
 
+await test("final timeline fails early when production contracts or asset provenance are missing", () => {
+  ensureMediaFixtures();
+  const directory = path.join(temporary, "final-timeline-provenance-gate");
+  fs.mkdirSync(directory, { recursive: true });
+  const timeline = path.join(directory, "timeline.json");
+  writeJson(timeline, {
+    schemaVersion: "1.0",
+    projectId: "final-provenance-gate",
+    mode: "final",
+    source: {
+      path: baseVideo,
+      sha256: sha256File(baseVideo),
+    },
+    edl: [{ id: "full", sourceStart: 0, sourceEnd: 2 }],
+    visual: {
+      breathing: [],
+      overlays: [],
+      subtitles: {
+        path: baseVideo,
+        kind: "overlay_video",
+      },
+    },
+    audio: { sfx: [] },
+    output: {
+      path: path.join(directory, "final.mp4"),
+      width: 320,
+      height: 180,
+      fps: 25,
+    },
+  });
+  const failure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "timeline",
+    "validate",
+    "--plan",
+    timeline,
+  ]);
+  for (const expected of [
+    "contracts.proposal",
+    "contracts.editPlan",
+    "visual.subtitles.sha256",
+    "visual.subtitles.provenance.kind/evidence",
+  ]) {
+    if (!failure.stderr.includes(expected)) {
+      throw new Error(`final timeline did not fail early for ${expected}`);
+    }
+  }
+});
+
 function renderVisualOnlyCandidate(base, output) {
   execute("ffmpeg", [
     "-hide_banner", "-loglevel", "error", "-y",
@@ -4022,8 +4380,13 @@ await test("content-addressed artifact cache reuses exact outputs and releases r
     "--project-root",
     root,
   ]).stdout);
-  if (Object.values(status.resources).some((resource) => resource.active !== 0)) {
-    throw new Error("resource scheduler leaked a lease after cache execution");
+  const cachePurpose = `cache:styleframe:${first.cache.key.slice(0, 12)}`;
+  if (
+    Object.values(status.resources).some((resource) => (
+      resource.leases ?? []
+    ).some((lease) => lease.purpose === cachePurpose))
+  ) {
+    throw new Error("resource scheduler leaked this cache execution's lease");
   }
   const directoryOutput = path.join(root, "mask-frames");
   const directoryArguments = [
@@ -4272,6 +4635,7 @@ await test("dialogue separation cache fingerprints the actual Demucs runtime", (
   const engineResolution = source.indexOf('engine="kacha-managed-demucs"');
   const cacheEntry = source.indexOf('if [[ "$no_cache" != true ]]');
   const requiredFragments = [
+    'script_self="$script_dir/$(basename "${BASH_SOURCE[0]}")"',
     'runtime_fingerprint="demucs=${runtime_demucs_version};torch=${runtime_torch_version}"',
     '--operation-version "demucs-two-stems-v2"',
     '--implementation "$runtime_launcher"',
@@ -4280,6 +4644,7 @@ await test("dialogue separation cache fingerprints the actual Demucs runtime", (
     '--arg runtimeFingerprint "$runtime_fingerprint"',
     '--arg modelContentSha256 "$runtime_model_sha"',
     'modelContentSha256:$modelContentSha256',
+    'bash "$script_self" "$input" "$output_dir"',
   ];
   if (
     engineResolution < 0
@@ -4386,6 +4751,48 @@ await test("telemetry captures model usage from child JSON without manual token 
     || report.tokens.measuredEvents !== 1
   ) {
     throw new Error("child model usage was not captured as actual token evidence");
+  }
+});
+
+await test("telemetry wrapper options do not consume child command options", () => {
+  const root = path.join(temporary, "telemetry-child-option-boundary");
+  fs.mkdirSync(root, { recursive: true });
+  const childScript = path.join(root, "child-options.mjs");
+  fs.writeFileSync(
+    childScript,
+    "console.log(JSON.stringify({status:'pass',childMode:process.argv[3],"
+      + "childConfig:process.argv[5]}));\n",
+  );
+  const result = execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "metrics",
+    "run",
+    "--stage",
+    "inventory",
+    "--project-root",
+    root,
+    "--mode",
+    "preview",
+    "--",
+    process.execPath,
+    childScript,
+    "--mode",
+    "review",
+    "--config",
+    "/tmp/child-only-config.json",
+  ]);
+  const compact = JSON.parse(result.stdout);
+  const report = readJson(compact.metrics);
+  const event = JSON.parse(
+    fs.readFileSync(report.eventLog, "utf8").trim().split("\n").at(-1),
+  );
+  if (
+    event.mode !== "preview"
+    || compact.result.childMode !== "review"
+    || compact.result.childConfig !== "/tmp/child-only-config.json"
+    || !event.command.includes("/tmp/child-only-config.json")
+  ) {
+    throw new Error("telemetry wrapper consumed options that belong to the child command");
   }
 });
 
@@ -5501,6 +5908,236 @@ await test("bundled original SFX pass hash, format and distribution checks", () 
   }
 });
 
+await test("SFX aliases resolve uniquely and private assets fail public distribution", () => {
+  const sourceManifestFile = path.join(
+    skillDirectory,
+    "assets",
+    "sfx",
+    "manifest.json",
+  );
+  const sourceManifest = readJson(sourceManifestFile);
+  const sourceAsset = sourceManifest.assets[0];
+  const fixture = {
+    ...sourceManifest,
+    assets: [{
+      ...sourceAsset,
+      aliases: ["Regression Alias"],
+      source_file: path.resolve(
+        path.dirname(sourceManifestFile),
+        sourceAsset.source_file,
+      ),
+      ready_file: path.resolve(
+        path.dirname(sourceManifestFile),
+        sourceAsset.ready_file,
+      ),
+      distribution: "public_distribution_allowed",
+    }],
+  };
+  const manifest = path.join(temporary, "sfx-alias-manifest.json");
+  writeJson(manifest, fixture);
+  const selected = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "sfx",
+    "validate",
+    manifest,
+    "--title",
+    "Regression Alias",
+    "--require-public-distribution",
+  ]).stdout);
+  if (
+    selected.assets.length !== 1
+    || !selected.assets[0].aliases.includes("Regression Alias")
+  ) {
+    throw new Error("SFX alias did not resolve to exactly one asset");
+  }
+  fixture.assets[0].distribution = "project_private_only";
+  writeJson(manifest, fixture);
+  const blocked = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "sfx",
+    "validate",
+    manifest,
+    "--title",
+    "Regression Alias",
+    "--require-public-distribution",
+  ]);
+  if (!blocked.stderr.includes("公开仓库")) {
+    throw new Error("private SFX was rejected for the wrong reason");
+  }
+});
+
+await test("effect templates and resource catalog resolve deterministic execution contracts", () => {
+  const validation = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "templates",
+    "validate",
+  ]).stdout);
+  if (
+    validation.templates !== 60
+    || validation.catalogs.length !== 1
+    || validation.catalogs[0].assets !== 18
+    || validation.byCategory.opening !== 10
+    || validation.byCategory.transition !== 10
+  ) {
+    throw new Error(`unexpected effect catalog coverage: ${JSON.stringify(validation)}`);
+  }
+  const resolved = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "templates",
+    "resolve",
+    "--template",
+    "effect-sticker_directional_arrows",
+  ]).stdout);
+  if (
+    resolved.template.category !== "sticker_and_gaze"
+    || resolved.resources.some((resource) => resource.status === "unresolved")
+    || !/^[a-f0-9]{64}$/.test(resolved.digest)
+    || resolved.executionContract.safety.preserveFaceSafeZone !== true
+  ) {
+    throw new Error("effect template did not resolve to an executable safe contract");
+  }
+});
+
+await test("FaceFusion plans enforce consent, loopback and a mock end-to-end candidate QC", async () => {
+  ensureMediaFixtures();
+  const unsafeConfig = path.join(temporary, "facefusion-unsafe-config.json");
+  writeJson(unsafeConfig, {
+    schemaVersion: "1.0",
+    tools: {
+      faceFusionEndpoint: "https://example.com",
+    },
+  });
+  const unsafe = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "config",
+    "validate",
+    "--config",
+    unsafeConfig,
+  ]);
+  if (!unsafe.stderr.includes("loopback")) {
+    throw new Error("non-loopback FaceFusion endpoint was rejected for the wrong reason");
+  }
+
+  const planFile = path.join(temporary, "facefusion-plan.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "facefusion",
+    "template",
+    "--operation",
+    "post_process",
+    "--output",
+    planFile,
+  ]);
+  const plan = readJson(planFile);
+  const firstOutput = path.join(temporary, "facefusion-output.mp4");
+  plan.inputs.target = baseVideo;
+  plan.output.path = firstOutput;
+  plan.authorization.evidence = "synthetic regression authorization";
+  writeJson(planFile, plan);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "facefusion",
+    "validate",
+    "--plan",
+    planFile,
+  ]);
+  const unauthorized = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "facefusion",
+    "validate",
+    "--plan",
+    planFile,
+    "--for-execution",
+  ]);
+  if (!unauthorized.stderr.includes("authorization.canExecute")) {
+    throw new Error("FaceFusion execution authorization failed for the wrong reason");
+  }
+
+  plan.authorization.canExecute = true;
+  plan.authorization.postProcessingAuthorized = true;
+  plan.authorization.modelLicenseReviewed = true;
+  writeJson(planFile, plan);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "facefusion",
+    "validate",
+    "--plan",
+    planFile,
+    "--for-execution",
+  ]);
+
+  const token = ["facefusion", "regression", "fixture"].join("-");
+  const tokenFile = path.join(temporary, "facefusion-token");
+  fs.writeFileSync(tokenFile, `${token}\n`, { mode: 0o600 });
+  const mock = await startMockFaceFusionServer(baseVideo, token);
+  try {
+    const config = path.join(temporary, "facefusion-config.json");
+    writeJson(config, {
+      schemaVersion: "1.0",
+      tools: {
+        faceFusionEndpoint: mock.endpoint,
+        faceFusionTokenFile: tokenFile,
+      },
+    });
+    const beforeHash = sha256File(baseVideo);
+    const result = execute(process.execPath, [
+      path.join(scripts, "kacha.mjs"),
+      "facefusion",
+      "run",
+      "--plan",
+      planFile,
+      "--project-root",
+      path.join(temporary, "facefusion-project"),
+      "--timeout",
+      "30",
+      "--config",
+      config,
+    ]);
+    if (result.stdout.includes(token) || result.stderr.includes(token)) {
+      throw new Error("FaceFusion adapter leaked its bearer token");
+    }
+    const report = JSON.parse(result.stdout);
+    if (
+      report.status !== "candidate_requires_manual_qc"
+      || report.releaseApproved !== false
+      || report.automaticQc.outputDecodes !== true
+      || sha256File(firstOutput) !== beforeHash
+      || sha256File(baseVideo) !== beforeHash
+      || !fs.existsSync(`${firstOutput}.facefusion.json`)
+    ) {
+      throw new Error("FaceFusion candidate output or QC contract is incomplete");
+    }
+
+    const cachedPlan = {
+      ...plan,
+      output: {
+        ...plan.output,
+        path: path.join(temporary, "facefusion-output-cached.mp4"),
+      },
+    };
+    const cachedPlanFile = path.join(temporary, "facefusion-plan-cached.json");
+    writeJson(cachedPlanFile, cachedPlan);
+    const cached = JSON.parse(execute(process.execPath, [
+      path.join(scripts, "kacha.mjs"),
+      "facefusion",
+      "run",
+      "--plan",
+      cachedPlanFile,
+      "--project-root",
+      path.join(temporary, "facefusion-project"),
+      "--timeout",
+      "30",
+      "--config",
+      config,
+    ]).stdout);
+    if (cached.cache !== "hit" || !fs.existsSync(cached.output)) {
+      throw new Error("FaceFusion content-addressed cache was not reused");
+    }
+  } finally {
+    mock.child.kill("SIGTERM");
+  }
+});
+
 await test("local change template passes and rejects an unsafe overwrite", () => {
   execute(process.execPath, [
     path.join(scripts, "validate_local_change_plan.mjs"),
@@ -5695,7 +6332,7 @@ await test("technical QC decodes media and writes a report", () => {
     "[0:a]aformat=sample_rates=48000:channel_layouts=stereo[d];"
       + "[1:a]aformat=sample_rates=48000:channel_layouts=stereo[b];"
       + "[d][b]amix=inputs=2:normalize=0:duration=longest:dropout_transition=0,"
-      + "atrim=0:2,alimiter=limit=0.95[m]",
+      + "atrim=0:2,alimiter=limit=0.630957:level=false[m]",
     "-map", "[m]", "-c:a", "pcm_s24le", mixStem,
   ]);
   execute("ffmpeg", [
@@ -5725,6 +6362,7 @@ await test("technical QC decodes media and writes a report", () => {
       truePeakMax: 0,
       audioMix: {
         bgmRequired: true,
+        masterTruePeakDb: -4,
         bgmBelowDialogueDbMin: 12,
         bgmBelowDialogueDbMax: 18,
         bgmMinimumCoverageRatio: 0.85,
@@ -5766,7 +6404,9 @@ await test("technical QC decodes media and writes a report", () => {
   if (
     report.configuration?.detectorParameters?.blackDurationSeconds !== 0.12
     || report.configuration?.detectorParameters?.silenceDurationSeconds !== 0.7
+    || !["videotoolbox", "software"].includes(report.execution?.detectorDecoder)
     || report.audioStemQc?.status !== "pass"
+    || report.audioStemQc?.measurements?.mixReconstruction?.exactMatch !== true
     || report.audioStemQc?.bgmBelowDialogueDb < 12
     || report.audioStemQc?.bgmBelowDialogueDb > 18
   ) {
@@ -5795,7 +6435,7 @@ await test("technical QC rejects valid stems when the final video omits their mi
     "-i", dialogue, "-i", bgm,
     "-filter_complex",
     "[0:a][1:a]amix=inputs=2:normalize=0:duration=longest:dropout_transition=0,"
-      + "atrim=0:2,alimiter=limit=0.95[m]",
+      + "atrim=0:2,alimiter=limit=0.630957:level=false[m]",
     "-map", "[m]", "-c:a", "pcm_s24le", mix,
   ]);
   const report = path.join(temporary, "technical-qc-omitted-mix.json");
@@ -5820,6 +6460,7 @@ await test("technical QC rejects valid stems when the final video omits their mi
       truePeakMax: 0,
       audioMix: {
         bgmRequired: true,
+        masterTruePeakDb: -4,
         bgmBelowDialogueDbMin: 12,
         bgmBelowDialogueDbMax: 18,
         bgmMinimumCoverageRatio: 0.85,
@@ -6055,6 +6696,12 @@ await test("release gate verifies hashes, cover ratios and manual evidence", () 
     projectFile,
   ]);
 });
+
+await test("Agent chat control plane keeps deltas, search, jobs, refs and install status deterministic", () => {
+  execute(process.execPath, [
+    path.join(testDirectory, "agent_control_plane_tests.mjs"),
+  ]);
+}, "incremental");
 
 try {
   if (listOnly) {

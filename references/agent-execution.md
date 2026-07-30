@@ -150,6 +150,14 @@ node scripts/kacha.mjs rules compile \
 
 ## Token 与时间纪律
 
+- JSON 合同小改动使用 `delta apply`；Agent 只读取 mutation delta 的变化对象、
+  路径和受影响层，不重新读取整份 before/after；
+- 已有项目先用 `refs resolve` 缩小到对象 JSON Pointer，避免凭自然语言遍历
+  完整 timeline、素材索引或 artifact index；
+- 本地素材通过 `media search` 只返回前几个带证据候选，不把完整目录清单放入
+  packet；
+- 生成、分离、跟踪、渲染和全片 QC 可用 `jobs submit` 后台执行；上下文只
+  保留 `@job` 与 placeholder 状态，stdout/stderr 留在文件；
 - 主入口只负责选路，任务 reference 由 router 精确选择；
 - token 预算对非 ASCII 字符按 1 token、ASCII 按约 4 字符/token 保守估算，
   不再用会严重低估中文的总字符/4；
@@ -174,3 +182,5 @@ node scripts/kacha.mjs rules compile \
 - `pass_with_review` 继续进入人工处置，不能自动改写为 `pass`；
 - 较弱模型无法完成复杂创意判断时，交给样式帧、短预览或人工批准，不降低
   合同要求。
+
+控制面完整合同见 `references/agent-chat-control-plane.md`。

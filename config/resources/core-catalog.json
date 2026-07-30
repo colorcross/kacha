@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "1.0",
+  "id": "kacha-core-resources",
+  "version": "1.0.0",
+  "styleProfile": "xingzhe",
+  "distribution": "public_bundle",
+  "assets": [
+    {"id": "ai-orb", "kind": "svg", "path": "../../assets/design/original/ai-orb.svg", "sha256": "7ac98de1764a8f2d64464eb2279bcfb0889f5c887a64ce29e411b76e3ad0da94", "license": "MIT", "roles": ["ai_role", "focus", "technology"]},
+    {"id": "arrow-flow", "kind": "svg", "path": "../../assets/design/original/arrow-flow.svg", "sha256": "e317c8efc3c08234fca2f88f62774e7107304f33dc618dcff1c5d7105e449095", "license": "MIT", "roles": ["gaze_direction", "process", "cause_effect"]},
+    {"id": "document-frame", "kind": "svg", "path": "../../assets/design/original/document-frame.svg", "sha256": "84bea6d141b441790f4a295252dc5d9507f14ff896f39593d9b70434211f95d8", "license": "MIT", "roles": ["document", "source", "evidence"]},
+    {"id": "doodle-ring", "kind": "svg", "path": "../../assets/design/original/doodle-ring.svg", "sha256": "fd17747558c857a2b57805b27188ededd921ccab791e6e0ccd8d6aea02249136", "license": "MIT", "roles": ["focus", "sticker", "humor"]},
+    {"id": "dotted-path", "kind": "svg", "path": "../../assets/design/original/dotted-path.svg", "sha256": "2c19e6295ddab7f7543aaba33a02303a26d5ed24ec27f8da2c2357707c216886", "license": "MIT", "roles": ["gaze_direction", "journey", "process"]},
+    {"id": "focus-brackets", "kind": "svg", "path": "../../assets/design/original/focus-brackets.svg", "sha256": "2e4c097d3d1c134c868331efa15a59d1da528153a43d76db192bf8d0a7cfdb29", "license": "MIT", "roles": ["focus", "screen_callout", "subject_tracking"]},
+    {"id": "grain-overlay", "kind": "svg", "path": "../../assets/design/original/grain-overlay.svg", "sha256": "50bc78f78b95d0b712eb8f7f8e109c0abbfb4109e06d1b490becbad16eddb2ec", "license": "MIT", "roles": ["texture", "depth", "documentary"]},
+    {"id": "light-sweep", "kind": "svg", "path": "../../assets/design/original/light-sweep.svg", "sha256": "8b1434b8b9499c4ca692aff54b71df6ffb7876cf7cc31ceaf17af10060e3620a", "license": "MIT", "roles": ["reveal", "transition", "highlight"]},
+    {"id": "nested-frames", "kind": "svg", "path": "../../assets/design/original/nested-frames.svg", "sha256": "0308a09efb6defd762f73e54e52c27f5195eb8c536bf8b6a57d11407ffc3c811", "license": "MIT", "roles": ["spatial_depth", "evidence_layers", "pip"]},
+    {"id": "quote-marks", "kind": "svg", "path": "../../assets/design/original/quote-marks.svg", "sha256": "5a9efaedaecf394f2413756707463e4a3594773a990671f0c9b8cbfddc9b2d16", "license": "MIT", "roles": ["quote", "citation", "reflection"]},
+    {"id": "speech-bubble", "kind": "svg", "path": "../../assets/design/original/speech-bubble.svg", "sha256": "33ffda19b6fc8972a7a93f152b39627f411ddfb2c57588641f49add83e9f1925", "license": "MIT", "roles": ["dialogue", "ai_response", "message"]},
+    {"id": "speed-lines", "kind": "svg", "path": "../../assets/design/original/speed-lines.svg", "sha256": "89c973afa5d688d8c338e39833a51a8249a69b080ec0bc72bd42337713ba406f", "license": "MIT", "roles": ["motion", "impact", "humor"]},
+    {"id": "torn-paper-strip", "kind": "svg", "path": "../../assets/design/original/torn-paper-strip.svg", "sha256": "22817710f80727cf61ea5753e74596917e821a51f563c705820bda75ce7694d3", "license": "MIT", "roles": ["sticker", "caption_stage", "documentary"]},
+    {"id": "underline-sweep", "kind": "svg", "path": "../../assets/design/original/underline-sweep.svg", "sha256": "b11f7611a5751a94dafdf24c247f57f7e232c8d6f8f3f75eef83321c1994cf83", "license": "MIT", "roles": ["logical_emphasis", "caption", "conclusion"]},
+    {"id": "warm-grid", "kind": "svg", "path": "../../assets/design/original/warm-grid.svg", "sha256": "3f086265c0151db916a236e411e1bf7a84d1344735498191f93ead0424913e64", "license": "MIT", "roles": ["background", "technology", "workflow"]},
+    {"id": "kacha-logo", "kind": "image", "path": "../../assets/brand/kacha-logo.png", "sha256": "3bd7b5feaaa869dede7283a7ac69afa3b48cbb8c4596e864aab8d2dd83083ab0", "license": "project_brand_asset", "roles": ["brand"]},
+    {"id": "kacha-original-sfx", "kind": "manifest", "path": "../../assets/sfx/manifest.json", "sha256": "6c57ab3a20b5a8ba610a0895540c5ee9c3e64307467c20e601deafdb86cdc22c", "license": "Kacha Original SFX Asset License 1.0", "roles": ["sfx_library"]},
+    {"id": "kacha-font-routing", "kind": "manifest", "path": "../font-routing.json", "sha256": "9e4e7a02dc8991a4de4343ff563f6c2c1c6d3c511e21d2150b912f54ca75e261", "license": "MIT", "roles": ["font_routing"]}
+  ],
+  "runtimeRecipes": [
+    {"id": "warm-paper-drift", "sourceAsset": "grain-overlay", "durationSeconds": 6, "motion": "scale 1.00→1.025; x -0.8%→0.8%; opacity 0.08", "loop": "ping_pong", "useWhen": "沉思、文化或章节背景需要轻微呼吸"},
+    {"id": "graphite-grid-pulse", "sourceAsset": "warm-grid", "durationSeconds": 4, "motion": "opacity 0.08→0.16→0.08; scale 1.0→1.012", "loop": "ping_pong", "useWhen": "工具、数据、工作流与AI主题"},
+    {"id": "amber-light-sweep", "sourceAsset": "light-sweep", "durationSeconds": 1.1, "motion": "x -80%→120%; opacity 0→0.5→0", "loop": "none", "useWhen": "揭示、页面切换或关键卡片落位"},
+    {"id": "focus-ring-pulse", "sourceAsset": "focus-brackets", "durationSeconds": 0.5, "motion": "scale 1.06→1.0; opacity 0→1", "loop": "none", "useWhen": "点击、证据或局部焦点确认"},
+    {"id": "directional-streak", "sourceAsset": "speed-lines", "durationSeconds": 0.42, "motion": "scaleX 0.8→1.05; opacity 0→0.7→0", "loop": "none", "useWhen": "短促方向运动或喜剧冲击"},
+    {"id": "document-layer-drift", "sourceAsset": "nested-frames", "durationSeconds": 3.2, "motion": "front x 1.8%; middle x 0.9%; back x 0.25%", "loop": "none", "useWhen": "证据层级、来源对照或2.5D轻纵深"}
+  ],
+  "logicalSlots": [
+    {"id": "real_evidence_image", "kind": "image", "selectionOrder": ["project_real_evidence", "official_source", "wikimedia_file_license_checked", "pexels_or_pixabay_project_copy", "generated_with_disclosure"], "fallback": "document-frame"},
+    {"id": "real_evidence_video", "kind": "video", "selectionOrder": ["project_real_evidence", "official_source", "pexels_or_pixabay_project_copy", "generated_with_disclosure"], "fallback": "full_screen_insert_card"},
+    {"id": "tool_screenshot", "kind": "image", "selectionOrder": ["project_capture", "official_product_media"], "fallback": "document-frame"},
+    {"id": "person_cutout", "kind": "image_or_mask", "selectionOrder": ["project_subject_mask"], "fallback": "keep_a_roll"},
+    {"id": "city_or_place", "kind": "image_or_video", "selectionOrder": ["official_source", "wikimedia_file_license_checked", "pexels_or_pixabay_project_copy"], "fallback": "source_card"},
+    {"id": "texture", "kind": "image", "selectionOrder": ["bundled_original", "ambientcg_cc0_project_copy"], "fallback": "grain-overlay"},
+    {"id": "icon", "kind": "svg", "selectionOrder": ["bundled_original", "tabler_mit_fetch_on_demand"], "fallback": "focus-brackets"},
+    {"id": "background_motion", "kind": "runtime_recipe", "selectionOrder": ["runtime_original"], "fallback": "graphite-grid-pulse"}
+  ],
+  "providers": [
+    {"id": "bundled_original", "mode": "bundled", "licensePolicy": "catalog_hash_and_declared_license_required"},
+    {"id": "runtime_original", "mode": "render_at_runtime", "licensePolicy": "Kacha_original_recipe"},
+    {"id": "project_real_evidence", "mode": "local_only", "licensePolicy": "project_record_required"},
+    {"id": "project_capture", "mode": "local_only", "licensePolicy": "capture_source_and_project_authorization_required"},
+    {"id": "project_subject_mask", "mode": "local_only", "licensePolicy": "subject_consent_and_frozen_source_hash_required"},
+    {"id": "official_source", "mode": "fetch_on_demand", "licensePolicy": "source_terms_and_attribution_required"},
+    {"id": "official_product_media", "mode": "fetch_on_demand", "licensePolicy": "official_media_terms_and_context_required"},
+    {"id": "wikimedia_file_license_checked", "mode": "fetch_on_demand", "url": "https://commons.wikimedia.org/wiki/Commons:Reusing_content_outside_Wikimedia/en", "licensePolicy": "per_file_license_and_attribution_required"},
+    {"id": "pexels_or_pixabay_project_copy", "mode": "fetch_on_demand", "adapter": "../../scripts/fetch_stock_media.py", "licenseUrls": ["https://www.pexels.com/license/", "https://pixabay.com/service/license-summary/"], "licensePolicy": "project_use_only_no_stock_redistribution"},
+    {"id": "tabler_mit_fetch_on_demand", "mode": "fetch_on_demand", "url": "https://tabler.io/icons", "licensePolicy": "MIT_notice_required"},
+    {"id": "ambientcg_cc0_project_copy", "mode": "fetch_on_demand", "url": "https://ambientcg.com/", "licensePolicy": "CC0_record_source_and_hash"},
+    {"id": "generated_with_disclosure", "mode": "generate_on_demand", "licensePolicy": "provider_terms_reference_and_disclosure_decision_required"}
+  ],
+  "governance": {
+    "noThirdPartyBinaryBundlingWithoutLicenseRecord": true,
+    "projectPrivateCatalogMayExtendButNotOverrideCoreLicenses": true,
+    "semanticMismatchMeansDoNotUse": true,
+    "sourceUrlLicenseFormatAndShaRequiredForFetchedAssets": true,
+    "fontsAndProjectPrivateSfxNeverEnterPublicBundle": true
+  }
+}

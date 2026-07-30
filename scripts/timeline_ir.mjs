@@ -66,6 +66,133 @@ function existingFile(owner, entry) {
   return file && fs.existsSync(file) && fs.statSync(file).isFile() ? file : null;
 }
 
+const placeholderDirectoryCache = new Map();
+
+function explicitPlaceholderPath(owner, entry) {
+  const placeholder = entry?.placeholder;
+  const candidate = typeof placeholder === "string"
+    ? placeholder
+    : placeholder?.path;
+  return candidate ? resolveFrom(owner, candidate) : null;
+}
+
+function placeholderDirectory(owner) {
+  let current = path.dirname(path.resolve(owner));
+  while (true) {
+    const candidate = path.join(current, ".kacha", "placeholders");
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+      return candidate;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+}
+
+function placeholdersFor(owner) {
+  const directory = placeholderDirectory(owner);
+  if (!directory) return [];
+  if (placeholderDirectoryCache.has(directory)) {
+    return placeholderDirectoryCache.get(directory);
+  }
+  const values = fs.readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+    .map((entry) => path.join(directory, entry.name))
+    .flatMap((file) => {
+      try {
+        return [{ file, value: readJson(file) }];
+      } catch {
+        return [];
+      }
+    });
+  placeholderDirectoryCache.set(directory, values);
+  return values;
+}
+
+function canonicalExistingPath(file) {
+  const resolved = path.resolve(file);
+  try {
+    return fs.existsSync(resolved) ? fs.realpathSync(resolved) : resolved;
+  } catch {
+    return resolved;
+  }
+}
+
+function placeholderClaimsFile(value, file) {
+  const resolved = canonicalExistingPath(file);
+  return [
+    ...(value.expectedOutputs ?? []),
+    ...(value.outputs ?? []).map((output) => output.path),
+  ].some(
+    (candidate) => candidate && canonicalExistingPath(candidate) === resolved,
+  );
+}
+
+function validatePlaceholder(owner, label, entry, file, errors) {
+  if (!file) return;
+  const explicit = explicitPlaceholderPath(owner, entry);
+  let candidates = [];
+  if (explicit) {
+    if (!fs.existsSync(explicit) || !fs.statSync(explicit).isFile()) {
+      errors.push(`${label}.placeholder 不存在`);
+      return;
+    }
+    try {
+      candidates = [{ file: explicit, value: readJson(explicit) }];
+    } catch (error) {
+      errors.push(`${label}.placeholder 无法解析：${error.message}`);
+      return;
+    }
+  } else {
+    candidates = placeholdersFor(owner).filter(
+      ({ value }) => placeholderClaimsFile(value, file),
+    );
+  }
+  const jobProvenance = [
+    "async_job",
+    "background_job",
+    "job_placeholder",
+    "generated_job",
+  ].includes(String(entry?.provenance?.kind ?? ""));
+  if (candidates.length === 0) {
+    if (jobProvenance) {
+      errors.push(`${label} 声明为后台任务产物但缺少 placeholder 证据`);
+    }
+    return;
+  }
+  candidates.sort((left, right) => String(
+    right.value.updatedAt ?? right.value.createdAt ?? "",
+  ).localeCompare(String(
+    left.value.updatedAt ?? left.value.createdAt ?? "",
+  )));
+  const selected = candidates[0];
+  const placeholder = selected.value;
+  if (placeholder.state !== "ready") {
+    errors.push(
+      `${label} 对应 placeholder 尚未 ready：${placeholder.state ?? "unknown"} `
+        + `(${selected.file})`,
+    );
+    return;
+  }
+  const output = (placeholder.outputs ?? []).find(
+    (candidate) => candidate.path
+      && canonicalExistingPath(candidate.path) === canonicalExistingPath(file),
+  );
+  if (!output?.sha256) {
+    errors.push(`${label} 的 ready placeholder 缺少当前产物身份`);
+    return;
+  }
+  if (output.sha256 !== sha256File(file)) {
+    errors.push(`${label} 的 placeholder 产物 SHA-256 已失效`);
+  }
+  const expectedRef = typeof entry?.placeholder === "object"
+    ? entry.placeholder.ref
+    : null;
+  if (expectedRef && placeholder.ref !== expectedRef) {
+    errors.push(`${label}.placeholder.ref 与当前任务不一致`);
+  }
+}
+
 function ffmpegFilterPath(file) {
   return path.resolve(file)
     .replaceAll("\\", "\\\\")
@@ -89,6 +216,23 @@ function formatNumber(value) {
   return Number(value).toFixed(6).replace(/\.?0+$/, "");
 }
 
+function displayGeometry(summary) {
+  const rotation = Number(
+    (summary.video?.side_data_list ?? [])
+      .find((item) => Number.isFinite(Number(item.rotation)))
+      ?.rotation ?? 0,
+  );
+  const normalizedRotation = ((rotation % 360) + 360) % 360;
+  const swapsAxes = normalizedRotation === 90 || normalizedRotation === 270;
+  return {
+    width: swapsAxes ? summary.height : summary.width,
+    height: swapsAxes ? summary.width : summary.height,
+    rotation,
+    encodedWidth: summary.width,
+    encodedHeight: summary.height,
+  };
+}
+
 function normalizeEdl(plan, summary) {
   const sourceDuration = summary.videoDuration || summary.duration;
   const entries = Array.isArray(plan.edl) && plan.edl.length > 0
@@ -99,11 +243,156 @@ function normalizeEdl(plan, summary) {
     sourceStart: Number(entry.sourceStart),
     sourceEnd: Number(entry.sourceEnd),
     duration: Number(entry.sourceEnd) - Number(entry.sourceStart),
+    scale: Number(entry.scale ?? 1),
+    anchorX: Number(entry.anchorX ?? 0.5),
+    anchorY: Number(entry.anchorY ?? 0.5),
   }));
 }
 
-function outputDuration(edl) {
-  return edl.reduce((sum, item) => sum + item.duration, 0);
+const XFADE_TRANSITIONS = new Set([
+  "fade",
+  "wipeleft",
+  "wiperight",
+  "wipeup",
+  "wipedown",
+  "slideleft",
+  "slideright",
+  "slideup",
+  "slidedown",
+  "circlecrop",
+  "rectcrop",
+  "distance",
+  "fadeblack",
+  "fadewhite",
+  "radial",
+  "smoothleft",
+  "smoothright",
+  "smoothup",
+  "smoothdown",
+  "circleopen",
+  "circleclose",
+  "vertopen",
+  "vertclose",
+  "horzopen",
+  "horzclose",
+  "dissolve",
+  "pixelize",
+  "diagtl",
+  "diagtr",
+  "diagbl",
+  "diagbr",
+  "hlslice",
+  "hrslice",
+  "vuslice",
+  "vdslice",
+  "hblur",
+  "fadegrays",
+  "wipetl",
+  "wipetr",
+  "wipebl",
+  "wipebr",
+  "squeezeh",
+  "squeezev",
+  "zoomin",
+  "fadefast",
+  "fadeslow",
+  "hlwind",
+  "hrwind",
+  "vuwind",
+  "vdwind",
+  "coverleft",
+  "coverright",
+  "coverup",
+  "coverdown",
+  "revealleft",
+  "revealright",
+  "revealup",
+  "revealdown",
+]);
+
+const TRANSITION_PRESETS = {
+  soft_dissolve: "dissolve",
+  focus_blur: "hblur",
+  // FFmpeg 的 xfade=zoomin 在 2–4 帧短转场里会先把人脸瞬间放到极大，
+  // 还可能产生一帧高饱和混合画面。景别推进由相邻镜头尺度完成，
+  // 连接本身使用克制溶解，避免“有动效但更生硬”。
+  zoom_punch: "dissolve",
+  micro_fade: "fadefast",
+  directional_smooth_left: "smoothleft",
+  directional_smooth_right: "smoothright",
+  directional_smooth_up: "smoothup",
+  directional_smooth_down: "smoothdown",
+  push_slide_left: "slideleft",
+  push_slide_right: "slideright",
+  push_slide_up: "slideup",
+  push_slide_down: "slidedown",
+  diagonal_reveal_top_left: "diagtl",
+  diagonal_reveal_top_right: "diagtr",
+  diagonal_reveal_bottom_left: "diagbl",
+  diagonal_reveal_bottom_right: "diagbr",
+};
+
+function resolveTransitionName(entry) {
+  const explicit = String(entry?.transition ?? "").trim();
+  if (explicit) return explicit;
+  const effectId = String(entry?.effectId ?? "").trim();
+  if (TRANSITION_PRESETS[effectId]) return TRANSITION_PRESETS[effectId];
+  if (effectId === "directional_smooth") {
+    return `smooth${String(entry?.direction ?? "left")}`;
+  }
+  if (effectId === "push_slide") {
+    return `slide${String(entry?.direction ?? "left")}`;
+  }
+  if (effectId === "diagonal_reveal") {
+    const direction = String(entry?.direction ?? "top_left");
+    return {
+      top_left: "diagtl",
+      top_right: "diagtr",
+      bottom_left: "diagbl",
+      bottom_right: "diagbr",
+    }[direction] ?? "diagtl";
+  }
+  return effectId || "fadefast";
+}
+
+function normalizeTransitions(plan, edl, fps) {
+  const count = Math.max(0, edl.length - 1);
+  const normalized = Array.from({ length: count }, (_, boundaryIndex) => ({
+    boundaryIndex,
+    effectId: "clean_cut",
+    transition: null,
+    durationFrames: 0,
+    durationSeconds: 0,
+  }));
+  const entries = Array.isArray(plan.transitions) ? plan.transitions : [];
+  for (const [entryIndex, entry] of entries.entries()) {
+    let boundaryIndex = Number(entry?.boundaryIndex);
+    if (!Number.isInteger(boundaryIndex) && entry?.afterClipId) {
+      boundaryIndex = edl.findIndex((segment) => segment.id === entry.afterClipId);
+    }
+    if (!Number.isInteger(boundaryIndex) && entries.length === count) {
+      boundaryIndex = entryIndex;
+    }
+    if (!Number.isInteger(boundaryIndex) || boundaryIndex < 0 || boundaryIndex >= count) {
+      throw new Error(`transitions[${entryIndex}].boundaryIndex 无效`);
+    }
+    const durationFrames = Number(entry.durationFrames ?? 0);
+    const durationSeconds = durationFrames / fps;
+    normalized[boundaryIndex] = {
+      ...entry,
+      boundaryIndex,
+      effectId: String(entry.effectId ?? "custom_xfade"),
+      transition: durationFrames > 0 ? resolveTransitionName(entry) : null,
+      durationFrames,
+      durationSeconds,
+    };
+  }
+  return normalized;
+}
+
+function outputDuration(edl, transitions = []) {
+  return edl.reduce((sum, item) => sum + item.duration, 0)
+    - transitions.reduce((sum, item) => sum + Number(item.durationSeconds ?? 0), 0);
 }
 
 function previewRange(totalDuration, mode) {
@@ -152,6 +441,9 @@ function sliceEdl(edl, range) {
         sourceStart,
         sourceEnd,
         duration: sourceEnd - sourceStart,
+        scale: segment.scale,
+        anchorX: segment.anchorX,
+        anchorY: segment.anchorY,
       });
     }
     outputStart = outputEnd;
@@ -195,8 +487,16 @@ function validatePlan(planFile) {
       errors.push(`contracts.${name}.sha256 已失效`);
     }
   }
+  if (plan.mode === "final") {
+    for (const name of ["proposal", "editPlan"]) {
+      if (!plan.contracts?.[name]) {
+        errors.push(`最终时间线必须声明 contracts.${name}`);
+      }
+    }
+  }
   const source = existingFile(planFile, plan.source);
   if (!source) errors.push(`源视频不存在：${mediaPath(planFile, plan.source) ?? "missing"}`);
+  validatePlaceholder(planFile, "source", plan.source, source, errors);
   let summary = null;
   if (source) {
     try {
@@ -205,11 +505,15 @@ function validatePlan(planFile) {
       if (plan.source?.sha256 && plan.source.sha256 !== sha256File(source)) {
         errors.push("源视频 SHA-256 已失效");
       }
+      if (plan.mode === "final" && !plan.source?.sha256) {
+        errors.push("最终时间线的 source.sha256 不能为空");
+      }
     } catch (error) {
       errors.push(`源视频无法探测：${error.message}`);
     }
   }
   let edl = [];
+  let transitions = [];
   if (summary) {
     edl = normalizeEdl(plan, summary);
     const duration = summary.videoDuration || summary.duration;
@@ -220,12 +524,49 @@ function validatePlan(planFile) {
         || entry.sourceStart < 0
         || entry.sourceEnd <= entry.sourceStart
         || entry.sourceEnd > duration + 0.001
+        || !between(entry.scale, 1, 1.2)
+        || !between(entry.anchorX, 0, 1)
+        || !between(entry.anchorY, 0, 1)
       ) {
         errors.push(`edl[${index}] 区间无效`);
       }
     });
+    const fps = finite(plan.output?.fps)
+      ? Number(plan.output.fps)
+      : (summary.averageFps || summary.declaredFps || summary.fps);
+    try {
+      transitions = normalizeTransitions(plan, edl, fps);
+      transitions.forEach((transition, index) => {
+        if (
+          !Number.isInteger(transition.durationFrames)
+          || transition.durationFrames < 0
+          || transition.durationFrames > Math.round(fps * 0.6)
+        ) {
+          errors.push(`transitions[${index}].durationFrames 必须为 0 至 0.6 秒内的整数帧`);
+        }
+        if (
+          transition.durationFrames > 0
+          && !XFADE_TRANSITIONS.has(transition.transition)
+        ) {
+          errors.push(
+            `transitions[${index}].transition 不受当前 FFmpeg xfade 支持：`
+              + `${transition.transition}`,
+          );
+        }
+        const before = edl[index];
+        const after = edl[index + 1];
+        if (
+          transition.durationSeconds >= before.duration
+          || transition.durationSeconds >= after.duration
+        ) {
+          errors.push(`transitions[${index}] 时长不得达到相邻片段时长`);
+        }
+      });
+    } catch (error) {
+      errors.push(error.message);
+    }
   }
-  const duration = outputDuration(edl);
+  const duration = outputDuration(edl, transitions);
   if (plan.decisionPlan) {
     const decisionFile = existingFile(planFile, plan.decisionPlan);
     if (!decisionFile) {
@@ -278,6 +619,13 @@ function validatePlan(planFile) {
   (plan.visual?.overlays ?? []).forEach((event, index) => {
     const file = existingFile(planFile, event);
     if (!file) errors.push(`visual.overlays[${index}] 素材不存在`);
+    validatePlaceholder(
+      planFile,
+      `visual.overlays[${index}]`,
+      event,
+      file,
+      errors,
+    );
     if (file && event.sha256 && event.sha256 !== sha256File(file)) {
       errors.push(`visual.overlays[${index}] SHA-256 已失效`);
     }
@@ -326,6 +674,13 @@ function validatePlan(planFile) {
         ? "ass"
         : "overlay_video");
     if (!subtitleFile) errors.push("visual.subtitles.path 不存在");
+    validatePlaceholder(
+      planFile,
+      "visual.subtitles",
+      subtitles,
+      subtitleFile,
+      errors,
+    );
     if (
       subtitleFile
       && subtitles.sha256
@@ -363,13 +718,27 @@ function validatePlan(planFile) {
   ]) {
     if (entry && !existingFile(planFile, entry)) errors.push(`${label} 不存在`);
     const file = entry ? existingFile(planFile, entry) : null;
+    validatePlaceholder(planFile, label, entry, file, errors);
     if (file && entry.sha256 && entry.sha256 !== sha256File(file)) {
       errors.push(`${label} SHA-256 已失效`);
     }
   }
+  if (
+    plan.audio?.masterTruePeakDb !== undefined
+    && !between(plan.audio.masterTruePeakDb, -9, -1)
+  ) {
+    errors.push("audio.masterTruePeakDb 必须在 -9 到 -1 dBTP 之间");
+  }
   (plan.audio?.sfx ?? []).forEach((event, index) => {
     const file = existingFile(planFile, event);
     if (!file) errors.push(`audio.sfx[${index}] 不存在`);
+    validatePlaceholder(
+      planFile,
+      `audio.sfx[${index}]`,
+      event,
+      file,
+      errors,
+    );
     if (file && event.sha256 && event.sha256 !== sha256File(file)) {
       errors.push(`audio.sfx[${index}] SHA-256 已失效`);
     }
@@ -377,6 +746,32 @@ function validatePlan(planFile) {
       errors.push(`audio.sfx[${index}].time 无效`);
     }
   });
+  if (plan.mode === "final") {
+    const finalAssets = [
+      ...(plan.visual?.overlays ?? []).map((entry, index) => [
+        `visual.overlays[${index}]`,
+        entry,
+      ]),
+      ...(plan.visual?.subtitles
+        ? [["visual.subtitles", plan.visual.subtitles]]
+        : []),
+      ...(plan.audio?.dialogue ? [["audio.dialogue", plan.audio.dialogue]] : []),
+      ...(plan.audio?.bgm ? [["audio.bgm", plan.audio.bgm]] : []),
+      ...(plan.audio?.sfx ?? []).map((entry, index) => [
+        `audio.sfx[${index}]`,
+        entry,
+      ]),
+    ];
+    for (const [label, entry] of finalAssets) {
+      if (!entry.sha256) errors.push(`${label}.sha256 不能为空`);
+      if (
+        !String(entry.provenance?.kind ?? "").trim()
+        || !String(entry.provenance?.evidence ?? "").trim()
+      ) {
+        errors.push(`${label}.provenance.kind/evidence 不能为空`);
+      }
+    }
+  }
   const output = mediaPath(planFile, option("--output", plan.output));
   if (!output) errors.push("output.path 不能为空");
   if (source && output && path.resolve(source) === path.resolve(output)) {
@@ -387,6 +782,7 @@ function validatePlan(planFile) {
     source,
     summary,
     edl,
+    transitions,
     duration,
     output,
     errors,
@@ -423,14 +819,29 @@ function breathingExpression(events, fps, field) {
 }
 
 function compileGraph(validated, loadedConfig) {
-  const { plan, source, summary, edl, duration, output } = validated;
+  const {
+    plan,
+    source,
+    summary,
+    edl,
+    transitions,
+    duration,
+    output,
+  } = validated;
   const mode = option("--mode", plan.mode);
   const range = previewRange(duration, mode);
-  const renderEdl = sliceEdl(edl, range);
+  const hasExecutedTransitions = transitions.some(
+    (entry) => Number(entry.durationFrames) > 0,
+  );
+  const renderEdl = range && !hasExecutedTransitions
+    ? sliceEdl(edl, range)
+    : edl;
+  const renderTransitions = range && !hasExecutedTransitions ? [] : transitions;
   const renderDuration = range?.duration ?? duration;
   const configured = loadedConfig.config.execution.unifiedRender;
-  const sourceWidth = summary.width;
-  const sourceHeight = summary.height;
+  const sourceDisplay = displayGeometry(summary);
+  const sourceWidth = sourceDisplay.width;
+  const sourceHeight = sourceDisplay.height;
   const sourceFps = summary.averageFps || summary.declaredFps || summary.fps;
   const previewMaximum = configured.preview.maxWidth;
   const requestedWidth = Number(plan.output?.width);
@@ -466,11 +877,22 @@ function compileGraph(validated, loadedConfig) {
     sourceMedia: {
       width: sourceWidth,
       height: sourceHeight,
+      encodedWidth: sourceDisplay.encodedWidth,
+      encodedHeight: sourceDisplay.encodedHeight,
+      rotation: sourceDisplay.rotation,
       fps: sourceFps,
       durationSeconds: summary.videoDuration || summary.duration,
       hasAudio: Boolean(summary.audio),
     },
     edl: renderEdl,
+    transitions: renderTransitions,
+    compositionDurationSeconds: duration,
+    videoTrimRange: range && hasExecutedTransitions
+      ? { start: range.start, end: range.end }
+      : null,
+    sourceSeekSeconds: range && !hasExecutedTransitions
+      ? Math.max(0, Math.min(...renderEdl.map((segment) => segment.sourceStart)))
+      : 0,
     durationSeconds: renderDuration,
     previewRange: range,
     geometry: { width, height, fps },
@@ -511,6 +933,7 @@ function compileGraph(validated, loadedConfig) {
         : null,
     },
     audio: {
+      masterTruePeakDb: Number(plan.audio?.masterTruePeakDb ?? -4),
       dialogue: plan.audio?.dialogue
         ? {
             ...plan.audio.dialogue,
@@ -578,8 +1001,13 @@ function compileGraph(validated, loadedConfig) {
   return graph;
 }
 
-function buildRenderCommand(graph) {
-  const command = ["-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-i", graph.source.path];
+function buildRenderCommand(graph, { hardwareDecode = process.platform === "darwin" } = {}) {
+  const command = ["-hide_banner", "-loglevel", "error", "-nostdin", "-y"];
+  if (hardwareDecode) command.push("-hwaccel", "videotoolbox");
+  if (Number(graph.sourceSeekSeconds ?? 0) > 0) {
+    command.push("-ss", formatNumber(graph.sourceSeekSeconds));
+  }
+  command.push("-i", graph.source.path);
   const inputIndexes = {
     overlays: [],
     subtitles: null,
@@ -620,15 +1048,31 @@ function buildRenderCommand(graph) {
   const videoSegments = [];
   const audioSegments = [];
   graph.edl.forEach((segment, index) => {
+    const sourceStart = segment.sourceStart - Number(graph.sourceSeekSeconds ?? 0);
+    const sourceEnd = segment.sourceEnd - Number(graph.sourceSeekSeconds ?? 0);
+    const segmentScale = Number(segment.scale ?? 1);
+    const scaledWidth = Math.max(
+      graph.geometry.width,
+      Math.ceil(graph.geometry.width * segmentScale / 2) * 2,
+    );
+    const scaledHeight = Math.max(
+      graph.geometry.height,
+      Math.ceil(graph.geometry.height * segmentScale / 2) * 2,
+    );
     filters.push(
-      `[0:v]trim=start=${formatNumber(segment.sourceStart)}:`
-        + `end=${formatNumber(segment.sourceEnd)},setpts=PTS-STARTPTS[vseg${index}]`,
+      `[0:v]trim=start=${formatNumber(sourceStart)}:`
+        + `end=${formatNumber(sourceEnd)},setpts=PTS-STARTPTS,`
+        + `scale=${scaledWidth}:${scaledHeight}:force_original_aspect_ratio=increase,`
+        + `crop=${graph.geometry.width}:${graph.geometry.height}:`
+        + `x='(iw-ow)*${formatNumber(segment.anchorX ?? 0.5)}':`
+        + `y='(ih-oh)*${formatNumber(segment.anchorY ?? 0.5)}',`
+        + `setsar=1[vseg${index}]`,
     );
     videoSegments.push(`[vseg${index}]`);
     if (graph.sourceMedia.hasAudio && !graph.audio.dialogue) {
       filters.push(
-        `[0:a]atrim=start=${formatNumber(segment.sourceStart)}:`
-          + `end=${formatNumber(segment.sourceEnd)},asetpts=PTS-STARTPTS[aseg${index}]`,
+        `[0:a]atrim=start=${formatNumber(sourceStart)}:`
+          + `end=${formatNumber(sourceEnd)},asetpts=PTS-STARTPTS[aseg${index}]`,
       );
       audioSegments.push(`[aseg${index}]`);
     }
@@ -636,12 +1080,56 @@ function buildRenderCommand(graph) {
   if (videoSegments.length === 1) {
     filters.push(`${videoSegments[0]}null[vcut]`);
   } else {
-    filters.push(`${videoSegments.join("")}concat=n=${videoSegments.length}:v=1:a=0[vcut]`);
+    let currentVideoLabel = "vseg0";
+    let composedVideoDuration = Number(graph.edl[0].duration);
+    for (let index = 0; index < graph.edl.length - 1; index += 1) {
+      const transition = graph.transitions?.[index] ?? {};
+      const transitionDuration = Number(transition.durationSeconds ?? 0);
+      const nextLabel = `vchain${index + 1}`;
+      if (transitionDuration > 0) {
+        const offset = composedVideoDuration - transitionDuration;
+        filters.push(
+          `[${currentVideoLabel}][vseg${index + 1}]xfade=`
+            + `transition=${transition.transition}:`
+            + `duration=${formatNumber(transitionDuration)}:`
+            + `offset=${formatNumber(offset)}[${nextLabel}]`,
+        );
+        composedVideoDuration += Number(graph.edl[index + 1].duration)
+          - transitionDuration;
+      } else {
+        filters.push(
+          `[${currentVideoLabel}][vseg${index + 1}]`
+            + `concat=n=2:v=1:a=0[${nextLabel}]`,
+        );
+        composedVideoDuration += Number(graph.edl[index + 1].duration);
+      }
+      currentVideoLabel = nextLabel;
+    }
+    filters.push(`[${currentVideoLabel}]null[vcut]`);
   }
   if (audioSegments.length === 1) {
     filters.push(`${audioSegments[0]}anull[voiceRaw]`);
   } else if (audioSegments.length > 1) {
-    filters.push(`${audioSegments.join("")}concat=n=${audioSegments.length}:v=0:a=1[voiceRaw]`);
+    let currentAudioLabel = "aseg0";
+    for (let index = 0; index < graph.edl.length - 1; index += 1) {
+      const transitionDuration = Number(
+        graph.transitions?.[index]?.durationSeconds ?? 0,
+      );
+      const nextLabel = `achain${index + 1}`;
+      if (transitionDuration > 0) {
+        filters.push(
+          `[${currentAudioLabel}][aseg${index + 1}]acrossfade=`
+            + `d=${formatNumber(transitionDuration)}:c1=tri:c2=tri[${nextLabel}]`,
+        );
+      } else {
+        filters.push(
+          `[${currentAudioLabel}][aseg${index + 1}]`
+            + `concat=n=2:v=0:a=1[${nextLabel}]`,
+        );
+      }
+      currentAudioLabel = nextLabel;
+    }
+    filters.push(`[${currentAudioLabel}]anull[voiceRaw]`);
   } else if (inputIndexes.dialogue !== null) {
     const dialogueStart = graph.previewRange?.start ?? 0;
     const dialogueEnd = graph.previewRange?.end ?? graph.durationSeconds;
@@ -651,11 +1139,15 @@ function buildRenderCommand(graph) {
         + "asetpts=PTS-STARTPTS[voiceRaw]",
     );
   }
-  filters.push(
-    `[vcut]scale=${graph.geometry.width}:${graph.geometry.height}:`
-      + "force_original_aspect_ratio=increase,"
-      + `crop=${graph.geometry.width}:${graph.geometry.height},setsar=1[vgeom]`,
-  );
+  if (graph.videoTrimRange) {
+    filters.push(
+      `[vcut]trim=start=${formatNumber(graph.videoTrimRange.start)}:`
+        + `end=${formatNumber(graph.videoTrimRange.end)},`
+        + "setpts=PTS-STARTPTS,setsar=1[vgeom]",
+    );
+  } else {
+    filters.push("[vcut]setsar=1[vgeom]");
+  }
   let currentVideo = "vgeom";
   if (graph.visual.breathing.length > 0) {
     const scale = breathingExpression(graph.visual.breathing, graph.geometry.fps, "scale");
@@ -803,11 +1295,12 @@ function buildRenderCommand(graph) {
     sfxForMix ? `[${sfxForMix}]` : null,
   ].filter(Boolean);
   if (mixLabels.length > 0) {
+    const masterLimit = 10 ** (Number(graph.audio.masterTruePeakDb ?? -4) / 20);
     filters.push(
       `${mixLabels.join("")}amix=inputs=${mixLabels.length}:normalize=0:`
         + `duration=longest:dropout_transition=0,`
         + `atrim=0:${formatNumber(graph.durationSeconds)},`
-        + "alimiter=limit=0.95[mixLimited]",
+        + `alimiter=limit=${formatNumber(masterLimit)}:level=false[mixLimited]`,
     );
     if (graph.output.mixStem) {
       filters.push("[mixLimited]asplit=2[aout][mixStem]");
@@ -827,11 +1320,24 @@ function buildRenderCommand(graph) {
   } else {
     command.push("-b:v", "0", "-q:v", graph.mode === "preview" ? "60" : "75");
   }
+  if (
+    ["hevc_videotoolbox", "libx265"].includes(encoder)
+    && [".mp4", ".mov"].includes(path.extname(graph.output.path).toLowerCase())
+  ) {
+    // Apple AVFoundation/QuickTime expects the hvc1 sample entry for broadly
+    // compatible HEVC playback. FFmpeg otherwise writes hev1, which can produce
+    // the real-world failure mode "audio plays but video is unavailable".
+    command.push("-tag:v", "hvc1");
+  }
   command.push("-pix_fmt", "yuv420p");
   if (mixLabels.length > 0) {
     command.push("-c:a", "aac", "-b:a", "256k", "-ar", "48000");
   } else {
     command.push("-an");
+  }
+  command.push("-map_metadata", "-1", "-map_chapters", "-1");
+  if ([".mp4", ".mov"].includes(path.extname(graph.output.path).toLowerCase())) {
+    command.push("-write_tmcd", "0");
   }
   command.push(
     "-t", formatNumber(graph.durationSeconds),
@@ -842,7 +1348,13 @@ function buildRenderCommand(graph) {
     fs.mkdirSync(path.dirname(stem.path), { recursive: true });
     command.push("-map", `[${stem.label}]`, "-c:a", "pcm_s24le", stem.path);
   }
-  return { command, encoder, filters, stemMaps };
+  return {
+    command,
+    encoder,
+    filters,
+    stemMaps,
+    decoder: hardwareDecode ? "videotoolbox" : "software",
+  };
 }
 
 function render(validated, graph, graphFile, loadedConfig) {
@@ -895,8 +1407,20 @@ function render(validated, graph, graphFile, loadedConfig) {
       resources: ["cpuHeavy", "videoEncode"],
       purpose: `timeline-render:${graph.projectId}`,
     });
-    const built = buildRenderCommand(graph);
-    const result = run("ffmpeg", built.command);
+    let built = buildRenderCommand(graph);
+    let result = run("ffmpeg", built.command);
+    let decoderFallbackUsed = false;
+    if (result.status !== 0 && built.decoder === "videotoolbox") {
+      for (const file of [
+        output,
+        ...built.stemMaps.map((item) => item.path),
+      ]) {
+        if (fs.existsSync(file)) fs.unlinkSync(file);
+      }
+      built = buildRenderCommand(graph, { hardwareDecode: false });
+      result = run("ffmpeg", built.command);
+      decoderFallbackUsed = true;
+    }
     if (result.status !== 0) {
       if (fs.existsSync(output)) fs.unlinkSync(output);
       throw new Error(result.stderr.trim() || "统一时间线渲染失败");
@@ -935,6 +1459,8 @@ function render(validated, graph, graphFile, loadedConfig) {
         fallbackEncoder: graph.encoding.fallback,
         encoder: built.encoder,
         encoderFallbackUsed: built.encoder !== graph.encoding.requested,
+        decoder: built.decoder,
+        decoderFallbackUsed,
         videoEncodes: 1,
         fullDecodePerformed: false,
         finalQcRequired: graph.mode === "final",
@@ -945,6 +1471,22 @@ function render(validated, graph, graphFile, loadedConfig) {
         })),
         resourceWaitSeconds: resourceLeases.waitedSeconds,
         previewRange: graph.previewRange,
+        masterTruePeakDb: graph.audio.masterTruePeakDb,
+        transitions: {
+          boundaryCount: graph.transitions.length,
+          executedCount: graph.transitions.filter(
+            (entry) => Number(entry.durationFrames) > 0,
+          ).length,
+          effects: graph.transitions
+            .filter((entry) => Number(entry.durationFrames) > 0)
+            .map((entry) => ({
+              boundaryIndex: entry.boundaryIndex,
+              effectId: entry.effectId,
+              transition: entry.transition,
+              durationFrames: entry.durationFrames,
+            })),
+        },
+        sourceTimecodeAndUnrequestedMetadataStripped: true,
       },
       quality: graph.quality,
       configurationDigest: graph.configurationDigest,

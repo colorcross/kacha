@@ -23,6 +23,9 @@ function usage() {
       + "  kacha.mjs styleframe render --scene ID --output FILE [options]\n"
       + "  kacha.mjs beauty validate|show|authorize|render|qc [options]\n"
       + "  kacha.mjs effects list|show|validate|preview [options]\n"
+      + "  kacha.mjs sfx validate|import [options]\n"
+      + "  kacha.mjs facefusion probe|profiles|template|validate|run [options]\n"
+      + "  kacha.mjs templates validate|list|show|resolve [options]\n"
       + "  kacha.mjs fonts scan|validate|resolve|preview [options]\n"
       + "  kacha.mjs captions plan|validate|render [options]\n"
       + "  kacha.mjs breathing plan|validate|render [options]\n"
@@ -37,6 +40,11 @@ function usage() {
       + "  kacha.mjs vision-enrich <visual-evidence.json> --context CONTEXT --allow-external-upload\n"
       + "  kacha.mjs metrics run|summarize [options]\n"
       + "  kacha.mjs resources status|run [options]\n"
+      + "  kacha.mjs delta diff|apply [options]\n"
+      + "  kacha.mjs media index|search [options]\n"
+      + "  kacha.mjs jobs submit|status|list|cancel|resume [options]\n"
+      + "  kacha.mjs refs index|resolve|parse [options]\n"
+      + "  kacha.mjs install status|sync [options]\n"
       + "  kacha.mjs cache key|run|inspect [options]\n"
       + "  kacha.mjs transcribe INPUT --output TRANSCRIPT.json [options]\n"
       + "  kacha.mjs transcript index|slice TRANSCRIPT.json [options]\n"
@@ -110,6 +118,9 @@ const delegatedCommands = {
   styleframe: "render_styleframe_cached.mjs",
   beauty: "kacha_beauty.mjs",
   effects: "kacha_effects.mjs",
+  sfx: "kacha_sfx.mjs",
+  facefusion: "kacha_facefusion.mjs",
+  templates: "kacha_templates.mjs",
   fonts: "kacha_fonts.mjs",
   captions: "caption_layout.mjs",
   breathing: "visual_breathing.mjs",
@@ -123,6 +134,11 @@ const delegatedCommands = {
   "vision-enrich": "enrich_visual_evidence_minimax.mjs",
   metrics: "run_telemetry.mjs",
   resources: "resource_scheduler.mjs",
+  delta: "kacha_delta.mjs",
+  media: "kacha_media.mjs",
+  jobs: "kacha_jobs.mjs",
+  refs: "kacha_refs.mjs",
+  install: "kacha_install.mjs",
   cache: "artifact_cache.mjs",
   transcribe: "transcribe_local.mjs",
   transcript: "transcript_window.mjs",

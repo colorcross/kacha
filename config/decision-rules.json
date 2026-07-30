@@ -191,6 +191,16 @@
       "fallback": "beauty_disabled"
     },
     {
+      "id": "facefusion-explicit-only",
+      "stages": ["inventory", "visual_audio"],
+      "modules": ["facefusion", "masks"],
+      "signals": ["face_swap_candidate", "lip_sync_candidate", "face_restore_candidate", "frame_restore_candidate"],
+      "priority": "required",
+      "decision": "FaceFusion 只生成候选计划；身份、声音、素材权利、模型许可和逐项目执行授权完整后才能运行。",
+      "candidates": [{"recipe": "facefusion_consent_gated_candidate", "score": 100}],
+      "fallback": "keep_original_media"
+    },
+    {
       "id": "single-final-encode",
       "stages": ["visual_audio", "release"],
       "modules": ["render"],

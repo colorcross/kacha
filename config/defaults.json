@@ -118,7 +118,10 @@
       "responseFormat": "verbose_json",
       "wordTimestamps": true,
       "temperature": 0,
-      "conditionOnPreviousText": true,
+      "conditionOnPreviousText": false,
+      "audioStreamIndex": 0,
+      "normalizationSampleRate": 16000,
+      "normalizationChannels": 1,
       "timeoutSeconds": 3600,
       "cache": true,
       "lowConfidence": {
@@ -223,7 +226,10 @@
     "demucsBin": null,
     "sfxLibrary": null,
     "fontRegistry": null,
-    "whisperEndpoint": "http://127.0.0.1:8000/v1/audio/transcriptions"
+    "whisperEndpoint": "http://127.0.0.1:8000/v1/audio/transcriptions",
+    "faceFusionEndpoint": "http://127.0.0.1:8765",
+    "faceFusionTokenFile": null,
+    "resourceCatalog": null
   },
   "providers": {
     "minimax": {

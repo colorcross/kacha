@@ -106,6 +106,12 @@ node scripts/validate_edit_plan.mjs edit-plan.json
 `previewEvidence`。风格化转场还必须保留真实前后 handle；方向型转场要记录
 `motionDirection`。先做干净切 A/B，复杂方案没有明显改善就使用干净切。
 
+`transitionDecision` 只是决策证据，不是渲染证据。最终 Timeline IR 还必须
+逐边界写入 `transitions[]`，渲染图应出现实际 `xfade` 或等价画面 overlap，
+并对源人声执行等长 `acrossfade`；若已预先拼成 dialogue stem，则该 stem
+必须来自同一组 overlap 帧。最终 manifest 记录边界总数、实际执行数、效果和
+帧数。计划为非零而执行数为零，或音画 overlap 不同长，都直接失败。
+
 剪完停顿、口误或废句以后，必须从最终拼接时间线重新枚举全部真实连接点，
 不能只检查方案中记得的几个效果切点。顶层 `connectionAudit` 记录检测方法、
 连接点总数、逐项 ID、已检查数量、未解决项和正常速度证据；检测数量必须与
@@ -131,6 +137,11 @@ node scripts/kacha.mjs connections CANDIDATE.mov \
 3. 章节、时间、空间或图形关系真实变化时才使用有 handle 的转场；
 4. 双切点、2–4 帧残片或短暂姿态抖动必须删除、重选切点或用有方向依据的局部运动吸收；
 5. 每个新增转场重新匹配音效功能和峰值，不能无声套模板，也不能所有连接共用一个 whoosh。
+
+同一固定机位的删段不需要把每一处都做成可见模板转场。2–3 帧极短淡化只用于
+吸收微小曝光/姿态差，4–6 帧方向或焦点转场只用于章节、视角或姿态差明显的
+边界；任何转场都不得形成嘴型双影。连续两个边界使用同类转场时，第二个必须
+有相同的连续性理由，否则回退景别变化、PIP 细节视角或干净切。
 
 ## 节奏与运动
 

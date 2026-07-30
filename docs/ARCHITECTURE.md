@@ -49,6 +49,20 @@ edit plan、overlay、字幕、dialogue、BGM、SFX 与字体目录的真实内�
 
 三者都是执行证据，不由对话历史代替。
 
+### `.kacha` Agent 对话控制面
+
+- `mutation-delta.json`：一次 JSON 合同操作的紧凑变化证据，只返回变化路径、
+  对象与受影响层，不复制完整 snapshot；
+- `media-index.json`：本机素材的描述、标签、转写、OCR、Apple Vision 分类、
+  许可和区间索引；
+- `jobs/ + placeholders/`：可恢复后台任务、日志和 ready 产物身份；
+- `object-index.json`：绑定 owner SHA、JSON Pointer 与 object digest 的
+  `@type:id` 短引用；
+- `install status`：源码 bundle 与 Codex/Claude 用户级安装的只读摘要比较。
+
+控制面服务 Agent 聊天，不是第二套编辑器。它缩小模型读取和等待范围，正式
+版本仍进入 Timeline IR、Render Graph、v3 依赖失效和发布门禁。
+
 ### `generatedShotPlan`
 
 描述生成镜头的参考素材、哈希、provider/model/transport、能力快照、动作节拍、规格、授权和 QC 目标。
@@ -140,6 +154,9 @@ editProposal + editPlan + inputs
 - `visual-evidence`：本地关键帧、人物、OCR 和技术证据；
 - `vision-enrich`：外传、付费服务和显式命令授权后，以 MiniMax 增强有限
   关键帧语义。
+- `delta / media / jobs / refs / install`：Agent 对话控制面，分别处理操作级
+  变化、本地语义素材、后台任务与 placeholder、对象短引用和双端同步状态；
+  不改变既有项目状态机或授权边界。
 
 `nextAction.owner` 把 `agent`、`render_engine` 和 `human` 分开，防止验证命令
 冒充渲染、自动 QC 冒充审片。详细合同见

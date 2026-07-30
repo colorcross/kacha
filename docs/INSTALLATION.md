@@ -141,6 +141,25 @@ scripts/capability_probe.sh --profile core --output capabilities.json
 
 `scripts/generate_vision_masks.swift` 仅支持 macOS，需要 Swift、Vision、AVFoundation、CoreImage 和 AppKit。Linux 用户应把蒙版能力标为不可用，或替换为经过验证的其他引擎。
 
+### FaceFusion
+
+换脸、口型同步、人脸修复和帧后处理是可选能力。咔嚓不安装或修改
+FaceFusion，只连接用户已经配置好的本机 Agent API。用户配置中设置：
+
+```json
+{
+  "schemaVersion": "1.0",
+  "tools": {
+    "faceFusionEndpoint": "http://127.0.0.1:8765",
+    "faceFusionTokenFile": "/absolute/path/to/api-token"
+  }
+}
+```
+
+token 文件必须是 `0600`。用 `node scripts/kacha.mjs facefusion probe`
+验证服务版本、认证、处理器和许可 profile。probe 通过不授权身份操作；
+每次实际处理仍需单独的授权计划和专项人工 QC。
+
 ### 素材平台
 
 `scripts/fetch_stock_media.py` 支持 Pixabay/Pexels。凭据优先从环境变量读取，

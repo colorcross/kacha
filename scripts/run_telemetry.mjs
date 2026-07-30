@@ -19,7 +19,8 @@ import {
 
 const args = process.argv.slice(2);
 const delimiter = args.indexOf("--");
-const action = firstPositional(args, [
+const wrapperArgs = delimiter >= 0 ? args.slice(0, delimiter) : args;
+const action = firstPositional(wrapperArgs, [
   "--project-root",
   "--metrics",
   "--stage",
@@ -40,8 +41,8 @@ const action = firstPositional(args, [
 ]) ?? "help";
 
 function option(name, fallback = null) {
-  const index = args.indexOf(name);
-  return index >= 0 ? args[index + 1] : fallback;
+  const index = wrapperArgs.indexOf(name);
+  return index >= 0 ? wrapperArgs[index + 1] : fallback;
 }
 
 function repeated(name) {
@@ -343,7 +344,7 @@ function usage() {
 let loadedConfig;
 try {
   loadedConfig = loadKachaConfig({
-    args,
+    args: wrapperArgs,
     anchorPath: option("--project-root", process.cwd()),
     includeSecrets: false,
   });

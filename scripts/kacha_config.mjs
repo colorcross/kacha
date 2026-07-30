@@ -43,6 +43,7 @@ const RECIPE_NAMES = new Set([
   "timing_sync",
   "popup_layout",
   "connections",
+  "facefusion",
 ]);
 const TOP_LEVEL_KEYS = new Set([
   "schemaVersion",
@@ -86,6 +87,9 @@ const TOOLS_KEYS = new Set([
   "sfxLibrary",
   "fontRegistry",
   "whisperEndpoint",
+  "faceFusionEndpoint",
+  "faceFusionTokenFile",
+  "resourceCatalog",
 ]);
 const PROVIDER_KEYS = {
   minimax: new Set(["credentialEnv", "region", "baseUrl"]),
@@ -591,6 +595,9 @@ function validateEffectiveConfig(config) {
       "wordTimestamps",
       "temperature",
       "conditionOnPreviousText",
+      "audioStreamIndex",
+      "normalizationSampleRate",
+      "normalizationChannels",
       "timeoutSeconds",
       "cache",
       "lowConfidence",
@@ -612,6 +619,27 @@ function validateEffectiveConfig(config) {
     throw new Error("execution.asr 的 wordTimestamps/conditionOnPreviousText/cache 无效");
   }
   assertNumber(asr.temperature, "execution.asr.temperature", 0, 1);
+  assertNumber(
+    asr.audioStreamIndex,
+    "execution.asr.audioStreamIndex",
+    0,
+    31,
+    true,
+  );
+  assertNumber(
+    asr.normalizationSampleRate,
+    "execution.asr.normalizationSampleRate",
+    8_000,
+    48_000,
+    true,
+  );
+  assertNumber(
+    asr.normalizationChannels,
+    "execution.asr.normalizationChannels",
+    1,
+    2,
+    true,
+  );
   assertNumber(asr.timeoutSeconds, "execution.asr.timeoutSeconds", 10, 86_400, true);
   rejectUnknownKeys(
     asr.lowConfidence,
@@ -652,6 +680,19 @@ function validateEffectiveConfig(config) {
     || !["127.0.0.1", "localhost", "::1"].includes(whisperEndpoint.hostname)
   ) {
     throw new Error("tools.whisperEndpoint 必须是本机 loopback HTTP 地址");
+  }
+  assertString(config.tools.faceFusionEndpoint, "tools.faceFusionEndpoint");
+  let faceFusionEndpoint;
+  try {
+    faceFusionEndpoint = new URL(config.tools.faceFusionEndpoint);
+  } catch {
+    throw new Error("tools.faceFusionEndpoint 必须是有效 URL");
+  }
+  if (
+    faceFusionEndpoint.protocol !== "http:"
+    || !["127.0.0.1", "localhost", "::1"].includes(faceFusionEndpoint.hostname)
+  ) {
+    throw new Error("tools.faceFusionEndpoint 必须是本机 loopback HTTP 地址");
   }
   rejectUnknownKeys(
     config.execution.referenceTokenLimits,
@@ -1010,6 +1051,8 @@ function validateEffectiveConfig(config) {
   assertPathOrNull(config.tools.demucsBin, "tools.demucsBin");
   assertPathOrNull(config.tools.sfxLibrary, "tools.sfxLibrary");
   assertPathOrNull(config.tools.fontRegistry, "tools.fontRegistry");
+  assertPathOrNull(config.tools.faceFusionTokenFile, "tools.faceFusionTokenFile");
+  assertPathOrNull(config.tools.resourceCatalog, "tools.resourceCatalog");
   for (const provider of ["minimax", "pixabay", "pexels"]) {
     assertString(
       config.providers[provider].credentialEnv,

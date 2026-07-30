@@ -269,3 +269,23 @@ node scripts/kacha.mjs next /path/to/compiled/incremental-project.json
 
 性能、Token、缓存和弱模型完整说明见
 [V5 性能与稳定生产](PERFORMANCE_TOKEN_STABILITY_V5.md)。
+
+## 10. Agent 对话式操作
+
+用户继续直接在 Codex/Claude Code 中描述目标。Agent 内部用以下能力减少整份
+合同回读、素材翻找和长任务阻塞：
+
+```bash
+node scripts/kacha.mjs delta apply timeline.json mutation.json \
+  --write timeline.next.json
+node scripts/kacha.mjs media search .kacha/media-index.json \
+  --query "城市夜景地标"
+node scripts/kacha.mjs jobs status @job:ID --project-root PROJECT_DIR
+node scripts/kacha.mjs refs resolve @overlay:card-1 \
+  --index .kacha/object-index.json
+node scripts/kacha.mjs install status --agent both
+```
+
+这些不是要求用户学习的新操作方式。自然语言仍是主入口，命令只负责把结果
+变成确定性、低 Token、可续跑的本地证据。详见
+[Agent 对话控制面](AGENT_CHAT_CONTROL_PLANE.md)。

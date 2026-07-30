@@ -71,6 +71,11 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Gives lower-capability models a deterministic `prepare → next` protocol,
   stable error codes, and compiled change recipes instead of relying on
   high-reasoning improvisation.
+- Keeps chat with Codex or Claude Code as the primary interface while a local
+  Agent control plane handles compact mutation deltas, on-device semantic media
+  lookup, terminal-state-safe background jobs with verified placeholders,
+  deterministic object-level `@` references,
+  and Codex/Claude installation status.
 - Routes context through five bounded packets while an ordered 13-stage state
   machine accepts only current file-backed evidence. Full word-level
   transcripts stay out of prompts; Agents read at most 180 seconds at a time.
@@ -112,6 +117,14 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Provides local Beauty v2 for skin smoothing, whitening, tone evening, and
   restrained nasolabial-fold softening. Beauty is disabled by default and does
   not use GPUPixel, cloud beautification, or generative face repair.
+- Resolves 60 production effect templates across openings, transitions,
+  semantic visuals, gaze guidance, spatial depth, keyframes, parallel
+  typography, captions, and visual breathing, backed by original visual
+  resources and license-aware query-time media slots.
+- Integrates a loopback FaceFusion candidate pipeline for consent-gated face
+  swap, lip sync, face restoration, and frame post-processing. Every run
+  freezes input hashes and model-license metadata and remains blocked from
+  release until operation-specific manual QC is recorded.
 - Produces local, machine-readable keyframe, face, person, OCR, luminance, and
   timestamp evidence for Claude Code. MiniMax may enrich a few frames only
   after external-upload, paid-service, and explicit command authorization;

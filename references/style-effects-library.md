@@ -5,6 +5,10 @@
 颜色、圆角、阴影、边框、缓动或安全区。完整可执行规范见
 `docs/VIDEO_DESIGN_SYSTEM_V1.md`。
 
+可直接解析执行的 60 个预制模板、原创资源、字体和按镜头素材路由见
+`references/effect-templates-resources.md`。实际项目应先运行
+`kacha templates resolve`，不要只凭效果名称手写参数。
+
 ## 风格配置入口
 
 内置默认风格：
@@ -102,7 +106,9 @@ node scripts/kacha.mjs effects show --kind transition --id directional_smooth
 - `iris_reveal`：从局部中心进入完整场景；
 - `radial_clock`：时间、步骤或循环变化；
 - `focus_blur`：注意对象或景深关系变化；
-- `zoom_punch`：结论、尺度变化或喜剧落点；
+- `zoom_punch`：结论、尺度变化或喜剧落点。景别推进由相邻镜头尺度/关键帧完成，
+  连接阶段使用短时 `dissolve`；禁止直接用 FFmpeg `xfade=zoomin` 做 2–4 帧短转场，
+  避免人脸瞬间极端放大和高饱和闪帧；
 - `diagonal_reveal`：构图或视线本身具有斜向依据；
 - `narrow_band_wipe`：固定机位微跳或配对短跳，局部遮切但不整屏闪烁。
 

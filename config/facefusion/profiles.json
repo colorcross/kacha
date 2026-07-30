@@ -1,0 +1,127 @@
+{
+  "schemaVersion": "1.0",
+  "id": "kacha-facefusion-profiles",
+  "serviceMinimumVersion": "3.6.1",
+  "defaultExecutionProviders": ["coreml", "cpu"],
+  "profiles": [
+    {
+      "id": "face-swap-release-candidate",
+      "operation": "face_swap",
+      "processor": "face_swapper",
+      "model": "ghost_2_256",
+      "modelOption": "face_swapper_model",
+      "modelLicense": "Apache-2.0",
+      "options": {
+        "face_swapper_model": "ghost_2_256",
+        "face_swapper_weight": 0.8,
+        "face_mask_blur": 0.3,
+        "execution_providers": ["coreml", "cpu"],
+        "output_video_scale": 100
+      },
+      "authorizationFields": [
+        "canExecute",
+        "identityManipulationConsent",
+        "sourceRightsConfirmed",
+        "targetSubjectConsent",
+        "modelLicenseReviewed"
+      ],
+      "manualQc": [
+        "身份保持与预期一致，不把第三方身份误映射到无关主体",
+        "发际线、耳朵、眼镜、牙齿、手部遮挡和侧脸边缘无破绽",
+        "逐镜正常速度检查闪烁、漂移、身份跳变与遮挡穿帮",
+        "公开发布时披露决策及证据已记录"
+      ],
+      "releasePolicy": "model_metadata_permissive_manual_license_review_required"
+    },
+    {
+      "id": "lip-sync-release-candidate",
+      "operation": "lip_sync",
+      "processor": "lip_syncer",
+      "model": "edtalk_256",
+      "modelOption": "lip_syncer_model",
+      "modelLicense": "Apache-2.0",
+      "options": {
+        "lip_syncer_model": "edtalk_256",
+        "lip_syncer_weight": 0.75,
+        "execution_providers": ["coreml", "cpu"],
+        "output_video_scale": 100
+      },
+      "authorizationFields": [
+        "canExecute",
+        "identityManipulationConsent",
+        "targetSubjectConsent",
+        "voiceRightsConfirmed",
+        "modelLicenseReviewed"
+      ],
+      "manualQc": [
+        "爆破音、闭口音、元音张口与最终音频节奏一致",
+        "嘴唇、牙齿、胡须和遮挡无闪烁、粘连或形变",
+        "除目标口型外，音频内容、时长、声道与画面身份保持",
+        "公开发布时披露决策及证据已记录"
+      ],
+      "releasePolicy": "model_metadata_permissive_manual_license_review_required"
+    },
+    {
+      "id": "face-restore-natural",
+      "operation": "face_restore",
+      "processor": "face_enhancer",
+      "model": "gfpgan_1.4",
+      "modelOption": "face_enhancer_model",
+      "modelLicense": "Apache-2.0",
+      "options": {
+        "face_enhancer_model": "gfpgan_1.4",
+        "face_enhancer_blend": 45,
+        "execution_providers": ["coreml", "cpu"],
+        "output_video_scale": 100
+      },
+      "authorizationFields": [
+        "canExecute",
+        "postProcessingAuthorized",
+        "modelLicenseReviewed"
+      ],
+      "manualQc": [
+        "眼睛、眉毛、牙齿、眼镜、发丝和真实皮肤纹理未被重绘",
+        "脸部无蜡感、锐化环、局部颜色漂移或身份变化",
+        "逐镜检查时序稳定，修复强度不替代 Beauty v2 的磨皮与匀肤"
+      ],
+      "releasePolicy": "model_metadata_permissive_manual_license_review_required"
+    },
+    {
+      "id": "frame-postprocess-natural",
+      "operation": "post_process",
+      "processor": "frame_enhancer",
+      "model": "real_esrgan_x2",
+      "modelOption": "frame_enhancer_model",
+      "modelLicense": "BSD-3-Clause",
+      "options": {
+        "frame_enhancer_model": "real_esrgan_x2",
+        "frame_enhancer_blend": 35,
+        "execution_providers": ["coreml", "cpu"],
+        "output_video_scale": 100
+      },
+      "authorizationFields": [
+        "canExecute",
+        "postProcessingAuthorized",
+        "modelLicenseReviewed"
+      ],
+      "manualQc": [
+        "不无故改变源尺寸、宽高比、有效帧率、时长和音轨",
+        "无振铃、锯齿、纹理幻觉、字幕变形或背景闪烁",
+        "只在真实低清或压缩损伤时使用，不把普通素材全部重绘"
+      ],
+      "releasePolicy": "model_metadata_permissive_manual_license_review_required"
+    }
+  ],
+  "blockedDefaults": [
+    {
+      "processor": "face_swapper",
+      "model": "inswapper_128",
+      "reason": "本机 FaceFusion 元数据标注 Non-Commercial，不能作为公开或商业项目默认模型"
+    },
+    {
+      "processor": "lip_syncer",
+      "model": "wav2lip_gan_96",
+      "reason": "本机 FaceFusion 元数据标注 Non-Commercial，不能作为公开或商业项目默认模型"
+    }
+  ]
+}

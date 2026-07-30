@@ -88,6 +88,9 @@ const requestedWorkers = Number(
 );
 const concurrency = Math.max(1, Math.min(8, requestedWorkers));
 const maxImageEdge = visualConfig.maxImageEdge;
+const preferredHardwareDecode = process.platform === "darwin"
+  ? ["-hwaccel", "videotoolbox"]
+  : [];
 
 if (
   !input
@@ -143,7 +146,10 @@ const optionsIdentity = {
   explicitTimestamps,
   skipAppleVision,
   maxImageEdge,
-  scriptVersion: "1.0.0",
+  decodePolicy: preferredHardwareDecode.length > 0
+    ? "videotoolbox_then_software"
+    : "software",
+  scriptVersion: "1.1.0",
 };
 const cacheKey = sha256Value({
   sourceSha256: identity.sha256,
@@ -192,10 +198,11 @@ function sceneTimes() {
   if (mode === "fast") {
     return { status: "skipped", times: [], error: null };
   }
-  const detector = run("ffmpeg", [
+  const detectorArguments = (hardwareDecode) => [
     "-hide_banner",
     "-nostats",
     "-nostdin",
+    ...hardwareDecode,
     "-i",
     source,
     "-an",
@@ -206,7 +213,13 @@ function sceneTimes() {
     "-f",
     "null",
     "-",
-  ]);
+  ];
+  let detector = run("ffmpeg", detectorArguments(preferredHardwareDecode));
+  let decoder = preferredHardwareDecode.length > 0 ? "videotoolbox" : "software";
+  if (detector.status !== 0 && preferredHardwareDecode.length > 0) {
+    detector = run("ffmpeg", detectorArguments([]));
+    decoder = "software_fallback";
+  }
   if (detector.status !== 0) {
     return {
       status: "fail",
@@ -217,7 +230,7 @@ function sceneTimes() {
   const matches = [...detector.stderr.matchAll(/pts_time:([0-9.]+)/g)]
     .map((match) => Number(match[1]))
     .filter((value) => Number.isFinite(value));
-  return { status: "pass", times: matches, error: null };
+  return { status: "pass", times: matches, error: null, decoder };
 }
 
 const duration = summary.duration;
@@ -301,11 +314,12 @@ try {
       "frames",
       `frame-${String(index + 1).padStart(3, "0")}.jpg`,
     );
-    const result = await runAsync("ffmpeg", [
+    const extractionArguments = (hardwareDecode) => [
       "-hide_banner",
       "-loglevel",
       "error",
       "-nostdin",
+      ...hardwareDecode,
       "-ss",
       timestamp.toFixed(6),
       "-i",
@@ -318,7 +332,16 @@ try {
       "2",
       "-y",
       file,
-    ]);
+    ];
+    let result = await runAsync(
+      "ffmpeg",
+      extractionArguments(preferredHardwareDecode),
+    );
+    let decoder = preferredHardwareDecode.length > 0 ? "videotoolbox" : "software";
+    if (result.status !== 0 && preferredHardwareDecode.length > 0) {
+      result = await runAsync("ffmpeg", extractionArguments([]));
+      decoder = "software_fallback";
+    }
     if (result.status !== 0 || !fs.existsSync(file)) {
       throw new Error(result.stderr.trim() || `frame extraction failed at ${timestamp}`);
     }
@@ -328,6 +351,7 @@ try {
       timecode: timeLabel(timestamp),
       path: file,
       sha256: sha256File(file),
+      decoder,
     };
   });
 } catch (error) {
@@ -551,6 +575,7 @@ const report = {
           threshold: sceneThreshold,
           detected: scenes.length,
           error: sceneDetection.error,
+          decoder: sceneDetection.decoder ?? null,
         },
   },
   analysis: {

@@ -62,6 +62,10 @@ const requiredFiles = [
   "scripts/prepare_agent_packet.mjs",
   "scripts/next_action.mjs",
   "scripts/compile_change_request.mjs",
+  "scripts/kacha_facefusion.mjs",
+  "scripts/kacha_sfx.mjs",
+  "scripts/kacha_templates.mjs",
+  "scripts/import_private_sfx.mjs",
   "scripts/build_visual_evidence.mjs",
   "scripts/analyze_visual_frames.swift",
   "scripts/enrich_visual_evidence_minimax.mjs",
@@ -69,7 +73,13 @@ const requiredFiles = [
   "references/incremental-workflow.md",
   "references/agent-execution.md",
   "references/visual-evidence.md",
+  "references/effect-templates-resources.md",
+  "references/facefusion.md",
+  "references/sfx-library.md",
   "references/qc-release.md",
+  "config/effects/templates.json",
+  "config/facefusion/profiles.json",
+  "config/resources/core-catalog.json",
 ];
 const fileChecks = requiredFiles.map((relativePath) => {
   const absolutePath = path.join(skillRoot, relativePath);
@@ -232,6 +242,7 @@ const semanticVisualCheck = {
       : "Apple Vision and authorized MiniMax vision are both unavailable",
 };
 let fullCapabilityCheck = null;
+let faceFusionCheck = null;
 if (profile === "full") {
   const manifestFile = path.join(
     os.tmpdir(),
@@ -269,6 +280,32 @@ if (profile === "full") {
   } finally {
     if (fs.existsSync(manifestFile)) fs.unlinkSync(manifestFile);
   }
+  const faceFusionConfigured = Boolean(
+    loadedConfig?.config.tools.faceFusionTokenFile,
+  );
+  if (faceFusionConfigured) {
+    const result = run(process.execPath, [
+      path.join(skillRoot, "scripts", "kacha_facefusion.mjs"),
+      "probe",
+      ...(option("--config") ? ["--config", path.resolve(option("--config"))] : []),
+      ...(option("--secrets") ? ["--secrets", path.resolve(option("--secrets"))] : []),
+    ]);
+    faceFusionCheck = {
+      id: "service:facefusion",
+      required: false,
+      available: result.status === 0,
+      evidence: result.status === 0
+        ? "loopback FaceFusion health, authorization and processor probe passed"
+        : (result.stderr.trim() || "FaceFusion probe failed"),
+    };
+  } else {
+    faceFusionCheck = {
+      id: "service:facefusion",
+      required: false,
+      available: false,
+      evidence: "tools.faceFusionTokenFile is not configured",
+    };
+  }
 }
 const checks = [
   configCheck,
@@ -279,6 +316,7 @@ const checks = [
     ? [appleVision, mmxVision, mmxAuth, semanticVisualCheck]
     : []),
   ...(fullCapabilityCheck ? [fullCapabilityCheck] : []),
+  ...(faceFusionCheck ? [faceFusionCheck] : []),
 ];
 const requiredFailures = checks.filter((item) => item.required && !item.available);
 const optionalMissing = checks.filter((item) => !item.required && !item.available);

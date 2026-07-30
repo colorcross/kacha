@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "id": "dahui-video-system",
   "name": "行者大灰视频设计系统",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "面向真人口播、工具演示、知识长谈、纪录片和人与AI互动的视频设计系统。",
   "styleProfile": "xingzhe",
   "registries": {
@@ -15,7 +15,9 @@
     "semanticNetstyle": "../effects/z-en-netstyle.json",
     "spokenCaptionLayouts": "../effects/spoken-caption-layouts.json",
     "visualBreathing": "../effects/visual-breathing.json",
-    "fontRouting": "../font-routing.json"
+    "fontRouting": "../font-routing.json",
+    "effectTemplates": "../effects/templates.json",
+    "resourceCatalog": "../resources/core-catalog.json"
   },
   "defaultModes": {
     "show": "tool-share",

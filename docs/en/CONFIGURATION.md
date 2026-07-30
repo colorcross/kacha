@@ -211,7 +211,9 @@ The `execution` section currently covers:
   high-value artifact kinds;
 - host-scoped cross-process CPU, MPS, video-encode, network, and I/O resource
   capacities;
-- local loopback Whisper ASR;
+- local loopback Whisper ASR with an explicit audio-stream index, normalized
+  16 kHz mono PCM input, and previous-text conditioning disabled by default to
+  prevent long-form repetition loops;
 - visual-evidence sampling, concurrency, and image size;
 - MiniMax frame limit, timeout, image-size limit, and network mode;
 - black/freeze/silence detection and loudness measurement;

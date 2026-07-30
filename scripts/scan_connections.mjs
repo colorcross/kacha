@@ -44,11 +44,24 @@ if (!(fps > 0)) {
   process.exit(1);
 }
 
-const scene = run("ffmpeg", [
-  "-hide_banner", "-nostats", "-i", inputFile,
-  "-vf", `select='gt(scene,${threshold})',metadata=print`,
-  "-an", "-f", "null", "-",
-]);
+function sceneArguments(hardwareDecode) {
+  const command = ["-hide_banner", "-nostats"];
+  if (hardwareDecode) command.push("-hwaccel", "videotoolbox");
+  command.push(
+    "-i", inputFile,
+    "-vf", `select='gt(scene,${threshold})',metadata=print`,
+    "-an", "-f", "null", "-",
+  );
+  return command;
+}
+
+const hardwareDecodeAttempted = process.platform === "darwin";
+let scene = run("ffmpeg", sceneArguments(hardwareDecodeAttempted));
+let decoderFallbackUsed = false;
+if (scene.status !== 0 && hardwareDecodeAttempted) {
+  scene = run("ffmpeg", sceneArguments(false));
+  decoderFallbackUsed = true;
+}
 if (scene.status !== 0) {
   console.error(scene.stderr || "FFmpeg 场景候选扫描失败");
   process.exit(1);
@@ -130,6 +143,10 @@ const report = {
     method: cutListFile
       ? "edit_timeline_union_ffmpeg_scene_score"
       : "ffmpeg_scene_score",
+    decoder: hardwareDecodeAttempted && !decoderFallbackUsed
+      ? "videotoolbox"
+      : "software",
+    decoderFallbackUsed,
     threshold,
     optionalPySceneDetectAdaptiveAvailable: adaptiveDetector.status === 0,
     note:

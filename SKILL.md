@@ -1,13 +1,31 @@
 ---
 name: kacha
 description: |
-  “咔嚓”本地专业视频策划、精剪、包装、增量返工与验收 Skill。用于真人口播、字幕、音频、BGM/SFX、插镜、画中画、美颜、蒙版、信息图、生成镜头、封面和完整 QC。先锁定内容与输出合同，再按变化范围渲染和验收；默认本地处理，不上传、不发布。
+  “咔嚓”本地专业视频策划、精剪、包装、增量返工与验收 Skill。用于真人口播、字幕、音频、BGM/SFX、插镜、画中画、美颜、FaceFusion、蒙版、信息图、效果模板、生成镜头、封面和完整 QC。先锁定内容与输出合同，再按变化范围渲染和验收；默认本地处理，不上传、不发布。
 ---
 
 # 咔嚓
 
 先把内容、切点和同步做对，再做视觉包装。首剪使用完整工作流；已有基线的
 局部返工使用增量工作流，只重做受影响层，但最终发布仍必须完整验收。
+
+## 默认交互：在 Agent 中聊天
+
+默认由用户在 Codex 或 Claude Code 中用自然语言操作咔嚓，不要求打开生产台、
+记命令或手工维护工程对象。Agent 必须在后台使用 operation-level mutation
+delta、本地素材索引、异步任务、placeholder、对象级 `@` 引用和安装状态，
+只把必要结论、候选和阻塞项返回用户。
+
+小修改不得重写或重新载入整份 timeline/manifest：先用 `refs` 解析对象，
+再用 `delta apply` 应用 1–200 个最小 JSON Pointer 操作。需要本机素材时用
+`media search` 返回少量带许可证据的 `@asset`；耗时生成、分离、跟踪、渲染
+和 QC 用 `jobs submit`，只有 placeholder 为 `ready` 才可接入正式时间线。
+macOS 素材搜索优先使用本地 NaturalLanguage 句向量，回退关键词时必须明示；
+后台任务取消要确认进程退出，失败产物恢复前先隔离。Timeline IR 会核对
+Placeholder 的 ready 状态与产物 SHA；重复对象 ID 必须使用确定性后缀，
+不能依赖索引输入顺序。
+源码开发态先用 `install status` 检查 Codex/Claude 安装，但通过测试前不得
+同步。完整规则见 `references/agent-chat-control-plane.md`。
 
 ## 先选路径
 
@@ -34,8 +52,12 @@ description: |
   `references/sfx-library.md`
 - 插镜/PIP/蒙版/人物后文字/调色：`references/visuals-masks.md`
 - 美颜：`references/beauty-v2.md`；默认关闭，只在明确启用时读取并执行
+- 换脸、口型同步、人脸修复和后期增强：`references/facefusion.md`；
+  只生成授权门禁后的候选，不自动执行身份处理
 - 信息卡/流程图/弹窗/复杂动效：`references/visual-design-preflight.md`
 - 统一风格、开场和转场库：`references/style-effects-library.md`
+- 预制效果合同、原创资源、字体、音效和按镜头素材路由：
+  `references/effect-templates-resources.md`
 - 语义拍、空间变化、贴纸引导、关键帧和并列句网感机制：
   `references/z-en-editing-system.md`
 - 画面呼吸、左右/上下/前后口播字幕排版和项目字体路由：
@@ -45,6 +67,8 @@ description: |
 - 字幕/封面/品牌/系列：`references/subtitles-covers-brand.md`
 - MiniMax/Seedance/网络素材：`references/generated-media-assets.md`
 - 较弱模型/低推理强度/长任务续跑：`references/agent-execution.md`
+- Agent 对话、Mutation Delta、本机素材搜索、异步任务、对象引用与双端同步：
+  `references/agent-chat-control-plane.md`
 - 性能、Token、统一渲染与弱模型稳定生产：
   `docs/PERFORMANCE_TOKEN_STABILITY_V5.md`
 - Claude Code 视觉补偿/关键帧证据：`references/visual-evidence.md`
@@ -91,6 +115,20 @@ reference。
 相同 decision digest。低置信度或规则冲突只能生成局部预览并升级给强模型或
 人工，不能直接 final。项目状态、证据和决定写入 `.kacha/project-state.json`，
 长任务不得依赖对话历史重建。
+
+对话控制面内部入口：
+
+```bash
+node scripts/kacha.mjs delta apply TARGET.json MUTATION.json --write NEXT.json
+node scripts/kacha.mjs media search .kacha/media-index.json --query "语义描述"
+node scripts/kacha.mjs jobs status @job:ID --project-root PROJECT_DIR
+node scripts/kacha.mjs refs resolve @overlay:ID --index .kacha/object-index.json
+node scripts/kacha.mjs install status --agent both
+```
+
+这些命令默认由 Agent 自动调用；不要把内部命令选择、索引建立或对象标注工作
+推给用户。mutation delta 是单次操作证据，v3 version delta 仍负责版本级
+失效、渲染和 QC，两者不能混用。
 
 ## 统一配置与默认剪辑要求
 
@@ -161,6 +199,19 @@ node scripts/kacha.mjs netstyle render-plan \
 正式渲染不显示演示标签，保留源尺寸、有效帧率、时长和人声，并输出 manifest。
 项目把计划登记在 `plans.netstyleTimelines`，`gate-plan` 会验证计划。
 
+具体效果不手写散落参数。先把已注册效果解析为当前行者风、资源、字体、
+音效、安全区和回退都完整的执行合同：
+
+```bash
+node scripts/kacha.mjs templates validate
+node scripts/kacha.mjs templates resolve \
+  --template effect-semantic_evidence_insert \
+  --output EFFECT_PLAN.json
+```
+
+资源解析优先项目真实证据和官方素材，再按单镜头取得许可明确的网络素材；
+不存在语义准确的照片或视频时使用信息卡或不用插镜，不用泛化库存凑画面。
+
 `netstyle preview` 只用于单项代表样例；需要回归机制实现时才使用
 `netstyle showcase`。showcase 不能替代正式时间线方案。
 
@@ -184,20 +235,30 @@ picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共�
   变化，普通人物镜头不得切掉头顶。
 - 转场、字幕强调、SFX、插镜、PIP、蒙版和人物后文字都必须有触发理由、
   最简替代、失败条件与 QC 证据；不能用特效掩盖错误切点。
+- 计划中写了转场不等于执行了转场。最终 Timeline IR 必须为每个真实边界
+  编译 `transitions`，画面执行对应 overlap/xfade，源人声或 dialogue
+  预处理时间线执行等长 crossfade；render manifest 的
+  `execution.transitions.executedCount` 必须与计划执行数一致。
 - 画面运动遵守“收紧—停稳—释放”：推近、拉远、横移和冲击必须有语义或
   空间理由；全片持续运动、连续同向缩放、无重音音效和裁头都不允许。
 - 普通口播字幕不加音效；左右/上下/前后排版只表达真实对照、层级或空间
   关系，同一时刻最多三个阅读区和一个主重音，人物后文字必须有逐帧蒙版。
 - 字体按场景角色、字符覆盖、真实文件 hash 和授权状态解析；缺字、路径变化
   或授权缺失时阻断，不静默 fallback，不把本地字体二进制提交到公开仓库。
-- 语义动效以短语义拍为单位：动作在重读词前 0–2 帧启动，在重音帧到达
-  峰值，并在下一事件前完整退出；不得按固定秒数随机套“网感”效果。
+- 语义动效以短语义拍为单位：入场可在重读词前 4–10 帧启动，但在触发词前
+  不得提前形成可读结论；可见落位与声音峰值必须在重音帧 `±1` 帧内，并在
+  下一事件或切回主画面前完整退出。不得把动画起始帧当成 SFX 落点，也不得
+  按固定秒数随机套“网感”效果。
 - 正式语义动效只从已验证 timeline plan 渲染；展示模式标签、固定示例文案
   和 showcase 音轨不得进入成片。
 - 信息卡/流程图/弹窗要么全屏，要么避开人物头脸与字幕安全区；高影响模块
   先做样式帧、进入/停稳/退出和声音设计。
 - 真人画中画默认把原始完整画面按比例缩小后再套形状和边框，不得先用固定
   矩形硬裁人物；双屏的每个窗格必须按人物锚点居中并保留完整头顶。
+- 画中画若承担“细节视角”可裁手部、物件、界面或证据，但必须与主画面形成
+  明确的信息差，记录裁切对象与语义理由，并配置统一边框/阴影和进入退出。
+  把同一 A-roll 原样缩小后叠在自己身上、或主画面与 PIP 同时展示同一信息，
+  视为错误；优先改为虚拟机位变化、局部特写或真实证据卡。
 - 插镜同时匹配对象、动作、角色、状态、时态、方向和全片风格。
 - 含口播且需要音频处理时，先做人声/非人声分离；只有验收通过的 dialogue
   stem 可进入降噪、美化和混音，residual 不回混。
@@ -205,6 +266,9 @@ picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共�
   声像和语气强弱；只对齐 LUFS 不算完成。知识口播默认采用
   `references/audio.md` 的“自然口播参考基准”和 `warm-soft` 长听感预设。
 - SFX 按功能建立调色板并与事件逐一映射；禁止整片反复套一个声音。
+- 新增本地音效必须先转为 48 kHz 双声道工作副本，冻结源/工作副本 SHA、
+  许可与分发边界，并为每个资产写精确 `use_when / placement /
+  do_not_use_when`；重复文件只建 alias。来源未记录的项目音效永不进入公开包。
 - 用户要求 BGM 时，最终混音必须保留闪避后的 dialogue/BGM/SFX 组件 stem
   和最终 mix stem，并在项目 manifest 声明 `outputs.audioStems` 与
   `expectedMedia.audioMix.bgmRequired=true`。最终 `qc` 直接测量 BGM 相对
@@ -219,6 +283,10 @@ picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共�
 - Beauty v2 渲染必须由当前项目配置显式 `enabled=true`，携带逐帧 Vision
   manifest，并通过主脸跟踪、媒体保真、同帧 A/B 和人工动态复核；仅指定
   profile 不构成启用授权。QC 报告必须冻结配置与完整实现链 digest。
+- FaceFusion 默认不执行。换脸、口型同步、人脸修复或后期增强必须绑定冻结
+  输入哈希、逐项目人物/素材/声音授权、模型许可和单独输出；API 只允许本机
+  loopback，token 不进日志。自动媒体检查通过后仍是候选，必须正常速度逐镜
+  复核身份、边缘、遮挡、口型、时序稳定与纹理，未复核不得发布。
 - 高影响视觉模块使用 `design render` 生成真实样式帧与实施清单；预检必须
   校验文件 hash、当前 design digest、实现 digest、组件、字体与 token
   路径。发布前运行 `design qc --matrix` 覆盖全部 mode 取值和组件/场景状态。

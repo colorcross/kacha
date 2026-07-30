@@ -19,14 +19,14 @@ export KACHA_SFX_LIBRARY=/absolute/path/to/sfx-library  # 在本机设置，不�
 检查完整库：
 
 ```bash
-node scripts/validate_sfx_library.mjs \
+node scripts/kacha.mjs sfx validate \
   "$KACHA_SFX_LIBRARY/manifest.json"
 ```
 
 按用户指定名称精确选择：
 
 ```bash
-node scripts/validate_sfx_library.mjs \
+node scripts/kacha.mjs sfx validate \
   "$KACHA_SFX_LIBRARY/manifest.json" \
   --title "单击键盘" \
   --output selected-sfx.json
@@ -41,6 +41,19 @@ node scripts/validate_sfx_library.mjs \
 5. 同一语义节拍通常只有一个主要声音事件。
 
 “键盘声”不是一个可互换的类别。单次按键、连续打字、退格、提交确认和机械键盘循环必须分别选择。用户说“单击键盘”时，不得用另一段“听起来差不多”的键盘循环替代。
+
+新增项目私有音效使用显式 mapping 导入：
+
+```bash
+node scripts/kacha.mjs sfx import \
+  --library "$KACHA_SFX_LIBRARY" \
+  --mapping /absolute/kacha-import.json
+```
+
+导入器复制原始来源，生成 48 kHz / 双声道 / 24-bit WAV 工作副本，记录两份
+SHA、时长、精确语义路由与分发边界，并重建试听索引。字节完全相同的文件只
+建立 `aliases`，不制造重复资产。来源与公开再分发许可未记录的文件统一标为
+`project_private_only`。
 
 ## 时间与混音
 
@@ -75,7 +88,7 @@ node scripts/validate_sfx_library.mjs \
 “可用于成片”不等于“可把源音频放进公开仓库”。运行：
 
 ```bash
-node scripts/validate_sfx_library.mjs \
+node scripts/kacha.mjs sfx validate \
   "$KACHA_SFX_LIBRARY/manifest.json" \
   --asset-id ASSET_ID \
   --require-public-distribution
