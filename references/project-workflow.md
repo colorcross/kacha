@@ -62,6 +62,11 @@ node scripts/validate_edit_proposal.mjs edit-proposal.json
 12. `final_qc`：一次高质量正式渲染、完整解码和全片检查；
 13. `release_package`：文件哈希、自动技术 QC、人工审片证据和本地交付包。
 
+`visual_packaging` 进入实施前还必须通过 `visualCapabilityPlan`：按当前
+style profile 和成片时长计算能力家族配额，检查素材/蒙版资源任务、PIP
+信息差、实现多样性与正常速度可感知性。计划写了效果但未绑定 Timeline IR，
+或只用重复小字达到数量，不得进入正式渲染。
+
 同一时刻最多一个阶段为 `in_progress`。前置阶段未通过，后续阶段不能写 `passed`。`not_applicable` 必须记录理由，`passed` 必须记录真实证据。
 
 ## 处理后的中间产物

@@ -36,6 +36,11 @@ const action = firstPositional(wrapperArgs, [
   "--video-encodes",
   "--mode",
   "--artifact",
+  "--workflow",
+  "--version-id",
+  "--render-scope",
+  "--qc-scope",
+  "--approval-evidence",
   "--config",
   "--secrets",
 ]) ?? "help";
@@ -337,6 +342,9 @@ function usage() {
       + "--usage-file USAGE.json --agent-packet PACKET.json "
       + "--cache-status hit|miss|bypass|unknown --rendered-seconds N "
       + "--source-seconds N --video-encodes N --mode preview|final "
+      + "--workflow first_edit|incremental --version-id ID "
+      + "--render-scope none|range|layer|full --qc-scope none|delta|full "
+      + "--approval-evidence FILE "
       + "--artifact FILE（可重复）",
   );
 }
@@ -387,18 +395,78 @@ const command = delimiter >= 0 ? args.slice(delimiter + 1) : [];
 const modelTier = option("--model-tier", loadedConfig.config.execution.modelTier);
 const cacheStatus = option("--cache-status", "unknown");
 const mode = option("--mode", "preview");
+const workflow = option("--workflow", "first_edit");
+const versionId = option("--version-id");
+const renderScope = option("--render-scope", "none");
+const qcScope = option("--qc-scope", "none");
 if (
   !stage
   || command.length === 0
   || !["economy", "balanced", "frontier"].includes(modelTier)
   || !["hit", "miss", "bypass", "unknown"].includes(cacheStatus)
   || !["preview", "final"].includes(mode)
+  || !["first_edit", "incremental"].includes(workflow)
+  || !["none", "range", "layer", "full"].includes(renderScope)
+  || !["none", "delta", "full"].includes(qcScope)
 ) {
   usage();
   process.exit(2);
 }
 
 try {
+  if (workflow === "incremental") {
+    if (!versionId || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(versionId)) {
+      throw new Error("增量返工的每次运行必须提供安全的 --version-id");
+    }
+    const budget = loadedConfig.config.execution.incremental.renderBudget;
+    const previous = loadEvents(eventFile).filter(
+      (event) => event.workflow?.kind === "incremental"
+        && event.workflow?.versionId === versionId
+        && event.status === "pass",
+    );
+    const requestedEncodes = numberOption("--video-encodes", null, renderScope === "full" ? 1 : 0);
+    if (renderScope === "full" && requestedEncodes > 0) {
+      const approval = option("--approval-evidence");
+      if (mode === "preview") {
+        if (!approval) {
+          throw new Error("整片代理前必须提供 --approval-evidence，证明代表区间已经批准");
+        }
+        const approvalFile = path.resolve(projectRoot, approval);
+        if (!fs.existsSync(approvalFile) || !fs.statSync(approvalFile).isFile()) {
+          throw new Error(`代表区间批准证据不存在：${approvalFile}`);
+        }
+      }
+      const previousFullEncodes = previous.reduce(
+        (sum, event) => sum + (
+          event.workflow?.renderScope === "full"
+          && event.mode === mode
+            ? Number(event.media?.videoEncodes ?? 0)
+            : 0
+        ),
+        0,
+      );
+      const maximum = mode === "preview"
+        ? budget.maximumFullPreviewEncodesPerVersion
+        : budget.maximumFinalEncodesPerVersion;
+      if (previousFullEncodes + requestedEncodes > maximum) {
+        throw new Error(
+          `版本 ${versionId} 的整片${mode === "preview" ? "代理" : "正式"}编码预算已用完；`
+          + "请复用当前 Render Graph，或创建新的、有明确失效原因的版本 delta",
+        );
+      }
+    }
+    if (qcScope === "full") {
+      const previousFullQc = previous.filter(
+        (event) => event.workflow?.qcScope === "full",
+      ).length;
+      if (previousFullQc >= budget.maximumFullQcRunsPerVersion) {
+        throw new Error(
+          `版本 ${versionId} 已完成一次完整 QC；后续只允许 delta QC，`
+          + "结构变化必须创建新版本 delta",
+        );
+      }
+    }
+  }
   fs.mkdirSync(path.dirname(eventFile), { recursive: true });
   const logDirectory = path.join(path.dirname(eventFile), "logs");
   fs.mkdirSync(logDirectory, { recursive: true });
@@ -516,6 +584,15 @@ try {
       wallSeconds: Number((Number(endedNs - startedNs) / 1e9).toFixed(6)),
     },
     model: { tier: modelTier },
+    workflow: {
+      kind: workflow,
+      versionId: versionId ?? null,
+      renderScope,
+      qcScope,
+      approvalEvidence: option("--approval-evidence")
+        ? path.resolve(projectRoot, option("--approval-evidence"))
+        : null,
+    },
     tokens: {
       ...tokenValues,
       measurement: tokenMeasurement,

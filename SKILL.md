@@ -147,6 +147,7 @@ node scripts/kacha.mjs netstyle list
 node scripts/kacha.mjs fonts validate --registry LOCAL_AUTHORIZED_FONTS.json
 node scripts/kacha.mjs breathing validate --plan BREATHING_PLAN.json
 node scripts/kacha.mjs captions validate --plan CAPTION_PLAN.json
+node scripts/kacha.mjs visual-capabilities validate --plan VISUAL_CAPABILITY_PLAN.json
 node scripts/kacha.mjs studio validate
 node scripts/kacha.mjs studio serve
 ```
@@ -172,6 +173,15 @@ Git。默认要求只表示偏好，不构成上传、付费、发布、覆盖�
 区间实现中写死字体、颜色、圆角、阴影、边框或缓动。更换模式或风格走
 `style` 增量配方并按依赖失效重建。
 系统规范、组件与场景选择见 `docs/VIDEO_DESIGN_SYSTEM_V1.md`。
+
+完整首剪与结构重做必须先生成 `plans.visualCapabilityPlan`。默认行者风按
+`expressive-balanced-v2` 计算可感知配额，要求开场、可感知转场、外部/AI/HyperFrames
+支撑素材、PIP、蒙版纵深、语义动效、视线引导、空间层次、关键帧、并列排版、
+关系字幕、超大背景词、人物前后景文字和呼吸运镜形成足够覆盖与变化。配额不是
+随机堆效果：每项仍需真实语义触发；但素材或蒙版缺失不能静默变成零使用，
+必须建立资源任务或明确阻断。`gate-plan` 检查覆盖，`gate-render` 检查素材
+SHA、蒙版 ready 状态和 Timeline IR 绑定。完整合同见
+`references/capability-coverage-and-rework-budget.md`。
 
 口播需要更强的语义动效、空间变化、贴纸引导、关键帧或并列句排版时，先从
 `z-en-netstyle` 注册表选择机制。注册表中的 33 个手法只保存触发、功能、
@@ -380,6 +390,13 @@ node scripts/kacha.mjs gate-render PROJECT_DIR/v2-project.json
 缓存复用必须同时匹配 artifact ID、内容指纹和依赖；显式复用请求不能绕过
 本轮失效规则。`preview` 只用于样例，`candidate` 用于返工验收，
 `release_candidate` 才能进入最终发布门禁。
+
+返工禁止边试边整片导出。L0–L2 只允许 1–3 个代表区间探索，代表样例批准并
+冻结 EDL/style/capability/audio digest 后，每个版本最多一次整片代理、一次
+正式视频编码和一次完整 QC；完整 QC 只在 `release_candidate` 执行。同一
+Render Graph 必须零编码复用，L0–L2 手工请求 `full_rebuild` 直接阻断。
+所有返工渲染必须通过 `metrics run --workflow incremental --version-id ...`
+记录 `render-scope`/`qc-scope` 并在执行前消费预算。
 
 ## 最小实现与验证闭环
 

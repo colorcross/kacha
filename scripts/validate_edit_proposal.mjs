@@ -567,6 +567,7 @@ function validateProposal(plan, proposalFile) {
       "requestSummary",
       "taskPath",
       "authorization",
+      "visualCapabilityPolicy",
       "sourceInventory",
       "goal",
       "contentSpine",
@@ -592,6 +593,31 @@ function validateProposal(plan, proposalFile) {
   }
 
   validateAuthorization(plan, errors);
+  requireFields(
+    plan.visualCapabilityPolicy,
+    [
+      "enabledForExecution",
+      "styleProfile",
+      "coveragePlanRequired",
+      "perceptualEvidenceRequired",
+    ],
+    "visualCapabilityPolicy",
+    errors,
+  );
+  if (plan.visualCapabilityPolicy?.enabledForExecution !== true) {
+    errors.push("visualCapabilityPolicy.enabledForExecution 必须为 true");
+  }
+  if (plan.visualCapabilityPolicy?.coveragePlanRequired !== true) {
+    errors.push("visualCapabilityPolicy.coveragePlanRequired 必须为 true");
+  }
+  if (plan.visualCapabilityPolicy?.perceptualEvidenceRequired !== true) {
+    errors.push("visualCapabilityPolicy.perceptualEvidenceRequired 必须为 true");
+  }
+  if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(
+    String(plan.visualCapabilityPolicy?.styleProfile ?? ""),
+  )) {
+    errors.push("visualCapabilityPolicy.styleProfile 格式无效");
+  }
   validateSources(plan, proposalFile, errors);
   validateCreativeLock(plan, errors);
   validateSeriesIdentity(plan, errors);

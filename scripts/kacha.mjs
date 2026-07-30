@@ -26,6 +26,7 @@ function usage() {
       + "  kacha.mjs sfx validate|import [options]\n"
       + "  kacha.mjs facefusion probe|profiles|template|validate|run [options]\n"
       + "  kacha.mjs templates validate|list|show|resolve [options]\n"
+      + "  kacha.mjs visual-capabilities template|validate [options]\n"
       + "  kacha.mjs fonts scan|validate|resolve|preview [options]\n"
       + "  kacha.mjs captions plan|validate|render [options]\n"
       + "  kacha.mjs breathing plan|validate|render [options]\n"
@@ -121,6 +122,7 @@ const delegatedCommands = {
   sfx: "kacha_sfx.mjs",
   facefusion: "kacha_facefusion.mjs",
   templates: "kacha_templates.mjs",
+  "visual-capabilities": "visual_capability_plan.mjs",
   fonts: "kacha_fonts.mjs",
   captions: "caption_layout.mjs",
   breathing: "visual_breathing.mjs",
@@ -212,6 +214,22 @@ function gatePlanV2() {
   );
   invoke("validate_edit_proposal.mjs", [proposal]);
   invoke("validate_edit_plan.mjs", [editPlan]);
+  const proposalPlan = readJson(proposal);
+  if (
+    proposalPlan.authorization?.canExecute === true
+    && proposalPlan.visualCapabilityPolicy?.coveragePlanRequired === true
+  ) {
+    const visualCapabilityPlan = requireProjectPath(
+      projectFile,
+      project.plans.visualCapabilityPlan,
+      "plans.visualCapabilityPlan",
+    );
+    invoke("visual_capability_plan.mjs", [
+      "validate",
+      "--plan",
+      visualCapabilityPlan,
+    ]);
+  }
 
   for (const entry of project.plans.netstyleTimelines ?? []) {
     const plan = requireProjectPath(
@@ -503,6 +521,29 @@ if (command === "gate-plan") {
       process.exit(1);
     }
     validateCapabilities();
+    if (proposal.visualCapabilityPolicy?.coveragePlanRequired === true) {
+      const visualEntry = project.plans.visualCapabilityPlan;
+      const visualCapabilityPlan = requireProjectPath(
+        projectFile,
+        visualEntry,
+        "plans.visualCapabilityPlan",
+      );
+      const argumentsList = [
+        "validate",
+        "--plan",
+        visualCapabilityPlan,
+      ];
+      if (!(typeof visualEntry === "object" && visualEntry.mode === "template")) {
+        const timelineEntry = project.plans.timeline ?? project.plans.timelineIr;
+        const timeline = requireProjectPath(
+          projectFile,
+          timelineEntry,
+          "plans.timeline",
+        );
+        argumentsList.push("--for-execution", "--timeline", timeline);
+      }
+      invoke("visual_capability_plan.mjs", argumentsList);
+    }
     for (const entry of project.plans.generatedShotPlans ?? []) {
       const plan = requireProjectPath(projectFile, entry, "generatedShotPlans");
       invoke("validate_generated_shot_plan.mjs", [plan, "--for-execution"]);

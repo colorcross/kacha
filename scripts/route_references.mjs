@@ -67,6 +67,10 @@ const MODULE_REFERENCES = {
     "references/effect-templates-resources.md",
     "docs/VIDEO_DESIGN_SYSTEM_V1.md",
   ],
+  capability_coverage: [
+    "references/capability-coverage-and-rework-budget.md",
+    "references/effect-templates-resources.md",
+  ],
   opening: ["references/style-effects-library.md"],
   netstyle: [
     "references/editing-theory.md",
@@ -121,6 +125,11 @@ const MODULE_REFERENCES = {
   network_assets: ["references/generated-media-assets.md"],
   cleanup: ["references/cleanup-retention.md"],
   hardening: ["docs/PRODUCTION_HARDENING.md"],
+  rework_budget: [
+    "references/incremental-workflow.md",
+    "references/capability-coverage-and-rework-budget.md",
+    "docs/PERFORMANCE_TOKEN_STABILITY_V5.md",
+  ],
   low_model: [
     "references/agent-execution.md",
     "references/agent-chat-control-plane.md",

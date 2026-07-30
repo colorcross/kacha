@@ -225,6 +225,22 @@ async function test(name, callback, explicitSuite = null) {
 const sourceFile = path.join(temporary, "source-input.txt");
 fs.writeFileSync(sourceFile, "immutable source fixture\n");
 let validProposalFixture = null;
+let visualCapabilityPlanFixture = null;
+
+function ensureVisualCapabilityPlanFixture() {
+  if (visualCapabilityPlanFixture) return visualCapabilityPlanFixture;
+  visualCapabilityPlanFixture = path.join(temporary, "visual-capability-plan.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "visual-capabilities",
+    "template",
+    "--duration",
+    "100",
+    "--output",
+    visualCapabilityPlanFixture,
+  ]);
+  return visualCapabilityPlanFixture;
+}
 
 function ensureValidProposalFixture() {
   if (validProposalFixture) return validProposalFixture;
@@ -3275,6 +3291,10 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
     plans: {
       proposal: projectProposal,
       editPlan: path.join(examples, "edit-plan.json"),
+      visualCapabilityPlan: {
+        path: ensureVisualCapabilityPlanFixture(),
+        mode: "template",
+      },
       timeline: projectTimeline,
       generatedShotPlans: [],
     },
@@ -6605,6 +6625,10 @@ await test("release gate verifies hashes, cover ratios and manual evidence", () 
     plans: {
       proposal: releaseProposal,
       editPlan: path.join(examples, "edit-plan.json"),
+      visualCapabilityPlan: {
+        path: ensureVisualCapabilityPlanFixture(),
+        mode: "template",
+      },
       generatedShotPlans: [],
     },
     requiredCoverAspectRatios: ["3:4", "4:3"],
@@ -6700,6 +6724,150 @@ await test("release gate verifies hashes, cover ratios and manual evidence", () 
 await test("Agent chat control plane keeps deltas, search, jobs, refs and install status deterministic", () => {
   execute(process.execPath, [
     path.join(testDirectory, "agent_control_plane_tests.mjs"),
+  ]);
+}, "incremental");
+
+await test("xingzhe capability budget rejects perceptually weak or under-covered plans", () => {
+  const planFile = path.join(temporary, "capability-budget.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "visual-capabilities",
+    "template",
+    "--duration",
+    "399.28",
+    "--output",
+    planFile,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "visual-capabilities",
+    "validate",
+    "--plan",
+    planFile,
+  ]);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "visual-capabilities",
+    "validate",
+    "--plan",
+    planFile,
+    "--for-execution",
+  ]);
+  const weak = readJson(planFile);
+  weak.events = weak.events.filter((event) => event.family !== "pip").slice(1);
+  weak.digest = sha256Value({ ...weak, digest: undefined });
+  const weakFile = path.join(temporary, "capability-budget-weak.json");
+  writeJson(weakFile, weak);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "visual-capabilities",
+    "validate",
+    "--plan",
+    weakFile,
+  ]);
+}, "visual");
+
+await test("incremental telemetry blocks repeated full previews, final encodes and full QC", () => {
+  const root = path.join(temporary, "incremental-render-budget");
+  fs.mkdirSync(root, { recursive: true });
+  const approval = path.join(root, "representative-preview-approved.json");
+  writeJson(approval, {
+    status: "approved",
+    reviewedRanges: [[10, 16], [42, 48]],
+    frozenDigests: ["edl", "style", "capability", "audio"],
+  });
+  const base = [
+    path.join(scripts, "kacha.mjs"),
+    "metrics",
+    "run",
+    "--project-root",
+    root,
+    "--workflow",
+    "incremental",
+    "--version-id",
+    "v2",
+  ];
+  execute(process.execPath, [
+    ...base,
+    "--stage",
+    "full_preview_after_approval",
+    "--mode",
+    "preview",
+    "--render-scope",
+    "full",
+    "--video-encodes",
+    "1",
+    "--approval-evidence",
+    approval,
+    "--",
+    "/usr/bin/true",
+  ]);
+  expectFailure(process.execPath, [
+    ...base,
+    "--stage",
+    "full_preview_again",
+    "--mode",
+    "preview",
+    "--render-scope",
+    "full",
+    "--video-encodes",
+    "1",
+    "--approval-evidence",
+    approval,
+    "--",
+    "/usr/bin/true",
+  ]);
+  execute(process.execPath, [
+    ...base,
+    "--stage",
+    "final_render",
+    "--mode",
+    "final",
+    "--render-scope",
+    "full",
+    "--video-encodes",
+    "1",
+    "--",
+    "/usr/bin/true",
+  ]);
+  expectFailure(process.execPath, [
+    ...base,
+    "--stage",
+    "final_render_again",
+    "--mode",
+    "final",
+    "--render-scope",
+    "full",
+    "--video-encodes",
+    "1",
+    "--",
+    "/usr/bin/true",
+  ]);
+  execute(process.execPath, [
+    ...base,
+    "--stage",
+    "release_qc",
+    "--mode",
+    "final",
+    "--qc-scope",
+    "full",
+    "--video-encodes",
+    "0",
+    "--",
+    "/usr/bin/true",
+  ]);
+  expectFailure(process.execPath, [
+    ...base,
+    "--stage",
+    "release_qc_again",
+    "--mode",
+    "final",
+    "--qc-scope",
+    "full",
+    "--video-encodes",
+    "0",
+    "--",
+    "/usr/bin/true",
   ]);
 }, "incremental");
 

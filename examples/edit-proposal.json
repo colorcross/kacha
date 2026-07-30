@@ -10,6 +10,12 @@
     "paidGenerationAllowed": false,
     "evidence": "结构示例只用于方案 review；没有执行授权。"
   },
+  "visualCapabilityPolicy": {
+    "enabledForExecution": true,
+    "styleProfile": "xingzhe",
+    "coveragePlanRequired": true,
+    "perceptualEvidenceRequired": true
+  },
   "sourceInventory": [
     {
       "path": "./vision-manifest-reframe.json",

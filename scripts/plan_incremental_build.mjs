@@ -8,6 +8,7 @@ import {
   unique,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
+import { loadKachaConfig } from "./kacha_config.mjs";
 
 const ALL_LAYERS = [
   "visual",
@@ -139,7 +140,11 @@ function defaultRenderStrategy(delta, impact) {
 }
 
 function strategyAllowed(requested, delta, impact) {
-  if (requested === "auto" || requested === "full_rebuild") return true;
+  if (requested === "auto") return true;
+  if (requested === "full_rebuild") {
+    return impact === "L3"
+      || delta.changeSet.types.some((type) => FULL_REBUILD_TYPES.has(type));
+  }
   if (delta.changeSet.types.some((type) => FULL_REBUILD_TYPES.has(type))) {
     return false;
   }
@@ -223,6 +228,11 @@ if (!strategyAllowed(requestedStrategy, delta, impact)) {
 const renderStrategy = requestedStrategy === "auto"
   ? recommendedStrategy
   : requestedStrategy;
+const renderBudget = loadKachaConfig({
+  args,
+  anchorPath: contextFile,
+  includeSecrets: false,
+}).config.execution.incremental.renderBudget;
 
 const changedLayers = delta.changeSet.changedLayers;
 const frozenLayers = ALL_LAYERS.filter((layer) => !changedLayers.includes(layer));
@@ -411,6 +421,26 @@ const plan = {
     finalAssemblyRequired: ["segment_rebuild", "full_rebuild"].includes(
       renderStrategy,
     ),
+    budget: {
+      explorationRenderScope: renderBudget.explorationRenderScope,
+      representativeRangeCount: {
+        minimum: renderBudget.representativeRangeMinimum,
+        maximum: renderBudget.representativeRangeMaximum,
+      },
+      representativeApprovalRequired:
+        renderBudget.requireRepresentativeApprovalBeforeFullPreview,
+      maximumFullPreviewEncodes: renderBudget.maximumFullPreviewEncodesPerVersion,
+      maximumFinalEncodes: renderBudget.maximumFinalEncodesPerVersion,
+      maximumFullQcRuns: renderBudget.maximumFullQcRunsPerVersion,
+      fullRebuildAllowed: impact === "L3"
+        || delta.changeSet.types.some((type) => FULL_REBUILD_TYPES.has(type)),
+      enforcement: [
+        "参数探索只渲染 1–3 个代表区间及 handle",
+        "代表区间批准并冻结 EDL/style/capability/audio digest 后，最多一次整片代理",
+        "正式版本最多一次视频编码；同 Render Graph 必须零编码复用",
+        "candidate 只做 delta QC；完整 QC 只在 release_candidate 执行一次",
+      ],
+    },
   },
   artifactPlan: {
     invalidatedTypes: [...invalidatedTypes].sort(),

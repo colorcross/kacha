@@ -136,7 +136,17 @@
       "frontier": 112000
     },
     "incremental": {
-      "handleFrames": 25
+      "handleFrames": 25,
+      "renderBudget": {
+        "explorationRenderScope": "representative_ranges_only",
+        "representativeRangeMinimum": 1,
+        "representativeRangeMaximum": 3,
+        "requireRepresentativeApprovalBeforeFullPreview": true,
+        "maximumFullPreviewEncodesPerVersion": 1,
+        "maximumFinalEncodesPerVersion": 1,
+        "maximumFullQcRunsPerVersion": 1,
+        "forbidFullRebuildForL0ToL2": true
+      }
     },
     "netstyle": {
       "automaticPlanning": true,

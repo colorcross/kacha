@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "1.0",
+  "styleProfile": "xingzhe",
+  "profile": "expressive-balanced-v2",
+  "description": "行者风的可感知能力使用策略。由语义触发，但缺少素材或蒙版不能静默变成零使用。",
+  "minimumDurationSeconds": 45,
+  "families": {
+    "opening": {"minimumPerVideo": 1, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
+    "expressive_transition": {"minimumPerVideo": 2, "minimumPerMinute": 0.3, "maximumPerMinute": 0.8},
+    "supporting_media": {"minimumPerVideo": 2, "minimumPerMinute": 0.3, "maximumPerMinute": 0.8},
+    "pip": {"minimumPerVideo": 1, "minimumPerMinute": 0.35, "maximumPerMinute": 0.8},
+    "mask_depth": {"minimumPerVideo": 1, "minimumPerMinute": 0.15, "maximumPerMinute": 0.4},
+    "semantic_motion": {"minimumPerVideo": 3, "minimumPerMinute": 0.75, "maximumPerMinute": 1.5},
+    "gaze_guidance": {"minimumPerVideo": 1, "minimumPerMinute": 0.25, "maximumPerMinute": 0.65},
+    "spatial_depth": {"minimumPerVideo": 1, "minimumPerMinute": 0.15, "maximumPerMinute": 0.4},
+    "keyframe_variation": {"minimumPerVideo": 2, "minimumPerMinute": 0.6, "maximumPerMinute": 1.2},
+    "parallel_layout": {"minimumPerVideo": 1, "minimumPerMinute": 0.25, "maximumPerMinute": 0.6},
+    "caption_relation": {"minimumPerVideo": 2, "minimumPerMinute": 0.6, "maximumPerMinute": 1.2},
+    "oversize_background_word": {"minimumPerVideo": 1, "minimumPerMinute": 0.25, "maximumPerMinute": 0.5},
+    "person_depth_text": {"minimumPerVideo": 1, "minimumPerMinute": 0.12, "maximumPerMinute": 0.3},
+    "visual_breathing": {"minimumPerVideo": 2, "minimumPerMinute": 0.6, "maximumPerMinute": 1.2}
+  },
+  "resourceRules": {
+    "supportingMediaAlternatives": ["external_media", "ai_generated_media", "hyperframes"],
+    "minimumSupportingMediaKinds": 2,
+    "personMaskRequiredAfterSeconds": 120,
+    "pipInformationDifferenceRequired": true
+  },
+  "diversity": {
+    "minimumDistinctFamilies": 10,
+    "maximumSingleImplementationShare": 0.35,
+    "sameImplementationMinimumGapSeconds": 12
+  },
+  "perceptual": {
+    "minimumVisibleDurationSeconds": 0.8,
+    "minimumPrimaryScreenAreaRatio": 0.08,
+    "oversizeWordMinimumSubtitleScale": 3,
+    "oversizeWordMinimumScreenAreaRatio": 0.12,
+    "personDepthTextMinimumSubtitleScale": 1.8,
+    "personDepthTextMinimumVisibleAreaRatio": 0.65
+  }
+}

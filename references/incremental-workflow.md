@@ -52,6 +52,11 @@ node scripts/kacha.mjs gate-release incremental-project.json
 6. `candidate` 只检查变化层、连接 handle 和冻结流证明；
 7. 用户确定最终版本后才升级 `release_candidate` 并做完整 QC。
 
+每个增量版本还有独立的渲染预算：探索只允许 1–3 个代表区间；代表区间批准
+并冻结 EDL/style/capability/audio digest 后，最多一次整片代理、一次正式
+视频编码和一次完整 QC。L0–L2 手工请求 `full_rebuild` 会被拒绝；同一版本
+预算用完后不能靠改输出文件名继续运行，真实依赖变化必须创建新 delta。
+
 这样把“探索参数”和“整片渲染”分开，避免每次反馈都重新加载全部 reference、
 重新分析全片和重编码冻结层。节省时间不能降低当前版本连接点、变化层和最终
 发布门禁。

@@ -710,7 +710,7 @@ function validateEffectiveConfig(config) {
   }
   rejectUnknownKeys(
     config.execution.incremental,
-    new Set(["handleFrames"]),
+    new Set(["handleFrames", "renderBudget"]),
     "execution.incremental",
   );
   assertNumber(
@@ -720,6 +720,50 @@ function validateEffectiveConfig(config) {
     250,
     true,
   );
+  const renderBudget = config.execution.incremental.renderBudget;
+  rejectUnknownKeys(
+    renderBudget,
+    new Set([
+      "explorationRenderScope",
+      "representativeRangeMinimum",
+      "representativeRangeMaximum",
+      "requireRepresentativeApprovalBeforeFullPreview",
+      "maximumFullPreviewEncodesPerVersion",
+      "maximumFinalEncodesPerVersion",
+      "maximumFullQcRunsPerVersion",
+      "forbidFullRebuildForL0ToL2",
+    ]),
+    "execution.incremental.renderBudget",
+  );
+  if (renderBudget.explorationRenderScope !== "representative_ranges_only") {
+    throw new Error(
+      "execution.incremental.renderBudget.explorationRenderScope 必须为 representative_ranges_only",
+    );
+  }
+  for (const key of [
+    "representativeRangeMinimum",
+    "representativeRangeMaximum",
+    "maximumFullPreviewEncodesPerVersion",
+    "maximumFinalEncodesPerVersion",
+    "maximumFullQcRunsPerVersion",
+  ]) {
+    assertNumber(
+      renderBudget[key],
+      `execution.incremental.renderBudget.${key}`,
+      1,
+      key === "representativeRangeMaximum" ? 6 : 3,
+      true,
+    );
+  }
+  if (renderBudget.representativeRangeMaximum < renderBudget.representativeRangeMinimum) {
+    throw new Error("增量代表区间最大数量不能小于最小数量");
+  }
+  if (
+    renderBudget.requireRepresentativeApprovalBeforeFullPreview !== true
+    || renderBudget.forbidFullRebuildForL0ToL2 !== true
+  ) {
+    throw new Error("增量返工必须先批准代表区间，并禁止 L0–L2 整片重建");
+  }
   const netstyle = config.execution.netstyle;
   rejectUnknownKeys(
     netstyle,
