@@ -108,6 +108,30 @@ function expectFailure(command, args) {
   return result;
 }
 
+async function withDeterministicDesignFonts(callback) {
+  const fontProbeBin = path.join(temporary, "deterministic-design-fonts");
+  const fontProbe = path.join(fontProbeBin, "fc-list");
+  fs.mkdirSync(fontProbeBin, { recursive: true });
+  fs.writeFileSync(
+    fontProbe,
+    "#!/bin/sh\n"
+      + "printf '%s\\n' "
+      + "'青鸟华光标题黑体' 'JBHGBTH' "
+      + "'方正粗金陵简体' 'FZJinLS-B-GB' "
+      + "'思源黑体 CN Light' 'Source Han Sans CN Light' "
+      + "'Aa封神榜书' 'AaFSBS'\n",
+  );
+  fs.chmodSync(fontProbe, 0o755);
+  const previousPath = process.env.PATH;
+  process.env.PATH = `${fontProbeBin}${path.delimiter}${previousPath ?? ""}`;
+  try {
+    return await callback();
+  } finally {
+    if (previousPath === undefined) delete process.env.PATH;
+    else process.env.PATH = previousPath;
+  }
+}
+
 async function startMockFaceFusionServer(resultFile, token) {
   const child = spawn(
     process.execPath,
@@ -1157,6 +1181,7 @@ await test("style profile and effect registries validate and render executable p
 }, "visual");
 
 await test("video design system validates, resolves every mode and renders production artifacts", async () => {
+  await withDeterministicDesignFonts(async () => {
   const validation = JSON.parse(execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
     "design",
@@ -1354,6 +1379,7 @@ await test("video design system validates, resolves every mode and renders produ
       throw new Error("macOS font fallback did not resolve every design role");
     }
   }
+  });
 }, "visual");
 
 await test("beauty v2 is local, scoped, bounded and disabled by default", async () => {
