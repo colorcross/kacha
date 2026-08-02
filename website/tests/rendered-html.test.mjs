@@ -33,6 +33,9 @@ test("server-renders the Chinese Kacha product page", async () => {
   assert.match(html, /从原始素材/);
   assert.match(html, /真正耗时间的/);
   assert.match(html, /先看变化，再看功能/);
+  assert.match(html, /四种风格，不是同一套卡片换颜色/);
+  assert.match(html, /1920 张横竖峰值帧/);
+  assert.match(html, />118</);
   assert.match(html, /本地优先/);
   assert.match(html, /Beauty v2/);
   assert.match(html, /dodofun@126\.com/);
@@ -47,6 +50,8 @@ test("server-renders the English product page", async () => {
   const html = await response.text();
   assert.match(html, /From raw footage/);
   assert.match(html, /See the change before the feature list/);
+  assert.match(html, /Four styles, four editing grammars/);
+  assert.match(html, /1,920 landscape\/vertical peak frames/);
   assert.match(html, /Local first/);
   assert.match(html, /You keep the final judgment/);
   assert.match(html, /dodofun@126\.com/);

@@ -27,12 +27,22 @@ type FaqItem = {
   answer: string;
 };
 
+type StyleGrammar = {
+  id: "light" | "spatial" | "comic" | "pixel";
+  kicker: string;
+  title: string;
+  body: string;
+  sequence: string;
+  sound: string;
+};
+
 export type SiteContent = {
   brandHome: string;
   navLabel: string;
   nav: {
     problems: string;
     outcomes: string;
+    styles: string;
     workflow: string;
     install: string;
     contact: string;
@@ -62,6 +72,13 @@ export type SiteContent = {
     beforeLabel: string;
     afterLabel: string;
     items: Outcome[];
+  };
+  styles: {
+    title: string;
+    intro: string;
+    auditLabel: string;
+    auditValue: string;
+    items: StyleGrammar[];
   };
   system: {
     title: string;
@@ -119,6 +136,7 @@ export const zhContent: SiteContent = {
   nav: {
     problems: "痛点",
     outcomes: "效果",
+    styles: "四种语法",
     workflow: "流程",
     install: "安装",
     contact: "联系",
@@ -140,7 +158,7 @@ export const zhContent: SiteContent = {
     { value: "LOCAL", label: "默认本地处理素材" },
     { value: "FULL", label: "覆盖完整后期流程" },
     { value: "DELTA", label: "返工只改受影响层" },
-    { value: "73", label: "自动回归检查" },
+    { value: "118", label: "自动回归检查" },
   ],
   problems: {
     title: "真正耗时间的，不只是拖动时间线。",
@@ -200,6 +218,47 @@ export const zhContent: SiteContent = {
         title: "反馈来了，不必推倒重来",
         body: "把“字幕上移”“BGM 再低一点”这类反馈编译成差异，只重建真正受影响的层。",
         proof: "冻结无关音视频流，并用摘要证明它们没有变化。",
+      },
+    ],
+  },
+  styles: {
+    title: "四种风格，不是同一套卡片换颜色。",
+    intro:
+      "它们共享人物保护、字幕可读性和品牌规范，但使用不同的时间单位、空间拓扑、转场与声音逻辑。系统会逐对比较七个语法轴，发现换皮就停止。",
+    auditLabel: "PRODUCTION EVIDENCE",
+    auditValue: "4 套语法 · 240 个效果 · 1920 张横竖峰值帧 · 960 份动效合同",
+    items: [
+      {
+        id: "light",
+        kicker: "EDITORIAL CONTINUITY",
+        title: "浅暖轻浮层",
+        body: "保持真人口播连续，用画面边缘旁注和负空间补充信息；完整观点优先于热闹切换。",
+        sequence: "完整意思 → 边缘旁注 → 证据区 → 回到真人",
+        sound: "默认安静；重大旁注最多一枚轻纸张或空气声。",
+      },
+      {
+        id: "spatial",
+        kicker: "DEPTH NAVIGATION",
+        title: "空间光路",
+        body: "先建立固定世界坐标，再让光路、焦点与镜头沿真实关系移动；文字属于景深，而不是漂浮网页卡。",
+        sequence: "建立空间 → 路径到达 → 焦点移动 → 终点停稳",
+        sound: "起点和终点共用一条方向性 tonal phrase。",
+      },
+      {
+        id: "comic",
+        kicker: "COMEDIC TIMING",
+        title: "幽默漫画",
+        body: "只有真实反差成立时才分格；铺垫、停顿、反应与回扣共同完成包袱，不把漫画材质当滤镜。",
+        sequence: "铺垫 → 半拍停顿 → 反应 → 包袱 → 回扣",
+        sound: "沉默也是节奏；动作后最多一枚干燥短音。",
+      },
+      {
+        id: "pixel",
+        kicker: "STATE MACHINE",
+        title: "像素风",
+        body: "像素只组织图形状态，人物、证据和正文保持高清；每次只提交一个可验证的真实变化。",
+        sequence: "输入 → 处理规则 → 状态提交 → 结果验证",
+        sound: "只有真实状态改变时，才触发对应 UI 声。",
       },
     ],
   },
@@ -358,6 +417,7 @@ export const enContent: SiteContent = {
   nav: {
     problems: "Problems",
     outcomes: "Results",
+    styles: "Four grammars",
     workflow: "Workflow",
     install: "Install",
     contact: "Contact",
@@ -379,7 +439,7 @@ export const enContent: SiteContent = {
     { value: "LOCAL", label: "local-first media handling" },
     { value: "FULL", label: "end-to-end post workflow" },
     { value: "DELTA", label: "affected layers only" },
-    { value: "73", label: "regression checks" },
+    { value: "118", label: "regression checks" },
   ],
   problems: {
     title: "The timeline is not the only expensive part.",
@@ -439,6 +499,47 @@ export const enContent: SiteContent = {
         title: "Feedback without a full rebuild",
         body: "Compile notes such as “raise the captions” or “lower the music” into a delta and rebuild only the affected layer.",
         proof: "Freeze unrelated streams and prove they did not change.",
+      },
+    ],
+  },
+  styles: {
+    title: "Four styles, four editing grammars—not one card system reskinned.",
+    intro:
+      "They share subject safety, caption legibility, and brand rules, but differ in time unit, spatial topology, transitions, and sound. Kacha compares seven grammar axes pairwise and fails a cosmetic reskin.",
+    auditLabel: "PRODUCTION EVIDENCE",
+    auditValue: "4 grammars · 240 effects · 1,920 landscape/vertical peak frames · 960 motion contracts",
+    items: [
+      {
+        id: "light",
+        kicker: "EDITORIAL CONTINUITY",
+        title: "Light Warm Overlay",
+        body: "Keep the talking-head thought continuous. Add one edge note and a restrained evidence zone instead of interrupting the speaker with a dashboard.",
+        sequence: "complete thought → margin note → evidence → clean A-roll",
+        sound: "Quiet by default; one soft paper or air cue for a major note.",
+      },
+      {
+        id: "spatial",
+        kicker: "DEPTH NAVIGATION",
+        title: "Spatial Light Path",
+        body: "Establish world coordinates first, then move the path, focus, and camera through a real relationship. Text belongs to depth, not floating web cards.",
+        sequence: "establish space → route arrives → focus travels → destination holds",
+        sound: "Origin and destination share one directional tonal phrase.",
+      },
+      {
+        id: "comic",
+        kicker: "COMEDIC TIMING",
+        title: "Humor Comic",
+        body: "Panels appear only when a real contrast exists. Setup, silence, reaction, punchline, and callback create the joke—not a comic filter.",
+        sequence: "setup → half-beat hold → reaction → punchline → callback",
+        sound: "Silence carries timing; at most one dry cue after the action.",
+      },
+      {
+        id: "pixel",
+        kicker: "STATE MACHINE",
+        title: "Pixel Editorial",
+        body: "Pixels organize graphic state while people, evidence, and readable copy stay sharp. Each beat commits one verifiable state change.",
+        sequence: "input → rule → state commit → verified result",
+        sound: "A UI cue fires only when the underlying state actually changes.",
       },
     ],
   },

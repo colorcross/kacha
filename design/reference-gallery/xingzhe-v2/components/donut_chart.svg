@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="brand-warm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F5B544"/>
+      <stop offset="1" stop-color="#E66A32"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="24" flood-color="#16181B" flood-opacity=".14"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="#F2EFE8"/>
+  <circle cx="1168" cy="86" r="170" fill="#6F8795" opacity=".07"/>
+  <circle cx="84" cy="670" r="190" fill="#F05A47" opacity=".045"/>
+  <text x="72" y="60" font-family="Avenir Next, PingFang SC, sans-serif" font-size="16" font-weight="700" letter-spacing="3" fill="#E98A2B">COMPONENT · DATA</text>
+  <text x="72" y="102" font-family="PingFang SC, sans-serif" font-size="34" font-weight="650" fill="#25282B">环形占比图</text>
+  <text x="72" y="132" font-family="Avenir Next, PingFang SC, sans-serif" font-size="15" fill="#626A70">donut_chart · 状态 exit · fallback bar_chart</text>
+  <rect x="72" y="156" width="1136" height="492" rx="28" fill="#FBF8F1" filter="url(#soft-shadow)"/>
+  <defs><clipPath id="clip-94-178-1092-446"><rect x="94" y="178" width="1092" height="446" rx="20"/></clipPath></defs>
+  <rect x="94" y="178" width="1092" height="446" rx="20" fill="#E8E4DB"/>
+  <image x="94" y="178" width="1092" height="446" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-94-178-1092-446)" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMTIwIiBoZWlnaHQ9IjUxMCIgdmlld0JveD0iMCAwIDExMjAgNTEwIiBkYXRhLWNvbXBvbmVudC1wcmV2aWV3PSJkb251dF9jaGFydCI+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjExMjAiIGhlaWdodD0iNTEwIiByeD0iMCIgZmlsbD0iI0YyRUZFOCIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjAiLz48ZyBkYXRhLWNvbXBvbmVudC1pZD0iZG9udXRfY2hhcnQiIGRhdGEtcmVuZGVyZXI9InN2Z19zZXF1ZW5jZSIgZGF0YS1zdGF0ZT0iZXhpdCI+PHRleHQgeD0iNDAuODAwMDAwMDAwMDAwMDA0IiB5PSI4Ny45MjQiIHRleHQtYW5jaG9yPSJzdGFydCIgZm9udC1mYW1pbHk9Iumdkum4n+WNjuWFieagh+mimOm7keS9kyIgZm9udC1zaXplPSI0Mi44NCIgZm9udC13ZWlnaHQ9IjgwMCIgbGV0dGVyLXNwYWNpbmc9IjBlbSIgZmlsbD0iIzI1MjgyQiIgb3BhY2l0eT0iMSI+5YWI5oqK5YaF5a655YGa5a+5PC90ZXh0PjxjaXJjbGUgY3g9IjQwNC4yNCIgY3k9IjI3Ni40MiIgcj0iOTguNTMyIiBmaWxsPSJub25lIiBzdHJva2U9IiNGQkY4RjEiIHN0cm9rZS13aWR0aD0iNDEuMzgzNDQiLz48Y2lyY2xlIGN4PSI0MDQuMjQiIGN5PSIyNzYuNDIiIHI9Ijk4LjUzMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRTk4QTJCIiBzdHJva2Utd2lkdGg9IjQxLjM4MzQ0IiBzdHJva2UtZGFzaGFycmF5PSI0MjAuOTg0NDczOTg3MTcyOSA2MTkuMDk0ODE0Njg3MDE4OSIgdHJhbnNmb3JtPSJyb3RhdGUoLTkwIDQwNC4yNCAyNzYuNDIpIi8+PHRleHQgeD0iNzg4LjQ0OCIgeT0iMjg5LjI3MiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9Iumdkum4n+WNjuWFieagh+mimOm7keS9kyIgZm9udC1zaXplPSIxMDcuMSIgZm9udC13ZWlnaHQ9IjgwMCIgbGV0dGVyLXNwYWNpbmc9IjBlbSIgZmlsbD0iIzI1MjgyQiIgb3BhY2l0eT0iMSI+NjglPC90ZXh0PjwvZz48L3N2Zz4="/>
+    <rect x="110" y="194" width="146" height="28" rx="14" fill="#272B2F" opacity=".82"/>
+    <text x="183" y="213" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">SVG_SEQUENCE</text>
+  <text x="72" y="686" font-family="Avenir Next, sans-serif" font-size="13" font-weight="600" letter-spacing="2" fill="#626A70" opacity=".8">真实组件渲染 · 尺寸与色彩受当前模式配置约束</text>
+  <rect x="1110" y="674" width="98" height="5" rx="2.5" fill="url(#brand-warm)"/>
+</svg>

@@ -51,7 +51,7 @@ function classify(record, routing) {
     ...record.fullNames,
     ...record.postscriptNames,
   ].join(" ").toLowerCase();
-  const classes = Object.entries(routing.classificationHints)
+  const classes = Object.entries(routing.classificationHints ?? {})
     .filter(([, hints]) => hints.some((hint) => haystack.includes(hint.toLowerCase())))
     .map(([id]) => id);
   if (classes.length === 0) classes.push("unclassified");
@@ -130,6 +130,19 @@ function supportsSceneText(record, text) {
   return true;
 }
 
+function materializeRegistryPaths(registry, registryFile) {
+  const baseDirectory = path.dirname(path.resolve(registryFile));
+  return {
+    ...registry,
+    records: (registry.records ?? []).map((record) => ({
+      ...record,
+      file: path.isAbsolute(record.file)
+        ? record.file
+        : path.resolve(baseDirectory, record.file),
+    })),
+  };
+}
+
 function routeFont(registry, roleId, text, allowRestricted) {
   const routing = readJson(routingFile);
   const role = routing.roles[roleId];
@@ -146,13 +159,13 @@ function routeFont(registry, roleId, text, allowRestricted) {
   ));
   const ranked = eligible.map((record) => {
     const names = aliases(record);
-    const preferredFamilyIndex = role.preferredFamilies.findIndex((family) => {
+    const preferredFamilyIndex = (role.preferredFamilies ?? []).findIndex((family) => {
       const requested = family.toLowerCase();
       return [...names].some(
         (name) => name === requested || name.includes(requested) || requested.includes(name),
       );
     });
-    const preferredClassIndex = role.preferredClasses.findIndex(
+    const preferredClassIndex = (role.preferredClasses ?? []).findIndex(
       (fontClass) => record.classes.includes(fontClass),
     );
     const weight = Number(record.weightClass ?? 400);
@@ -216,7 +229,7 @@ function routeFont(registry, roleId, text, allowRestricted) {
   };
 }
 
-function validateRegistry(registry) {
+function validateRegistry(registry, registryFile) {
   const errors = [];
   if (registry.schemaVersion !== "1.0") errors.push("schemaVersion 必须为 1.0");
   if (registry.kind !== "kacha_local_font_registry") {
@@ -227,11 +240,16 @@ function validateRegistry(registry) {
   }
   for (const [index, record] of (registry.records ?? []).entries()) {
     const label = `records[${index}]`;
-    if (!record.file || !fs.existsSync(record.file)) {
+    const resolvedFile = record.file && (
+      path.isAbsolute(record.file)
+        ? record.file
+        : path.resolve(path.dirname(path.resolve(registryFile)), record.file)
+    );
+    if (!resolvedFile || !fs.existsSync(resolvedFile)) {
       errors.push(`${label}.file 不存在：${record.file ?? "missing"}`);
       continue;
     }
-    if (sha256File(record.file) !== record.sha256) errors.push(`${label}.sha256 已失效`);
+    if (sha256File(resolvedFile) !== record.sha256) errors.push(`${label}.sha256 已失效`);
     if (!["open", "authorization_required", "unverified", "unknown"].includes(
       record.license?.status,
     )) {
@@ -250,7 +268,7 @@ if (!["scan", "authorize", "validate", "resolve", "preview"].includes(action)) {
   fail(
     "用法：kacha.mjs fonts scan --directory DIR --output registry.json\n"
     + "  kacha.mjs fonts authorize --registry registry.json --output authorized.json "
-    + "--statement TEXT\n"
+    + "--statement TEXT [--scope local_video_production|video_production_and_published_outputs]\n"
     + "  kacha.mjs fonts validate --registry registry.json\n"
     + "  kacha.mjs fonts resolve --registry registry.json --role ROLE --text TEXT\n"
     + "  kacha.mjs fonts preview --font FILE --output preview.png [--text TEXT]",
@@ -287,11 +305,19 @@ try {
     const registryFile = path.resolve(option("--registry", ""));
     const output = path.resolve(option("--output", ""));
     const statement = option("--statement");
+    const authorizationScope = option("--scope", "local_video_production");
+    const allowedAuthorizationScopes = new Set([
+      "local_video_production",
+      "video_production_and_published_outputs",
+    ]);
     if (!fs.existsSync(registryFile)) fail(`字体清单不存在：${registryFile}`, 2);
     if (!statement) fail("项目字体授权需要 --statement", 2);
+    if (!allowedAuthorizationScopes.has(authorizationScope)) {
+      fail(`不支持的字体授权范围：${authorizationScope}`, 2);
+    }
     if (fs.existsSync(output) && !has("--overwrite")) fail(`拒绝覆盖：${output}`, 2);
     const registry = readJson(registryFile);
-    const errors = validateRegistry(registry);
+    const errors = validateRegistry(registry, registryFile);
     if (errors.length > 0) throw new Error(errors.join("\n"));
     const authorizedAt = new Date().toISOString();
     const authorized = {
@@ -299,27 +325,43 @@ try {
       generatedAt: authorizedAt,
       projectAuthorization: {
         status: "authorized",
-        scope: "local_video_production",
+        scope: authorizationScope,
         source: "user_explicit_statement",
         statement,
         authorizedAt,
         publicRedistributionAllowed: false,
       },
-      records: registry.records.map((record) => ({
+      records: registry.records.map((record) => {
+        const resolvedFile = path.isAbsolute(record.file)
+          ? record.file
+          : path.resolve(path.dirname(registryFile), record.file);
+        const relativeFile = path.relative(path.dirname(output), resolvedFile);
+        return ({
         ...record,
+        file: !path.isAbsolute(relativeFile) && !relativeFile.startsWith(`..${path.sep}`)
+          ? relativeFile
+          : resolvedFile,
         localUse: {
           status: "project_authorized",
           requiresProjectAuthorization: false,
         },
         projectAuthorization: {
           status: "authorized",
-          scope: "local_video_production",
+          scope: authorizationScope,
           source: "user_explicit_statement",
           authorizedAt,
           publicRedistributionAllowed: false,
         },
-      })),
+      });
+      }),
     };
+    const portable = authorized.records.every((record) => !path.isAbsolute(record.file));
+    if (portable) {
+      authorized.source = {
+        ...authorized.source,
+        directory: ".",
+      };
+    }
     authorized.digest = sha256Value({ ...authorized, digest: undefined });
     writeJsonAtomic(output, authorized);
     console.log(JSON.stringify({
@@ -335,7 +377,7 @@ try {
     const registryFile = path.resolve(option("--registry", ""));
     if (!fs.existsSync(registryFile)) fail(`字体清单不存在：${registryFile}`, 2);
     const registry = readJson(registryFile);
-    const errors = validateRegistry(registry);
+    const errors = validateRegistry(registry, registryFile);
     if (errors.length > 0) throw new Error(errors.join("\n"));
     console.log(JSON.stringify({
       schemaVersion: "1.0",
@@ -355,10 +397,10 @@ try {
     const registryFile = path.resolve(option("--registry", ""));
     if (!fs.existsSync(registryFile)) fail(`字体清单不存在：${registryFile}`, 2);
     const registry = readJson(registryFile);
-    const errors = validateRegistry(registry);
+    const errors = validateRegistry(registry, registryFile);
     if (errors.length > 0) throw new Error(errors.join("\n"));
     const result = routeFont(
-      registry,
+      materializeRegistryPaths(registry, registryFile),
       option("--role", "subtitle_primary"),
       option("--text", "字幕设计"),
       has("--allow-restricted"),

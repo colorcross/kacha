@@ -1,0 +1,203 @@
+{
+  "schemaVersion": "1.0",
+  "id": "workflow-spatial-nodes",
+  "name": "空间流程节点",
+  "version": "1.0.0",
+  "status": "production_candidate",
+  "renderer": "hyperframes_or_timeline",
+  "purpose": "把三至七个连续步骤转换为具有空间纵深、局部点亮和明确阅读顺序的流程动效。",
+  "narrativeContract": {
+    "useWhen": [
+      "口播按顺序介绍流程、阶段或因果链",
+      "每个节点可压缩为二至四个字",
+      "人物一侧或上方存在足够负空间"
+    ],
+    "doNotUseWhen": [
+      "只是普通并列项而没有顺序关系",
+      "节点正文需要长句解释",
+      "人物、字幕和证据素材已经占满画面"
+    ],
+    "semanticTrigger": "每个节点的出现必须绑定对应口播词、可见动作或明确节拍。",
+    "exitReason": "在口播离开流程主题、返回真人主画面或下一组字幕前完整退出。"
+  },
+  "invariants": {
+    "preserveOriginalSubject": true,
+    "preserveFaceSafeZone": true,
+    "preserveSubtitleSafeZone": true,
+    "noLargeOpaqueWebCards": true,
+    "maximumCurrentNodes": 1,
+    "completedNodesRemainVisibleAtLowerEmphasis": true,
+    "futureNodesRemainHidden": true,
+    "onlyCurrentNodeMayUseWarmGradient": true,
+    "noFullFrameFlash": true,
+    "clearBeforeNextPrimaryVisualFrames": 3,
+    "audioVisualPeakToleranceFrames": 2
+  },
+  "parameters": {
+    "nodeCount": {
+      "type": "integer",
+      "default": 4,
+      "minimum": 3,
+      "maximum": 7
+    },
+    "labels": {
+      "type": "string_array",
+      "default": ["原片", "精剪", "声音", "发布"],
+      "minimumItems": 3,
+      "maximumItems": 7,
+      "maximumCharactersPerItem": 4
+    },
+    "nodeScale": {
+      "type": "number",
+      "default": 1,
+      "minimum": 0.82,
+      "maximum": 1.18
+    },
+    "pathCurvature": {
+      "type": "number",
+      "default": 0.62,
+      "minimum": 0.25,
+      "maximum": 0.9
+    },
+    "depthStrength": {
+      "type": "number",
+      "default": 0.48,
+      "minimum": 0.2,
+      "maximum": 0.72
+    },
+    "particleDensity": {
+      "type": "integer",
+      "default": 6,
+      "minimum": 0,
+      "maximum": 12
+    },
+    "backgroundPushRatio": {
+      "type": "number",
+      "default": 0.018,
+      "minimum": 0,
+      "maximum": 0.035
+    },
+    "colorMode": {
+      "type": "enum",
+      "default": "rational-blue-to-orange-red",
+      "values": [
+        "rational-blue-to-orange-red",
+        "rational-blue-only",
+        "warm-editorial"
+      ]
+    },
+    "showResultCaption": {
+      "type": "boolean",
+      "default": true
+    },
+    "durationSeconds": {
+      "type": "number",
+      "default": 4.2,
+      "minimum": 2.6,
+      "maximum": 7.5
+    }
+  },
+  "timing": {
+    "fpsBasis": 25,
+    "entry": {
+      "nodeFrames": 8,
+      "pathFrames": 9,
+      "staggerFrames": 6,
+      "ease": "back.out(1.35)"
+    },
+    "hold": {
+      "minimumFramesAfterFinalNode": 18,
+      "allowLocalPulse": true,
+      "maximumPulseScale": 1.055
+    },
+    "exit": {
+      "frames": 9,
+      "ease": "power2.in",
+      "clearBeforeNextPrimaryVisualFrames": 3
+    }
+  },
+  "layerContract": [
+    "original_background",
+    "local_grade_and_depth_haze",
+    "route_paths",
+    "completed_nodes",
+    "active_node",
+    "particles_and_local_glow",
+    "original_subject_or_subject_mask",
+    "captions_and_brand"
+  ],
+  "adaptationRules": {
+    "subjectRight": "流程位于左侧负空间，暖色终点不得进入眼睛与口部安全区。",
+    "subjectLeft": "整体水平镜像，但节点文字保持正向，路径方向仍与叙事顺序一致。",
+    "subjectCenter": "优先移到人物上方；若上方空间不足，缩为三节点或改用全屏流程图。",
+    "landscape16x9": {
+      "routeFieldMaximumWidthRatio": 0.5,
+      "routeFieldTopRatio": 0.14,
+      "subtitleReserveBottomRatio": 0.16
+    },
+    "portrait9x16": {
+      "routeFieldMaximumHeightRatio": 0.5,
+      "routeFieldTopRatio": 0.1,
+      "subjectHeadClearanceRatio": 0.06,
+      "subtitleReserveBottomRatio": 0.2
+    },
+    "fastSpeech": "缩短节点间隔但保留至少四帧路径生长；不得一次显示全部节点。",
+    "slowSpeech": "增加停稳而不是增加漂移动作。",
+    "longLabel": "先改写为四字以内短标签；仍无法压缩时回退到渐进信息卡。",
+    "crowdedFrame": "减少粒子、减小节点或回退到主体安全侧的简化流程，不压人物和字幕。"
+  },
+  "audioContract": {
+    "optional": false,
+    "duckUnderDialogue": true,
+    "cues": [
+      {
+        "id": "node_connect",
+        "function": "连接线完成与下一节点落位",
+        "trigger": "visible_node_settle",
+        "recommendedSfxRole": "info_tick",
+        "startGainDb": -17,
+        "maximumUses": 5
+      },
+      {
+        "id": "active_result",
+        "function": "最终节点完成并成为当前重点",
+        "trigger": "final_node_settle",
+        "recommendedSfxRole": "soft_impact",
+        "startGainDb": -14,
+        "maximumUses": 1
+      },
+      {
+        "id": "clean_exit",
+        "function": "整组元素在返回真人前退出",
+        "trigger": "effect_exit",
+        "recommendedSfxRole": "short_whoosh",
+        "startGainDb": -19,
+        "maximumUses": 1
+      }
+    ],
+    "forbid": [
+      "每个粒子都配音效",
+      "用同一个重音覆盖所有节点",
+      "音效峰值早于视觉落位超过两帧",
+      "盖住人声辅音和句尾"
+    ]
+  },
+  "qualityGates": [
+    "横版与竖版分别构图，不做机械裁切",
+    "节点依次出现且顺序与口播一致",
+    "人物脸部、字幕、栏目标识和平台UI安全区无碰撞",
+    "没有大面积不透明白色容器",
+    "正常速度预览中路径连续、节点停稳、退场完整",
+    "最终节点暖色只局部增强，不触发整屏闪烁",
+    "静态峰值帧和真实运动预览均通过人工复核"
+  ],
+  "fallbacks": [
+    "process_progressive",
+    "info_bullets",
+    "hold_original_shot"
+  ],
+  "referenceImplementations": {
+    "landscape": "../../../../../videos/workflow-spatial-motion/index.html",
+    "portrait": "../../../../../videos/workflow-spatial-motion-vertical/index.html"
+  }
+}

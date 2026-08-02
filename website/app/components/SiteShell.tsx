@@ -109,6 +109,60 @@ function OutcomeVisual({
   );
 }
 
+function StyleGrammarVisual({
+  id,
+  label,
+}: {
+  id: "light" | "spatial" | "comic" | "pixel";
+  label: string;
+}) {
+  return (
+    <div
+      aria-label={label}
+      className={`grammar-visual grammar-visual--${id}`}
+      role="img"
+    >
+      {id === "light" ? (
+        <>
+          <span className="grammar-subject"><i /><b /></span>
+          <span className="grammar-note grammar-note--one"><i />01</span>
+          <span className="grammar-note grammar-note--two"><i />02</span>
+          <span className="grammar-reading-line" />
+        </>
+      ) : null}
+      {id === "spatial" ? (
+        <>
+          <span className="grammar-depth-plane grammar-depth-plane--back" />
+          <span className="grammar-depth-plane grammar-depth-plane--front" />
+          <svg aria-hidden="true" viewBox="0 0 560 240">
+            <path d="M34 190 C148 218 146 74 278 116 S422 74 526 34" />
+          </svg>
+          <span className="grammar-node grammar-node--one" />
+          <span className="grammar-node grammar-node--two" />
+          <span className="grammar-node grammar-node--three" />
+        </>
+      ) : null}
+      {id === "comic" ? (
+        <>
+          <span className="grammar-panel grammar-panel--setup"><i>01</i></span>
+          <span className="grammar-panel grammar-panel--reaction"><i>…</i></span>
+          <span className="grammar-panel grammar-panel--punch"><i>!</i></span>
+          <span className="grammar-comic-slash" />
+        </>
+      ) : null}
+      {id === "pixel" ? (
+        <>
+          <span className="grammar-pixel-grid" />
+          <span className="grammar-register grammar-register--input"><i />INPUT</span>
+          <span className="grammar-register grammar-register--process"><i />RULE</span>
+          <span className="grammar-register grammar-register--result"><i />PASS</span>
+          <span className="grammar-cursor" />
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 export function SiteShell({
   content,
   locale,
@@ -131,6 +185,7 @@ export function SiteShell({
         <nav aria-label={content.navLabel}>
           <ScrollLink targetId="problems">{content.nav.problems}</ScrollLink>
           <ScrollLink targetId="outcomes">{content.nav.outcomes}</ScrollLink>
+          <ScrollLink targetId="styles">{content.nav.styles}</ScrollLink>
           <ScrollLink targetId="workflow">{content.nav.workflow}</ScrollLink>
           <ScrollLink targetId="install">{content.nav.install}</ScrollLink>
           <ScrollLink targetId="contact">{content.nav.contact}</ScrollLink>
@@ -297,9 +352,45 @@ export function SiteShell({
         <p className="outcome-note">{content.outcomes.demoNote}</p>
       </section>
 
+      <section className="section section--styles" id="styles">
+        <div className="section-heading">
+          <p className="section-index">03 / EDITING GRAMMARS</p>
+          <h2>{content.styles.title}</h2>
+          <p>{content.styles.intro}</p>
+        </div>
+        <div className="grammar-grid">
+          {content.styles.items.map((style) => (
+            <article
+              className={`grammar-card grammar-card--${style.id}`}
+              key={style.id}
+            >
+              <StyleGrammarVisual id={style.id} label={style.title} />
+              <div className="grammar-card__copy">
+                <p className="card-kicker">{style.kicker}</p>
+                <h3>{style.title}</h3>
+                <p>{style.body}</p>
+                <ol aria-label={style.sequence}>
+                  {style.sequence.split(" → ").map((step, index) => (
+                    <li key={step}>
+                      <span>{String(index + 1).padStart(2, "0")}</span>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+                <strong>{style.sound}</strong>
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="grammar-audit">
+          <span>{content.styles.auditLabel}</span>
+          <strong>{content.styles.auditValue}</strong>
+        </div>
+      </section>
+
       <section className="section section--system" id="system">
         <div className="section-heading">
-          <p className="section-index">03 / CAPABILITIES</p>
+          <p className="section-index">04 / CAPABILITIES</p>
           <h2>{content.system.title}</h2>
           <p>{content.system.intro}</p>
         </div>
@@ -324,7 +415,7 @@ export function SiteShell({
 
       <section className="section section--workflow" id="workflow">
         <div className="section-heading section-heading--inverse">
-          <p className="section-index">04 / WORKFLOW</p>
+          <p className="section-index">05 / WORKFLOW</p>
           <h2>{content.workflow.title}</h2>
           <p>{content.workflow.intro}</p>
         </div>
@@ -349,7 +440,7 @@ export function SiteShell({
 
       <section className="section section--principles" id="principles">
         <div className="principle-manifesto">
-          <p className="section-index">05 / WHY KACHA</p>
+          <p className="section-index">06 / WHY KACHA</p>
           <blockquote>
             “{content.principles.quoteLead}
             <em>{content.principles.quoteAccent}</em>”
@@ -371,7 +462,7 @@ export function SiteShell({
 
       <section className="section section--fit">
         <div className="section-heading">
-          <p className="section-index">06 / FIT</p>
+          <p className="section-index">07 / FIT</p>
           <h2>{content.fit.title}</h2>
           <p>{content.fit.intro}</p>
         </div>
@@ -388,7 +479,7 @@ export function SiteShell({
 
       <section className="section section--faq">
         <div className="section-heading">
-          <p className="section-index">07 / FAQ</p>
+          <p className="section-index">08 / FAQ</p>
           <h2>{content.faq.title}</h2>
           <p>{content.faq.intro}</p>
         </div>
@@ -408,7 +499,7 @@ export function SiteShell({
 
       <section className="section section--install" id="install">
         <div className="install-copy">
-          <p className="section-index">08 / START</p>
+          <p className="section-index">09 / START</p>
           <h2>{content.install.title}</h2>
           <p>{content.install.body}</p>
           <div className="agent-tabs" aria-label={content.install.agentLabel}>
@@ -436,7 +527,7 @@ export function SiteShell({
 
       <section className="section section--contact" id="contact">
         <div className="contact-copy">
-          <p className="section-index">09 / CONTACT</p>
+          <p className="section-index">10 / CONTACT</p>
           <h2>{content.contact.title}</h2>
           <p>{content.contact.body}</p>
           <span>{content.contact.emailLabel}</span>

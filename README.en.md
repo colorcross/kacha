@@ -8,10 +8,11 @@
   <img src="assets/brand/kacha-og.png" alt="Kacha local AI video workflow" width="100%">
 </p>
 
-Kacha is not a universal NLE. For supported contracts it compiles a unified
-Timeline IR into a deterministic FFmpeg Render Graph; projects may still use a
-verified NLE, Remotion, HyperFrames, or another selected engine for work outside
-that contract. Final creative decisions and human approval remain explicit.
+Kacha acts as a professional workflow layer. For supported contracts it
+compiles a unified Timeline IR into a deterministic FFmpeg Render Graph, while
+coordinating a verified NLE, Remotion, HyperFrames, or another selected engine
+under the same content, timing, and acceptance contracts. Final creative
+decisions and human approval remain explicit.
 
 ## Official site and product design
 
@@ -106,6 +107,10 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
   mechanisms into a frame-accurate production plan, render them into the full
   picture-locked video, and verify hashes, resources, timing, geometry, audio,
   and the absence of demo labels.
+- Gives all 240 registered effects four landscape/vertical visual languages and
+  960 executable motion contracts. Light Warm Overlay, Spatial Light Path,
+  Humor Comic, and Pixel Editorial use different time units, spatial topology,
+  transitions, and sound—not one card layout with new surface styling.
 - Builds semantic visual-breathing timelines with push-in, hold, release,
   lateral drift, and emphasis-punch motion while preserving deliberate stillness.
 - Lays out spoken captions as plain single lines or real left/right, top/bottom,
@@ -117,10 +122,13 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Provides local Beauty v2 for skin smoothing, whitening, tone evening, and
   restrained nasolabial-fold softening. Beauty is disabled by default and does
   not use GPUPixel, cloud beautification, or generative face repair.
-- Resolves 60 production effect templates across openings, transitions,
+- Resolves 62 production effect templates across openings, transitions,
   semantic visuals, gaze guidance, spatial depth, keyframes, parallel
   typography, captions, and visual breathing, backed by original visual
   resources and license-aware query-time media slots.
+- Ships 22 public core resources, including original margin-note, spatial-route,
+  comic-beat, and pixel-state visual primitives. Private fonts and project media
+  remain outside the public repository.
 - Integrates a loopback FaceFusion candidate pipeline for consent-gated face
   swap, lip sync, face restoration, and frame post-processing. Every run
   freezes input hashes and model-license metadata and remains blocked from
@@ -141,6 +149,12 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Records AI-generated shot plans with provider, model, capability snapshot, paid-call authorization, and QC targets.
 - Runs automated media checks and requires separate human-review evidence before local release.
 - Keeps uploads, publishing, purchases, and paid generation outside the default authorization boundary.
+
+<p align="center">
+  <a href="docs/en/FOUR_STYLE_EDITING_GRAMMARS.md">
+    <img src="assets/screenshots/kacha-four-editing-grammars.png" alt="Four distinct editing grammars: Light Warm Overlay, Spatial Light Path, Humor Comic, and Pixel Editorial" width="100%">
+  </a>
+</p>
 
 ## Install by asking your Agent
 
@@ -398,6 +412,7 @@ The scanner reduces risk but cannot prove that a repository contains no sensitiv
 - [Configuration and credentials](docs/en/CONFIGURATION.md)
 - [Architecture and design boundaries](docs/en/ARCHITECTURE.md)
 - [Performance, token, and weak-model production](docs/en/PERFORMANCE_TOKEN_STABILITY_V5.md)
+- [Four-style editing grammar contract](docs/en/FOUR_STYLE_EDITING_GRAMMARS.md)
 - [Product brand and website system](docs/en/PRODUCT_BRAND_AND_WEBSITE.md)
 - [2026-07-29 completion review](docs/en/COMPLETION_REVIEW_2026-07-29.md)
 - [Privacy and security](docs/en/PRIVACY_SECURITY.md)

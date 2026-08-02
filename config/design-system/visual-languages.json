@@ -1,0 +1,311 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "kacha_visual_language_registry",
+  "id": "kacha-visual-languages",
+  "default": "xingzhe-light-overlay",
+  "shared": {
+    "fontPolicy": "../font-routing.json",
+    "typography": {
+      "subtitle": "subtitle_primary",
+      "subtitleEmphasis": "subtitle_emphasis",
+      "videoTitle": "display_title",
+      "term": "term_definition",
+      "quote": "quote_pull",
+      "coverTitle": "cover_title",
+      "support": "thin_support"
+    },
+    "layoutResolver": {
+      "requiredInputs": ["subjectBounds", "headBounds", "subtitleSafeZone", "platformUiZones", "persistentBrandZones", "localLuminanceMap", "textMetrics"],
+      "candidatePlacements": ["negative_space", "opposite_gaze", "above_head_with_gap", "side_safe", "picture_in_picture"],
+      "minimumRegularTextContrast": 4.5,
+      "minimumLargeTextContrast": 3,
+      "minimumHeadGapRatio": 0.035,
+      "maximumReadingZones": 3,
+      "fallbackOrder": ["reduce_secondary_content", "reflow_by_semantic_group", "reduce_font_to_role_minimum", "move_component", "split_in_time", "omit_decorative_effect"]
+    },
+    "persistentBrand": {
+      "requiredModules": ["brand_bug", "show_label", "issue_badge", "series_marker"],
+      "fontRole": "thin_support",
+      "persistent": true,
+      "opacityRange": [0.62, 0.8],
+      "minimumContrastRatio": 3,
+      "maximumSalienceRatioToPrimaryTitle": 0.32,
+      "surface": "adaptive_micro_glass_or_shadow_only",
+      "forbid": ["full_width_bar", "high_saturation_fill", "face_overlap", "subtitle_overlap", "platform_ui_overlap"]
+    },
+    "avCoherence": {
+      "clock": "shared-timeline-ir",
+      "dialogueIsPrimaryClock": true,
+      "visualPeakToleranceFrames": 2,
+      "sfxPeakToleranceFrames": 2,
+      "ordinarySubtitleSfx": "forbidden",
+      "sfxResolver": "assets/audio/sfx-library/kacha-profile.json",
+      "maximumPrimaryCuesPerSemanticBeat": 1,
+      "conflictPriority": ["dialogue_intelligibility", "subject_face_and_evidence", "caption_readability", "primary_motion", "persistent_brand", "decoration"],
+      "forbid": ["sfx_covering_consonants", "motion_without_narrative_trigger", "visual_peak_without_audio_or_semantic_anchor", "decorative_loop"]
+    }
+  },
+  "languages": {
+    "xingzhe-light-overlay": {
+      "label": "浅暖轻浮层",
+      "intent": "保留真人口播的真实感，用轻量、半透明、有呼吸的信息层帮助理解，不做网页弹窗。",
+      "sourceReference": "设计参考/行者风高保真样板/index.html",
+      "grammarSignature": {
+        "id": "editorial-continuity-margin-notes",
+        "temporalModel": "continuous_a_roll_with_sparse_annotations",
+        "shotUnit": "complete_spoken_thought",
+        "spatialModel": "asymmetric_margin_and_negative_space",
+        "primaryTransition": "match_cut_soft_dissolve_or_local_reveal",
+        "textBehavior": "margin_note_underline_and_progressive_clause",
+        "audioCadence": "sparse_paper_tick_or_air_once_per_major_beat",
+        "stillnessPolicy": "minimum_45_percent_unanimated_reading_time"
+      },
+      "editingGrammar": {
+        "sequence": ["keep_subject_continuity", "establish_one_question", "add_one_edge_annotation", "reveal_supporting_evidence", "return_to_clean_frame"],
+        "camera": "stable_or_single_motivated_reframe; emphasis_scale_must_not_exceed_103_percent",
+        "topology": "one_primary_margin_note_plus_at_most_one_supporting_evidence_zone",
+        "cutPolicy": "finish_the_spoken_thought_before_cutting_unless_evidence_requires_an_insert",
+        "transitionPolicy": "prefer_clean_cut_match_cut_soft_dissolve_or_local_mask; never replace_the_frame_with_a_card_wall",
+        "soundPolicy": "default_silence; one_soft_paper_tick_or_air_cue_only_when_a_major_annotation_visibly_lands",
+        "forbidSharedPatterns": ["centered_three_card_stack", "node_route_without_relationship", "setup_reaction_punchline_panels", "input_process_output_hud"]
+      },
+      "applicability": {
+        "selectionRule": "知识解释、方法步骤、清单或证据需要轻量承载，且画面存在可用负空间",
+        "requiredSignals": ["information_change", "method_step", "list_item", "evidence", "negative_space"],
+        "minimumMatchedSignals": 1,
+        "runtimeEvidenceRequired": ["matchedSignal", "semanticBeatId", "sourceRange", "fallbackReasonWhenNotApplied"],
+        "fallback": "普通字幕或干净切"
+      },
+      "surface": {
+        "material": "warm_translucent_glass",
+        "opacityRange": [0.42, 0.66],
+        "blurPxAt1080p": [10, 20],
+        "borderOpacityRange": [0.28, 0.62],
+        "maximumSingleCardAreaRatio": 0.34,
+        "maximumTotalOverlayAreaRatio": 0.46,
+        "forbid": ["opaque_white_web_modal", "full_frame_warm_wash", "static_full_card"]
+      },
+      "composition": {
+        "motifs": ["editorial_negative_space", "asymmetric_title", "small_progressive_cards", "subject_safe_pip", "single_line_logic_subtitle"],
+        "cardBehavior": "content_measured_and_progressively_built",
+        "inheritApprovedLayouts": true
+      },
+      "motion": {
+        "entry": "8-12_frames_soft_translate_scale_fade",
+        "hold": "stable_reading_with_1-2_percent_breath",
+        "exit": "6-10_frames_preclear_before_cut",
+        "localOnly": true,
+        "forbid": ["full_frame_flash", "perpetual_float", "whole_card_static_sticker"]
+      }
+    },
+    "xingzhe-spatial-lightpath": {
+      "label": "空间光路",
+      "intent": "以真实口播画面为底，用玻璃节点、曲线光路、景深、局部辉光和少量粒子展示关系与流程，而不是把画面染黑。",
+      "sourceReference": "user-approved-spatial-lightpath-reference",
+      "grammarSignature": {
+        "id": "single-take-depth-navigation",
+        "temporalModel": "continuous_spatial_journey",
+        "shotUnit": "one_relationship_or_route_segment",
+        "spatialModel": "persistent_world_coordinates_and_z_depth",
+        "primaryTransition": "occlusion_path_continuation_or_focus_rack",
+        "textBehavior": "depth_anchored_labels_and_behind_subject_title",
+        "audioCadence": "directional_tonal_cue_at_route_or_focus_change",
+        "stillnessPolicy": "settle_each_destination_before_next_camera_move"
+      },
+      "editingGrammar": {
+        "sequence": ["establish_depth_field", "draw_directional_path", "move_focus_or_camera", "settle_destination_node", "resolve_back_to_subject"],
+        "camera": "dolly_pan_focus_rack_or_parallax_must_follow_a_declared_relationship",
+        "topology": "stable_world_coordinates; perspective_scale_and_occlusion_define_front_mid_back_layers",
+        "cutPolicy": "prefer_one_spatial_pass; cut_only_at_occlusion_or_when_the_relationship_changes",
+        "transitionPolicy": "path_continuation_occlusion_wipe_focus_rack_or_depth_pass; no_flat_card_replacement",
+        "soundPolicy": "low_density_directional_tonal_cues; path_start_and_destination_share_one_resolving_phrase",
+        "forbidSharedPatterns": ["centered_three_card_stack", "flat_margin_annotation_sequence", "setup_reaction_punchline_panels", "input_process_output_hud"]
+      },
+      "applicability": {
+        "selectionRule": "AI、工具、技术流程或因果关系需要表达节点、方向、层级或空间纵深",
+        "requiredSignals": ["relationship", "process", "causal_path", "system_layer", "depth_explanation"],
+        "minimumMatchedSignals": 1,
+        "runtimeEvidenceRequired": ["matchedSignal", "semanticBeatId", "sourceRange", "fallbackReasonWhenNotApplied"],
+        "fallback": "浅暖轻浮层流程卡或干净切"
+      },
+      "footage": {
+        "preserveOriginal": true,
+        "useSameBaseAsLightOverlay": true,
+        "forbid": ["opaque_black_region", "rectangular_dark_wash", "full_frame_color_replacement"]
+      },
+      "atmosphere": {
+        "type": "localized_feathered_radial_depth_field",
+        "maximumAreaRatio": 0.42,
+        "opacityRange": [0.08, 0.22],
+        "mustNotHaveVisibleRectangularEdges": true
+      },
+      "nodes": {
+        "material": "dark_neutral_translucent_glass",
+        "countRange": [2, 7],
+        "sizeByDepth": [0.76, 1.08],
+        "inactiveStroke": "rational_blue",
+        "activeStroke": "signal_warm",
+        "labelFontRole": "thin_support",
+        "maximumTextLines": 2
+      },
+      "paths": {
+        "geometry": "cubic_bezier",
+        "colors": ["rational_blue", "signal_warm"],
+        "strokePxAt1080p": [2, 5],
+        "directionalGlow": true,
+        "growthMustFollowSpeech": true
+      },
+      "depth": {
+        "layers": ["background_particles", "back_nodes", "light_paths", "front_nodes", "subject", "foreground_spark"],
+        "parallaxPercentRange": [0.7, 2.4],
+        "backgroundBlurPxRange": [0, 3]
+      },
+      "motion": {
+        "entry": "path_draw_then_node_settle",
+        "hold": "active_node_breath_only",
+        "exit": "deactivate_then_path_retract_or_dissolve",
+        "forbid": ["full_frame_flash", "all_nodes_appear_together", "continuous_particle_storm"]
+      }
+    },
+    "xingzhe-humor-comic": {
+      "label": "幽默漫画",
+      "intent": "用成年编辑漫画的分格、墨线、网点、反应构图和精确喜剧节奏放大真实反差；幽默来自叙事关系，不来自表情包堆叠或幼龄卡通化。",
+      "sourceReference": "设计参考/行者风高保真样板/全量效果库_v4_幽默漫画/index.html",
+      "grammarSignature": {
+        "id": "setup-reaction-punchline-callback",
+        "temporalModel": "comic_timing_with_deliberate_holds",
+        "shotUnit": "setup_expectation_reaction_punchline_callback",
+        "spatialModel": "asymmetric_panels_and_reaction_insert",
+        "primaryTransition": "hard_cut_freeze_smash_insert_or_panel_snap",
+        "textBehavior": "late_punchline_balloon_and_ink_correction",
+        "audioCadence": "dry_single_cue_after_anticipation_with_silence_as_structure",
+        "stillnessPolicy": "mandatory_half_beat_hold_before_or_after_the_punchline"
+      },
+      "editingGrammar": {
+        "sequence": ["setup_cleanly", "hold_expectation", "cut_to_reaction_or_contradiction", "land_one_punchline", "optional_visual_callback"],
+        "camera": "reaction_crop_freeze_frame_or_scale_mismatch_only_when_the_humor_mechanism_requires_it",
+        "topology": "one_dominant_panel_plus_zero_to_two_supporting_panels; panel_order_must_encode_time_or_contrast",
+        "cutPolicy": "hard_cut_and_hold_are_primary; use_smash_insert_only_for_a_real_reversal",
+        "transitionPolicy": "panel_snap_ink_wipe_freeze_or_smash_cut; do_not_soft_float_between_every_beat",
+        "soundPolicy": "silence_is_part_of_the_joke; one_dry_cue_after_visible_action_and_never_a_laugh_track",
+        "forbidSharedPatterns": ["centered_three_card_stack", "flat_margin_annotation_sequence", "continuous_depth_route", "input_process_output_hud"]
+      },
+      "applicability": {
+        "selectionRule": "真实叙事中存在反差、预期反转、尺度错位、反应或回扣",
+        "requiredSignals": ["semantic_contrast", "expectation_reversal", "scale_mismatch", "reaction_timing", "visual_callback"],
+        "minimumMatchedSignals": 1,
+        "runtimeEvidenceRequired": ["matchedSignal", "semanticBeatId", "sourceRange", "fallbackReasonWhenNotApplied"],
+        "quietBeatPolicy": "已建立喜剧前提的说明拍只保留干净分格与墨线，不硬造笑点",
+        "fallback": "浅暖轻浮层、普通字幕或干净切"
+      },
+      "footage": {
+        "preserveOriginal": true,
+        "faceAndEvidenceRemainPhotographic": true,
+        "localizedTreatmentOnly": true,
+        "forbid": ["full_frame_cartoon_filter", "meme_template_replacement", "face_distortion_without_narrative_reason", "copyrighted_comic_character"]
+      },
+      "surface": {
+        "material": "warm_editorial_paper_with_ink_contour",
+        "paperOpacityRange": [0.22, 0.48],
+        "inkStrokePxAt1080p": [3, 7],
+        "misregistrationPxAt1080p": [0, 3],
+        "halftoneMaximumAreaRatio": 0.18,
+        "maximumSinglePanelAreaRatio": 0.38,
+        "maximumConcurrentPanels": 3,
+        "forbid": ["full_frame_halftone", "opaque_web_card", "comic_explosion_on_every_beat", "dense_sticker_wall"]
+      },
+      "composition": {
+        "motifs": ["asymmetric_comic_panel", "reaction_crop", "speech_balloon_short", "ink_underline", "localized_speed_lines", "impact_starburst"],
+        "humorMechanismPriority": ["semantic_contrast", "expectation_reversal", "scale_mismatch", "reaction_timing", "visual_callback"],
+        "speechBalloonMaximumChineseCharacters": 12,
+        "reactionPanelMaximumAreaRatio": 0.22,
+        "onePrimaryPunchlinePerBeat": true
+      },
+      "motion": {
+        "entry": "2-4_frames_anticipation_then_4-8_frames_action_then_4-6_frames_settle",
+        "hold": "stable_punchline_reading_with_no_loop",
+        "exit": "6-10_frames_reverse_layer_order_preclear",
+        "overshootScaleRange": [1.03, 1.08],
+        "forbid": ["bounce_every_element", "continuous_wobble", "random_shake", "full_frame_flash", "laugh_track_as_default"]
+      },
+      "audio": {
+        "paletteTriggers": ["pop", "motion", "turn", "awkward", "question", "info", "knowledge"],
+        "preferredTexture": "dry_short_editorial",
+        "ordinarySubtitleSfx": "forbidden",
+        "literalImpactTrigger": "impact_literal_only",
+        "forbid": ["laugh_track", "cartoon_barrage", "gunshot_for_generic_emphasis", "sound_before_visible_action"]
+      }
+    },
+    "xingzhe-pixel-editorial": {
+      "label": "像素风",
+      "intent": "以编辑型像素图形表达系统状态、步骤、选择和数字变化；真人、证据和正式文字保持清晰，像素化只发生在有语义的图形与过渡层。",
+      "sourceReference": "设计参考/行者风高保真样板/全量效果库_v4_像素风/index.html",
+      "grammarSignature": {
+        "id": "deterministic-state-machine",
+        "temporalModel": "discrete_state_transitions",
+        "shotUnit": "input_processing_state_result",
+        "spatialModel": "persistent_integer_grid_and_state_register",
+        "primaryTransition": "tile_swap_cursor_commit_or_state_replace",
+        "textBehavior": "grid_anchored_smooth_type_above_crisp_graphics",
+        "audioCadence": "exact_ui_semantics_only_on_true_state_change",
+        "stillnessPolicy": "completely_static_between_state_changes"
+      },
+      "editingGrammar": {
+        "sequence": ["declare_input", "show_processing_or_rule", "commit_one_state_change", "verify_output", "hold_stable_result"],
+        "camera": "locked_or_integer_step_reframe; never_add_analog_breathing_to_state_modules",
+        "topology": "persistent_grid_cells_state_register_and_one_active_cursor",
+        "cutPolicy": "cut_or_update_only_when_state_changes; explanations_without_change_keep_clean_a_roll",
+        "transitionPolicy": "tile_swap_cursor_commit_state_replace_or_integer_step_clear; no_continuous_float_or_random_glitch",
+        "soundPolicy": "ui_sound_name_must_equal_the_real_state_event; stable_state_is_silent",
+        "forbidSharedPatterns": ["centered_three_card_stack", "flat_margin_annotation_sequence", "continuous_depth_route", "setup_reaction_punchline_panels"]
+      },
+      "applicability": {
+        "selectionRule": "存在系统状态、规则、计数、输入、确认、错误、奖励或量化流程的真实变化",
+        "requiredSignals": ["system_state", "rule", "count", "input", "confirmation", "error", "reward", "quantized_process"],
+        "minimumMatchedSignals": 1,
+        "runtimeEvidenceRequired": ["matchedSignal", "semanticBeatId", "sourceRange", "fallbackReasonWhenNotApplied"],
+        "quietBeatPolicy": "没有状态变化的说明拍保持真人原画与普通字幕",
+        "fallback": "浅暖轻浮层、普通信息卡或干净切"
+      },
+      "footage": {
+        "preserveOriginal": true,
+        "pixelateFace": false,
+        "pixelateEvidence": false,
+        "pixelateText": false,
+        "localizedTreatmentOnly": true,
+        "forbid": ["full_frame_low_resolution_filter", "game_hud_takeover", "pixelated_face", "pixelated_qr_or_evidence"]
+      },
+      "pixelSystem": {
+        "baseGridPxAt1080p": [6, 12],
+        "accentPaletteMaximumColors": 8,
+        "edges": "integer_aligned_crisp_steps",
+        "textRendering": "authorized_fonts_antialiased_above_pixel_graphics",
+        "panelCornerMode": "stepped_or_square",
+        "maximumGridOverlayAreaRatio": 0.24,
+        "maximumConcurrentModules": 3
+      },
+      "composition": {
+        "motifs": ["pixel_cursor", "stepped_frame", "tile_reveal", "status_meter", "pixel_route", "limited_dither"],
+        "informationPriority": ["current_state", "next_action", "result", "decoration"],
+        "noDecorativeGameScore": true,
+        "realEvidenceDominatesHud": true
+      },
+      "motion": {
+        "entry": "quantized_2-4_frame_steps_inside_native_fps_timeline",
+        "hold": "fully_stable_no_jitter",
+        "exit": "reverse_tile_or_2-3_step_clear_before_next_information",
+        "stepFrames": [2, 3, 4],
+        "maximumActiveAnimationFps": 12,
+        "forbid": ["continuous_scanline", "random_glitch", "subpixel_blur", "full_frame_flicker", "perpetual_sprite_idle"]
+      },
+      "audio": {
+        "paletteTriggers": ["ui", "info", "typing", "timer", "error", "knowledge", "reward"],
+        "preferredTexture": "short_quantized_digital",
+        "ordinarySubtitleSfx": "forbidden",
+        "rewardCueRequiresRealReward": true,
+        "errorCueRequiresRealFailure": true,
+        "forbid": ["retro_music_loop", "coin_for_non_reward", "error_buzzer_for_opinion", "sound_before_state_change"]
+      }
+    }
+  }
+}

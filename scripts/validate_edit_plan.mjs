@@ -66,6 +66,7 @@ const DESIGN_FONT_ROLES = [
   "subtitleSecondary",
   "label",
   "body",
+  "coverTitle",
 ];
 let validationBaseDirectory = process.cwd();
 const skillRoot = path.resolve(

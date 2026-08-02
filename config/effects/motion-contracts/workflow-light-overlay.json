@@ -1,0 +1,213 @@
+{
+  "schemaVersion": "1.0",
+  "id": "workflow-light-overlay",
+  "name": "浅暖轻浮层流程",
+  "version": "1.0.0",
+  "status": "production_candidate",
+  "renderer": "hyperframes_or_timeline",
+  "purpose": "用透明暖白、小体积卡片和局部高亮呈现流程、清单或阶段，保留实拍背景和人物呼吸感。",
+  "narrativeContract": {
+    "useWhen": [
+      "内容偏知识、方法、流程或清单，气质需要明亮、克制、亲和",
+      "需要展示四至八个节点，但不适合科技感光路",
+      "实拍背景值得保留，人物仍需作为主视觉"
+    ],
+    "doNotUseWhen": [
+      "情绪紧张、冲突强烈或需要暗色科技感",
+      "每张卡片需要长段正文",
+      "画面负空间不足且无法做人物安全重构"
+    ],
+    "semanticTrigger": "当前节点随对应口播落位，上一节点降低强调，下一节点只作为轻量预告。",
+    "exitReason": "流程口播完成后，卡片组先退场，再返回完整真人画面或进入下一章节。"
+  },
+  "invariants": {
+    "preserveOriginalSubject": true,
+    "preserveFaceSafeZone": true,
+    "preserveSubtitleSafeZone": true,
+    "backgroundMustRemainVisible": true,
+    "maximumFullyReadableCards": 3,
+    "noLargeOpaqueWebCards": true,
+    "noFullFrameDashboardLayout": true,
+    "onlyCurrentCardMayUseStrongAccent": true,
+    "noFullFrameFlash": true,
+    "clearBeforeNextPrimaryVisualFrames": 3,
+    "audioVisualPeakToleranceFrames": 2
+  },
+  "parameters": {
+    "nodeCount": {
+      "type": "integer",
+      "default": 6,
+      "minimum": 3,
+      "maximum": 8
+    },
+    "visibleWindow": {
+      "type": "integer",
+      "default": 3,
+      "minimum": 2,
+      "maximum": 3
+    },
+    "labels": {
+      "type": "string_array",
+      "default": ["原片", "精剪", "声音", "画面", "字幕", "验收"],
+      "minimumItems": 3,
+      "maximumItems": 8,
+      "maximumCharactersPerItem": 5
+    },
+    "surfaceOpacity": {
+      "type": "number",
+      "default": 0.68,
+      "minimum": 0.5,
+      "maximum": 0.78
+    },
+    "backgroundBlurPx": {
+      "type": "number",
+      "default": 12,
+      "minimum": 6,
+      "maximum": 18
+    },
+    "cardScale": {
+      "type": "number",
+      "default": 1,
+      "minimum": 0.84,
+      "maximum": 1.12
+    },
+    "floatAmplitudePx": {
+      "type": "number",
+      "default": 4,
+      "minimum": 0,
+      "maximum": 7
+    },
+    "accentMode": {
+      "type": "enum",
+      "default": "orange-red-local",
+      "values": [
+        "orange-red-local",
+        "rational-blue-local",
+        "warm-gold-local"
+      ]
+    },
+    "showSectionTitle": {
+      "type": "boolean",
+      "default": true
+    },
+    "durationSeconds": {
+      "type": "number",
+      "default": 5,
+      "minimum": 2.8,
+      "maximum": 8
+    }
+  },
+  "timing": {
+    "fpsBasis": 25,
+    "entry": {
+      "titleFrames": 8,
+      "cardFrames": 7,
+      "staggerFrames": 3,
+      "ease": "power3.out"
+    },
+    "hold": {
+      "minimumCurrentCardFrames": 12,
+      "floatCycleFrames": 28,
+      "maximumFloatAmplitudePx": 7
+    },
+    "advance": {
+      "slideFrames": 9,
+      "highlightFrames": 6,
+      "ease": "power2.inOut"
+    },
+    "exit": {
+      "frames": 8,
+      "ease": "power2.in",
+      "clearBeforeNextPrimaryVisualFrames": 3
+    }
+  },
+  "materialContract": {
+    "surface": "transparent_warm_white",
+    "surfaceOpacityRange": [0.5, 0.78],
+    "edge": "one_pixel_low_contrast",
+    "shadow": "soft_local_only",
+    "blur": "background_only",
+    "forbid": [
+      "纯白不透明大卡片",
+      "整屏仪表盘网格",
+      "粗边框和大面积投影",
+      "一次显示全部长文本"
+    ]
+  },
+  "adaptationRules": {
+    "subjectRight": "卡片窗口位于左侧或下方负空间，当前卡不进入头脸安全区。",
+    "subjectLeft": "卡片窗口移到右侧，标题保持与卡片同一视觉轴。",
+    "subjectCenter": "竖版优先放在人物头顶；横版采用下方窄带，但必须避开字幕区。",
+    "landscape16x9": {
+      "maximumCardWidthRatio": 0.14,
+      "maximumCardHeightRatio": 0.15,
+      "carouselMaximumWidthRatio": 0.5,
+      "subtitleReserveBottomRatio": 0.16
+    },
+    "portrait9x16": {
+      "maximumCardWidthRatio": 0.58,
+      "maximumCardHeightRatio": 0.1,
+      "stackMaximumHeightRatio": 0.42,
+      "subjectHeadClearanceRatio": 0.06,
+      "subtitleReserveBottomRatio": 0.2
+    },
+    "fastSpeech": "缩短当前卡停稳，但滑动至少保留六帧；不一次闪出多卡。",
+    "slowSpeech": "延长停稳并保留轻微漂移，不增加更多装饰。",
+    "longLabel": "先压缩标签；无法压缩则使用一张当前卡加两条轻量预告，不扩成网页面板。",
+    "highInformationDensity": "优先只显示当前、上一、下一三张卡，其余节点用点或短线表示。"
+  },
+  "audioContract": {
+    "optional": false,
+    "duckUnderDialogue": true,
+    "cues": [
+      {
+        "id": "card_arrive",
+        "function": "当前卡片停稳",
+        "trigger": "visible_card_settle",
+        "recommendedSfxRole": "soft_tick",
+        "startGainDb": -18,
+        "maximumUses": 6
+      },
+      {
+        "id": "carousel_advance",
+        "function": "节点窗口向下一阶段移动",
+        "trigger": "card_window_shift",
+        "recommendedSfxRole": "soft_swipe",
+        "startGainDb": -20,
+        "maximumUses": 5
+      },
+      {
+        "id": "flow_complete",
+        "function": "最终节点完成",
+        "trigger": "final_card_settle",
+        "recommendedSfxRole": "soft_impact",
+        "startGainDb": -15,
+        "maximumUses": 1
+      }
+    ],
+    "forbid": [
+      "每张卡使用同样的重砸音",
+      "漂移动作持续配循环音效",
+      "声音早于卡片停稳超过两帧",
+      "音效盖住人声"
+    ]
+  },
+  "qualityGates": [
+    "背景和人物仍可清楚辨认",
+    "同一时刻最多三张卡完整可读",
+    "当前卡与相邻卡层级明确",
+    "卡片面积、透明度、边缘和阴影不产生网页弹窗感",
+    "横版使用横向窗口，竖版使用上方纵向或阶梯窗口，不机械裁切",
+    "卡片进入、滑动、漂移和高亮均与口播节拍一致",
+    "正常速度预览中退场完整、字幕与头脸无遮挡"
+  ],
+  "fallbacks": [
+    "process_progressive",
+    "info_bullets",
+    "hold_original_shot"
+  ],
+  "referenceImplementations": {
+    "landscape": "../../../../../videos/workflow-light-overlay/index.html",
+    "portrait": "../../../../../videos/workflow-light-overlay-vertical/index.html"
+  }
+}

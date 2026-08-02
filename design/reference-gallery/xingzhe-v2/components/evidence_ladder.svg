@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="brand-warm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F5B544"/>
+      <stop offset="1" stop-color="#E66A32"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="24" flood-color="#16181B" flood-opacity=".14"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="#F2EFE8"/>
+  <circle cx="1168" cy="86" r="170" fill="#6F8795" opacity=".07"/>
+  <circle cx="84" cy="670" r="190" fill="#F05A47" opacity=".045"/>
+  <text x="72" y="60" font-family="Avenir Next, PingFang SC, sans-serif" font-size="16" font-weight="700" letter-spacing="3" fill="#E98A2B">COMPONENT · DATA</text>
+  <text x="72" y="102" font-family="PingFang SC, sans-serif" font-size="34" font-weight="650" fill="#25282B">证据等级阶梯</text>
+  <text x="72" y="132" font-family="Avenir Next, PingFang SC, sans-serif" font-size="15" fill="#626A70">evidence_ladder · 状态 exit · fallback bullet_card</text>
+  <rect x="72" y="156" width="1136" height="492" rx="28" fill="#FBF8F1" filter="url(#soft-shadow)"/>
+  <defs><clipPath id="clip-94-178-1092-446"><rect x="94" y="178" width="1092" height="446" rx="20"/></clipPath></defs>
+  <rect x="94" y="178" width="1092" height="446" rx="20" fill="#E8E4DB"/>
+  <image x="94" y="178" width="1092" height="446" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-94-178-1092-446)" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMTIwIiBoZWlnaHQ9IjUxMCIgdmlld0JveD0iMCAwIDExMjAgNTEwIiBkYXRhLWNvbXBvbmVudC1wcmV2aWV3PSJldmlkZW5jZV9sYWRkZXIiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMTIwIiBoZWlnaHQ9IjUxMCIgcng9IjAiIGZpbGw9IiNGMkVGRTgiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIi8+PGcgZGF0YS1jb21wb25lbnQtaWQ9ImV2aWRlbmNlX2xhZGRlciIgZGF0YS1yZW5kZXJlcj0ic3ZnX3NlcXVlbmNlIiBkYXRhLXN0YXRlPSJleGl0Ij48dGV4dCB4PSI0MC44MDAwMDAwMDAwMDAwMDQiIHk9Ijg3LjkyNCIgdGV4dC1hbmNob3I9InN0YXJ0IiBmb250LWZhbWlseT0i6Z2S6bif5Y2O5YWJ5qCH6aKY6buR5L2TIiBmb250LXNpemU9IjQyLjg0IiBmb250LXdlaWdodD0iODAwIiBsZXR0ZXItc3BhY2luZz0iMGVtIiBmaWxsPSIjMjUyODJCIiBvcGFjaXR5PSIxIj7or4Hmja7nrYnnuqfpmLbmoq88L3RleHQ+PHJlY3QgeD0iMTIzLjg3MjAwMDAwMDAwMDAxIiB5PSIzNDkuMjQ4IiB3aWR0aD0iMTY2LjE0NCIgaGVpZ2h0PSI1MS40MDc5OTk5OTk5OTk5OTQiIHJ4PSIxMC43MSIgZmlsbD0iI0ZCRjhGMSIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjAiLz48dGV4dCB4PSIyMDYuOTQ0MDAwMDAwMDAwMDIiIHk9IjQwMC42NTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSLmgJ3mupDpu5HkvZMgQ04gTGlnaHQiIGZvbnQtc2l6ZT0iMjcuODQ2IiBmb250LXdlaWdodD0iNTAwIiBsZXR0ZXItc3BhY2luZz0iMGVtIiBmaWxsPSIjMjUyODJCIiBvcGFjaXR5PSIxIj7mjqjmtYs8L3RleHQ+PHJlY3QgeD0iMzMxLjU1MjAwMDAwMDAwMDEiIHk9IjI5Ny44NCIgd2lkdGg9IjE2Ni4xNDQiIGhlaWdodD0iMTAyLjgxNTk5OTk5OTk5OTk5IiByeD0iMTAuNzEiIGZpbGw9IiNGQkY4RjEiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIi8+PHRleHQgeD0iNDE0LjYyNCIgeT0iNDAwLjY1NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IuaAnea6kOm7keS9kyBDTiBMaWdodCIgZm9udC1zaXplPSIyNy44NDYiIGZvbnQtd2VpZ2h0PSI1MDAiIGxldHRlci1zcGFjaW5nPSIwZW0iIGZpbGw9IiMyNTI4MkIiIG9wYWNpdHk9IjEiPue6v+e0ojwvdGV4dD48cmVjdCB4PSI1MzkuMjMyMDAwMDAwMDAwMSIgeT0iMjQ2LjQzMiIgd2lkdGg9IjE2Ni4xNDQiIGhlaWdodD0iMTU0LjIyNCIgcng9IjEwLjcxIiBmaWxsPSIjRkJGOEYxIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMCIvPjx0ZXh0IHg9IjYyMi4zMDQwMDAwMDAwMDAxIiB5PSI0MDAuNjU2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0i5oCd5rqQ6buR5L2TIENOIExpZ2h0IiBmb250LXNpemU9IjI3Ljg0NiIgZm9udC13ZWlnaHQ9IjUwMCIgbGV0dGVyLXNwYWNpbmc9IjBlbSIgZmlsbD0iIzI1MjgyQiIgb3BhY2l0eT0iMSI+6K+B5o2uPC90ZXh0PjxyZWN0IHg9Ijc0Ni45MTIiIHk9IjE5NS4wMjQiIHdpZHRoPSIxNjYuMTQ0IiBoZWlnaHQ9IjIwNS42MzE5OTk5OTk5OTk5OCIgcng9IjEwLjcxIiBmaWxsPSIjRTk4QTJCIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMCIvPjx0ZXh0IHg9IjgyOS45ODQwMDAwMDAwMDAyIiB5PSI0MDAuNjU2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0i5oCd5rqQ6buR5L2TIENOIExpZ2h0IiBmb250LXNpemU9IjI3Ljg0NiIgZm9udC13ZWlnaHQ9IjUwMCIgbGV0dGVyLXNwYWNpbmc9IjBlbSIgZmlsbD0iIzFGMjMyNiIgb3BhY2l0eT0iMSI+5aSN5qC4PC90ZXh0PjwvZz48L3N2Zz4="/>
+    <rect x="110" y="194" width="146" height="28" rx="14" fill="#272B2F" opacity=".82"/>
+    <text x="183" y="213" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">SVG_SEQUENCE</text>
+  <text x="72" y="686" font-family="Avenir Next, sans-serif" font-size="13" font-weight="600" letter-spacing="2" fill="#626A70" opacity=".8">真实组件渲染 · 尺寸与色彩受当前模式配置约束</text>
+  <rect x="1110" y="674" width="98" height="5" rx="2.5" fill="url(#brand-warm)"/>
+</svg>

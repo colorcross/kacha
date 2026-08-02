@@ -29,11 +29,12 @@ function safeRelative(value, label) {
   return path.normalize(value);
 }
 
-function run(command, args, cwd) {
+function run(command, args, cwd, options = {}) {
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
+    env: options.env ?? process.env,
   });
   if (result.status !== 0) {
     throw new Error(
@@ -171,20 +172,39 @@ function coreIdentity(source) {
   };
 }
 
-function verifyBundle(bundle) {
+function verifyBundle(bundle, source) {
   if (!fs.existsSync(path.join(bundle, "SKILL.md"))) {
     throw new Error("组合后的 bundle 缺少 SKILL.md");
   }
-  run(process.execPath, [path.join(bundle, "tests", "run_tests.mjs")], bundle);
+  const projectFonts = path.resolve(source, "..", "Fonts");
+  const verificationEnvironment = fs.existsSync(projectFonts)
+    ? { ...process.env, KACHA_FONTS_DIR: projectFonts }
+    : process.env;
+  run(
+    process.execPath,
+    [path.join(bundle, "tests", "run_tests.mjs")],
+    bundle,
+    { env: verificationEnvironment },
+  );
   const privateTests = path.join(bundle, "tests", "private");
   if (fs.existsSync(privateTests)) {
     for (const entry of fs.readdirSync(privateTests).sort()) {
       if (entry.endsWith(".mjs")) {
-        run(process.execPath, [path.join(privateTests, entry)], bundle);
+        run(
+          process.execPath,
+          [path.join(privateTests, entry)],
+          bundle,
+          { env: verificationEnvironment },
+        );
       }
     }
   }
-  run("bash", [path.join(bundle, "tests", "test_installer.sh")], bundle);
+  run(
+    "bash",
+    [path.join(bundle, "tests", "test_installer.sh")],
+    bundle,
+    { env: verificationEnvironment },
+  );
 }
 
 const args = process.argv.slice(2);
@@ -246,7 +266,7 @@ try {
       "",
     ].join("\n"),
   );
-  if (!verifyOnly) verifyBundle(bundle);
+  if (!verifyOnly) verifyBundle(bundle, source);
   const bundleDigest = treeDigest(bundle);
   const before = targets.map((target) => ({
     ...target,

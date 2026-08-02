@@ -151,6 +151,35 @@ function ancestorDirectories(file) {
   return directories;
 }
 
+function materializeBundledPrivateRegistry(templateFile, output) {
+  const template = readJson(templateFile);
+  const privateDirectory = path.dirname(templateFile);
+  const records = (template.records ?? []).map((record) => {
+    const localFile = path.join(privateDirectory, record.fileName);
+    if (!fs.existsSync(localFile)) {
+      throw new Error(`咔嚓私有字体注册表指向缺失文件：${localFile}`);
+    }
+    if (sha256File(localFile) !== record.sha256) {
+      throw new Error(`咔嚓私有字体文件哈希已失效：${localFile}`);
+    }
+    return { ...record, file: localFile };
+  });
+  const registry = {
+    ...template,
+    generatedAt: new Date().toISOString(),
+    source: {
+      directory: privateDirectory,
+      fileCount: records.length,
+      materializedFrom: templateFile,
+    },
+    records,
+  };
+  registry.digest = sha256Value({ ...registry, digest: undefined });
+  const destination = `${path.resolve(output)}.bundled-fonts.json`;
+  writeJsonAtomic(destination, registry);
+  return destination;
+}
+
 function resolveFontRegistry({ input, output, explicit, config }) {
   if (explicit) return path.resolve(explicit);
   if (config.tools.fontRegistry) {
@@ -182,6 +211,16 @@ function resolveFontRegistry({ input, output, explicit, config }) {
       ]);
       return generated;
     }
+  }
+  const bundledPrivateRegistry = path.join(
+    skillDirectory,
+    "assets",
+    "private",
+    "fonts",
+    "authorized.json",
+  );
+  if (fs.existsSync(bundledPrivateRegistry)) {
+    return materializeBundledPrivateRegistry(bundledPrivateRegistry, output);
   }
   return null;
 }
@@ -313,13 +352,13 @@ function localFontForRole(registry, routing, roleId, text, allowRestricted) {
     )
   )).map((record) => {
     const aliases = fontAliases(record).map((name) => name.toLowerCase());
-    const familyIndex = role.preferredFamilies.findIndex((family) => {
+    const familyIndex = (role.preferredFamilies ?? []).findIndex((family) => {
       const requested = family.toLowerCase();
       return aliases.some(
         (name) => name === requested || name.includes(requested) || requested.includes(name),
       );
     });
-    const classIndex = role.preferredClasses.findIndex(
+    const classIndex = (role.preferredClasses ?? []).findIndex(
       (fontClass) => record.classes?.includes(fontClass),
     );
     const weight = Number(record.weightClass ?? 400);

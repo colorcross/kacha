@@ -208,7 +208,7 @@ mix stem。后续 `qc incremental` 会测量闪避后的实际分轨、重建组
     },
     "overrides": {
       "palette": {
-        "accent": "#E9A92F"
+        "accent": "#E98A2B"
       },
       "motion": {
         "standardFrames": 12
@@ -255,7 +255,9 @@ node scripts/kacha.mjs facefusion probe
 
 行者风默认字幕字体是已授权的真正金陵体
 `方正粗金陵简体 / FZJinLS-B-GB`。生成项目时会读取 `tools.fontRegistry`
-并验证字体文件 SHA-256 和授权状态；失败时停止，不静默换字体。生产台的
+并验证字体文件 SHA-256 和授权状态；失败时停止，不静默换字体。开发态也可
+将授权字体与 `authorized.json` 放在 Git 忽略的 `assets/private/fonts/`，运行时
+会把可移植清单重定位到当前咔嚓安装目录后再冻结进字幕计划。生产台的
 字段、生成产物与信任边界见
 [`references/production-studio.md`](../references/production-studio.md)。
 
@@ -308,8 +310,11 @@ Python/Shell 子渲染器；能力探测会实际运行 `-version`，不能只�
 口播字幕计划未显式提供 `--font-registry` 时，先读取
 `tools.fontRegistry`，再从素材路径向上查找
 `.kacha/fonts/authorized.json` 或 `.work/kacha-font-registry-authorized.json`；
-仍未找到时，才扫描项目 `Fonts`、`fonts` 或 `assets/fonts`。自动扫描不等于
-自动获得商业授权，未开放字体只有存在项目授权记录时才会自动命中。
+仍未找到时扫描项目 `Fonts`、`fonts` 或 `assets/fonts`；最后才读取咔嚓本地
+`assets/private/fonts/authorized.json`。私有清单只保存可移植路径，字幕计划
+会按当前安装位置重定位并复核 SHA-256，避免 Codex/Claude 安装副本仍指向开发
+仓库。自动扫描不等于自动获得商业授权，未开放字体只有存在项目授权记录时才会
+自动命中。
 
 安全合同、授权、源文件只读、输出不覆盖、完整语义、PTS 共边界和 release
 门禁不是可调参数。

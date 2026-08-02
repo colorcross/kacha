@@ -8,8 +8,8 @@
     {
       "id": "xingzhe",
       "name": "行者风",
-      "tagline": "明亮克制，淡定幽默",
-      "description": "从当前已验证运行参数提取的默认风格。自然表达优先，暖色编辑感，适量动效与画面呼吸。",
+      "tagline": "暖而不黄，静而不闷",
+      "description": "行者风 2.0。人物与证据优先，以暖灰、石墨和克制暖橙建立编辑感，用路径、节点和语义色表达行动与判断。",
       "builtIn": true,
       "design": {
         "system": "dahui-video-system",
@@ -29,10 +29,10 @@
         "preferredFontFamily": "方正粗金陵简体",
         "fontSizeRatio": 0.048,
         "maxWidthRatio": 0.8,
-        "baselineYRatio": 0.76,
+        "baselineYRatio": 0.72,
         "primaryColor": "#FFF8EE",
-        "emphasisColor": "#E9A92F",
-        "shadowOpacity": 0.6,
+        "emphasisColor": "#E98A2B",
+        "shadowOpacity": 0.68,
         "singleLine": true,
         "background": "none"
       },
@@ -87,12 +87,12 @@
         },
         "overrides": {
           "palette": {
-            "canvas": "#F3F1EA",
+            "canvas": "#F2EFE8",
             "surface": "#FFFFFF",
-            "ink": "#172027",
-            "inkSecondary": "#52616A",
-            "accent": "#E9A92F",
-            "accentSecondary": "#6F8C95"
+            "ink": "#202326",
+            "inkSecondary": "#58636A",
+            "accent": "#E98A2B",
+            "accentSecondary": "#6F8795"
           }
         }
       },
@@ -102,9 +102,9 @@
         "preferredFontFamily": "方正粗金陵简体",
         "fontSizeRatio": 0.046,
         "maxWidthRatio": 0.82,
-        "baselineYRatio": 0.75,
-        "primaryColor": "#FFFFFF",
-        "emphasisColor": "#E9A92F",
+        "baselineYRatio": 0.72,
+        "primaryColor": "#202326",
+        "emphasisColor": "#E98A2B",
         "shadowOpacity": 0.68,
         "singleLine": true,
         "background": "none"
@@ -142,6 +142,71 @@
       }
     },
     {
+      "id": "deep-reading",
+      "name": "沉浸阅读",
+      "tagline": "更稳、更深、更有余味",
+      "description": "适合解读好书和长篇思考；保留真实停顿，以资料、引用和章节证明支撑观点，减少持续音乐和短视频式刺激。",
+      "builtIn": true,
+      "baseStyleId": "xingzhe",
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "xingzhe",
+        "modes": {
+          "show": "book-talk",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "footage",
+          "density": "spacious"
+        },
+        "overrides": {}
+      },
+      "caption": {
+        "templateId": "editorial-serif",
+        "fontRole": "caption_editorial",
+        "preferredFontFamily": "方正粗金陵简体",
+        "fontSizeRatio": 0.047,
+        "maxWidthRatio": 0.78,
+        "baselineYRatio": 0.72,
+        "primaryColor": "#FFF9F1",
+        "emphasisColor": "#B96D45",
+        "shadowOpacity": 0.68,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "warm",
+        "denoise": "light",
+        "targetLufs": -21.5,
+        "truePeakDbtp": -4.5,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": true,
+        "presetId": "minimal-piano",
+        "targetBelowDialogueDb": 21,
+        "ducking": "gentle",
+        "coverage": "opening_chapter_ending_only"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 22,
+          "whitening": 12,
+          "toneEvening": 20,
+          "nasolabialSoftening": 14
+        }
+      },
+      "direction": {
+        "openingId": "cold_open_marker",
+        "transitionBias": "sound-bridge-first",
+        "effectDensity": "restrained",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      }
+    },
+    {
       "id": "modern-tech",
       "name": "现代科技",
       "tagline": "清脆节奏，界面与数据优先",
@@ -165,8 +230,8 @@
             "surfaceElevated": "#232C38",
             "ink": "#F6F8FA",
             "inkSecondary": "#AAB6C4",
-            "accent": "#FF7A1A",
-            "accentSecondary": "#6ED8FF",
+            "accent": "#E98A2B",
+            "accentSecondary": "#6F8795",
             "darkSurface": "#0C1015",
             "textOnDark": "#F6F8FA"
           },
@@ -182,9 +247,9 @@
         "preferredFontFamily": "Source Han Sans CN",
         "fontSizeRatio": 0.046,
         "maxWidthRatio": 0.82,
-        "baselineYRatio": 0.75,
+        "baselineYRatio": 0.72,
         "primaryColor": "#F6F8FA",
-        "emphasisColor": "#FF7A1A",
+        "emphasisColor": "#F05A47",
         "shadowOpacity": 0.72,
         "singleLine": true,
         "background": "none"
@@ -240,12 +305,12 @@
         },
         "overrides": {
           "palette": {
-            "canvas": "#DDD3C2",
-            "surface": "#F2EADF",
-            "ink": "#25231F",
-            "inkSecondary": "#625E55",
-            "accent": "#C78945",
-            "accentSecondary": "#7E6A54"
+            "canvas": "#E8E3DA",
+            "surface": "#F6F2EA",
+            "ink": "#272A2B",
+            "inkSecondary": "#656861",
+            "accent": "#C77838",
+            "accentSecondary": "#7E7567"
           },
           "motion": {
             "standardFrames": 12,
@@ -260,7 +325,7 @@
         "preferredFontFamily": "方正粗金陵简体",
         "fontSizeRatio": 0.047,
         "maxWidthRatio": 0.78,
-        "baselineYRatio": 0.76,
+        "baselineYRatio": 0.72,
         "primaryColor": "#FFF9F1",
         "emphasisColor": "#D7A45B",
         "shadowOpacity": 0.64,
@@ -420,7 +485,10 @@
   "professionalAutoDirector": {
     "enabledByDefault": true,
     "rules": [
+      "每条视频必须且只能选择一个主开场动画；从首个有效声音或动作建立变化，并在3秒内兑现问题、冲突、收益或主题。",
       "未指定区间先判断信息、情绪或视角是否变化，再决定切镜、转场或保持。",
+      "语义画面按生产路由选择：重点放大、负面缩小、突出用蒙版、多观点用抠像、事实加可核验插图、移动用关键帧、创意用有共同结构的变形。",
+      "空间变化优先通过蒙版视线、背景与人物间插框、文字纵深或人物抠像演示舞台建立，并始终保护人物、字幕、品牌和平台UI。",
       "优先解决内容、切点、音画同步和连接，再选择组件、布局、字体、颜色、动效与声音。",
       "普通口播字幕保持单行稳定；只有真实对照、层级或空间关系才升级排版。",
       "画面运动遵守收紧、停稳、释放；运动覆盖默认不超过55%，静止不少于45%。",

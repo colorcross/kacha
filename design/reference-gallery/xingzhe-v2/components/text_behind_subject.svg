@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="brand-warm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F5B544"/>
+      <stop offset="1" stop-color="#E66A32"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="24" flood-color="#16181B" flood-opacity=".14"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="#F2EFE8"/>
+  <circle cx="1168" cy="86" r="170" fill="#6F8795" opacity=".07"/>
+  <circle cx="84" cy="670" r="190" fill="#F05A47" opacity=".045"/>
+  <text x="72" y="60" font-family="Avenir Next, PingFang SC, sans-serif" font-size="16" font-weight="700" letter-spacing="3" fill="#E98A2B">COMPONENT · TEXT</text>
+  <text x="72" y="102" font-family="PingFang SC, sans-serif" font-size="34" font-weight="650" fill="#25282B">人物后文字</text>
+  <text x="72" y="132" font-family="Avenir Next, PingFang SC, sans-serif" font-size="15" fill="#626A70">text_behind_subject · 状态 peak · fallback statement_title</text>
+  <rect x="72" y="156" width="1136" height="492" rx="28" fill="#FBF8F1" filter="url(#soft-shadow)"/>
+  <defs><clipPath id="clip-94-178-1092-446"><rect x="94" y="178" width="1092" height="446" rx="20"/></clipPath></defs>
+  <rect x="94" y="178" width="1092" height="446" rx="20" fill="#E8E4DB"/>
+  <image x="94" y="178" width="1092" height="446" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-94-178-1092-446)" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMTIwIiBoZWlnaHQ9IjUxMCIgdmlld0JveD0iMCAwIDExMjAgNTEwIiBkYXRhLWNvbXBvbmVudC1wcmV2aWV3PSJ0ZXh0X2JlaGluZF9zdWJqZWN0Ij48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMTEyMCIgaGVpZ2h0PSI1MTAiIHJ4PSIwIiBmaWxsPSIjRjJFRkU4IiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMCIvPjxnIGRhdGEtY29tcG9uZW50LWlkPSJ0ZXh0X2JlaGluZF9zdWJqZWN0IiBkYXRhLXJlbmRlcmVyPSJtYXNrX2NvbXBvc2l0ZSIgZGF0YS1zdGF0ZT0icGVhayI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJwZXJzb24tZGVwdGgtdGV4dF9iZWhpbmRfc3ViamVjdCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI0ZGOEEzRCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI0YwNDQ1QSIvPjwvbGluZWFyR3JhZGllbnQ+PGZpbHRlciBpZD0icGVyc29uLWRlcHRoLXNoYWRvdy10ZXh0X2JlaGluZF9zdWJqZWN0IiB4PSItMjAlIiB5PSItMjAlIiB3aWR0aD0iMTQwJSIgaGVpZ2h0PSIxNDAlIj48ZmVEcm9wU2hhZG93IGR4PSIwIiBkeT0iNS4xNDA4IiBzdGREZXZpYXRpb249IjUuOTk3NTk5OTk5OTk5OTk5IiBmbG9vZC1jb2xvcj0iIzIwMjMyNiIgZmxvb2Qtb3BhY2l0eT0iMC4yNCIvPjwvZmlsdGVyPjwvZGVmcz48ZyBmaWx0ZXI9InVybCgjcGVyc29uLWRlcHRoLXNoYWRvdy10ZXh0X2JlaGluZF9zdWJqZWN0KSI+PHRleHQgeD0iNjEuNTY4MDAwMDAwMDAwMDA1IiB5PSIxNTIuMTg0IiB0ZXh0LWFuY2hvcj0ic3RhcnQiIGZvbnQtZmFtaWx5PSLpnZLpuJ/ljY7lhYnmoIfpopjpu5HkvZMiIGZvbnQtc2l6ZT0iMTAyLjgxNTk5OTk5OTk5OTk5IiBmb250LXdlaWdodD0iODAwIiBsZXR0ZXItc3BhY2luZz0iLTAuMDI1ZW0iIGZpbGw9InVybCgjcGVyc29uLWRlcHRoLXRleHRfYmVoaW5kX3N1YmplY3QpIiBvcGFjaXR5PSIwLjk4Ij7kv6Hmga/lj5jljJY8L3RleHQ+PHRleHQgeD0iMzUyLjMyMDAwMDAwMDAwMDA1IiB5PSIyNzIuMTM2IiB0ZXh0LWFuY2hvcj0ic3RhcnQiIGZvbnQtZmFtaWx5PSLpnZLpuJ/ljY7lhYnmoIfpopjpu5HkvZMiIGZvbnQtc2l6ZT0iMTE1LjY2OCIgZm9udC13ZWlnaHQ9IjgwMCIgbGV0dGVyLXNwYWNpbmc9Ii0wLjAyNWVtIiBmaWxsPSIjNTU3N0I4IiBvcGFjaXR5PSIwLjk4Ij7mg4Xnu6rlj5jljJY8L3RleHQ+PHRleHQgeD0iNjEuNTY4MDAwMDAwMDAwMDA1IiB5PSIzOTIuMDg4IiB0ZXh0LWFuY2hvcj0ic3RhcnQiIGZvbnQtZmFtaWx5PSLpnZLpuJ/ljY7lhYnmoIfpopjpu5HkvZMiIGZvbnQtc2l6ZT0iMTAyLjgxNTk5OTk5OTk5OTk5IiBmb250LXdlaWdodD0iODAwIiBsZXR0ZXItc3BhY2luZz0iLTAuMDI1ZW0iIGZpbGw9InVybCgjcGVyc29uLWRlcHRoLXRleHRfYmVoaW5kX3N1YmplY3QpIiBvcGFjaXR5PSIwLjk4Ij7op4bop5Llj5jljJY8L3RleHQ+PC9nPjwvZz48L3N2Zz4="/>
+    <rect x="110" y="194" width="146" height="28" rx="14" fill="#272B2F" opacity=".82"/>
+    <text x="183" y="213" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">MASK_COMPOSITE</text>
+  <text x="72" y="686" font-family="Avenir Next, sans-serif" font-size="13" font-weight="600" letter-spacing="2" fill="#626A70" opacity=".8">真实组件渲染 · 尺寸与色彩受当前模式配置约束</text>
+  <rect x="1110" y="674" width="98" height="5" rx="2.5" fill="url(#brand-warm)"/>
+</svg>

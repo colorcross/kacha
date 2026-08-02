@@ -23,6 +23,10 @@ node scripts/kacha.mjs studio serve --port 4187 --no-open
 
 ## 默认“行者风”
 
+默认已升级为行者风 2.0：暖灰中性色承担大面积，暖橙只做品牌和一般强调；
+冲突/笑点使用信号珊瑚，AI/系统使用理性蓝，完成/证据使用验证绿。封面人物
+默认约占高度 38%–44%，给标题和内容证据留出更完整的负空间。
+
 `config/production-studio.json` 的 `defaultStyleId` 固定指向 `xingzhe`。
 它来自当前已验证的运行参数：
 

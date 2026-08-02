@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="brand-warm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F5B544"/>
+      <stop offset="1" stop-color="#E66A32"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="24" flood-color="#16181B" flood-opacity=".14"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="#F2EFE8"/>
+  <circle cx="1168" cy="86" r="170" fill="#6F8795" opacity=".07"/>
+  <circle cx="84" cy="670" r="190" fill="#F05A47" opacity=".045"/>
+  <text x="72" y="60" font-family="Avenir Next, PingFang SC, sans-serif" font-size="16" font-weight="700" letter-spacing="3" fill="#E98A2B">COMPONENT · DATA</text>
+  <text x="72" y="102" font-family="PingFang SC, sans-serif" font-size="34" font-weight="650" fill="#25282B">条形图</text>
+  <text x="72" y="132" font-family="Avenir Next, PingFang SC, sans-serif" font-size="15" fill="#626A70">bar_chart · 状态 exit · fallback metric_grid</text>
+  <rect x="72" y="156" width="1136" height="492" rx="28" fill="#FBF8F1" filter="url(#soft-shadow)"/>
+  <defs><clipPath id="clip-94-178-1092-446"><rect x="94" y="178" width="1092" height="446" rx="20"/></clipPath></defs>
+  <rect x="94" y="178" width="1092" height="446" rx="20" fill="#E8E4DB"/>
+  <image x="94" y="178" width="1092" height="446" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-94-178-1092-446)" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMTIwIiBoZWlnaHQ9IjUxMCIgdmlld0JveD0iMCAwIDExMjAgNTEwIiBkYXRhLWNvbXBvbmVudC1wcmV2aWV3PSJiYXJfY2hhcnQiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMTIwIiBoZWlnaHQ9IjUxMCIgcng9IjAiIGZpbGw9IiNGMkVGRTgiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIi8+PGcgZGF0YS1jb21wb25lbnQtaWQ9ImJhcl9jaGFydCIgZGF0YS1yZW5kZXJlcj0ic3ZnX3NlcXVlbmNlIiBkYXRhLXN0YXRlPSJleGl0Ij48dGV4dCB4PSI0MC44MDAwMDAwMDAwMDAwMDQiIHk9Ijg3LjkyNCIgdGV4dC1hbmNob3I9InN0YXJ0IiBmb250LWZhbWlseT0i6Z2S6bif5Y2O5YWJ5qCH6aKY6buR5L2TIiBmb250LXNpemU9IjQyLjg0IiBmb250LXdlaWdodD0iODAwIiBsZXR0ZXItc3BhY2luZz0iMGVtIiBmaWxsPSIjMjUyODJCIiBvcGFjaXR5PSIxIj7lhYjmiorlhoXlrrnlgZrlr7k8L3RleHQ+PHJlY3QgeD0iMTY1LjQwODAwMDAwMDAwMDAyIiB5PSIyMTkuMzU3MTE5OTk5OTk5OTgiIHdpZHRoPSIxMjQuNjA4IiBoZWlnaHQ9IjE3Mi43MzA4Nzk5OTk5OTk5OCIgcng9IjIyLjQyOTQ0IiBmaWxsPSIjNkY4Nzk1IiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMCIvPjx0ZXh0IHg9IjIyNy43MTIwMDAwMDAwMDAwMiIgeT0iMjA0LjM2MzExOTk5OTk5OTk4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0i5oCd5rqQ6buR5L2TIENOIExpZ2h0IiBmb250LXNpemU9IjI3Ljg0NiIgZm9udC13ZWlnaHQ9IjUwMCIgbGV0dGVyLXNwYWNpbmc9IjBlbSIgZmlsbD0iIzI1MjgyQiIgb3BhY2l0eT0iMSI+NzI8L3RleHQ+PHJlY3QgeD0iMzczLjA4ODAwMDAwMDAwMDEiIHk9IjI3Ni45MzQwOCIgd2lkdGg9IjEyNC42MDgiIGhlaWdodD0iMTE1LjE1MzkyIiByeD0iMjIuNDI5NDQiIGZpbGw9IiM2Rjg3OTUiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIi8+PHRleHQgeD0iNDM1LjM5MjAwMDAwMDAwMDA1IiB5PSIyNjEuOTQwMDc5OTk5OTk5OTciIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSLmgJ3mupDpu5HkvZMgQ04gTGlnaHQiIGZvbnQtc2l6ZT0iMjcuODQ2IiBmb250LXdlaWdodD0iNTAwIiBsZXR0ZXItc3BhY2luZz0iMGVtIiBmaWxsPSIjMjUyODJCIiBvcGFjaXR5PSIxIj40ODwvdGV4dD48cmVjdCB4PSI1ODAuNzY4IiB5PSIxODUuNzcwNTU5OTk5OTk5OTYiIHdpZHRoPSIxMjQuNjA4IiBoZWlnaHQ9IjIwNi4zMTc0NCIgcng9IjIyLjQyOTQ0IiBmaWxsPSIjRTk4QTJCIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMCIvPjx0ZXh0IHg9IjY0My4wNzIiIHk9IjE3MC43NzY1NTk5OTk5OTk5NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IuaAnea6kOm7keS9kyBDTiBMaWdodCIgZm9udC1zaXplPSIyNy44NDYiIGZvbnQtd2VpZ2h0PSI1MDAiIGxldHRlci1zcGFjaW5nPSIwZW0iIGZpbGw9IiMyNTI4MkIiIG9wYWNpdHk9IjEiPjg2PC90ZXh0PjxyZWN0IHg9Ijc4OC40NDgwMDAwMDAwMDAxIiB5PSIyMzguNTQ5NDM5OTk5OTk5OTgiIHdpZHRoPSIxMjQuNjA4IiBoZWlnaHQ9IjE1My41Mzg1NiIgcng9IjIyLjQyOTQ0IiBmaWxsPSIjNkY4Nzk1IiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMCIvPjx0ZXh0IHg9Ijg1MC43NTIwMDAwMDAwMDAxIiB5PSIyMjMuNTU1NDM5OTk5OTk5OTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSLmgJ3mupDpu5HkvZMgQ04gTGlnaHQiIGZvbnQtc2l6ZT0iMjcuODQ2IiBmb250LXdlaWdodD0iNTAwIiBsZXR0ZXItc3BhY2luZz0iMGVtIiBmaWxsPSIjMjUyODJCIiBvcGFjaXR5PSIxIj42NDwvdGV4dD48L2c+PC9zdmc+"/>
+    <rect x="110" y="194" width="146" height="28" rx="14" fill="#272B2F" opacity=".82"/>
+    <text x="183" y="213" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">SVG_SEQUENCE</text>
+  <text x="72" y="686" font-family="Avenir Next, sans-serif" font-size="13" font-weight="600" letter-spacing="2" fill="#626A70" opacity=".8">真实组件渲染 · 尺寸与色彩受当前模式配置约束</text>
+  <rect x="1110" y="674" width="98" height="5" rx="2.5" fill="url(#brand-warm)"/>
+</svg>

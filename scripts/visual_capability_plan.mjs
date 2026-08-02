@@ -15,6 +15,52 @@ const args = process.argv.slice(2);
 const action = args[0];
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillDirectory = path.resolve(scriptDirectory, "..");
+const productionMotionPolicyFile = path.join(
+  skillDirectory,
+  "config",
+  "effects",
+  "production-motion-policy.json",
+);
+const openingRegistryFile = path.join(
+  skillDirectory,
+  "config",
+  "effects",
+  "openings.json",
+);
+const netstyleRegistryFile = path.join(
+  skillDirectory,
+  "config",
+  "effects",
+  "z-en-netstyle.json",
+);
+
+const DECISION_RULES_BY_FAMILY = {
+  semantic_motion: [
+    "importance_zoom",
+    "negative_shrink",
+    "highlight_mask",
+    "viewpoint_cutout",
+    "fact_evidence",
+    "movement_keyframe",
+    "creative_morph",
+  ],
+  mask_depth: ["highlight_mask", "focus_route"],
+  gaze_guidance: ["highlight_mask", "focus_route"],
+  pip: ["viewpoint_cutout"],
+  supporting_media: ["fact_evidence"],
+  keyframe_variation: ["movement_keyframe"],
+  spatial_depth: [
+    "focus_route",
+    "frame_between_layers",
+    "text_depth",
+    "cutout_demo_stage",
+  ],
+  person_depth_text: ["text_depth"],
+};
+
+const DEFAULT_DECISION_RULE_BY_FAMILY = Object.fromEntries(
+  Object.entries(DECISION_RULES_BY_FAMILY).map(([family, ids]) => [family, ids[0]]),
+);
 
 function option(name, fallback = null) {
   const index = args.indexOf(name);
@@ -49,7 +95,55 @@ function maximumCount(policy, durationSeconds) {
   );
 }
 
-function coveragePolicy(profileId, durationSeconds) {
+function isObject(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function deepMerge(left, right) {
+  if (!isObject(left) || !isObject(right)) return structuredClone(right);
+  const merged = structuredClone(left);
+  for (const [key, value] of Object.entries(right)) {
+    merged[key] = isObject(value) && isObject(merged[key])
+      ? deepMerge(merged[key], value)
+      : structuredClone(value);
+  }
+  return merged;
+}
+
+function loadProductionMotionPolicy() {
+  const policy = readJson(productionMotionPolicyFile);
+  if (policy.schemaVersion !== "1.0" || policy.status !== "production") {
+    throw new Error("production motion policy 无效");
+  }
+  const coreIds = new Set(
+    (readJson(openingRegistryFile).effects ?? []).map((effect) => effect.id),
+  );
+  const netstyleOpeningIds = new Set(
+    (readJson(netstyleRegistryFile).effects ?? [])
+      .filter((effect) => effect.family === "opening")
+      .map((effect) => effect.id),
+  );
+  for (const id of policy.opening?.registeredCoreEffects ?? []) {
+    if (!coreIds.has(id)) throw new Error(`生产动效策略引用了不存在的核心开场：${id}`);
+  }
+  for (const id of policy.opening?.registeredNetstyleEffects ?? []) {
+    if (!netstyleOpeningIds.has(id)) {
+      throw new Error(`生产动效策略引用了不存在的网感开场：${id}`);
+    }
+  }
+  const routingIds = new Set([
+    ...(policy.semanticRouting ?? []).map((entry) => entry.id),
+    ...(policy.spatialRouting ?? []).map((entry) => entry.id),
+  ]);
+  for (const [family, ids] of Object.entries(DECISION_RULES_BY_FAMILY)) {
+    for (const id of ids) {
+      if (!routingIds.has(id)) throw new Error(`${family} 引用了不存在的生产决策：${id}`);
+    }
+  }
+  return policy;
+}
+
+function coveragePolicy(profileId, durationSeconds, requestedShowId = null) {
   const loaded = loadStyleProfile(profileId);
   const usageFile = path.join(
     skillDirectory,
@@ -68,28 +162,128 @@ function coveragePolicy(profileId, durationSeconds) {
   ) {
     throw new Error(`风格 ${profileId} 的 capability usage 配置无效`);
   }
-  const active = durationSeconds >= Number(usage.minimumDurationSeconds ?? 0);
+  const showId = requestedShowId || usage.defaultShow || "tool-share";
+  const showProfile = usage.showProfiles?.[showId];
+  if (usage.showProfiles && !showProfile) {
+    throw new Error(`风格 ${profileId} 没有栏目能力策略：${showId}`);
+  }
+  const selected = showProfile
+    ? deepMerge(
+        Object.fromEntries(
+          Object.entries(usage).filter(([key]) => key !== "showProfiles"),
+        ),
+        showProfile,
+      )
+    : usage;
+  const productionMotionPolicy = loadProductionMotionPolicy();
+  const active = durationSeconds >= Number(selected.minimumDurationSeconds ?? 0);
   const families = Object.fromEntries(
-    Object.entries(usage.families).map(([family, policy]) => [
+    Object.entries(selected.families).map(([family, policy]) => [
       family,
       {
-        minimum: active ? requiredCount(policy, durationSeconds) : 0,
+        minimum: family === "opening"
+          ? Number(productionMotionPolicy.opening.primaryEffectCount)
+          : active ? requiredCount(policy, durationSeconds) : 0,
         maximum: maximumCount(policy, durationSeconds),
       },
     ]),
   );
   return {
     profileId,
+    showId,
     styleDigest: loaded.digest,
     profileDigest: sha256File(usageFile),
-    capabilityProfile: usage.profile,
+    productionMotionPolicyId: productionMotionPolicy.id,
+    productionMotionPolicyDigest: sha256File(productionMotionPolicyFile),
+    capabilityProfile: selected.profile,
     durationSeconds,
     active,
     families,
-    resourceRules: usage.resourceRules,
-    diversity: usage.diversity,
-    perceptual: usage.perceptual,
+    resourceRules: selected.resourceRules,
+    diversity: selected.diversity,
+    perceptual: selected.perceptual,
+    longFormRequirements: selected.longFormRequirements,
+    openingContract: productionMotionPolicy.opening,
+    semanticRouting: productionMotionPolicy.semanticRouting,
+    spatialRouting: productionMotionPolicy.spatialRouting,
+    professionalMotionContract: productionMotionPolicy.professionalContract,
   };
+}
+
+function requireContractFields(value, fields, label, errors) {
+  for (const field of fields) {
+    if (value?.[field] === undefined || value?.[field] === null || value?.[field] === "") {
+      errors.push(`${label}.${field} 缺失`);
+    }
+  }
+}
+
+function validateOpeningEvent(event, label, policy, errors) {
+  const contract = policy.openingContract;
+  const implementation = event.implementation ?? {};
+  const start = Number(event.startSeconds);
+  if (start > Number(contract.startAtOrBeforeSeconds)) {
+    errors.push(
+      `${label} 开场必须在 ${contract.startAtOrBeforeSeconds} 秒内开始建立可见变化`,
+    );
+  }
+  const promiseBySeconds = Number(implementation.promiseBySeconds);
+  if (
+    !Number.isFinite(promiseBySeconds)
+    || promiseBySeconds > Number(contract.promiseBySeconds)
+    || promiseBySeconds < start
+  ) {
+    errors.push(`${label}.implementation.promiseBySeconds 必须在开场后且不晚于 3 秒`);
+  }
+  if (implementation.openingMode === "registered") {
+    const allowed = new Set([
+      ...(contract.registeredCoreEffects ?? []),
+      ...(contract.registeredNetstyleEffects ?? []),
+    ]);
+    if (!allowed.has(implementation.effectId)) {
+      errors.push(`${label}.implementation.effectId 不是已注册生产开场`);
+    }
+  } else if (implementation.openingMode === "custom") {
+    requireContractFields(
+      implementation.customContract,
+      contract.customContractRequiredFields ?? [],
+      `${label}.implementation.customContract`,
+      errors,
+    );
+  } else {
+    errors.push(`${label}.implementation.openingMode 必须是 registered 或 custom`);
+  }
+}
+
+function validateProductionDecision(event, label, policy, errors) {
+  const allowedRuleIds = DECISION_RULES_BY_FAMILY[event.family];
+  if (!allowedRuleIds) return;
+  const implementation = event.implementation ?? {};
+  if (implementation.selectionMode === "custom") {
+    requireContractFields(
+      implementation.customContract,
+      policy.openingContract.customContractRequiredFields ?? [],
+      `${label}.implementation.customContract`,
+      errors,
+    );
+    return;
+  }
+  if (implementation.selectionMode !== "registered") {
+    errors.push(`${label}.implementation.selectionMode 必须是 registered 或 custom`);
+    return;
+  }
+  if (!allowedRuleIds.includes(implementation.decisionRuleId)) {
+    errors.push(`${label}.implementation.decisionRuleId 不符合 ${event.family} 的生产路由`);
+    return;
+  }
+  const allRoutes = [
+    ...(policy.semanticRouting ?? []),
+    ...(policy.spatialRouting ?? []),
+  ];
+  const route = allRoutes.find((entry) => entry.id === implementation.decisionRuleId);
+  if (!route || route.effectId !== implementation.effectId) {
+    errors.push(`${label}.implementation.effectId 与生产决策不一致`);
+  }
 }
 
 function eventDuration(event) {
@@ -139,7 +333,11 @@ function validatePlan(planFile, forExecution = false, timelineFile = null) {
   }
   let policy = null;
   try {
-    policy = coveragePolicy(plan.styleProfile ?? "xingzhe", duration);
+    policy = coveragePolicy(
+      plan.styleProfile ?? "xingzhe",
+      duration,
+      plan.showId ?? null,
+    );
   } catch (error) {
     errors.push(error.message);
   }
@@ -148,6 +346,9 @@ function validatePlan(planFile, forExecution = false, timelineFile = null) {
     && (
       plan.policy?.profileDigest !== policy.profileDigest
       || plan.policy?.capabilityProfile !== policy.capabilityProfile
+      || plan.policy?.showId !== policy.showId
+      || plan.policy?.productionMotionPolicyDigest
+        !== policy.productionMotionPolicyDigest
     )
   ) {
     errors.push("能力使用策略或行者风摘要已失效，必须重新规划");
@@ -246,7 +447,9 @@ function validatePlan(planFile, forExecution = false, timelineFile = null) {
     if (event.family === "supporting_media") {
       const kind = event.implementation?.assetKind;
       if (!policy?.resourceRules.supportingMediaAlternatives.includes(kind)) {
-        errors.push(`${label}.implementation.assetKind 必须是外部、AI 或 HyperFrames 素材`);
+        errors.push(
+          `${label}.implementation.assetKind 必须属于当前策略允许的支撑素材来源`,
+        );
       } else {
         supportingKinds.add(kind);
       }
@@ -277,6 +480,11 @@ function validatePlan(planFile, forExecution = false, timelineFile = null) {
       ) {
         errors.push(`${label} 人物后文字可读面积不足`);
       }
+    }
+    if (event.family === "opening") {
+      validateOpeningEvent(event, label, policy, errors);
+    } else {
+      validateProductionDecision(event, label, policy, errors);
     }
     if (!Array.isArray(event.qcEvidence) || event.qcEvidence.length < 2) {
       errors.push(`${label}.qcEvidence 至少包含动态短片和代表帧两类证据`);
@@ -332,8 +540,15 @@ function validatePlan(planFile, forExecution = false, timelineFile = null) {
       }
     }
   }
+  if (policy) {
+    const openingCount = familyCounts.opening ?? 0;
+    if (openingCount !== Number(policy.openingContract.primaryEffectCount)) {
+      errors.push("每条视频必须且只能选择一个主开场动画效果");
+    }
+  }
   if (policy?.active) {
     for (const [family, limits] of Object.entries(policy.families)) {
+      if (family === "opening") continue;
       const count = familyCounts[family] ?? 0;
       if (count < limits.minimum) {
         errors.push(`${family} 计划 ${count} 次，低于行者风最低配额 ${limits.minimum}`);
@@ -352,20 +567,36 @@ function validatePlan(planFile, forExecution = false, timelineFile = null) {
       );
     }
     if (duration >= 120) {
-      for (const required of [
-        "logic_emphasis_inline",
-        "left_right_contrast",
-        "top_bottom_hierarchy",
-      ]) {
+      const requirements = policy.longFormRequirements ?? {
+        captionRelationLayouts: [
+          "logic_emphasis_inline",
+          "left_right_contrast",
+          "top_bottom_hierarchy",
+        ],
+        minimumPipLayoutKinds: 2,
+        minimumTransitionKinds: 2,
+      };
+      for (const required of requirements.captionRelationLayouts ?? []) {
         if (!captionKinds.has(required)) {
-          errors.push(`两分钟以上行者风必须实际使用字幕关系布局：${required}`);
+          errors.push(
+            `两分钟以上 ${policy.showId} 栏目必须实际使用字幕关系布局：${required}`,
+          );
         }
       }
-      if (pipKinds.size < 2) {
-        errors.push("两分钟以上行者风的 PIP 至少使用两种构图，不能反复套同一角落框");
+      if (pipKinds.size < Number(requirements.minimumPipLayoutKinds ?? 0)) {
+        errors.push(
+          `两分钟以上 ${policy.showId} 栏目的 PIP 至少使用 `
+          + `${requirements.minimumPipLayoutKinds} 种构图`,
+        );
       }
-      if (transitionKinds.size < 2) {
-        errors.push("两分钟以上行者风的可感知转场至少覆盖两种有理由的机制");
+      if (
+        transitionKinds.size
+        < Number(requirements.minimumTransitionKinds ?? 0)
+      ) {
+        errors.push(
+          `两分钟以上 ${policy.showId} 栏目的可感知转场至少覆盖 `
+          + `${requirements.minimumTransitionKinds} 种有理由的机制`,
+        );
       }
     }
     const distinctFamilies = Object.values(familyCounts).filter((count) => count > 0).length;
@@ -393,8 +624,15 @@ function validatePlan(planFile, forExecution = false, timelineFile = null) {
   };
 }
 
-function writeTemplate(output, profileId, durationSeconds) {
-  const policy = coveragePolicy(profileId, durationSeconds);
+function writeTemplate(output, profileId, durationSeconds, showId, openingId) {
+  const policy = coveragePolicy(profileId, durationSeconds, showId);
+  const allowedOpeningIds = new Set([
+    ...policy.openingContract.registeredCoreEffects,
+    ...policy.openingContract.registeredNetstyleEffects,
+  ]);
+  if (!allowedOpeningIds.has(openingId)) {
+    throw new Error(`--opening 不是已注册生产开场：${openingId}`);
+  }
   const events = [];
   let cursor = 0;
   for (const [family, limits] of Object.entries(policy.families)) {
@@ -411,7 +649,28 @@ function writeTemplate(output, profileId, durationSeconds) {
         simplerAlternative: "plain_a_roll_or_single_caption",
         failureCondition: "semantic mismatch, collision, weak perceptual evidence",
         implementation: {
-          id: `replace-${family}-${index + 1}`,
+          id: family === "opening"
+            ? `opening-${openingId.replaceAll("_", "-")}`
+            : `replace-${family}-${index + 1}`,
+          openingMode: family === "opening" ? "registered" : undefined,
+          effectId: family === "opening"
+            ? openingId
+            : DEFAULT_DECISION_RULE_BY_FAMILY[family]
+              ? [
+                  ...policy.semanticRouting,
+                  ...policy.spatialRouting,
+                ].find(
+                  (entry) => entry.id === DEFAULT_DECISION_RULE_BY_FAMILY[family],
+                )?.effectId
+              : undefined,
+          promiseBySeconds: family === "opening" ? 1 : undefined,
+          contractRef: family === "opening"
+            ? policy.productionMotionPolicyId
+            : undefined,
+          selectionMode: DEFAULT_DECISION_RULE_BY_FAMILY[family]
+            ? "registered"
+            : undefined,
+          decisionRuleId: DEFAULT_DECISION_RULE_BY_FAMILY[family],
           informationDifference: family === "pip"
             ? "replace_with_real_information_difference"
             : undefined,
@@ -454,6 +713,7 @@ function writeTemplate(output, profileId, durationSeconds) {
     kind: "kacha_visual_capability_plan",
     status: "template_needs_semantic_and_resource_binding",
     styleProfile: profileId,
+    showId: policy.showId,
     durationSeconds,
     policy,
     events: events.sort((left, right) => left.startSeconds - right.startSeconds),
@@ -466,7 +726,8 @@ function writeTemplate(output, profileId, durationSeconds) {
 if (!["template", "validate"].includes(action)) {
   fail(
     "用法：visual_capability_plan.mjs template --duration SECONDS --output PLAN.json "
-    + "[--style xingzhe]\n"
+    + "[--style xingzhe] [--show tool-share|book-talk|infinite-game|very-ai] "
+    + "[--opening REGISTERED_OPENING_ID]\n"
     + "  visual_capability_plan.mjs validate --plan PLAN.json "
     + "[--for-execution --timeline TIMELINE.json]",
     2,
@@ -478,17 +739,20 @@ try {
     const output = path.resolve(option("--output", ""));
     const duration = Number(option("--duration", ""));
     const profile = option("--style", "xingzhe");
+    const showId = option("--show", "tool-share");
+    const openingId = option("--opening", "cold_open_marker");
     if (!output || !Number.isFinite(duration) || duration <= 0) {
       throw new Error("template 需要 --duration 正数与 --output");
     }
     if (fs.existsSync(output) && !has("--overwrite")) {
       throw new Error(`拒绝覆盖现有计划：${output}`);
     }
-    const plan = writeTemplate(output, profile, duration);
+    const plan = writeTemplate(output, profile, duration, showId, openingId);
     console.log(JSON.stringify({
       status: "pass",
       output,
       eventCount: plan.events.length,
+      showId: plan.showId,
       familyMinimums: plan.policy.families,
       digest: plan.digest,
     }, null, 2));

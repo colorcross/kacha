@@ -1,8 +1,10 @@
 {
   "schemaVersion": "1.0",
   "styleProfile": "xingzhe",
-  "profile": "expressive-balanced-v2",
-  "description": "行者风的可感知能力使用策略。由语义触发，但缺少素材或蒙版不能静默变成零使用。",
+  "profile": "expressive-balanced-v3",
+  "productionMotionPolicy": "../effects/production-motion-policy.json",
+  "defaultShow": "tool-share",
+  "description": "行者风 2.0 的可感知能力使用策略。统一视觉基因，按栏目气质分别控制效果密度，所有能力仍由真实语义触发。",
   "minimumDurationSeconds": 45,
   "families": {
     "opening": {"minimumPerVideo": 1, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
@@ -21,7 +23,7 @@
     "visual_breathing": {"minimumPerVideo": 2, "minimumPerMinute": 0.6, "maximumPerMinute": 1.2}
   },
   "resourceRules": {
-    "supportingMediaAlternatives": ["external_media", "ai_generated_media", "hyperframes"],
+    "supportingMediaAlternatives": ["project_media", "external_media", "ai_generated_media", "hyperframes"],
     "minimumSupportingMediaKinds": 2,
     "personMaskRequiredAfterSeconds": 120,
     "pipInformationDifferenceRequired": true
@@ -38,5 +40,96 @@
     "oversizeWordMinimumScreenAreaRatio": 0.12,
     "personDepthTextMinimumSubtitleScale": 1.8,
     "personDepthTextMinimumVisibleAreaRatio": 0.65
+  },
+  "longFormRequirements": {
+    "captionRelationLayouts": ["logic_emphasis_inline", "left_right_contrast", "top_bottom_hierarchy"],
+    "minimumPipLayoutKinds": 2,
+    "minimumTransitionKinds": 2
+  },
+  "showProfiles": {
+    "tool-share": {
+      "profile": "tool-evidence-balanced",
+      "description": "实、快、可复现；界面、证据和结果优先。",
+      "diversity": {"minimumDistinctFamilies": 8},
+      "longFormRequirements": {
+        "captionRelationLayouts": ["logic_emphasis_inline", "left_right_contrast", "top_bottom_hierarchy"],
+        "minimumPipLayoutKinds": 2,
+        "minimumTransitionKinds": 2
+      }
+    },
+    "book-talk": {
+      "profile": "book-calm-evidence",
+      "description": "稳、深、完整；降低强效果和持续运动，引用、证据、章节与停稳优先。",
+      "families": {
+        "expressive_transition": {"minimumPerVideo": 1, "minimumPerMinute": 0.12, "maximumPerMinute": 0.4},
+        "supporting_media": {"minimumPerVideo": 1, "minimumPerMinute": 0.15, "maximumPerMinute": 0.5},
+        "pip": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
+        "mask_depth": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.15},
+        "semantic_motion": {"minimumPerVideo": 1, "minimumPerMinute": 0.25, "maximumPerMinute": 0.65},
+        "gaze_guidance": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
+        "spatial_depth": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.2},
+        "keyframe_variation": {"minimumPerVideo": 1, "minimumPerMinute": 0.2, "maximumPerMinute": 0.5},
+        "parallel_layout": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
+        "caption_relation": {"minimumPerVideo": 1, "minimumPerMinute": 0.25, "maximumPerMinute": 0.6},
+        "oversize_background_word": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.15},
+        "person_depth_text": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.12},
+        "visual_breathing": {"minimumPerVideo": 1, "minimumPerMinute": 0.3, "maximumPerMinute": 0.75}
+      },
+      "resourceRules": {
+        "minimumSupportingMediaKinds": 1,
+        "personMaskRequiredAfterSeconds": 99999
+      },
+      "diversity": {"minimumDistinctFamilies": 5},
+      "longFormRequirements": {
+        "captionRelationLayouts": ["logic_emphasis_inline"],
+        "minimumPipLayoutKinds": 0,
+        "minimumTransitionKinds": 1
+      }
+    },
+    "infinite-game": {
+      "profile": "documentary-event-led",
+      "description": "真、动、变化；真实事件、环境声、时间和过程优先，包装服从现场。",
+      "families": {
+        "expressive_transition": {"minimumPerVideo": 1, "minimumPerMinute": 0.12, "maximumPerMinute": 0.45},
+        "supporting_media": {"minimumPerVideo": 2, "minimumPerMinute": 0.2, "maximumPerMinute": 0.8},
+        "pip": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
+        "mask_depth": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.2},
+        "semantic_motion": {"minimumPerVideo": 1, "minimumPerMinute": 0.2, "maximumPerMinute": 0.6},
+        "gaze_guidance": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
+        "spatial_depth": {"minimumPerVideo": 1, "minimumPerMinute": 0.12, "maximumPerMinute": 0.4},
+        "keyframe_variation": {"minimumPerVideo": 1, "minimumPerMinute": 0.2, "maximumPerMinute": 0.6},
+        "parallel_layout": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.2},
+        "caption_relation": {"minimumPerVideo": 1, "minimumPerMinute": 0.2, "maximumPerMinute": 0.5},
+        "oversize_background_word": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.12},
+        "person_depth_text": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.12},
+        "visual_breathing": {"minimumPerVideo": 1, "minimumPerMinute": 0.25, "maximumPerMinute": 0.7}
+      },
+      "resourceRules": {
+        "minimumSupportingMediaKinds": 1,
+        "personMaskRequiredAfterSeconds": 99999
+      },
+      "diversity": {"minimumDistinctFamilies": 5},
+      "longFormRequirements": {
+        "captionRelationLayouts": ["logic_emphasis_inline"],
+        "minimumPipLayoutKinds": 0,
+        "minimumTransitionKinds": 1
+      }
+    },
+    "very-ai": {
+      "profile": "ai-dialogue-playful-verified",
+      "description": "活、险、可检验；冲突与反应可以更强，事实核验区间自动收稳。",
+      "families": {
+        "semantic_motion": {"minimumPerVideo": 3, "minimumPerMinute": 0.8, "maximumPerMinute": 1.7},
+        "gaze_guidance": {"minimumPerVideo": 1, "minimumPerMinute": 0.3, "maximumPerMinute": 0.8},
+        "caption_relation": {"minimumPerVideo": 2, "minimumPerMinute": 0.7, "maximumPerMinute": 1.4},
+        "visual_breathing": {"minimumPerVideo": 2, "minimumPerMinute": 0.55, "maximumPerMinute": 1.1}
+      },
+      "diversity": {"minimumDistinctFamilies": 9},
+      "longFormRequirements": {
+        "captionRelationLayouts": ["logic_emphasis_inline", "left_right_contrast", "top_bottom_hierarchy"],
+        "minimumPipLayoutKinds": 2,
+        "minimumTransitionKinds": 2
+      }
+    }
   }
 }

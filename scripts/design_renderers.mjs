@@ -377,16 +377,40 @@ function textComponent(component, data, box, resolved) {
   }
   if (component.id === "text_behind_subject") {
     const phrases = normalizedList(data.phrases, DEFAULT_DATA.phrases);
-    return phrases.slice(0, 3).map((phrase, index) => textNode({
-      x: x + width * (index % 2 === 0 ? 0.04 : 0.34),
-      y: y + height * (0.28 + index * 0.27),
-      text: lineText(phrase, 9),
-      size: height * 0.23,
-      fill: index === 1 ? p.accentSecondary : p.accent,
-      family: display,
-      weight: 800,
-      opacity: 0.95,
-    })).join("");
+    const gradient = resolved.style.gradients?.[
+      resolved.style.emphasis?.personDepthGradient ?? "signalWarm"
+    ] ?? {
+      from: p.accent,
+      to: p.accentSignal ?? p.accentSecondary,
+    };
+    const gradientId = `person-depth-${component.id}`;
+    const shadowId = `person-depth-shadow-${component.id}`;
+    return `<defs>`
+      + `<linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="100%">`
+      + `<stop offset="0%" stop-color="${gradient.from}"/>`
+      + `<stop offset="100%" stop-color="${gradient.to}"/>`
+      + `</linearGradient>`
+      + `<filter id="${shadowId}" x="-20%" y="-20%" width="140%" height="140%">`
+      + `<feDropShadow dx="0" dy="${Math.max(2, height * 0.012)}" `
+      + `stdDeviation="${Math.max(2, height * 0.014)}" `
+      + `flood-color="${p.shadow}" flood-opacity="0.24"/>`
+      + `</filter>`
+      + `</defs>`
+      + `<g filter="url(#${shadowId})">`
+      + phrases.slice(0, 3).map((phrase, index) => textNode({
+        x: x + width * (index % 2 === 0 ? 0.02 : 0.3),
+        y: y + height * (0.26 + index * 0.28),
+        text: lineText(phrase, 9),
+        size: height * (index === 1 ? 0.27 : 0.24),
+        fill: index === 1
+          ? p.accentInsight ?? p.accentSecondary
+          : `url(#${gradientId})`,
+        family: display,
+        weight: 800,
+        opacity: 0.98,
+        letterSpacing: -0.025,
+      })).join("")
+      + `</g>`;
   }
   if (component.id === "definition_term") {
     return textNode({
@@ -995,7 +1019,34 @@ function sceneBoxes(scene, resolved, width, height) {
   ].includes(template);
   let subject = null;
   let content = { ...available };
-  if (!fullScreen && subjectLeft) {
+  const coverScene = scene.category === "cover";
+  const cover = resolved.style.cover ?? {};
+  if (
+    coverScene
+    && !fullScreen
+    && !["split", "split_subject_aware"].includes(template)
+  ) {
+    const subjectHeightRatio = Math.min(
+      Number(cover.subjectMaximumHeightRatio ?? 0.48),
+      Math.max(
+        Number(cover.subjectMinimumHeightRatio ?? 0.32),
+        Number(cover.subjectHeightRatio ?? 0.44),
+      ),
+    );
+    const subjectWidthRatio = Number(cover.subjectWidthRatio ?? 0.27);
+    subject = {
+      x: available.x + available.width * (1 - subjectWidthRatio),
+      y: available.y + available.height * (1 - subjectHeightRatio),
+      width: available.width * subjectWidthRatio,
+      height: available.height * subjectHeightRatio,
+    };
+    content = {
+      x: available.x,
+      y: available.y,
+      width: available.width * Number(cover.titleMaximumWidthRatio ?? 0.56),
+      height: available.height,
+    };
+  } else if (!fullScreen && subjectLeft) {
     subject = {
       x: available.x,
       y: available.y + available.height * 0.08,

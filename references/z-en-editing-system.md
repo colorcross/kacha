@@ -79,6 +79,22 @@
 - 人物蒙版覆盖不足、边缘严重抖动或跟踪丢失时，降级为普通卡片、画中画或景别切换；
 - 任何参考视频分析副本都只用于本地研究，不进入仓库、Release 或公开安装包。
 
+## 生产决策表
+
+生产系统使用 `config/effects/production-motion-policy.json` 固化语义路由：
+说重点用 `semantic_importance_zoom`，负面词用 `semantic_negative_shrink`，
+突出局部用 `semantic_mask_emphasis`，多观点用 `semantic_viewpoint_clones`，
+事实、数据和案例用 `semantic_evidence_insert`，需要移动让位用
+`semantic_keyframe_reposition`，创意类比用 `semantic_graphic_morph`。
+这些是默认决策，不是机械关键词替换；语义不成立时保持主画面或提交完整自定义
+合同。
+
+空间变化按四条路径选择：`space_focus_route` 用蒙版移动视觉焦点；
+`space_frame_between_layers` 把边框或贴纸放在背景与人物之间并制造视差；
+`space_text_depth_wrap` 用文字尺度、位置、遮挡和动画建立近远层次；
+`space_paper_demo_stage` 抠出人物、替换背景并逐项加入演示素材。所有层都必须
+动态避让人物、字幕、常驻品牌和平台 UI，且画面、语音、动作与声音表达同一意图。
+
 ## 代表素材实测与修正
 
 能力形成的最低要求是：每种效果至少在一条构图和语义都适合的代表视频上完成

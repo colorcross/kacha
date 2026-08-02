@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "1.0",
+  "id": "kacha-production-motion-policy",
+  "status": "production",
+  "opening": {
+    "requiredEveryVideo": true,
+    "primaryEffectCount": 1,
+    "startAtOrBeforeSeconds": 0.5,
+    "promiseBySeconds": 3,
+    "normalSpeedPreviewRequired": true,
+    "registeredCoreEffects": [
+      "editorial_label_reveal",
+      "kinetic_word_stack",
+      "typewriter_command",
+      "statement_punch",
+      "cold_open_marker"
+    ],
+    "registeredNetstyleEffects": [
+      "hook_suspense_push",
+      "hook_beat_shape_switch",
+      "hook_spotlight_circle",
+      "hook_title_behind_subject",
+      "hook_text_first_face_reveal"
+    ],
+    "customContractRequiredFields": [
+      "id",
+      "trigger",
+      "function",
+      "mechanism",
+      "entryPeakExit",
+      "simplerAlternative",
+      "failureCondition",
+      "fallback",
+      "soundFunction",
+      "qc"
+    ]
+  },
+  "semanticRouting": [
+    {
+      "id": "importance_zoom",
+      "cue": "说重点",
+      "effectId": "semantic_importance_zoom",
+      "principle": "景别变化必须服务信息权重，峰值对齐重读词"
+    },
+    {
+      "id": "negative_shrink",
+      "cue": "负面词或退缩",
+      "effectId": "semantic_negative_shrink",
+      "principle": "缩小表达降权，不把人物缩到失去可读性"
+    },
+    {
+      "id": "highlight_mask",
+      "cue": "突出局部",
+      "effectId": "semantic_mask_emphasis",
+      "principle": "蒙版只保留一个主焦点并持续避让人物眼口和字幕"
+    },
+    {
+      "id": "viewpoint_cutout",
+      "cue": "观点多或角色立场切换",
+      "effectId": "semantic_viewpoint_clones",
+      "principle": "抠像分身必须表达真实观点差异，不能复制同一信息"
+    },
+    {
+      "id": "fact_evidence",
+      "cue": "讲事实、数据、案例或引用",
+      "effectId": "semantic_evidence_insert",
+      "principle": "使用可核验插图或素材，事实来源先于装饰"
+    },
+    {
+      "id": "movement_keyframe",
+      "cue": "主体或信息需要移动让位",
+      "effectId": "semantic_keyframe_reposition",
+      "principle": "关键帧起止速度接近零，方向有叙事依据"
+    },
+    {
+      "id": "creative_morph",
+      "cue": "创意类比、概念转译或形态变化",
+      "effectId": "semantic_graphic_morph",
+      "principle": "变形前后必须共享可识别结构，不能只为炫技"
+    }
+  ],
+  "spatialRouting": [
+    {
+      "id": "focus_route",
+      "effectId": "space_focus_route",
+      "layers": ["background", "focus-mask", "subject", "caption"],
+      "principle": "用最短且有意义的蒙版路径引导视线"
+    },
+    {
+      "id": "frame_between_layers",
+      "effectId": "space_frame_between_layers",
+      "layers": ["background", "frame-or-sticker", "subject", "caption"],
+      "principle": "背景、边框和人物至少两层采用不同速度或尺度"
+    },
+    {
+      "id": "text_depth",
+      "effectId": "space_text_depth_wrap",
+      "layers": ["far-text", "subject", "near-text", "caption"],
+      "principle": "文字以近大远小、遮挡和位置建立纵深，主词必须最先可读"
+    },
+    {
+      "id": "cutout_demo_stage",
+      "effectId": "space_paper_demo_stage",
+      "layers": ["replacement-background", "demo-assets", "subject-cutout", "caption"],
+      "principle": "演示素材随口播逐项建立，当前项最大，人物和字幕始终可读"
+    }
+  ],
+  "professionalContract": {
+    "onePrimaryEffectAtATime": true,
+    "semanticTriggerRequired": true,
+    "entryPeakHoldExitRequired": true,
+    "peakAlignsToMeaningOrAction": true,
+    "soundPeakBindsVisibleLanding": true,
+    "cleanAlternativeRequired": true,
+    "failureConditionRequired": true,
+    "preserveFaceAndCaptionSafeZones": true,
+    "normalSpeedReviewRequired": true,
+    "unifiedAudioVoicePictureIntent": true
+  }
+}

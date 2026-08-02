@@ -2,10 +2,10 @@
   "schemaVersion": "1.0",
   "status": "rendered",
   "designSystemId": "dahui-video-system",
-  "designSystemVersion": "1.4.0",
-  "designDigest": "00d7224fb5089627498798214e139ae83258843120d9b80dc693bee1507e8fe8",
-  "implementationDigest": "d6ea1c816caec800674402eafd7a713c46529fb546a6c9d02d9249d5d5fe06a3",
-  "rendererCodeSha256": "34d26116dd76af9bcaf00610bd84a50f4a84e4d38225c3b96b3eeea2d8beebed",
+  "designSystemVersion": "1.5.0",
+  "designDigest": "82e6a83a1cebe41ad207149ea43e509be58105bd3e3c4f29a2447c613ef13776",
+  "implementationDigest": "226b27c8805fce12aa4945ece85a3800e522524338d7e4af08fc419b440b743c",
+  "rendererCodeSha256": "3cc5d84a0812f91505cb9d0802108c86857b26387557108309167472e4272e6f",
   "sceneId": "text_behind_subject_scene",
   "layoutId": "negative_space_behind_subject",
   "layoutTemplate": "negative_space_subject",
@@ -21,83 +21,74 @@
   },
   "state": "peak",
   "resolvedFonts": {
-    "display": "PingFang SC",
-    "subtitlePrimary": "STSong",
-    "subtitleSecondary": "STSong",
-    "label": "Avenir Next",
-    "body": "Avenir Next"
+    "display": "青鸟华光标题黑体",
+    "subtitlePrimary": "方正粗金陵简体",
+    "subtitleSecondary": "方正粗金陵简体",
+    "label": "思源黑体 CN Light",
+    "body": "思源黑体 CN Light",
+    "coverTitle": "Aa封神榜书"
   },
   "fontResolution": {
-    "probe": "fc-list",
+    "probe": "fc-list+project-fonts",
     "error": null,
     "roles": {
       "display": {
         "requested": [
-          "华光标题黑",
-          "Source Han Sans SC",
-          "PingFang SC",
-          "Noto Sans CJK SC",
-          "DejaVu Sans"
+          "青鸟华光标题黑体",
+          "JBHGBTH"
         ],
-        "resolved": "PingFang SC",
+        "resolved": "青鸟华光标题黑体",
         "verified": true,
-        "fallbackUsed": true
+        "fallbackUsed": false
       },
       "subtitlePrimary": {
         "requested": [
           "方正粗金陵简体",
-          "FZJinLS-B-GB",
-          "STSong",
-          "Songti SC",
-          "Noto Serif CJK SC",
-          "Noto Sans CJK SC",
-          "DejaVu Sans"
+          "FZJinLS-B-GB"
         ],
-        "resolved": "STSong",
+        "resolved": "方正粗金陵简体",
         "verified": true,
-        "fallbackUsed": true
+        "fallbackUsed": false
       },
       "subtitleSecondary": {
         "requested": [
           "方正粗金陵简体",
-          "FZJinLS-B-GB",
-          "STSong",
-          "Songti SC",
-          "Noto Serif CJK SC",
-          "Noto Sans CJK SC",
-          "DejaVu Sans"
+          "FZJinLS-B-GB"
         ],
-        "resolved": "STSong",
+        "resolved": "方正粗金陵简体",
         "verified": true,
-        "fallbackUsed": true
+        "fallbackUsed": false
       },
       "label": {
         "requested": [
-          "Avenir Next",
-          "Source Han Sans SC",
-          "PingFang SC",
-          "Noto Sans CJK SC",
-          "DejaVu Sans"
+          "思源黑体 CN Light",
+          "Source Han Sans CN Light"
         ],
-        "resolved": "Avenir Next",
+        "resolved": "思源黑体 CN Light",
         "verified": true,
         "fallbackUsed": false
       },
       "body": {
         "requested": [
-          "Avenir Next",
-          "Source Han Sans SC",
-          "PingFang SC",
-          "Noto Sans CJK SC",
-          "DejaVu Sans"
+          "思源黑体 CN Light",
+          "Source Han Sans CN Light"
         ],
-        "resolved": "Avenir Next",
+        "resolved": "思源黑体 CN Light",
+        "verified": true,
+        "fallbackUsed": false
+      },
+      "coverTitle": {
+        "requested": [
+          "Aa封神榜书",
+          "AaFSBS"
+        ],
+        "resolved": "Aa封神榜书",
         "verified": true,
         "fallbackUsed": false
       }
     },
     "warnings": [],
-    "digest": "fd38c094379efb59e89d5e26c817c693bba09e5055893e5e23fcb41642cf67c6"
+    "digest": "ce2ce583b453b888c1a67aad06172fb755032074e436ae356832f52b6409ee6d"
   },
   "scene": {
     "trigger": "章节题眼或记忆点适合空间层级",

@@ -1,4 +1,4 @@
-# 咔嚓视频设计系统 V1
+# 咔嚓视频设计系统 V1.5
 
 > 本文定义“成片内部”的视频设计系统。官网、GitHub、文档和产品界面的品牌
 > 规范另见[产品品牌与官网设计规范](PRODUCT_BRAND_AND_WEBSITE.md)，两者共享
@@ -33,9 +33,20 @@ Style Profile
     +
 33 个语义网感机制
     +
-60 个预制效果模板 / 18 个公共核心资源
+62 个预制效果模板 / 22 个公共核心资源
     ↓
 8 个生产 Renderer / 36 个 Layout / 75 个 Motion
+    ↓
+240 张带摘要的参考效果图
+
+项目内高保真层另外提供 `浅暖轻浮层`、`空间光路`、`幽默漫画` 与 `像素风`
+四套风格。每套为全部 240 个效果分别设计 16:9 与 9:16 峰值帧，共 1920 张；同时由
+`design-effect-library-v3.json` 提供 960 份可执行动效合同。基础 SVG 图库用于
+快速检索，项目内高保真图库用于构图对齐，合同用于正式时间行为，三者不能互相
+替代。两套新增视觉语言的完整叙事边界、材质、动态、声音与 QC 规则见
+`docs/HUMOR_COMIC_VISUAL_LANGUAGE.md` 和 `docs/PIXEL_EDITORIAL_VISUAL_LANGUAGE.md`。
+四套风格的镜头组织、时间单位、空间拓扑、转场和声音必须按
+`docs/FOUR_STYLE_EDITING_GRAMMARS.md` 分离；不得只更换表面材质。
     ↓
 Design Preflight
     ↓
@@ -64,6 +75,8 @@ config/resources/core-catalog.json
 默认 profile 是 `xingzhe`（行者风）。其主字幕与辅字幕使用本地已授权的
 真正金陵体 `方正粗金陵简体 / FZJinLS-B-GB`；正式项目必须冻结字体文件
 SHA-256 与授权证据，不能静默换回替代字体。字体二进制不属于公开设计系统。
+行者风 2.0 的拍摄画面、语义色、渐变、封面人物比例与栏目差异见
+[行者风 2.0 完整实施规范](XINGZHE_STYLE_V2.md)。
 
 ## 3. 五组模式
 
@@ -160,20 +173,21 @@ showcase 的家族标签、效果名称和固定示例文字。项目在
 - `config/effects/visual-breathing.json`：慢推、慢拉、横移、重音冲击和停稳；
 - `config/effects/spoken-caption-layouts.json`：普通单行、逻辑重音、左右、
   侧边、上下和前后景布局；
-- `config/font-routing.json`：主字幕、强调、观点、人文、幽默、科技和中英文
-  标题的字体角色。
+- `config/font-routing.json`：金陵体字幕、华光标题黑展示字、封神榜书封面标题和细体辅助文字的限定角色。
+- `config/design-system/visual-languages.json`：四套高保真视觉语言的材质、布局、碰撞、对比度、品牌、动态和声音母合同。
 
 它们进入 design digest，但不把本地字体文件写进系统。正式应用分别走
 `breathing plan → validate → render` 和
 `captions plan → validate → render`；排版计划冻结实际字体文件 hash 与项目
 授权记录，前后景布局同时冻结逐帧人物蒙版。
 
-V1.4 把注册表进一步编译为 60 个预制效果模板。模板覆盖开场、转场、语义
+V1.5 把注册表进一步编译为 62 个预制效果模板。模板覆盖开场、转场、语义
 画面、贴纸/视线、空间纵深、关键帧、并列句、字幕布局和画面呼吸；每个模板
 统一声明场景、组件、进入/停稳/退出、字体角色、音效触发、人物/字幕/品牌
-安全区、资源槽位、失败条件和回退。18 个公共核心资源包括原创 SVG、品牌、
-原创音效入口和字体路由；项目私有目录只扩展授权字体、私有音效和按镜头取得
-的素材，不能覆盖核心许可。
+安全区、资源槽位、失败条件和回退。22 个公共核心资源包括原创 SVG、品牌、
+原创音效入口和字体路由；其中四个剪辑语法母件分别对应边缘旁注、空间路径、
+漫画节拍和像素状态。项目私有目录只扩展授权字体、私有音效和按镜头取得的
+素材，不能覆盖核心许可。
 
 ## 6. 解析与检查
 
@@ -200,6 +214,16 @@ node scripts/kacha.mjs design render \
 node scripts/kacha.mjs design qc \
   --matrix \
   --output /tmp/design-system-qc.json
+node scripts/kacha.mjs design gallery \
+  --output design/reference-gallery/xingzhe-v2 \
+  --overwrite
+node scripts/kacha.mjs design library-qc \
+  --light /path/to/全量效果库_v3_浅暖轻浮层 \
+  --spatial /path/to/全量效果库_v3_空间光路 \
+  --comic /path/to/全量效果库_v4_幽默漫画 \
+  --pixel /path/to/全量效果库_v4_像素风 \
+  --contracts config/effects/motion-contracts/design-effect-library-v3.json \
+  --output /path/to/four-style-qc-report.json
 ```
 
 效果与资源解析：
@@ -219,6 +243,11 @@ renderer 生成 SVG/PNG/ASS 和实施清单，不再输出与组件无关的通�
 `design qc --matrix` 覆盖每一个 mode 取值、关键组合、全部组件状态、场景
 entry/peak/exit、重复 SVG ID 和文字对比度。任一输入变化，最终摘要变化，
 依赖旧摘要的视觉产物必须失效。
+
+`design gallery` 为注册表中每个 component、scene、renderer、layout 和
+motion 生成独立 SVG 参考图、可搜索 `index.html` 与带 SHA-256 的
+`manifest.json`。图库是策划、执行与返工的共同视觉合同；注册表或渲染实现
+变化后必须重新生成。
 
 ## 7. 设计预检合同
 
@@ -294,13 +323,15 @@ entry/peak/exit、重复 SVG ID 和文字对比度。任一输入变化，最终
 3. 设计预检记录系统、场景、组件和模式；
 4. 8 个 renderer、36 个 layout 和 75 个 motion 均由独立注册表验证，33 个
    语义网感机制也必须通过独立注册表与真实视频预览验证；
-5. 所有组件状态与场景 entry/peak/exit 都能本地生成真实 SVG；字幕组件还能
+5. 52 个组件、69 个场景、8 个 renderer、36 个 layout 和 75 个 motion
+   均有当前设计摘要对应的参考图，图库合计 240 张；
+6. 所有组件状态与场景 entry/peak/exit 都能本地生成真实 SVG；字幕组件还能
    生成 ASS；
-6. 样式帧实施清单包含当前解析器、风格解析器和渲染器实现摘要，旧代码生成的
+7. 样式帧实施清单包含当前解析器、风格解析器和渲染器实现摘要，旧代码生成的
    证据不能冒充当前设计系统产物；
-7. `design qc --matrix` 覆盖全部 mode 取值和关键跨模式组合，字体与对比度
+8. `design qc --matrix` 覆盖全部 mode 取值和关键跨模式组合，字体与对比度
    门禁通过；
-8. 样式帧和实施清单具备可复核 hash，伪造或过期证据被拒绝；
-9. 示例配置、文档和测试与运行时一致；
-10. 旧的散落配置不能绕过设计系统；
-11. 正式视频仍通过自动 QC 和人工逐段审片。
+9. 样式帧和实施清单具备可复核 hash，伪造或过期证据被拒绝；
+10. 示例配置、文档和测试与运行时一致；
+11. 旧的散落配置不能绕过设计系统；
+12. 正式视频仍通过自动 QC 和人工逐段审片。

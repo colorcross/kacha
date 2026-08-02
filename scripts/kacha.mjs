@@ -19,13 +19,14 @@ function usage() {
     "用法：\n"
       + "  kacha.mjs doctor [--profile core|claude-vision|full]\n"
       + "  kacha.mjs config show|validate|get|init [options]\n"
-      + "  kacha.mjs design validate|list|show|resolve|preview|render|qc [options]\n"
+      + "  kacha.mjs design validate|list|show|resolve|preview|render|qc|gallery|library-qc [options]\n"
       + "  kacha.mjs styleframe render --scene ID --output FILE [options]\n"
       + "  kacha.mjs beauty validate|show|authorize|render|qc [options]\n"
       + "  kacha.mjs effects list|show|validate|preview [options]\n"
       + "  kacha.mjs sfx validate|import [options]\n"
       + "  kacha.mjs facefusion probe|profiles|template|validate|run [options]\n"
       + "  kacha.mjs templates validate|list|show|resolve [options]\n"
+      + "  kacha.mjs contracts validate|list|show|resolve [options]\n"
       + "  kacha.mjs visual-capabilities template|validate [options]\n"
       + "  kacha.mjs fonts scan|validate|resolve|preview [options]\n"
       + "  kacha.mjs captions plan|validate|render [options]\n"
@@ -122,6 +123,7 @@ const delegatedCommands = {
   sfx: "kacha_sfx.mjs",
   facefusion: "kacha_facefusion.mjs",
   templates: "kacha_templates.mjs",
+  contracts: "kacha_motion_contracts.mjs",
   "visual-capabilities": "visual_capability_plan.mjs",
   fonts: "kacha_fonts.mjs",
   captions: "caption_layout.mjs",

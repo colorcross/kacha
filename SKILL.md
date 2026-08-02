@@ -56,6 +56,7 @@ Placeholder 的 ready 状态与产物 SHA；重复对象 ID 必须使用确定�
   只生成授权门禁后的候选，不自动执行身份处理
 - 信息卡/流程图/弹窗/复杂动效：`references/visual-design-preflight.md`
 - 统一风格、开场和转场库：`references/style-effects-library.md`
+- 四风格互斥剪辑语法与换皮失败门禁：`docs/FOUR_STYLE_EDITING_GRAMMARS.md`
 - 预制效果合同、原创资源、字体、音效和按镜头素材路由：
   `references/effect-templates-resources.md`
 - 语义拍、空间变化、贴纸引导、关键帧和并列句网感机制：
@@ -140,6 +141,7 @@ node scripts/kacha.mjs config show --anchor PROJECT_DIR
 node scripts/kacha.mjs config init --scope user
 node scripts/kacha.mjs design validate
 node scripts/kacha.mjs design list --kind scene
+node scripts/kacha.mjs contracts validate
 node scripts/kacha.mjs effects validate
 node scripts/kacha.mjs effects list --kind transition
 node scripts/kacha.mjs netstyle validate
@@ -166,22 +168,78 @@ Git。默认要求只表示偏好，不构成上传、付费、发布、覆盖�
 
 视觉必须从 `style.system + style.profile + style.modes + style.overrides`
 解析，默认使用 `dahui-video-system` 与 `xingzhe`（行者风）。行者风的
-默认口播字幕必须从本地授权注册表解析真正的金陵体，不得静默换回替代字体。
+默认口播字幕必须从本地授权注册表解析真正的金陵体，无底色、无描边、阴影 60%，不得静默换回替代字体。
+字体查找顺序为显式/用户注册表、项目授权注册表、项目字体目录，最后才是咔嚓
+本地私有字体目录；命中私有目录时必须按当前安装位置重定位并复核文件哈希，
+不能继承开发机绝对路径。
+在“浅暖轻浮层”“空间光路”“幽默漫画”和“像素风”中，视频标题、术语、金句和大号字只用华光标题黑，封面主标题只用封神榜书，其他文字只用细体；除非缺字或用户显式指定，否则禁止其他字体。漫画字形、像素字形只允许作为图形材质，不得替代可读正文。
+四个正式栏目的封面人物统一采用原创的高品质院线级 3D 动画电影语言。用户
+口语中的“皮克斯风格”只解析为温暖、圆润但不幼龄化、可按叙事夸张、精细
+材质与电影级灯光；不得复制或近似 Pixar、Disney 或其他具体角色、影片造型、
+Logo 与 IP。必须保留大灰本人可识别的成年脸型、黑框矩形眼镜、短刺黑发和
+深藏蓝运动服。3D 只升级人物，不替代封面的高密度语义编辑拼贴、前中后景、
+遮挡、尺度反差和印刷质感；普通单人物 3D 动画海报不得进入正式交付。
 设计系统包含基础
 令牌、栏目/画幅/语言/明暗/密度模式、组件库和场景库。字幕、弹窗、信息卡、
 画中画、品牌、封面、开场和转场只读取解析后的设计合同与 digest，不在时间
 区间实现中写死字体、颜色、圆角、阴影、边框或缓动。更换模式或风格走
 `style` 增量配方并按依赖失效重建。
 系统规范、组件与场景选择见 `docs/VIDEO_DESIGN_SYSTEM_V1.md`。
+行者风 2.0 的拍摄基线、语义色、渐变、栏目差异、封面人物比例和人物后文字
+合同见 `docs/XINGZHE_STYLE_V2.md`；幽默漫画与像素风的完整母合同分别见
+`docs/HUMOR_COMIC_VISUAL_LANGUAGE.md` 和 `docs/PIXEL_EDITORIAL_VISUAL_LANGUAGE.md`。高影响视觉在正式制作前应先从
+`design/reference-gallery/xingzhe-v2/index.html` 查看当前设计摘要对应的
+参考效果；图库缺失或摘要过期时运行 `design gallery` 重新生成，不能只凭
+效果名称和文字描述猜实现。
+
+静态参考图只约束峰值构图，不能替代时间行为。可复用高影响效果必须通过
+`templates resolve` 取得 `motionContract`，并执行其中的 invariants、
+parameters、adaptationRules、timing、audioContract 和 qualityGates。
+模板允许按人物位置、画幅、语速、字幕区和信息密度调参，但不得破坏人物安全、
+逐项建立、局部更新、音画峰值和提前退场等硬约束。流程内容可在
+`effect-process_spatial_nodes`（空间光路）、
+`effect-process_light_overlay`（浅暖轻浮层）、
+`xingzhe-humor-comic`（幽默漫画）与
+`xingzhe-pixel-editorial`（像素风）之间按气质选择；不得把大面积
+不透明白卡或整屏仪表盘伪装成“视频动效”。所有文字、卡片和常驻品牌模块在渲染前必须输入人物/头部边界、字幕安全区、平台 UI、局部亮度图和真实文字度量；先调颜色与位置，再缩小或分时展示，不能遮头或在低对比背景上硬放。
+“空间光路”必须保留同一张原实拍底图，以局部径向景深场、深中性玻璃节点、蓝/橙红曲线光路和少量粒子建立空间，禁止矩形黑块、全屏暗罩和节点同时弹出。
+
+“幽默漫画”只在真实反差、误会、预期落差、尺度错位、反应或回扣成立时使用；保留实拍人物和事实证据，只以局部墨线、分格、网点、反应特写或短气泡增强节拍，禁止笑声罐头、表情包墙和持续抖动。“像素风”只像素化图形层，不降低人物、证据和文字清晰度；在 1080p 以 6–12 px 基础网格、最多 8 个强调色和每步 2–4 帧的量化运动建立秩序，禁止全屏低清、持续故障闪烁和无叙事的游戏 HUD。
+
+全部 240 个注册效果均提供上述四套风格的横竖峰值帧和可执行合同。正式计划
+必须通过 `contracts resolve --id <effect-id> --style <style-id>` 取得对应
+合同，把其时序、调参范围、人物/字幕适配、音频、回退和质量门禁写入时间线；
+不能把参考图当作静态插图，也不能仅复制参考图的固定坐标。每次选择还必须记录
+`matchedSignal`、`semanticBeatId` 和 `sourceRange`；未应用时记录
+`fallbackReasonWhenNotApplied`，禁止只凭“科技”“轻松”等笼统题材套风格。
+图库交付前必须运行 `design library-qc --light <浅暖目录> --spatial <空间目录>
+--comic <漫画目录> --pixel <像素目录> --contracts <合同注册表> --output <报告>`，同时检查 1920 张图片的唯一性、人物头部碰撞、金陵体
+像素证据、字幕阴影、文字对比度、空间黑块、漫画/像素材质边界和 960 份独立动效核心。
 
 完整首剪与结构重做必须先生成 `plans.visualCapabilityPlan`。默认行者风按
-`expressive-balanced-v2` 计算可感知配额，要求开场、可感知转场、外部/AI/HyperFrames
+当前栏目对应的 `showProfiles` 计算可感知配额；工具分享、解读好书、有限的
+无限游戏和灰常AI不得使用同一套强制密度。要求开场、可感知转场、项目/外部/
+AI/HyperFrames
 支撑素材、PIP、蒙版纵深、语义动效、视线引导、空间层次、关键帧、并列排版、
 关系字幕、超大背景词、人物前后景文字和呼吸运镜形成足够覆盖与变化。配额不是
 随机堆效果：每项仍需真实语义触发；但素材或蒙版缺失不能静默变成零使用，
 必须建立资源任务或明确阻断。`gate-plan` 检查覆盖，`gate-render` 检查素材
 SHA、蒙版 ready 状态和 Timeline IR 绑定。完整合同见
 `references/capability-coverage-and-rework-budget.md`。
+
+每条视频无论长短都必须且只能选择一个主开场动画。可从核心开场库或
+`z-en-netstyle` 的五种开场机制中选择；确有更合适方案时允许自定义，但必须
+提交完整动效合同，写清触发、叙事功能、机制、进入/峰值/停稳/退出、最简替代、
+失败条件、回退、声音功能和 QC。开场从首个有效声音或动作开始建立可见变化，
+最迟 3 秒兑现问题、冲突、收益或主题。`visualCapabilityPlan` 对短于 45 秒的
+视频也强制检查这一项，并要求正常速度动态预览和代表帧，不能用静态效果图
+替代动效验收。生产规则见 `config/effects/production-motion-policy.json`。
+
+常用画面处理按语义而不是按固定时间路由：重点放大、负面缩小、突出用蒙版、
+多观点用抠像、事实加可核验插图、移动用关键帧、创意用有共同结构的变形。
+空间变化优先使用蒙版视线轨迹、背景与人物间插框、文字纵深或人物抠像演示
+舞台。任何选择仍须满足同时最多一个主效果、语义峰值对齐、完整退出、安全区、
+音效绑定可见落位、干净方案回退，以及效果图、动作、声音、语音和画面意图统一。
 
 口播需要更强的语义动效、空间变化、贴纸引导、关键帧或并列句排版时，先从
 `z-en-netstyle` 注册表选择机制。注册表中的 33 个手法只保存触发、功能、
@@ -301,6 +359,9 @@ picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共�
   校验文件 hash、当前 design digest、实现 digest、组件、字体与 token
   路径。发布前运行 `design qc --matrix` 覆盖全部 mode 取值和组件/场景状态。
 - 检测到系列时，视频和封面使用同一系列标识、层级和安全区。
+- 工具分享、解读好书、有限的无限游戏和灰常AI都必须执行同一院线级 3D
+  大灰身份合同，但分别使用任务推进、沉静思考、真实运动重量和人机冲突的
+  表演/灯光语言；同批不得复用同一姿势或用具体动画角色套型区分栏目。
 - 自动技术 QC、当前版本人工审片和对应门禁全部通过前，不能称为可发布成片。
 - 正式视觉时间线必须编译为统一 Timeline IR/Render Graph，从最高质量源最多
   一次完整视频编码；局部探索只渲染独立代理/区间。相同 graph 与输出哈希

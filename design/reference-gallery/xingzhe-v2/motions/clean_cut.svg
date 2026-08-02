@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="brand-warm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F5B544"/>
+      <stop offset="1" stop-color="#E66A32"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="24" flood-color="#16181B" flood-opacity=".14"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="#F2EFE8"/>
+  <circle cx="1168" cy="86" r="170" fill="#6F8795" opacity=".07"/>
+  <circle cx="84" cy="670" r="190" fill="#F05A47" opacity=".045"/>
+  <text x="72" y="60" font-family="Avenir Next, PingFang SC, sans-serif" font-size="16" font-weight="700" letter-spacing="3" fill="#E98A2B">MOTION · CUT</text>
+  <text x="72" y="102" font-family="PingFang SC, sans-serif" font-size="34" font-weight="650" fill="#25282B">clean_cut</text>
+  <text x="72" y="132" font-family="Avenir Next, PingFang SC, sans-serif" font-size="15" fill="#626A70">参考帧描述运动意图；正式执行还需绑定时长、缓动、声音落点和真实对象</text>
+  <rect x="72" y="156" width="1136" height="492" rx="28" fill="#FBF8F1" filter="url(#soft-shadow)"/>
+
+    <rect x="136" y="236" width="330" height="298" rx="22" fill="#F2EFE8"/>
+    <text x="160" y="274" font-family="Avenir Next, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="#626A70">ENTRY</text>
+    <g transform="translate(0 0) translate(301 398) rotate(0) scale(1) translate(-301 -398)" opacity="0.252">
+      <circle cx="226" cy="366" r="42" fill="#272B2F"/>
+      <rect x="188" y="410" width="76" height="84" rx="32" fill="#272B2F"/>
+      <rect x="294" y="348" width="142" height="18" rx="9" fill="#E98A2B"/>
+      <rect x="294" y="390" width="23.759999999999998" height="12" rx="6" fill="#25282B" opacity=".66"/>
+      <rect x="294" y="420" width="19.439999999999998" height="12" rx="6" fill="#25282B" opacity=".34"/>
+    </g>
+    <path d="M 301 302 V 494" stroke="#E98A2B" stroke-width="2" opacity="0.28"/>
+    <path d="M 472 385 H 494" stroke="#6F8795" stroke-width="4" stroke-linecap="round"/><path d="M 486 377 L 496 385 L 486 393" fill="none" stroke="#6F8795" stroke-width="3"/>
+    <rect x="506" y="236" width="330" height="298" rx="22" fill="#F2EFE8"/>
+    <text x="530" y="274" font-family="Avenir Next, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="#626A70">PEAK</text>
+    <g transform="translate(0 0) translate(671 398) rotate(0) scale(1) translate(-671 -398)" opacity="0.868">
+      <circle cx="596" cy="366" r="42" fill="#272B2F"/>
+      <rect x="558" y="410" width="76" height="84" rx="32" fill="#272B2F"/>
+      <rect x="664" y="348" width="142" height="18" rx="9" fill="#F05A47"/>
+      <rect x="664" y="390" width="81.84" height="12" rx="6" fill="#25282B" opacity=".66"/>
+      <rect x="664" y="420" width="66.96" height="12" rx="6" fill="#25282B" opacity=".34"/>
+    </g>
+    <path d="M 671 302 V 494" stroke="#F05A47" stroke-width="8" opacity="0.95"/>
+    <path d="M 842 385 H 864" stroke="#6F8795" stroke-width="4" stroke-linecap="round"/><path d="M 856 377 L 866 385 L 856 393" fill="none" stroke="#6F8795" stroke-width="3"/>
+    <rect x="876" y="236" width="330" height="298" rx="22" fill="#F2EFE8"/>
+    <text x="900" y="274" font-family="Avenir Next, sans-serif" font-size="13" font-weight="700" letter-spacing="2" fill="#626A70">EXIT</text>
+    <g transform="translate(0 0) translate(1041 398) rotate(0) scale(1) translate(-1041 -398)" opacity="1">
+      <circle cx="966" cy="366" r="42" fill="#272B2F"/>
+      <rect x="928" y="410" width="76" height="84" rx="32" fill="#272B2F"/>
+      <rect x="1034" y="348" width="142" height="18" rx="9" fill="#E98A2B"/>
+      <rect x="1034" y="390" width="132" height="12" rx="6" fill="#25282B" opacity=".66"/>
+      <rect x="1034" y="420" width="108" height="12" rx="6" fill="#25282B" opacity=".34"/>
+    </g>
+    <path d="M 1041 302 V 494" stroke="#E98A2B" stroke-width="2" opacity="0.28"/>
+
+  <text x="72" y="686" font-family="Avenir Next, sans-serif" font-size="13" font-weight="600" letter-spacing="2" fill="#626A70" opacity=".8">运动必须解释信息、情绪或视角变化；无理由则停稳</text>
+  <rect x="1110" y="674" width="98" height="5" rx="2.5" fill="url(#brand-warm)"/>
+</svg>

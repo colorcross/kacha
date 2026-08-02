@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="brand-warm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F5B544"/>
+      <stop offset="1" stop-color="#E66A32"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="24" flood-color="#16181B" flood-opacity=".14"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="#F2EFE8"/>
+  <circle cx="1168" cy="86" r="170" fill="#6F8795" opacity=".07"/>
+  <circle cx="84" cy="670" r="190" fill="#F05A47" opacity=".045"/>
+  <text x="72" y="60" font-family="Avenir Next, PingFang SC, sans-serif" font-size="16" font-weight="700" letter-spacing="3" fill="#E98A2B">RENDERER · PRODUCTION ADAPTER</text>
+  <text x="72" y="102" font-family="PingFang SC, sans-serif" font-size="34" font-weight="650" fill="#25282B">timeline</text>
+  <text x="72" y="132" font-family="Avenir Next, PingFang SC, sans-serif" font-size="15" fill="#626A70">timeline · production · requires media</text>
+  <rect x="72" y="156" width="1136" height="492" rx="28" fill="#FBF8F1" filter="url(#soft-shadow)"/>
+
+    <rect x="142" y="292" width="236" height="132" rx="24" fill="#F2EFE8"/>
+    <text x="260" y="348" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="14" font-weight="700" fill="#626A70">DESIGN CONTRACT</text>
+    <text x="260" y="382" text-anchor="middle" font-family="PingFang SC, sans-serif" font-size="20" font-weight="650" fill="#25282B">组件 / 场景 / 模式</text>
+    <path d="M 394 358 H 514" stroke="#E98A2B" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 498 344 L 518 358 L 498 372" fill="none" stroke="#E98A2B" stroke-width="5"/>
+    <rect x="532" y="264" width="236" height="188" rx="28" fill="#272B2F"/>
+    <text x="650" y="334" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="15" font-weight="700" letter-spacing="2" fill="#FFFFFF" opacity=".62">TIMELINE</text>
+    <text x="650" y="378" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="28" font-weight="750" fill="#FFFFFF">timeline</text>
+    <text x="650" y="414" text-anchor="middle" font-family="PingFang SC, sans-serif" font-size="14" fill="#FFFFFF" opacity=".7">需要真实媒体</text>
+    <path d="M 786 358 H 824" stroke="#6F8795" stroke-width="6" stroke-linecap="round"/>
+
+    <rect x="850" y="264" width="232" height="50" rx="15" fill="#E98A2B" opacity="0.95"/>
+    <text x="966" y="295" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">SVG</text>
+    <rect x="850" y="338" width="232" height="50" rx="15" fill="#6F8795" opacity="0.7"/>
+    <text x="966" y="369" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">PNG</text>
+    <rect x="850" y="412" width="232" height="50" rx="15" fill="#6F8795" opacity="0.7"/>
+    <text x="966" y="443" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF">MANIFEST</text>
+  <text x="72" y="686" font-family="Avenir Next, sans-serif" font-size="13" font-weight="600" letter-spacing="2" fill="#626A70" opacity=".8">渲染器是执行能力，不代表任意素材都能得到同样质量</text>
+  <rect x="1110" y="674" width="98" height="5" rx="2.5" fill="url(#brand-warm)"/>
+</svg>

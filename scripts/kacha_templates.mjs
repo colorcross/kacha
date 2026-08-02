@@ -123,7 +123,75 @@ function expandTemplates(config) {
       });
     }
   }
+  for (const item of config.standaloneTemplates ?? []) {
+    const family = config.families[item.family];
+    if (!family) {
+      throw new Error(`${item.id} 无法解析模板 family：${item.family}`);
+    }
+    const merged = deepMerge(
+      deepMerge(config.defaults, family),
+      item,
+    );
+    expanded.push({
+      registry: "standalone",
+      registryFile: templateFile,
+      effect: {
+        id: item.effectId,
+        label: item.label,
+        renderer: "hyperframes_or_timeline",
+      },
+      ...merged,
+    });
+  }
   return expanded;
+}
+
+function loadMotionContract(template) {
+  if (!template.motionContractRef) return null;
+  const file = path.resolve(
+    path.dirname(templateFile),
+    template.motionContractRef,
+  );
+  if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+    throw new Error(`${template.id}.motionContractRef 不存在：${file}`);
+  }
+  const contract = readJson(file);
+  const required = [
+    "narrativeContract",
+    "invariants",
+    "parameters",
+    "timing",
+    "adaptationRules",
+    "audioContract",
+    "qualityGates",
+  ];
+  if (
+    contract.schemaVersion !== "1.0"
+    || !contract.id
+    || !contract.version
+  ) {
+    throw new Error(`${template.id}.motionContract 不是有效 1.0 合同`);
+  }
+  for (const field of required) {
+    if (!contract[field]) {
+      throw new Error(`${template.id}.motionContract 缺少 ${field}`);
+    }
+  }
+  if (
+    contract.invariants.preserveFaceSafeZone !== true
+    || contract.invariants.preserveSubtitleSafeZone !== true
+    || contract.invariants.noFullFrameFlash !== true
+  ) {
+    throw new Error(`${template.id}.motionContract 缺少人物、字幕或闪屏硬约束`);
+  }
+  if (!Array.isArray(contract.audioContract.cues)) {
+    throw new Error(`${template.id}.motionContract.audioContract.cues 不是数组`);
+  }
+  return {
+    source: file,
+    sha256: sha256File(file),
+    contract,
+  };
 }
 
 function validateAll(config, expanded, resolved, catalogs) {
@@ -225,6 +293,11 @@ function validateAll(config, expanded, resolved, catalogs) {
       if (!resourceIds.has(role) && !resourceRoles.has(role)) {
         errors.push(`${label}.resourceRoles 未登记：${role}`);
       }
+    }
+    try {
+      loadMotionContract(template);
+    } catch (error) {
+      errors.push(error.message);
     }
   }
   const specialFallbacks = new Set([
@@ -462,6 +535,7 @@ const result = {
     typography: selected.typography,
     resolvedFonts: fontsFor(selected, catalogs),
     audio: selected.audio,
+    motionContract: loadMotionContract(selected),
     fallback: selected.fallback,
     failureConditions: selected.failureConditions,
     resourceResolution:
@@ -469,6 +543,7 @@ const result = {
   },
   digest: sha256Value({
     template: selected,
+    motionContract: loadMotionContract(selected),
     resources: resourcesFor(selected, catalogs),
     fonts: fontsFor(selected, catalogs),
     designDigest: resolved.digest,

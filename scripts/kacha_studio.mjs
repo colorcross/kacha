@@ -41,6 +41,12 @@ const netstyleFile = path.join(
   "effects",
   "z-en-netstyle.json",
 );
+const productionMotionPolicyFile = path.join(
+  skillRoot,
+  "config",
+  "effects",
+  "production-motion-policy.json",
+);
 const scenesFile = path.join(
   skillRoot,
   "config",
@@ -217,6 +223,13 @@ function effectCatalog() {
       label: effect.label,
       trigger: (effect.useWhen ?? []).join("；"),
       production: effect.status === "production",
+      source: "core-opening-registry",
+      function: "在首个完整语义单元建立问题、冲突、收益或主题",
+      mechanism: effect.implementation?.template ?? effect.engine,
+      soundFunction: effect.audioFunction,
+      fallback: effect.id === "cold_open_marker" ? "clean_cold_open" : "cold_open_marker",
+      failureModes: clone(effect.avoidWhen ?? []),
+      qc: ["首秒已有可见变化", "3 秒内兑现内容承诺", "人物与字幕安全区无碰撞"],
     })),
     ...transitions.map((effect) => ({
       kind: "transition",
@@ -243,12 +256,21 @@ function effectCatalog() {
       production: true,
     })),
     ...netstyle.map((effect) => ({
-      kind: "netstyle",
-      group: "语义动效",
+      kind: effect.family === "opening" ? "opening" : "netstyle",
+      group: effect.family === "opening" ? "开场" : "语义动效",
       id: effect.id,
       label: effect.label,
       trigger: effect.trigger,
       production: true,
+      source: "z-en-netstyle",
+      family: effect.family,
+      function: effect.function,
+      mechanism: effect.mechanism,
+      soundFunction: effect.soundTrigger,
+      fallback: effect.fallback,
+      failureModes: clone(effect.failureModes ?? []),
+      qc: clone(effect.qc ?? []),
+      referenceVideo: effect.referenceVideo ?? null,
     })),
     ...scenes.map((scene) => ({
       kind: "scene",
@@ -484,7 +506,8 @@ export function loadProductionCatalog({
   includeCustom = true,
 } = {}) {
   const registry = loadBaseRegistry();
-  const openings = readJson(openingFile).effects ?? [];
+  const effects = effectCatalog();
+  const openings = effects.filter((effect) => effect.kind === "opening");
   const openingIds = new Set(openings.map((effect) => effect.id));
   const builtIns = registry.stylePresets.map((style, index) => normalizeStylePreset(
     style,
@@ -512,7 +535,7 @@ export function loadProductionCatalog({
   if (!styles.some((style) => style.id === registry.defaultStyleId)) {
     throw new Error(`默认风格不存在：${registry.defaultStyleId}`);
   }
-  const effects = effectCatalog();
+  const productionMotionPolicy = readJson(productionMotionPolicyFile);
   return {
     schemaVersion: "1.0",
     status: "pass",
@@ -527,10 +550,12 @@ export function loadProductionCatalog({
     outputPresets: clone(registry.outputPresets),
     openings: effects.filter((effect) => effect.kind === "opening"),
     assignableEffects: effects,
+    productionMotionPolicy: clone(productionMotionPolicy),
     professionalAutoDirector: clone(registry.professionalAutoDirector),
     digest: sha256Value({
       registry,
       effects,
+      productionMotionPolicy,
       custom: custom.map(({ source: _source, ...style }) => style),
     }),
   };
@@ -725,7 +750,8 @@ function normalizeProductionRequest(request, catalog, media) {
   const projectOverrides = normalizeProjectOverrides(request.projectOverrides, catalog);
   const style = applyProjectOverrides(baseStyle, projectOverrides, catalog);
   const openingId = request.openingId ?? style.direction.openingId;
-  if (!catalog.openings.some((entry) => entry.id === openingId)) {
+  const openingEffect = catalog.openings.find((entry) => entry.id === openingId);
+  if (!openingEffect) {
     throw new Error(`开场效果不存在：${openingId}`);
   }
   const effectByKey = new Map(
@@ -746,6 +772,7 @@ function normalizeProductionRequest(request, catalog, media) {
     videoPath: media.path,
     styleId,
     openingId,
+    openingEffect: clone(openingEffect),
     task,
     platform,
     language,
@@ -797,10 +824,10 @@ function productionInstructions(request, catalog) {
     },
     {
       id: "studio-opening",
-      text: `开场使用已注册效果 \`${request.openingId}\`，从有效声音或动作开始，不增加静态封面和无意静音。`,
+      text: `每条视频必须且只能选择一个主开场。本片使用已注册效果 \`${request.openingId}\`（${request.openingEffect.label}），从首个有效声音或动作建立变化，3 秒内兑现问题、冲突、收益或主题；不增加静态封面和无意静音。`,
       appliesTo: [request.task],
-      modules: ["openings"],
-      priority: "high",
+      modules: ["openings", "visual", "sfx"],
+      priority: "required",
     },
   ];
   if (request.automaticProfessionalJudgment) {
@@ -913,6 +940,26 @@ function buildProjectConfig(request, media, catalog) {
           styleId: style.id,
           styleName: style.name,
           openingId: request.openingId,
+          openingContract: {
+            required: true,
+            primaryEffectCount: 1,
+            effectId: request.openingId,
+            effectLabel: request.openingEffect.label,
+            source: request.openingEffect.source ?? "core-opening-registry",
+            trigger: request.openingEffect.trigger,
+            function: request.openingEffect.function
+              ?? "在首个完整语义单元建立内容承诺",
+            mechanism: request.openingEffect.mechanism
+              ?? "按注册开场模板完成进入、语义峰值、停稳和退出",
+            soundFunction: request.openingEffect.soundFunction ?? "visible_landing",
+            fallback: request.openingEffect.fallback ?? "cold_open_marker",
+            startAtOrBeforeSeconds:
+              catalog.productionMotionPolicy.opening.startAtOrBeforeSeconds,
+            promiseBySeconds:
+              catalog.productionMotionPolicy.opening.promiseBySeconds,
+            normalSpeedPreviewRequired: true,
+            representativeFrameRequired: true,
+          },
           platform: request.platform,
           outputPresetId: request.outputPresetId,
           targetDuration: request.targetDuration || null,
@@ -1099,7 +1146,14 @@ export function compileProductionRequest(request, {
     },
     opening: {
       id: normalized.openingId,
-      source: "registered-opening",
+      label: normalized.openingEffect.label,
+      source: normalized.openingEffect.source ?? "core-opening-registry",
+      required: true,
+      primaryEffectCount: 1,
+      startAtOrBeforeSeconds:
+        catalog.productionMotionPolicy.opening.startAtOrBeforeSeconds,
+      promiseBySeconds: catalog.productionMotionPolicy.opening.promiseBySeconds,
+      normalSpeedPreviewRequired: true,
     },
     effectAssignments: clone(normalized.effectAssignments),
     professionalAutoDirector: {

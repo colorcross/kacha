@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "id": "kacha-core-resources",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "styleProfile": "xingzhe",
   "distribution": "public_bundle",
   "assets": [
@@ -20,9 +20,13 @@
     {"id": "torn-paper-strip", "kind": "svg", "path": "../../assets/design/original/torn-paper-strip.svg", "sha256": "22817710f80727cf61ea5753e74596917e821a51f563c705820bda75ce7694d3", "license": "MIT", "roles": ["sticker", "caption_stage", "documentary"]},
     {"id": "underline-sweep", "kind": "svg", "path": "../../assets/design/original/underline-sweep.svg", "sha256": "b11f7611a5751a94dafdf24c247f57f7e232c8d6f8f3f75eef83321c1994cf83", "license": "MIT", "roles": ["logical_emphasis", "caption", "conclusion"]},
     {"id": "warm-grid", "kind": "svg", "path": "../../assets/design/original/warm-grid.svg", "sha256": "3f086265c0151db916a236e411e1bf7a84d1344735498191f93ead0424913e64", "license": "MIT", "roles": ["background", "technology", "workflow"]},
+    {"id": "editorial-margin-notes", "kind": "svg", "path": "../../assets/design/original/editorial-margin-notes.svg", "sha256": "f404668b80a704ae42387104697481db22d3edfda80767f3cdaaf1a63f48c0ed", "license": "MIT", "roles": ["light_overlay_grammar", "margin_note", "editorial_continuity"]},
+    {"id": "spatial-route-field", "kind": "svg", "path": "../../assets/design/original/spatial-route-field.svg", "sha256": "146754cd5b6c9991474092296db78efa19001c70d897e7ea10234a4b1de85ea4", "license": "MIT", "roles": ["spatial_grammar", "depth_navigation", "relationship_path"]},
+    {"id": "comic-beat-panels", "kind": "svg", "path": "../../assets/design/original/comic-beat-panels.svg", "sha256": "ab07866b43434803629bf3f30688eea950138e6f41d9342f966952ed6632e468", "license": "MIT", "roles": ["comic_grammar", "setup_reaction_punchline", "panel_timing"]},
+    {"id": "pixel-state-lattice", "kind": "svg", "path": "../../assets/design/original/pixel-state-lattice.svg", "sha256": "f664bd4ecd8b402dde4920b7d077887f928f914dcf481436ba15105d614d16f3", "license": "MIT", "roles": ["pixel_grammar", "state_machine", "quantized_process"]},
     {"id": "kacha-logo", "kind": "image", "path": "../../assets/brand/kacha-logo.png", "sha256": "3bd7b5feaaa869dede7283a7ac69afa3b48cbb8c4596e864aab8d2dd83083ab0", "license": "project_brand_asset", "roles": ["brand"]},
     {"id": "kacha-original-sfx", "kind": "manifest", "path": "../../assets/sfx/manifest.json", "sha256": "6c57ab3a20b5a8ba610a0895540c5ee9c3e64307467c20e601deafdb86cdc22c", "license": "Kacha Original SFX Asset License 1.0", "roles": ["sfx_library"]},
-    {"id": "kacha-font-routing", "kind": "manifest", "path": "../font-routing.json", "sha256": "9e4e7a02dc8991a4de4343ff563f6c2c1c6d3c511e21d2150b912f54ca75e261", "license": "MIT", "roles": ["font_routing"]}
+    {"id": "kacha-font-routing", "kind": "manifest", "path": "../font-routing.json", "sha256": "756cc5996653c082e40e95057b278858c0e161688081ee5cbe42f981ca326510", "license": "MIT", "roles": ["font_routing"]}
   ],
   "runtimeRecipes": [
     {"id": "warm-paper-drift", "sourceAsset": "grain-overlay", "durationSeconds": 6, "motion": "scale 1.00→1.025; x -0.8%→0.8%; opacity 0.08", "loop": "ping_pong", "useWhen": "沉思、文化或章节背景需要轻微呼吸"},
@@ -30,7 +34,11 @@
     {"id": "amber-light-sweep", "sourceAsset": "light-sweep", "durationSeconds": 1.1, "motion": "x -80%→120%; opacity 0→0.5→0", "loop": "none", "useWhen": "揭示、页面切换或关键卡片落位"},
     {"id": "focus-ring-pulse", "sourceAsset": "focus-brackets", "durationSeconds": 0.5, "motion": "scale 1.06→1.0; opacity 0→1", "loop": "none", "useWhen": "点击、证据或局部焦点确认"},
     {"id": "directional-streak", "sourceAsset": "speed-lines", "durationSeconds": 0.42, "motion": "scaleX 0.8→1.05; opacity 0→0.7→0", "loop": "none", "useWhen": "短促方向运动或喜剧冲击"},
-    {"id": "document-layer-drift", "sourceAsset": "nested-frames", "durationSeconds": 3.2, "motion": "front x 1.8%; middle x 0.9%; back x 0.25%", "loop": "none", "useWhen": "证据层级、来源对照或2.5D轻纵深"}
+    {"id": "document-layer-drift", "sourceAsset": "nested-frames", "durationSeconds": 3.2, "motion": "front x 1.8%; middle x 0.9%; back x 0.25%", "loop": "none", "useWhen": "证据层级、来源对照或2.5D轻纵深"},
+    {"id": "editorial-margin-reveal", "sourceAsset": "editorial-margin-notes", "durationSeconds": 0.72, "motion": "edge rule 0%→100%; primary note opacity 0→1; support note delayed 5 frames", "loop": "none", "useWhen": "浅暖轻浮层在连续口播中建立一处边缘旁注"},
+    {"id": "spatial-route-traverse", "sourceAsset": "spatial-route-field", "durationSeconds": 1.4, "motion": "path draw 0%→100%; focus moves only after path reaches node; destination settles", "loop": "none", "useWhen": "空间光路表达真实关系、因果或流程目的地"},
+    {"id": "comic-beat-hold", "sourceAsset": "comic-beat-panels", "durationSeconds": 1.1, "motion": "setup hold 4 frames; reaction hard cut; punchline lands after half-beat", "loop": "none", "useWhen": "幽默漫画存在真实反差、反应或回扣"},
+    {"id": "pixel-state-commit", "sourceAsset": "pixel-state-lattice", "durationSeconds": 0.6, "motion": "input→process→output in 3-frame integer steps; result fully static", "loop": "none", "useWhen": "像素风存在可核验的输入、状态变化与结果"}
   ],
   "logicalSlots": [
     {"id": "real_evidence_image", "kind": "image", "selectionOrder": ["project_real_evidence", "official_source", "wikimedia_file_license_checked", "pexels_or_pixabay_project_copy", "generated_with_disclosure"], "fallback": "document-frame"},

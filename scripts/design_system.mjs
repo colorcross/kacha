@@ -19,6 +19,7 @@ const FONT_ROLES = [
   "subtitleSecondary",
   "label",
   "body",
+  "coverTitle",
 ];
 
 function isObject(value) {
@@ -119,6 +120,33 @@ function normalizeFontName(value) {
 }
 
 function installedFontFamilies() {
+  const addProjectFonts = (families) => {
+    const scanCommand = [
+      "/opt/homebrew/bin/fc-scan",
+      "/usr/local/bin/fc-scan",
+      "/usr/bin/fc-scan",
+    ].find((candidate) => fs.existsSync(candidate)) ?? "fc-scan";
+    const candidates = [
+      process.env.KACHA_FONTS_DIR,
+      path.resolve(scriptDirectory, "..", "..", "Fonts"),
+    ].filter(Boolean);
+    for (const directory of candidates) {
+      if (!fs.existsSync(directory)) continue;
+      for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+        if (!entry.isFile() || !/\.(?:ttf|otf|ttc)$/i.test(entry.name)) continue;
+        const file = path.join(directory, entry.name);
+        const scan = spawnSync(scanCommand, ["--format", "%{family}", file], {
+          encoding: "utf8",
+          timeout: 10000,
+        });
+        if (scan.status !== 0) continue;
+        for (const family of scan.stdout.split(",")) {
+          const trimmed = family.replaceAll("\\-", "-").trim();
+          if (trimmed) families.set(normalizeFontName(trimmed), trimmed);
+        }
+      }
+    }
+  };
   const result = spawnSync("fc-list", [":", "family"], {
     encoding: "utf8",
     timeout: 10000,
@@ -131,7 +159,8 @@ function installedFontFamilies() {
         if (trimmed) families.set(normalizeFontName(trimmed), trimmed);
       }
     }
-    return { probe: "fc-list", families, error: null };
+    addProjectFonts(families);
+    return { probe: "fc-list+project-fonts", families, error: null };
   }
   if (process.platform === "darwin") {
     const profiler = spawnSync(
@@ -158,6 +187,7 @@ function installedFontFamilies() {
       };
       visit(JSON.parse(profiler.stdout));
       if (families.size > 0) {
+        addProjectFonts(families);
         return { probe: "system_profiler", families, error: null };
       }
     }
@@ -268,12 +298,101 @@ export function validateDesignSystem(bundle) {
   }
   const fontRouting = capabilityRegistries?.fontRouting;
   if (
-    fontRouting?.schemaVersion !== "1.0"
+    fontRouting?.schemaVersion !== "2.0"
     || fontRouting?.id !== "kacha-font-routing"
     || !isObject(fontRouting?.roles)
-    || Object.keys(fontRouting.roles).length < 8
+    || Object.keys(fontRouting.roles).length < 7
   ) {
-    errors.push("fontRouting 必须注册至少 8 个语义字体角色");
+    errors.push("fontRouting 2.0 必须注册四类限定字体的至少 7 个语义角色");
+  }
+  const requiredVisualLanguageIds = [
+    "xingzhe-light-overlay",
+    "xingzhe-spatial-lightpath",
+    "xingzhe-humor-comic",
+    "xingzhe-pixel-editorial",
+  ];
+  if (
+    !Array.isArray(fontRouting?.scope)
+    || requiredVisualLanguageIds.some((styleId) => !fontRouting.scope.includes(styleId))
+  ) {
+    errors.push("fontRouting.scope 必须覆盖浅暖轻浮层、空间光路、幽默漫画和像素风四套风格");
+  }
+  const visualLanguages = capabilityRegistries?.visualLanguages;
+  if (
+    visualLanguages?.schemaVersion !== "1.0"
+    || visualLanguages?.id !== "kacha-visual-languages"
+    || !isObject(visualLanguages?.languages)
+    || !visualLanguages.languages["xingzhe-light-overlay"]
+    || !visualLanguages.languages["xingzhe-spatial-lightpath"]
+    || !visualLanguages.languages["xingzhe-humor-comic"]
+    || !visualLanguages.languages["xingzhe-pixel-editorial"]
+  ) {
+    errors.push("visualLanguages 必须注册浅暖轻浮层、空间光路、幽默漫画和像素风四套可执行视觉语言");
+  }
+  for (const styleId of requiredVisualLanguageIds) {
+    const language = visualLanguages?.languages?.[styleId];
+    const applicability = language?.applicability;
+    if (
+      !applicability?.selectionRule
+      || !Array.isArray(applicability.requiredSignals)
+      || applicability.requiredSignals.length < 3
+      || applicability.minimumMatchedSignals !== 1
+      || !applicability.fallback
+      || !["matchedSignal", "semanticBeatId", "sourceRange", "fallbackReasonWhenNotApplied"]
+        .every((field) => applicability.runtimeEvidenceRequired?.includes(field))
+    ) {
+      errors.push(`visualLanguages.${styleId}.applicability 缺少可执行选择、证据或回退合同`);
+    }
+    const signature = language?.grammarSignature;
+    const grammar = language?.editingGrammar;
+    const signatureFields = [
+      "id",
+      "temporalModel",
+      "shotUnit",
+      "spatialModel",
+      "primaryTransition",
+      "textBehavior",
+      "audioCadence",
+      "stillnessPolicy",
+    ];
+    if (
+      !isObject(signature)
+      || signatureFields.some((field) => typeof signature[field] !== "string" || !signature[field].trim())
+      || !isObject(grammar)
+      || !Array.isArray(grammar.sequence)
+      || grammar.sequence.length < 5
+      || ["camera", "topology", "cutPolicy", "transitionPolicy", "soundPolicy"]
+        .some((field) => typeof grammar[field] !== "string" || !grammar[field].trim())
+      || !Array.isArray(grammar.forbidSharedPatterns)
+      || grammar.forbidSharedPatterns.length < 4
+    ) {
+      errors.push(`visualLanguages.${styleId} 缺少完整且可执行的剪辑语法签名`);
+    }
+  }
+  const grammarSignatures = requiredVisualLanguageIds
+    .map((styleId) => visualLanguages?.languages?.[styleId]?.grammarSignature)
+    .filter(Boolean);
+  if (new Set(grammarSignatures.map((signature) => signature.id)).size !== requiredVisualLanguageIds.length) {
+    errors.push("四套视觉语言的 grammarSignature.id 必须互不相同");
+  }
+  const differentiatingAxes = [
+    "temporalModel",
+    "shotUnit",
+    "spatialModel",
+    "primaryTransition",
+    "textBehavior",
+    "audioCadence",
+    "stillnessPolicy",
+  ];
+  for (let leftIndex = 0; leftIndex < grammarSignatures.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < grammarSignatures.length; rightIndex += 1) {
+      const sharedAxes = differentiatingAxes.filter(
+        (axis) => grammarSignatures[leftIndex]?.[axis] === grammarSignatures[rightIndex]?.[axis],
+      );
+      if (sharedAxes.length > 1) {
+        errors.push(`四套视觉语言不能只做材质换皮；剪辑语法重复轴：${sharedAxes.join("、")}`);
+      }
+    }
   }
   const effectTemplates = capabilityRegistries?.effectTemplates;
   if (

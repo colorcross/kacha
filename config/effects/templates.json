@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "id": "kacha-effect-templates",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "styleProfile": "xingzhe",
   "resourceCatalog": "../resources/core-catalog.json",
   "defaults": {
@@ -168,6 +168,40 @@
       "items": "motions",
       "templatePrefix": "breathing-",
       "family": "breathing"
+    }
+  ],
+  "standaloneTemplates": [
+    {
+      "id": "effect-process_spatial_nodes",
+      "label": "空间流程节点",
+      "family": "spatial",
+      "effectId": "process_spatial_nodes",
+      "sceneId": "process_progressive",
+      "componentIds": ["process_flow", "progress_node"],
+      "signals": [
+        "ordered_workflow",
+        "process_progression",
+        "stage_by_stage_explanation"
+      ],
+      "resourceRoles": ["grain-overlay"],
+      "motionContractRef": "motion-contracts/workflow-spatial-nodes.json",
+      "fallback": "hold_original_shot"
+    },
+    {
+      "id": "effect-process_light_overlay",
+      "label": "浅暖轻浮层流程",
+      "family": "spatial",
+      "effectId": "process_light_overlay",
+      "sceneId": "process_progressive",
+      "componentIds": ["process_flow", "progress_node"],
+      "signals": [
+        "ordered_workflow",
+        "warm_editorial_process",
+        "lightweight_progression"
+      ],
+      "resourceRoles": ["grain-overlay"],
+      "motionContractRef": "motion-contracts/workflow-light-overlay.json",
+      "fallback": "effect-process_spatial_nodes"
     }
   ],
   "overrides": {

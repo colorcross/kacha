@@ -2,85 +2,144 @@
   "schemaVersion": "1.0",
   "id": "xingzhe",
   "name": "行者风",
-  "description": "咔嚓默认生产风格。明亮、克制、可信，保留自然表达与画面呼吸，适合行者大灰真人口播、工具分享和知识型内容。",
+  "description": "咔嚓默认生产风格。暖而不黄、静而不闷，以人物、证据、路径和节点建立明亮克制、真实可信的表达。",
   "designSystem": {
     "id": "dahui-video-system",
-    "minimumVersion": "1.3.0"
+    "minimumVersion": "1.5.0"
   },
   "palette": {
-    "canvas": "#F7E8C9",
-    "surface": "#FFF8EA",
+    "canvas": "#F2EFE8",
+    "surface": "#FBF8F1",
     "surfaceElevated": "#FFFFFF",
-    "ink": "#24150F",
-    "inkSecondary": "#6E4B38",
-    "accent": "#E9A92F",
-    "accentSecondary": "#B96535",
-    "shadow": "#2A170F",
-    "darkSurface": "#2B1912",
-    "textOnDark": "#FFF8EE",
-    "textOnLight": "#1A100B",
-    "secondaryTextOnLight": "#2D1B12",
-    "textOnAccent": "#24150F"
+    "ink": "#25282B",
+    "inkSecondary": "#626A70",
+    "accent": "#E98A2B",
+    "accentSecondary": "#6F8795",
+    "accentSignal": "#F05A47",
+    "accentInsight": "#5577B8",
+    "accentVerified": "#3F8A78",
+    "shadow": "#202326",
+    "darkSurface": "#272B2F",
+    "textOnDark": "#FFF9F0",
+    "textOnLight": "#202326",
+    "secondaryTextOnLight": "#4F585F",
+    "textOnAccent": "#1F2326"
+  },
+  "gradients": {
+    "brandWarm": {
+      "from": "#F5B544",
+      "to": "#E66A32",
+      "angleDegrees": 18,
+      "maximumAreaRatio": 0.12
+    },
+    "signalWarm": {
+      "from": "#FF8A3D",
+      "to": "#F0445A",
+      "angleDegrees": 12,
+      "maximumAreaRatio": 0.18
+    },
+    "aiDialogue": {
+      "from": "#637FBE",
+      "to": "#4C9B9A",
+      "angleDegrees": 24,
+      "maximumAreaRatio": 0.14
+    }
+  },
+  "emphasis": {
+    "brand": "accent",
+    "logical": "accent",
+    "conflict": "accentSignal",
+    "ai": "accentInsight",
+    "verified": "accentVerified",
+    "personDepthGradient": "signalWarm",
+    "maximumAccentAreaRatio": 0.12,
+    "maximumGradientAreaRatio": 0.18,
+    "minimumLargeTextContrastRatio": 3
   },
   "typography": {
     "display": {
-      "families": ["华光标题黑", "Source Han Sans SC", "PingFang SC", "Noto Sans CJK SC", "DejaVu Sans"],
-      "weight": 800,
+      "families": ["青鸟华光标题黑体", "JBHGBTH"],
+      "fontFile": "assets/private/fonts/华光标题黑.TTF",
+      "fontSha256": "7446486b30fd433fb56ea7b745549f326218ea9161785deaf1a7df0ec8e124a0",
+      "fallback": "forbidden",
+      "weight": 400,
       "sizeRatio": 0.072,
-      "letterSpacingEm": -0.02
+      "letterSpacingEm": -0.02,
+      "transparentGradient": "auto_by_semantic_role"
     },
     "subtitlePrimary": {
-      "families": ["方正粗金陵简体", "FZJinLS-B-GB", "STSong", "Songti SC", "Noto Serif CJK SC", "Noto Sans CJK SC", "DejaVu Sans"],
+      "families": ["方正粗金陵简体", "FZJinLS-B-GB"],
+      "fontFile": "assets/private/fonts/FZCuJinLJW.ttf",
+      "fontSha256": "3c15643db0ef339e1faf39b8b0c12ffead661565876e617fd25ca5209eabb1ea",
+      "fallback": "forbidden",
       "weight": 400,
       "sizeRatio": 0.048,
       "letterSpacingEm": 0
     },
     "subtitleSecondary": {
-      "families": ["方正粗金陵简体", "FZJinLS-B-GB", "STSong", "Songti SC", "Noto Serif CJK SC", "Noto Sans CJK SC", "DejaVu Sans"],
+      "families": ["方正粗金陵简体", "FZJinLS-B-GB"],
+      "fontFile": "assets/private/fonts/FZCuJinLJW.ttf",
+      "fontSha256": "3c15643db0ef339e1faf39b8b0c12ffead661565876e617fd25ca5209eabb1ea",
+      "fallback": "forbidden",
       "weight": 400,
       "sizeRatio": 0.032,
       "letterSpacingEm": 0
     },
     "label": {
-      "families": ["Avenir Next", "Source Han Sans SC", "PingFang SC", "Noto Sans CJK SC", "DejaVu Sans"],
-      "weight": 700,
+      "families": ["思源黑体 CN Light", "Source Han Sans CN Light"],
+      "fontFile": "assets/private/fonts/细体-思源黑体7号.otf",
+      "fontSha256": "317e53f4b71c757b9c2317354570f03dacae2321cbd6eb3f256c0b71c45610da",
+      "fallback": "forbidden",
+      "weight": 300,
       "sizeRatio": 0.025,
       "letterSpacingEm": 0.025
     },
     "body": {
-      "families": ["Avenir Next", "Source Han Sans SC", "PingFang SC", "Noto Sans CJK SC", "DejaVu Sans"],
-      "weight": 500,
+      "families": ["思源黑体 CN Light", "Source Han Sans CN Light"],
+      "fontFile": "assets/private/fonts/细体-思源黑体7号.otf",
+      "fontSha256": "317e53f4b71c757b9c2317354570f03dacae2321cbd6eb3f256c0b71c45610da",
+      "fallback": "forbidden",
+      "weight": 300,
       "sizeRatio": 0.036,
       "letterSpacingEm": 0
+    },
+    "coverTitle": {
+      "families": ["Aa封神榜书", "AaFSBS"],
+      "fontFile": "assets/private/fonts/封神榜书.ttf",
+      "fontSha256": "4a2701607972a3b4804019b656800b7778deb6e1767093fc56a110eac48083ed",
+      "fallback": "forbidden",
+      "weight": 400,
+      "sizeRatio": 0.086,
+      "letterSpacingEm": -0.01
     }
   },
   "subtitles": {
-    "maxWidthRatio": 0.84,
-    "baselineYRatio": 0.69,
+    "maxWidthRatio": 0.8,
+    "baselineYRatio": 0.72,
     "lineGapRatio": 0.038,
     "singleLinePerLanguage": true,
     "background": "none",
     "outline": "none",
     "shadow": {
-      "color": "#160E09",
+      "color": "#16191C",
       "opacity": 0.6,
-      "blurRatio": 0.007,
-      "offsetYRatio": 0.003
+      "blurRatio": 0.008,
+      "offsetYRatio": 0.0035
     },
     "lightSurfaceVariant": {
-      "primaryColor": "#1A100B",
-      "secondaryColor": "#2D1B12",
-      "primaryWeight": 700,
-      "secondaryWeight": 650,
-      "shadowColor": "#FFFDF6",
-      "shadowOpacity": 0.96
+      "primaryColor": "#202326",
+      "secondaryColor": "#4F585F",
+      "primaryWeight": 500,
+      "secondaryWeight": 400,
+      "shadowColor": "#FFFFFF",
+      "shadowOpacity": 0.78
     }
   },
   "popups": {
-    "fill": "#2B1912",
-    "text": "#FFF8EE",
-    "accent": "#E9A92F",
-    "borderColor": "#FFF1D1",
+    "fill": "#272B2F",
+    "text": "#FFF9F0",
+    "accent": "#E98A2B",
+    "borderColor": "#F5E9D7",
     "borderWidthRatio": 0.004,
     "cornerRadiusRatio": 0.028,
     "paddingXRatio": 0.032,
@@ -89,8 +148,8 @@
     "headSafetyMarginRatio": 0.08,
     "subtitleSafetyMarginRatio": 0.05,
     "shadow": {
-      "color": "#2A170F",
-      "opacity": 0.28,
+      "color": "#202326",
+      "opacity": 0.24,
       "blurRatio": 0.018,
       "offsetYRatio": 0.008
     }
@@ -100,29 +159,29 @@
     "safeMarginRatio": 0.04,
     "strokes": [
       {
-        "color": "#FFF8EA",
+        "color": "#FBF8F1",
         "widthRatio": 0.009
       },
       {
-        "color": "#E9A92F",
+        "color": "#E98A2B",
         "widthRatio": 0.004
       }
     ],
     "shadow": {
-      "color": "#2A170F",
-      "opacity": 0.28,
+      "color": "#202326",
+      "opacity": 0.24,
       "blurRatio": 0.018,
       "offsetYRatio": 0.008
     }
   },
   "cards": {
-    "fill": "#FFF8EA",
-    "text": "#24150F",
-    "mutedText": "#6E4B38",
-    "activeFill": "#E9A92F",
-    "activeText": "#24150F",
-    "completedFill": "#2B1912",
-    "completedText": "#FFF8EE",
+    "fill": "#FBF8F1",
+    "text": "#25282B",
+    "mutedText": "#626A70",
+    "activeFill": "#E98A2B",
+    "activeText": "#1F2326",
+    "completedFill": "#3F8A78",
+    "completedText": "#FFFFFF",
     "cornerRadiusRatio": 0.026,
     "gapRatio": 0.024,
     "paddingRatio": 0.035,
@@ -131,12 +190,57 @@
     "screenFlashPolicy": "forbid_full_frame_fade"
   },
   "brand": {
-    "label": "DAHUI · TOOL SHARE",
+    "label": "栏目",
+    "creatorName": "行者大灰",
+    "dynamicShowLabel": true,
+    "issueTemplate": "第{issue}期",
     "position": "top_left",
     "safeMarginRatio": 0.04,
-    "fill": "#2B1912",
-    "text": "#FFF8EE",
-    "accent": "#E9A92F"
+    "fill": "adaptive_micro_glass",
+    "text": "adaptive_contrast",
+    "accent": "#E98A2B",
+    "persistent": true,
+    "minimumContrastRatio": 3,
+    "targetOpacityRange": [0.62, 0.8],
+    "maximumSalienceRatioToPrimaryTitle": 0.32,
+    "collisionPriority": ["platform_ui", "head", "primary_title", "subtitle", "brand"]
+  },
+  "cover": {
+    "subjectHeightRatio": 0.44,
+    "subjectMinimumHeightRatio": 0.32,
+    "subjectMaximumHeightRatio": 0.48,
+    "subjectWidthRatio": 0.27,
+    "titleMaximumWidthRatio": 0.56,
+    "accentMaximumAreaRatio": 0.12,
+    "safeMarginRatio": 0.07,
+    "preferContextOverPortraitScale": true,
+    "titleTypographyRole": "coverTitle",
+    "metadataTypographyRole": "label",
+    "characterVisualLanguageId": "cinematic-3d-adult-dahui",
+    "characterVisualLanguage": "高品质院线级 3D 动画电影人物：温暖圆润但不幼龄化，保留大灰本人可识别的成年脸型、黑框矩形眼镜、短刺黑发和深藏蓝运动服，使用精细皮肤/头发/眼镜/布料材质与电影级灯光",
+    "preserveSemanticEditorialCollage": true,
+    "posterQuality": "theatrical-cinematic-3d-character-with-editorial-collage",
+    "specificCharacterImitation": "forbidden"
+  },
+  "adaptiveLayout": {
+    "requiredInputs": ["subjectBounds", "headBounds", "subtitleSafeZone", "platformUiZones", "brandZones", "localLuminanceMap", "textMetrics"],
+    "placementOrder": ["negative_space", "opposite_gaze", "above_head_with_gap", "side_safe", "picture_in_picture", "omit_nonessential"],
+    "minimumTextContrastRatio": 4.5,
+    "minimumLargeTextContrastRatio": 3,
+    "minimumHeadGapRatio": 0.035,
+    "forbidOcclusion": ["face", "eyes", "mouth", "primary_subtitle", "platform_ui"],
+    "cardSizing": "content_measured_with_min_max_constraints",
+    "textFitting": ["measure", "reflow_by_semantic_group", "reduce_to_role_minimum", "move", "split_in_time", "fallback"]
+  },
+  "shooting": {
+    "compositionMotif": "subject_with_low_information_zone",
+    "subjectEyeLineRatio": 0.4,
+    "preferredNegativeSpaceRatio": 0.3,
+    "backgroundDetailPolicy": "one_bookshelf_slice_plus_neutral_depth",
+    "backgroundSaturationReductionRange": [0.08, 0.15],
+    "backgroundExposureReductionStops": [0.2, 0.4],
+    "facePriority": "face_and_eyes_first",
+    "tableHighlightPolicy": "keep_below_face_salience"
   },
   "motion": {
     "entryFrames": 9,

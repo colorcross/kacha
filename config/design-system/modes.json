@@ -5,44 +5,110 @@
       "tool-share": {
         "label": "工具分享",
         "styleOverrides": {
+          "palette": {
+            "accent": "#E98A2B",
+            "accentSecondary": "#6F8795",
+            "accentSignal": "#F05A47",
+            "accentInsight": "#5577B8"
+          },
           "brand": {"label": "工具分享"},
-          "motion": {"fastFrames": 6, "standardFrames": 9, "slowFrames": 15}
+          "cover": {"subjectHeightRatio": 0.42, "subjectWidthRatio": 0.26},
+          "motion": {"fastFrames": 6, "standardFrames": 9, "slowFrames": 15, "maxOvershoot": 0.04}
         },
-        "sceneTags": ["practical", "screen", "evidence", "fast-clear"]
+        "sceneTags": ["practical", "screen", "evidence", "fast-clear"],
+        "direction": {
+          "openingPriority": ["open_result_first", "open_cold_marker", "open_clean_title"],
+          "coverPriority": ["cover_editorial", "cover_comparison"],
+          "soundPolicy": "interface_feedback_only",
+          "musicPolicy": "sectional_light_rhythm"
+        }
       },
       "book-talk": {
         "label": "解读好书",
         "styleOverrides": {
-          "palette": {"accent": "#C98245", "accentSecondary": "#8A5A3C"},
+          "palette": {
+            "canvas": "#EFEAE1",
+            "surface": "#FAF7F0",
+            "ink": "#282B2D",
+            "inkSecondary": "#66635F",
+            "accent": "#C47A51",
+            "accentSecondary": "#7B858A",
+            "accentSignal": "#B84F43",
+            "accentInsight": "#66788D"
+          },
           "brand": {"label": "解读好书"},
-          "motion": {"fastFrames": 8, "standardFrames": 12, "slowFrames": 20}
+          "cover": {"subjectHeightRatio": 0.38, "subjectWidthRatio": 0.24},
+          "motion": {"fastFrames": 8, "standardFrames": 12, "slowFrames": 20, "maxOvershoot": 0.015}
         },
-        "sceneTags": ["calm", "evidence", "quote", "long-form"]
+        "sceneTags": ["calm", "evidence", "quote", "long-form"],
+        "direction": {
+          "openingPriority": ["open_question", "open_documentary_moment", "open_clean_title"],
+          "coverPriority": ["cover_editorial"],
+          "soundPolicy": "chapter_or_evidence_only",
+          "musicPolicy": "opening_chapter_ending_only"
+        }
       },
       "infinite-game": {
         "label": "有限的无限游戏",
         "styleOverrides": {
-          "palette": {"accent": "#D38A3B", "accentSecondary": "#87513A"},
+          "palette": {
+            "canvas": "#E8E3DA",
+            "surface": "#F6F2EA",
+            "ink": "#272A2B",
+            "inkSecondary": "#656861",
+            "accent": "#C77838",
+            "accentSecondary": "#7E7567",
+            "accentSignal": "#B95743",
+            "accentInsight": "#6C7C80"
+          },
           "brand": {"label": "有限的无限游戏"},
-          "motion": {"fastFrames": 7, "standardFrames": 11, "slowFrames": 18}
+          "cover": {
+            "subjectHeightRatio": 0.34,
+            "subjectWidthRatio": 0.22,
+            "preferContextOverPortraitScale": true
+          },
+          "motion": {"fastFrames": 7, "standardFrames": 11, "slowFrames": 18, "maxOvershoot": 0.01}
         },
-        "sceneTags": ["documentary", "timeline", "process", "reflective"]
+        "sceneTags": ["documentary", "timeline", "process", "reflective"],
+        "direction": {
+          "openingPriority": ["open_documentary_moment", "open_cold_marker"],
+          "coverPriority": ["cover_documentary"],
+          "soundPolicy": "environment_first",
+          "musicPolicy": "emotional_turn_or_time_jump_only"
+        }
       },
       "very-ai": {
         "label": "灰常AI",
         "styleOverrides": {
-          "palette": {"accent": "#D9A333", "accentSecondary": "#718FA2"},
+          "palette": {
+            "canvas": "#EEF0EE",
+            "surface": "#F8F8F4",
+            "ink": "#22272B",
+            "inkSecondary": "#5F6A71",
+            "accent": "#E98A2B",
+            "accentSecondary": "#6F8795",
+            "accentSignal": "#F05A47",
+            "accentInsight": "#5577B8",
+            "darkSurface": "#20272D"
+          },
           "brand": {"label": "灰常AI"},
-          "motion": {"fastFrames": 5, "standardFrames": 8, "slowFrames": 14}
+          "cover": {"subjectHeightRatio": 0.4, "subjectWidthRatio": 0.25},
+          "motion": {"fastFrames": 5, "standardFrames": 8, "slowFrames": 14, "maxOvershoot": 0.045}
         },
-        "sceneTags": ["dialogue", "experiment", "playful", "fact-check"]
+        "sceneTags": ["dialogue", "experiment", "playful", "fact-check"],
+        "direction": {
+          "openingPriority": ["open_dialogue", "open_cold_marker", "open_typewriter"],
+          "coverPriority": ["cover_ai_dialogue", "cover_comparison"],
+          "soundPolicy": "reaction_and_state_change",
+          "musicPolicy": "playful_until_fact_check"
+        }
       }
     },
     "aspectRatio": {
       "landscape-16x9": {
         "label": "16:9横版",
         "styleOverrides": {
-          "subtitles": {"maxWidthRatio": 0.8, "baselineYRatio": 0.76},
+          "subtitles": {"maxWidthRatio": 0.8, "baselineYRatio": 0.72},
           "popups": {"maxWidthRatio": 0.58},
           "pip": {"safeMarginRatio": 0.04}
         },
@@ -99,7 +165,7 @@
         "label": "英文",
         "styleOverrides": {
           "typography": {
-            "subtitlePrimary": {"families": ["Avenir Next", "Helvetica Neue", "Arial", "DejaVu Sans"], "sizeRatio": 0.042}
+            "subtitlePrimary": {"families": ["方正粗金陵简体", "FZJinLS-B-GB"], "sizeRatio": 0.042}
           }
         },
         "subtitleLines": 1
@@ -109,8 +175,8 @@
         "styleOverrides": {
           "subtitles": {"lineGapRatio": 0.03, "maxWidthRatio": 0.86},
           "typography": {
-            "subtitlePrimary": {"families": ["Avenir Next", "Helvetica Neue", "Arial", "DejaVu Sans"], "sizeRatio": 0.041},
-            "subtitleSecondary": {"families": ["方正粗金陵简体", "FZJinLS-B-GB", "STSong", "Songti SC", "Noto Serif CJK SC", "Noto Sans CJK SC", "DejaVu Sans"], "sizeRatio": 0.03}
+            "subtitlePrimary": {"families": ["方正粗金陵简体", "FZJinLS-B-GB"], "sizeRatio": 0.041},
+            "subtitleSecondary": {"families": ["方正粗金陵简体", "FZJinLS-B-GB"], "sizeRatio": 0.03}
           }
         },
         "subtitleLines": 2
@@ -129,24 +195,24 @@
           }
         }
       },
-    "dark": {
-      "label": "暗色底图",
-      "styleOverrides": {
-        "palette": {
-          "canvas": "#1A100B",
-          "surface": "#2B1912",
-          "surfaceElevated": "#382319",
-          "ink": "#FFF8EE",
-          "inkSecondary": "#E7C9A7",
-          "accentSecondary": "#D98555",
-          "shadow": "#000000",
-          "darkSurface": "#120A07",
-          "textOnDark": "#FFF8EE",
-          "textOnAccent": "#24150F"
-        },
-        "subtitles": {
+      "dark": {
+        "label": "暗色底图",
+        "styleOverrides": {
+          "palette": {
+            "canvas": "#1D2226",
+            "surface": "#262D32",
+            "surfaceElevated": "#313940",
+            "ink": "#FFF9F0",
+            "inkSecondary": "#C9D0D4",
+            "accentSecondary": "#7894A5",
+            "shadow": "#000000",
+            "darkSurface": "#15191C",
+            "textOnDark": "#FFF9F0",
+            "textOnAccent": "#1F2326"
+          },
+          "subtitles": {
             "primaryColor": "#FFF8EE",
-            "secondaryColor": "#F2D8B5"
+            "secondaryColor": "#D9E0E3"
           }
         }
       }

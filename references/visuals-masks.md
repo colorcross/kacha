@@ -176,13 +176,14 @@ scripts/compose_text_behind_person.sh SOURCE.mov MASK_DIR/person.mkv TEXT.mov OU
 
 ### 设计合同
 
-- `content`：只保留题眼，优先拆成每组 2–7 个汉字的语义短语；
+- `content`：只保留题眼，默认 2–4 个汉字，最长不超过 7 个汉字；完整结论、解释句和两行以上文案必须回退为头顶标题、普通字幕或信息卡；
 - `fontFamily`：继承项目字幕字体家族或选择气质一致、已经授权的展示字体；
 - `fontWeight`：使用 600–800 的 SemiBold/Bold，拒绝廉价的超粗黑体和随意卡通字体；
 - `fontSizeRatioToSubtitle`：普通字幕的 1.35–3 倍，在手机尺寸上形成明确层级；
-- `positionRationale`：优先人物头顶上方或视线反方向的负空间，不与脸、眼睛、字幕、品牌和平台 UI 争抢；
+- `positionRationale`：竖版优先放在人物头顶上方并与发顶保留约 0.4–0.8 个字高的呼吸距离；确需视差时，只让短词边缘与头发轻微重叠。横版优先人物头顶或视线反方向的负空间，不与脸、眼睛、字幕、品牌和平台 UI 争抢；
 - `color`：从项目主色/强调色中选一个主色，最多加一个强调色；可见区域对比度至少 4.5:1；
-- `visibleAreaRatio`：至少 65% 字形保持可读，人物遮挡只负责制造景深，不能把关键词遮得只剩边角；
+- `visibleAreaRatio`：每个字至少 85% 字形保持可读，人物遮挡只允许触碰字形边缘，不能压住字心；
+- `splitGlyphSpacing`：两个字分置人物两侧时，字间净空至少接近头部可见宽度；两个字都被头部明显遮挡即判定失败；
 - `phraseGrouping`：多短语按口播和逻辑重音分批出现，不整句一起弹出；
 - `textBounds/subtitleBounds`：使用归一化坐标记录，二者不得相交；
 - `layoutEvidence`：检查人物蒙版、亮底/暗底、手机尺寸、进入、停稳和退出代表帧。

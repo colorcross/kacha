@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import {
   firstPositional,
   loadKachaConfig,
@@ -19,7 +20,9 @@ import {
   validateDesignContrast,
   validateRenderArtifact,
 } from "./design_renderers.mjs";
+import { generateDesignReferenceGallery } from "./design_reference_gallery.mjs";
 
+const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
 const action = args[0];
 const option = (name, fallback = null) => {
@@ -37,13 +40,86 @@ function fail(message, code = 1) {
   process.exit(code);
 }
 
-if (!["validate", "list", "show", "resolve", "preview", "render", "qc"].includes(action)) {
+if (![
+  "validate",
+  "list",
+  "show",
+  "resolve",
+  "preview",
+  "render",
+  "qc",
+  "gallery",
+  "library-qc",
+].includes(action)) {
   fail(
-    "用法：kacha.mjs design validate|list|show|resolve|preview|render|qc "
+    "用法：kacha.mjs design validate|list|show|resolve|preview|render|qc|gallery|library-qc "
       + "[--kind component|scene|mode|renderer|layout|motion|system] "
-      + "[--id ID] [--scene ID]",
+      + "[--id ID] [--scene ID]\n"
+      + "  kacha.mjs design library-qc --light DIR --spatial DIR --comic DIR --pixel DIR --contracts FILE [--output REPORT.json]",
     2,
   );
+}
+
+if (action === "library-qc") {
+  const light = option("--light");
+  const spatial = option("--spatial");
+  const comic = option("--comic");
+  const pixel = option("--pixel");
+  const contracts = option("--contracts");
+  const semantics = option(
+    "--semantics",
+    path.join(path.resolve(scriptDirectory, ".."), "config", "effects", "reference-semantics", "light-overlay.json"),
+  );
+  const output = option("--output");
+  if (!light || !spatial || !comic || !pixel || !contracts) {
+    fail("library-qc 必须提供 --light、--spatial、--comic、--pixel 和 --contracts", 2);
+  }
+  const qcArguments = [
+    path.join(scriptDirectory, "reference_library_qc.py"),
+    "--light", path.resolve(light),
+    "--spatial", path.resolve(spatial),
+    "--comic", path.resolve(comic),
+    "--pixel", path.resolve(pixel),
+    "--contracts", path.resolve(contracts),
+    "--semantics", path.resolve(semantics),
+  ];
+  if (output) qcArguments.push("--output", path.resolve(output));
+  const result = spawnSync("python3", qcArguments, {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (result.stdout && output) {
+    const report = JSON.parse(result.stdout);
+    process.stdout.write(`${JSON.stringify({
+      schemaVersion: report.schemaVersion,
+      status: report.status,
+      output: path.resolve(output),
+      distinctEditingGrammarCount: report.distinctEditingGrammarCount,
+      crossStyleExactDuplicateGroupCount: report.crossStyleExactDuplicateGroupCount,
+      libraries: report.libraries.map((library) => ({
+        style: library.style,
+        editingGrammarId: library.editingGrammarId,
+        effects: library.effects,
+        images: library.images,
+        headCollisionAssetCount: library.headCollisionAssetCount,
+        spatialBlackAssetCount: library.spatialBlackAssetCount,
+        exactDuplicateAssets: library.exactDuplicateAssets,
+        nearDuplicatePairCount: library.nearDuplicatePairCount,
+        failures: library.failures,
+        warnings: library.warnings,
+      })),
+      failures: report.failures,
+    }, null, 2)}\n`);
+  } else if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.status !== 0) {
+    if (result.stderr) process.stderr.write(result.stderr);
+    process.exit(result.status ?? 1);
+  }
+  process.exit(0);
 }
 
 const loaded = loadKachaConfig({
@@ -64,6 +140,23 @@ const styleConfig = {
 };
 const resolved = resolveDesignSystem(styleConfig);
 const baseBundle = loadDesignSystem(resolved.system.id);
+
+if (action === "gallery") {
+  const output = option(
+    "--output",
+    path.join("design", "reference-gallery", "xingzhe-v2"),
+  );
+  const result = generateDesignReferenceGallery({
+    resolved,
+    outputDirectory: output,
+    overwrite: has("--overwrite"),
+  });
+  console.log(JSON.stringify({
+    schemaVersion: "1.0",
+    ...result,
+  }, null, 2));
+  process.exit(0);
+}
 
 if (action === "validate") {
   console.log(JSON.stringify({

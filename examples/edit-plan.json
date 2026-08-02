@@ -144,8 +144,8 @@
       "fallback": "边缘不稳时改用普通信息卡",
       "designPreflight": {
         "designSystemId": "dahui-video-system",
-        "designSystemVersion": "1.4.0",
-        "designDigest": "00d7224fb5089627498798214e139ae83258843120d9b80dc693bee1507e8fe8",
+        "designSystemVersion": "1.5.0",
+        "designDigest": "82e6a83a1cebe41ad207149ea43e509be58105bd3e3c4f29a2447c613ef13776",
         "sceneId": "text_behind_subject_scene",
         "componentIds": [
           "text_behind_subject"
@@ -160,9 +160,9 @@
         "status": "approved_for_implementation",
         "artifactMode": "local_styleframe",
         "artifactRef": "kacha://examples/design/text-behind/approved-styleframes.svg",
-        "artifactSha256": "bd984cf38e3ec907e46b68c95789a8f9d49e8be98738a5228d333680b95ee8e4",
+        "artifactSha256": "17fd241d843e9e91d0e652ff6747cfeb191945c6c8dc70dc492bc5d5a864b0c3",
         "implementationManifestRef": "kacha://examples/design/text-behind/approved-styleframes.manifest.json",
-        "implementationManifestSha256": "51ee8f7ee63196f77994bbcba3f4ec728fc4d715a2bd94012b70e533c001919c",
+        "implementationManifestSha256": "b91d933d18ec57d2f252ddb7b9c514f5551d272af4ef6fb40a308a50598fdf75",
         "layoutSpec": "人物头顶左侧负空间，文字与字幕区、品牌区分离",
         "motionSpec": "两组短语分别以 8 帧遮罩揭示进入，停稳后统一淡出",
         "soundSpec": "知识点落位声跟随第二组文字停稳，第一组只使用轻微空气感 whoosh",
@@ -173,13 +173,14 @@
         ],
         "implementationHandoff": {
           "resolvedFonts": {
-            "display": "PingFang SC",
-            "subtitlePrimary": "STSong",
-            "subtitleSecondary": "STSong",
-            "label": "Avenir Next",
-            "body": "Avenir Next"
+            "display": "青鸟华光标题黑体",
+            "subtitlePrimary": "方正粗金陵简体",
+            "subtitleSecondary": "方正粗金陵简体",
+            "label": "思源黑体 CN Light",
+            "body": "思源黑体 CN Light",
+            "coverTitle": "Aa封神榜书"
           },
-          "fontResolutionDigest": "9c58cbcafcfccd6e2b79b8f61dd961e49c0210937c098e993a0078a44ffafdde",
+          "fontResolutionDigest": "fc102ca0eb55deedbc2067003cb361198536e4a0ef949891eb2743b2bfa433b7",
           "tokenRefs": [
             "typography.display",
             "palette",

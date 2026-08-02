@@ -49,6 +49,12 @@ npm audit --audit-level=high
 测试与隐私扫描。当前 lint 使用 Oxlint；生产依赖与完整开发依赖都必须保持
 `0 vulnerabilities`。
 
+首页的“四种剪辑语法”区块直接对应
+[`docs/FOUR_STYLE_EDITING_GRAMMARS.md`](../docs/FOUR_STYLE_EDITING_GRAMMARS.md)：
+四张卡必须分别表现连续旁注、纵深导航、喜剧节拍和状态机，不能退化为同一组件
+只换颜色或材质。中英文内容、118 项回归口径、1920 张峰值帧和 960 份合同数量
+需要同步更新并由页面测试锁定。
+
 ## 目录
 
 ```text

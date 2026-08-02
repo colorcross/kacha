@@ -12,15 +12,27 @@
 
 ## 行者风能力配额
 
-默认 `config/capability-usage/xingzhe.json` 使用 `expressive-balanced-v2`。
+默认 `config/capability-usage/xingzhe.json` 使用行者风 2.0 的栏目级
+`showProfiles`。
 它与视觉 token 配置分离，避免仅调整使用频率就让全部视觉证据失效。配额按真实
 成片时长计算，覆盖开场、可感知转场、支撑素材、画中画、蒙版纵深、语义动效、贴纸/视线
 引导、空间分层、关键帧变化、并列排版、关系字幕、超大背景词、人物前后景
 文字和呼吸运镜。
 
+四个栏目分别使用不同的最低覆盖和长视频多样性门禁：工具分享侧重界面、证据
+和结果；解读好书降低 PIP、蒙版与强转场配额；有限的无限游戏让真实现场和
+过程素材优先；灰常AI允许更活跃的语义动效，但事实核验段自动收稳。模板必须
+显式写入 `showId`，策略摘要或栏目变化后需要重新规划。
+
 这不是“每隔几秒随机加效果”。每个事件仍须写出真实语义触发、机制、最简
 替代、失败条件、进入/峰值/退出、声音功能和动态 QC。硬门禁包括：
 
+- 开场配额不受 `minimumDurationSeconds` 影响：任何时长都必须且只能有一个
+  主开场，0.5 秒内开始可见变化，3 秒内兑现内容承诺；注册效果或完整自定义
+  合同二选一；
+- 语义动效和空间层次必须绑定
+  `config/effects/production-motion-policy.json` 中的决策路由，或提交字段等价的
+  自定义专业动效合同；
 - `supporting_media` 至少来自外部真实素材、AI 生成素材、HyperFrames 中的
   两类；每个素材都要有来源、许可/生成记录和 SHA-256；
 - PIP 必须与主画面形成信息差，不能把同一 A-roll 缩小后叠在自己身上；
@@ -33,7 +45,9 @@
 
 ```bash
 node scripts/kacha.mjs visual-capabilities template \
-  --duration 399.28 --style xingzhe --output visual-capability-plan.json
+  --duration 399.28 --style xingzhe --show book-talk \
+  --opening hook_title_behind_subject \
+  --output visual-capability-plan.json
 node scripts/kacha.mjs visual-capabilities validate \
   --plan visual-capability-plan.json
 node scripts/kacha.mjs visual-capabilities validate \

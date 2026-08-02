@@ -77,6 +77,8 @@ The site in `website/` uses:
 - a bilingual brand lockup;
 - a timeline hero that explains “workflow” visually;
 - version-scoped proof metrics;
+- four distinct editing-grammar diagrams for editorial continuity, depth
+  navigation, comedy timing, and deterministic state changes;
 - capability cards and a six-step workflow;
 - explicit local-first and human-review principles;
 - an `OFF` Beauty v2 default state;
@@ -84,6 +86,11 @@ The site in `website/` uses:
 
 Every new component must have an information purpose, a mobile reflow, and no
 ambiguous state or authorization claim.
+
+The four grammar diagrams must not reuse one card composition with different
+surface styling. Their motion also stays distinct: margin-note breathing,
+route travel, held comic panels, and a stepped state cursor. All non-essential
+motion stops under `prefers-reduced-motion`.
 
 ## Motion and accessibility
 

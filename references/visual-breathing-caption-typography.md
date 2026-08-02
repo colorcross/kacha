@@ -102,22 +102,16 @@ node scripts/kacha.mjs captions render \
 
 ## 3. 字体场景路由
 
-字体不是按文件名随机挑选，而是先解析元数据、字符覆盖、字重、气质和项目
-授权，再按角色选择。路由配置在 `config/font-routing.json`，默认角色包括：
+字体不是按文件名随机挑选，而是先解析元数据、字符覆盖、角色和项目授权。
+路由配置在 `config/font-routing.json`。“浅暖轻浮层”“空间光路”“幽默漫画”和“像素风”只允许四类字体：
 
-- `subtitle_primary`：长时间阅读的主字幕，优先中性、清晰的中文无衬线；
-- `subtitle_emphasis`：逻辑重音，和主字幕同家族或同气质，不跳风格；
-- `caption_editorial`：观点、文化和思考类展示字，可使用金陵体一类书写感字体；
-- `caption_humor`：自嘲、反转和轻喜剧短字，允许略强个性但不能影响识别；
-- `caption_cultural`：书籍、历史和人文内容；
-- `caption_tech`：工具、数据和流程内容；
-- `display_title_zh`：中文封面/章节标题，可使用华光标题黑一类标题字体；
-- `display_title_en` / `body_en`：英文标题与正文。
+- `subtitle_primary` / `subtitle_emphasis`：真实金陵体，常规字幕无底色、无描边、阴影 60%；
+- `display_title` / `term_definition` / `quote_pull`：华光标题黑，允许受控透明渐变；
+- `cover_title`：封神榜书，仅用于封面主标题；
+- `thin_support`：细体，用于来源、栏目、期号、系列、辅助说明和封面其他文字。
 
-普通主字幕和逻辑重音保持同一阅读家族，不因句子主题频繁换字。展示型布局
-才按语义自动路由：自嘲/反转可选 `caption_humor`，书籍/历史/哲学可选
-`caption_cultural`，AI/工具/数据/流程可选 `caption_tech`；无法可靠判断时
-回到布局默认角色。cue 可用 `fontRole` 显式覆盖，但必须是已注册角色。
+缺字、文件丢失、hash 变化或授权记录缺失时不得静默换字；例外必须记录
+原因并在预检中可见。
 
 本项目 `Fonts` 目录的文件先生成本地注册表，再记录用户对当前项目制作范围
 的授权。授权记录不改变字体内嵌许可，也不意味着允许把字体文件提交到公开
@@ -135,7 +129,7 @@ node scripts/kacha.mjs fonts validate \
   --registry LOCAL_AUTHORIZED_FONTS.json
 node scripts/kacha.mjs fonts resolve \
   --registry LOCAL_AUTHORIZED_FONTS.json \
-  --role caption_editorial \
+  --role quote_pull \
   --text "工具降低门槛，品味决定上限"
 ```
 

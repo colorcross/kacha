@@ -1,120 +1,172 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "2.0",
   "id": "kacha-font-routing",
-  "principles": [
-    "字体先按信息功能选择，再按情绪气质选择，不能只因为好看就使用",
-    "常规口播优先可长时间阅读的中性字体，装饰字体只用于短题眼、引语或明确的喜剧落点",
-    "同一画面最多一个主展示字体和一个正文或字幕字体",
-    "未知或限制性授权字体可以登记，但默认不进入自动选择，也不得随公开仓库分发",
-    "字体选择必须覆盖当前文本字符，并在真实画幅和手机缩略尺寸下复核"
+  "scope": [
+    "xingzhe-light-overlay",
+    "xingzhe-spatial-lightpath",
+    "xingzhe-humor-comic",
+    "xingzhe-pixel-editorial"
   ],
+  "principles": [
+    "字体先按信息职责选择，再按情绪调整字号、颜色、字距和透明度",
+    "常规口播字幕只用真实金陵体，不加底色、不加描边，固定使用 60% 阴影",
+    "视频标题、术语定义、金句引用和大号题眼只用华光标题黑，允许受控透明渐变",
+    "封面主标题只用封神榜书，封面其他文字只用细体",
+    "辅助说明、来源、栏目、期号、系列和英文标识只用细体",
+    "同一画面最多一个主展示字体和一个正文或字幕字体",
+    "字体必须覆盖当前字符；缺字时不得静默回退，必须记录例外原因并通过预检"
+  ],
+  "allowedFamilies": [
+    "方正粗金陵简体",
+    "FZJinLS-B-GB",
+    "青鸟华光标题黑体",
+    "JBHGBTH",
+    "Aa封神榜书",
+    "AaFSBS",
+    "思源黑体 CN Light",
+    "Source Han Sans CN Light"
+  ],
+  "localAssets": {
+    "subtitle_primary": {
+      "path": "assets/private/fonts/FZCuJinLJW.ttf",
+      "sha256": "3c15643db0ef339e1faf39b8b0c12ffead661565876e617fd25ca5209eabb1ea",
+      "family": "方正粗金陵简体",
+      "required": true,
+      "private": true,
+      "fallback": "forbidden"
+    },
+    "display_title": {
+      "path": "assets/private/fonts/华光标题黑.TTF",
+      "sha256": "7446486b30fd433fb56ea7b745549f326218ea9161785deaf1a7df0ec8e124a0",
+      "family": "青鸟华光标题黑体",
+      "required": true,
+      "private": true,
+      "fallback": "forbidden"
+    },
+    "thin_support": {
+      "path": "assets/private/fonts/细体-思源黑体7号.otf",
+      "sha256": "317e53f4b71c757b9c2317354570f03dacae2321cbd6eb3f256c0b71c45610da",
+      "family": "思源黑体 CN Light",
+      "required": true,
+      "private": true,
+      "fallback": "forbidden"
+    },
+    "cover_title": {
+      "path": "assets/private/fonts/封神榜书.ttf",
+      "sha256": "4a2701607972a3b4804019b656800b7778deb6e1767093fc56a110eac48083ed",
+      "family": "Aa封神榜书",
+      "required": true,
+      "private": true,
+      "fallback": "forbidden"
+    }
+  },
   "roles": {
     "subtitle_primary": {
       "label": "常规口播字幕",
-      "scenes": ["plain_speech", "knowledge_explainer", "tool_demo"],
-      "preferredFamilies": ["方正粗金陵简体", "FZJinLS-B-GB", "Source Han Sans CN", "思源黑体 CN", "PingFang SC"],
-      "preferredClasses": ["editorial_serif", "neutral_sans"],
+      "preferredFamilies": ["方正粗金陵简体", "FZJinLS-B-GB"],
       "targetWeight": 400,
-      "maximumWeight": 500,
-      "allowDecorative": false,
+      "maximumWeight": 400,
+      "background": "none",
+      "outline": "none",
+      "shadowOpacity": 0.6,
       "soundPolicy": "none"
     },
     "subtitle_emphasis": {
       "label": "逻辑重音字幕",
-      "scenes": ["conclusion", "contrast", "number", "turn"],
-      "preferredFamilies": ["方正粗金陵简体", "FZJinLS-B-GB", "Source Han Sans CN", "思源黑体 CN", "Alegreya Sans"],
-      "preferredClasses": ["editorial_serif", "display_sans", "neutral_sans"],
+      "preferredFamilies": ["方正粗金陵简体", "FZJinLS-B-GB"],
       "targetWeight": 400,
-      "maximumWeight": 500,
-      "allowDecorative": false,
+      "maximumWeight": 400,
+      "background": "none",
+      "outline": "none",
+      "shadowOpacity": 0.6,
+      "emphasisMethods": ["signal_color", "rational_color", "size_step", "underline", "word_spacing"],
       "soundPolicy": "only_visible_settle"
     },
-    "caption_editorial": {
-      "label": "编辑感短题眼",
-      "scenes": ["chapter", "quote", "book_talk", "reflective"],
-      "preferredFamilies": ["方正粗金陵简体", "FZJinLS-B-GB", "Source Han Sans CN"],
-      "preferredClasses": ["editorial_serif", "neutral_sans"],
-      "targetWeight": 700,
-      "maximumWeight": 800,
-      "allowDecorative": false,
+    "display_title": {
+      "label": "视频标题与大号题眼",
+      "preferredFamilies": ["青鸟华光标题黑体", "JBHGBTH"],
+      "targetWeight": 400,
+      "maximumWeight": 400,
+      "transparentGradient": true,
+      "soundPolicy": "tonal_hit_or_none"
+    },
+    "term_definition": {
+      "label": "术语定义",
+      "preferredFamilies": ["青鸟华光标题黑体", "JBHGBTH"],
+      "targetWeight": 400,
+      "transparentGradient": true,
       "soundPolicy": "soft_tick_or_none"
     },
-    "caption_humor": {
-      "label": "幽默或自嘲短句",
-      "scenes": ["humor", "self_deprecation", "reaction"],
-      "preferredFamilies": ["字由俏丽体", "仓耳恋爱笔记体", "Source Han Sans CN"],
-      "preferredClasses": ["friendly_handwritten", "neutral_sans"],
-      "targetWeight": 500,
-      "maximumWeight": 700,
-      "allowDecorative": true,
-      "maximumCharacters": 12,
-      "soundPolicy": "pop_or_click"
+    "quote_pull": {
+      "label": "金句引用",
+      "preferredFamilies": ["青鸟华光标题黑体", "JBHGBTH"],
+      "targetWeight": 400,
+      "transparentGradient": true,
+      "soundPolicy": "tonal_resolve_or_none"
     },
-    "caption_cultural": {
-      "label": "传统文化或历史题眼",
-      "scenes": ["history", "classics", "cultural_reference"],
-      "preferredFamilies": ["励字隶书简繁", "造字侠今朝醉简", "Source Han Sans CN"],
-      "preferredClasses": ["cultural_calligraphy", "editorial_serif", "neutral_sans"],
-      "targetWeight": 600,
-      "maximumWeight": 800,
-      "allowDecorative": true,
-      "maximumCharacters": 10,
-      "soundPolicy": "page_or_low_tonal_hit"
+    "cover_title": {
+      "label": "封面主标题",
+      "preferredFamilies": ["Aa封神榜书", "AaFSBS"],
+      "targetWeight": 400,
+      "maximumWeight": 400,
+      "soundPolicy": "none"
     },
-    "caption_tech": {
-      "label": "工具、数据和流程",
-      "scenes": ["tool_demo", "data", "workflow", "ai_dialogue"],
-      "preferredFamilies": ["Source Han Sans CN", "Poppins", "Mina"],
-      "preferredClasses": ["neutral_sans", "tech_sans"],
-      "targetWeight": 500,
-      "maximumWeight": 700,
-      "allowDecorative": false,
-      "soundPolicy": "ui_click_or_tick"
-    },
-    "display_title_zh": {
-      "label": "中文标题和章节",
-      "scenes": ["opening", "chapter", "cover"],
-      "preferredFamilies": ["青鸟华光标题黑体", "优设标题黑", "Source Han Sans CN"],
-      "preferredClasses": ["display_sans", "neutral_sans"],
-      "targetWeight": 800,
-      "maximumWeight": 900,
-      "allowDecorative": false,
-      "soundPolicy": "tonal_hit_or_none"
-    },
-    "display_title_en": {
-      "label": "英文标题和章节",
-      "scenes": ["opening", "chapter", "cover", "bilingual"],
-      "preferredFamilies": ["Alegreya Sans", "Poppins", "Mina"],
-      "preferredClasses": ["display_sans", "tech_sans", "neutral_sans"],
-      "targetWeight": 900,
-      "maximumWeight": 900,
-      "allowDecorative": false,
-      "soundPolicy": "tonal_hit_or_none"
+    "thin_support": {
+      "label": "辅助说明、标签、期号和封面其他文字",
+      "preferredFamilies": ["思源黑体 CN Light", "Source Han Sans CN Light"],
+      "targetWeight": 300,
+      "maximumWeight": 300,
+      "soundPolicy": "none"
     },
     "body_en": {
-      "label": "英文正文与辅助字幕",
-      "scenes": ["bilingual", "source", "definition"],
-      "preferredFamilies": ["Poppins", "Mina", "Avenir Next"],
-      "preferredClasses": ["tech_sans", "neutral_sans"],
+      "label": "英文正文兼容角色",
+      "preferredFamilies": ["思源黑体 CN Light", "Source Han Sans CN Light"],
+      "targetWeight": 300,
+      "maximumWeight": 400,
+      "soundPolicy": "none",
+      "canonicalRole": "thin_support"
+    },
+    "caption_tech": {
+      "label": "技术说明与图解标签兼容角色",
+      "preferredFamilies": ["思源黑体 CN Light", "Source Han Sans CN Light"],
+      "targetWeight": 300,
+      "maximumWeight": 400,
+      "soundPolicy": "soft_tick_or_none",
+      "canonicalRole": "thin_support"
+    },
+    "caption_editorial": {
+      "label": "编辑型口播字幕兼容角色",
+      "preferredFamilies": ["方正粗金陵简体", "FZJinLS-B-GB"],
       "targetWeight": 400,
-      "maximumWeight": 600,
-      "allowDecorative": false,
-      "soundPolicy": "none"
+      "maximumWeight": 400,
+      "background": "none",
+      "outline": "none",
+      "shadowOpacity": 0.6,
+      "soundPolicy": "none",
+      "canonicalRole": "subtitle_primary"
+    },
+    "display_title_zh": {
+      "label": "中文展示标题兼容角色",
+      "preferredFamilies": ["青鸟华光标题黑体", "JBHGBTH"],
+      "targetWeight": 400,
+      "maximumWeight": 400,
+      "transparentGradient": true,
+      "soundPolicy": "tonal_hit_or_none",
+      "canonicalRole": "display_title"
     }
   },
-  "classificationHints": {
-    "neutral_sans": ["Source Han Sans", "思源黑体", "叙黑", "Poppins", "Mina"],
-    "display_sans": ["标题黑", "畅黑", "烈黑", "战甲", "经典黑", "倔强黑", "Alegreya Sans Black"],
-    "editorial_serif": ["金陵", "隶书", "Classical"],
-    "friendly_handwritten": ["惊鸿", "俏丽", "恋爱", "新悦", "文乐", "温柔", "莫雪", "承英", "亦然"],
-    "cultural_calligraphy": ["隶书", "封神", "今朝醉", "赤云隶", "Classical"],
-    "fantasy_decorative": ["山海经", "战甲", "Starry", "Bless", "巴洛克", "封神"],
-    "tech_sans": ["Poppins", "Mina", "Source Han Sans", "思源黑体"]
+  "exceptionPolicy": {
+    "default": "forbid",
+    "allowOnlyWhen": ["missing_glyph", "explicit_user_request", "source_artifact_requires_original_font"],
+    "requireRecordedReason": true,
+    "requireVisiblePreflightWarning": true,
+    "forbidSilentFallback": true
   },
   "distributionPolicy": {
-    "openLicenseStatuses": ["open"],
-    "automaticSelectionStatuses": ["open", "project_authorized"],
+    "automaticSelectionStatuses": ["project_authorized"],
     "publicRedistributionRequiresExplicitLicense": true,
-    "unknownLicenseDefault": "index_only"
+    "fontFilesRemainPrivateProjectAssets": true,
+    "renderedOutputsMayBePublished": true,
+    "projectAuthorizationScope": "video_production_and_published_outputs"
   }
 }

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="brand-warm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F5B544"/>
+      <stop offset="1" stop-color="#E66A32"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="24" flood-color="#16181B" flood-opacity=".14"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="#F2EFE8"/>
+  <circle cx="1168" cy="86" r="170" fill="#6F8795" opacity=".07"/>
+  <circle cx="84" cy="670" r="190" fill="#F05A47" opacity=".045"/>
+  <text x="72" y="60" font-family="Avenir Next, PingFang SC, sans-serif" font-size="16" font-weight="700" letter-spacing="3" fill="#E98A2B">COMPONENT · CARD</text>
+  <text x="72" y="102" font-family="PingFang SC, sans-serif" font-size="34" font-weight="650" fill="#25282B">前后对比卡</text>
+  <text x="72" y="132" font-family="Avenir Next, PingFang SC, sans-serif" font-size="15" fill="#626A70">before_after_card · 状态 exit · fallback comparison_card</text>
+  <rect x="72" y="156" width="1136" height="492" rx="28" fill="#FBF8F1" filter="url(#soft-shadow)"/>
+  <defs><clipPath id="clip-94-178-1092-446"><rect x="94" y="178" width="1092" height="446" rx="20"/></clipPath></defs>
+  <rect x="94" y="178" width="1092" height="446" rx="20" fill="#E8E4DB"/>
+  <image x="94" y="178" width="1092" height="446" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-94-178-1092-446)" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMTIwIiBoZWlnaHQ9IjUxMCIgdmlld0JveD0iMCAwIDExMjAgNTEwIiBkYXRhLWNvbXBvbmVudC1wcmV2aWV3PSJiZWZvcmVfYWZ0ZXJfY2FyZCI+PHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjExMjAiIGhlaWdodD0iNTEwIiByeD0iMCIgZmlsbD0iI0YyRUZFOCIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjAiLz48ZyBkYXRhLWNvbXBvbmVudC1pZD0iYmVmb3JlX2FmdGVyX2NhcmQiIGRhdGEtcmVuZGVyZXI9InN2Z19zZXF1ZW5jZSIgZGF0YS1zdGF0ZT0iZXhpdCI+PHJlY3QgeD0iNDAuODAwMDAwMDAwMDAwMDA0IiB5PSI0MC44MDAwMDAwMDAwMDAwMDQiIHdpZHRoPSIxMDM4LjQiIGhlaWdodD0iNDI4LjQiIHJ4PSIxMS4xMzgzOTk5OTk5OTk5OTkiIGZpbGw9IiNGRkZGRkYiIHN0cm9rZT0iI0U5OEEyQiIgc3Ryb2tlLXdpZHRoPSIzLjExNTIiLz48dGV4dCB4PSI1NS43OTQwMDAwMDAwMDAwMDQiIHk9Ijk4LjYzNDAwMDAwMDAwMDAxIiB0ZXh0LWFuY2hvcj0ic3RhcnQiIGZvbnQtZmFtaWx5PSLpnZLpuJ/ljY7lhYnmoIfpopjpu5HkvZMiIGZvbnQtc2l6ZT0iNDcuMTIzOTk5OTk5OTk5OTk1IiBmb250LXdlaWdodD0iODAwIiBsZXR0ZXItc3BhY2luZz0iMGVtIiBmaWxsPSIjMjUyODJCIiBvcGFjaXR5PSIxIj7liY3lkI7lr7nmr5TljaE8L3RleHQ+PHJlY3QgeD0iNTUuNzk0MDAwMDAwMDAwMDA0IiB5PSIxNjAuNzUyIiB3aWR0aD0iNDk2LjcwOTAwMDAwMDAwMDA2IiBoZWlnaHQ9IjIwNS42MzE5OTk5OTk5OTk5OCIgcng9IjcuMjM5OTYiIGZpbGw9IiNGQkY4RjEiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIi8+PHJlY3QgeD0iNTY3LjQ5NzAwMDAwMDAwMDEiIHk9IjE2MC43NTIiIHdpZHRoPSI0OTYuNzA5MDAwMDAwMDAwMDYiIGhlaWdodD0iMjA1LjYzMTk5OTk5OTk5OTk4IiByeD0iNy4yMzk5NiIgZmlsbD0iI0U5OEEyQiIgc3Ryb2tlPSJub25lIiBzdHJva2Utd2lkdGg9IjAiLz48dGV4dCB4PSIzMDQuMTQ4NSIgeT0iMjgwLjcwNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IuaAnea6kOm7keS9kyBDTiBMaWdodCIgZm9udC1zaXplPSI2OC41NDQiIGZvbnQtd2VpZ2h0PSI3MDAiIGxldHRlci1zcGFjaW5nPSIwZW0iIGZpbGw9IiM2MjZBNzAiIG9wYWNpdHk9IjEiPuWOn+WnizwvdGV4dD48dGV4dCB4PSI4MTUuODUxNTAwMDAwMDAwMSIgeT0iMjgwLjcwNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IuaAnea6kOm7keS9kyBDTiBMaWdodCIgZm9udC1zaXplPSI2OC41NDQiIGZvbnQtd2VpZ2h0PSI4MDAiIGxldHRlci1zcGFjaW5nPSIwZW0iIGZpbGw9IiMxRjIzMjYiIG9wYWNpdHk9IjEiPuS8mOWMljwvdGV4dD48dGV4dCB4PSI1NjAiIHk9IjQyNi4zNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IuaAnea6kOm7keS9kyBDTiBMaWdodCIgZm9udC1zaXplPSIzMi4xMjk5OTk5OTk5OTk5OTUiIGZvbnQtd2VpZ2h0PSI1MDAiIGxldHRlci1zcGFjaW5nPSIwZW0iIGZpbGw9IiM2MjZBNzAiIG9wYWNpdHk9IjEiPuWQjOa6kCDCtyDlkIzluKcgwrcg5ZCM6KOB5YiHPC90ZXh0PjwvZz48L3N2Zz4="/>
+    <rect x="110" y="194" width="146" height="28" rx="14" fill="#272B2F" opacity=".82"/>
+    <text x="183" y="213" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">SVG_SEQUENCE</text>
+  <text x="72" y="686" font-family="Avenir Next, sans-serif" font-size="13" font-weight="600" letter-spacing="2" fill="#626A70" opacity=".8">真实组件渲染 · 尺寸与色彩受当前模式配置约束</text>
+  <rect x="1110" y="674" width="98" height="5" rx="2.5" fill="url(#brand-warm)"/>
+</svg>

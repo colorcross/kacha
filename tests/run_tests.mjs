@@ -2434,6 +2434,59 @@ await test("font routing scans, authorizes, resolves and previews a real local f
   }
 }, "visual");
 
+await test("bundled private Jinling font is portable and selected by caption planning", () => {
+  const bundledFont = path.join(
+    skillDirectory,
+    "assets",
+    "private",
+    "fonts",
+    "FZCuJinLJW.ttf",
+  );
+  const bundledRegistry = path.join(path.dirname(bundledFont), "authorized.json");
+  if (!fs.existsSync(bundledFont) || !fs.existsSync(bundledRegistry)) return;
+  ensureMediaFixtures();
+  const standalone = fs.mkdtempSync(path.join(os.tmpdir(), "kacha-bundled-font-"));
+  try {
+    const configHome = path.join(standalone, "config-home");
+    const input = path.join(standalone, "source.mp4");
+    const cues = path.join(standalone, "cues.json");
+    const plan = path.join(standalone, "caption-plan.json");
+    fs.mkdirSync(configHome, { recursive: true });
+    fs.copyFileSync(baseVideo, input);
+    writeJson(cues, [{
+      id: "jinling",
+      start: 0.1,
+      end: 0.8,
+      text: "真正的金陵体字幕",
+    }]);
+    const planned = run(process.execPath, [
+      path.join(scripts, "kacha.mjs"),
+      "captions", "plan",
+      "--input", input,
+      "--transcript", cues,
+      "--output", plan,
+    ], {
+      cwd: standalone,
+      env: { ...process.env, KACHA_CONFIG_HOME: configHome },
+    });
+    if (planned.status !== 0) {
+      throw new Error(`bundled Jinling planning failed:\n${planned.stdout}\n${planned.stderr}`);
+    }
+    const value = readJson(plan);
+    const selected = value.events[0].font;
+    if (
+      selected.file !== bundledFont
+      || selected.sha256 !== "3c15643db0ef339e1faf39b8b0c12ffead661565876e617fd25ca5209eabb1ea"
+      || selected.projectAuthorization?.status !== "authorized"
+      || !value.source.fontRegistry.path.endsWith(".bundled-fonts.json")
+    ) {
+      throw new Error("caption planning did not bind the portable bundled Jinling font");
+    }
+  } finally {
+    fs.rmSync(standalone, { recursive: true, force: true });
+  }
+}, "visual");
+
 await test("local production studio compiles an auditable project with verified font evidence", () => {
   const catalog = JSON.parse(execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
@@ -2442,7 +2495,7 @@ await test("local production studio compiles an auditable project with verified 
   if (
     catalog.defaultStyleId !== "xingzhe"
     || catalog.builtInStyleCount < 4
-    || catalog.openingCount < 5
+    || catalog.openingCount < 10
     || catalog.assignableEffectCount < 100
   ) {
     throw new Error("production studio catalog is incomplete");
@@ -2536,7 +2589,7 @@ await test("local production studio compiles an auditable project with verified 
     preserveSource: true,
     backgroundMusicEnabled: true,
     styleId: "custom-studio-test",
-    openingId: "editorial_label_reveal",
+    openingId: "hook_title_behind_subject",
     automaticProfessionalJudgment: true,
     effectAssignments: [{
       positionDescription: "说到结论的时候",
@@ -2600,6 +2653,14 @@ await test("local production studio compiles an auditable project with verified 
     || projectConfig.editingDefaults.parameters.beauty.tuning.smoothing !== 35
     || projectConfig.editingDefaults.parameters.productionStudio
       .effectAssignments[0].effectId !== "logic_emphasis_inline"
+    || projectConfig.editingDefaults.parameters.productionStudio
+      .openingContract.effectId !== "hook_title_behind_subject"
+    || projectConfig.editingDefaults.parameters.productionStudio
+      .openingContract.source !== "z-en-netstyle"
+    || projectConfig.editingDefaults.parameters.productionStudio
+      .openingContract.promiseBySeconds !== 3
+    || brief.opening.required !== true
+    || brief.opening.primaryEffectCount !== 1
   ) {
     throw new Error("production studio project contract is incomplete");
   }
@@ -5993,9 +6054,9 @@ await test("effect templates and resource catalog resolve deterministic executio
     "validate",
   ]).stdout);
   if (
-    validation.templates !== 60
+    validation.templates !== 62
     || validation.catalogs.length !== 1
-    || validation.catalogs[0].assets !== 18
+    || validation.catalogs[0].assets !== 22
     || validation.byCategory.opening !== 10
     || validation.byCategory.transition !== 10
   ) {
@@ -6015,6 +6076,159 @@ await test("effect templates and resource catalog resolve deterministic executio
     || resolved.executionContract.safety.preserveFaceSafeZone !== true
   ) {
     throw new Error("effect template did not resolve to an executable safe contract");
+  }
+  const workflow = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "templates",
+    "resolve",
+    "--template",
+    "effect-process_spatial_nodes",
+  ]).stdout);
+  if (
+    workflow.executionContract.motionContract?.contract?.id
+      !== "workflow-spatial-nodes"
+    || workflow.executionContract.motionContract.contract
+      .invariants.noLargeOpaqueWebCards !== true
+    || workflow.executionContract.motionContract.contract
+      .audioContract.cues.length < 3
+    || workflow.executionContract.motionContract.contract
+      .parameters.nodeCount.maximum !== 7
+  ) {
+    throw new Error("spatial workflow template lost its adaptive motion contract");
+  }
+  const lightOverlay = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "templates",
+    "resolve",
+    "--template",
+    "effect-process_light_overlay",
+  ]).stdout);
+  if (
+    lightOverlay.executionContract.motionContract?.contract?.id
+      !== "workflow-light-overlay"
+    || lightOverlay.executionContract.motionContract.contract
+      .invariants.maximumFullyReadableCards !== 3
+    || lightOverlay.executionContract.motionContract.contract
+      .materialContract.surfaceOpacityRange[1] > 0.8
+    || lightOverlay.executionContract.motionContract.contract
+      .invariants.noFullFrameDashboardLayout !== true
+  ) {
+    throw new Error("light overlay workflow lost its lightweight video contract");
+  }
+});
+
+await test("full design effect library resolves four executable visual styles", () => {
+  const fontRouting = readJson(path.join(skillDirectory, "config", "font-routing.json"));
+  const visualLanguages = readJson(path.join(skillDirectory, "config", "design-system", "visual-languages.json"));
+  for (const styleId of [
+    "xingzhe-light-overlay",
+    "xingzhe-spatial-lightpath",
+    "xingzhe-humor-comic",
+    "xingzhe-pixel-editorial",
+  ]) {
+    if (!fontRouting.scope.includes(styleId)) {
+      throw new Error(`font routing does not cover ${styleId}`);
+    }
+    const applicability = visualLanguages.languages[styleId]?.applicability;
+    if (
+      applicability?.minimumMatchedSignals !== 1
+      || !applicability?.fallback
+      || !applicability.runtimeEvidenceRequired?.includes("matchedSignal")
+    ) {
+      throw new Error(`visual language does not enforce runtime applicability evidence for ${styleId}`);
+    }
+  }
+  const validation = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "contracts",
+    "validate",
+  ]).stdout);
+  if (
+    validation.counts.effects !== 240
+    || validation.counts.styles !== 4
+    || validation.counts.contracts !== 960
+  ) {
+    throw new Error(`unexpected design contract coverage: ${JSON.stringify(validation)}`);
+  }
+  const light = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "contracts",
+    "resolve",
+    "--id",
+    "process_progressive",
+    "--style",
+    "xingzhe-light-overlay",
+  ]).stdout);
+  const spatial = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "contracts",
+    "resolve",
+    "--id",
+    "process_progressive",
+    "--style",
+    "xingzhe-spatial-lightpath",
+  ]).stdout);
+  const comic = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "contracts",
+    "resolve",
+    "--id",
+    "process_progressive",
+    "--style",
+    "xingzhe-humor-comic",
+  ]).stdout);
+  const pixel = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "contracts",
+    "resolve",
+    "--id",
+    "process_progressive",
+    "--style",
+    "xingzhe-pixel-editorial",
+  ]).stdout);
+  const cleanCut = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "contracts",
+    "resolve",
+    "--id",
+    "clean_cut",
+    "--style",
+    "xingzhe-light-overlay",
+  ]).stdout);
+  if (
+    light.execution.timelineMode !== "seek-safe"
+    || light.execution.parameters.defaults.surfaceOpacity > 0.62
+    || spatial.execution.parameters.defaults.relationAccent !== "rational-blue"
+    || spatial.execution.parameters.defaults.depthOffsetPx <= light.execution.parameters.defaults.depthOffsetPx
+    || spatial.execution.qualityGates.length < 5
+    || light.semanticMotionCore.trigger !== light.trigger
+    || spatial.semanticMotionCore.trigger !== spatial.trigger
+    || light.avCoherenceContract.clock !== "shared-timeline-ir"
+    || light.avCoherenceContract.dialogueIsPrimaryClock !== true
+    || light.avCoherenceContract.visualPeakToleranceFrames > 2
+    || spatial.avCoherenceContract.sfx.resolver !== "assets/audio/sfx-library/kacha-profile.json"
+    || spatial.avCoherenceContract.conflictPriority[0] !== "dialogue_intelligibility"
+    || comic.styleMaterialContract.humorMechanismRequired !== true
+    || comic.styleMaterialContract.maximumPanelCount !== 3
+    || comic.execution.audio.styleProfile.id !== "humor-comic-dry-editorial"
+    || !comic.execution.easing.entry.startsWith("anticipate-then")
+    || pixel.styleMaterialContract.textRendering !== "authorized-fonts-antialiased-above-crisp-pixel-graphics"
+    || pixel.execution.parameters.defaults.baseGridPxAt1080p !== 8
+    || pixel.execution.audio.styleProfile.id !== "pixel-editorial-quantized-ui"
+    || pixel.execution.easing.entry !== "steps(3,end)"
+    || pixel.execution.parameters.defaults.pixelateFaceAndEvidence !== false
+    || !light.execution.renderer.startsWith("chrome-or-rsvg-explicit-font-svg-reference")
+    || !light.execution.sync.visibleLanding
+    || comic.applicabilityContract.requiredSignals.length < 5
+    || pixel.applicabilityContract.requiredSignals.length < 6
+    || comic.applicabilityContract.minimumMatchedSignals !== 1
+    || pixel.applicabilityContract.minimumMatchedSignals !== 1
+    || !comic.applicabilityContract.runtimeEvidenceRequired.includes("matchedSignal")
+    || !pixel.applicabilityContract.runtimeEvidenceRequired.includes("fallbackReasonWhenNotApplied")
+    || cleanCut.execution.audio.cue !== "none"
+    || cleanCut.execution.audio.peakDbfs !== null
+  ) {
+    throw new Error("full design effect contracts lost style-specific executable behavior");
   }
 });
 
@@ -6765,6 +6979,167 @@ await test("xingzhe capability budget rejects perceptually weak or under-covered
     "--plan",
     weakFile,
   ]);
+}, "visual");
+
+await test("every video requires exactly one registered or contracted opening, including shorts", () => {
+  const planFile = path.join(temporary, "capability-opening-short.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "visual-capabilities",
+    "template",
+    "--duration",
+    "20",
+    "--opening",
+    "hook_title_behind_subject",
+    "--output",
+    planFile,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "visual-capabilities",
+    "validate",
+    "--plan",
+    planFile,
+  ]);
+  const valid = readJson(planFile);
+  const openings = valid.events.filter((event) => event.family === "opening");
+  if (
+    valid.policy.active !== false
+    || valid.policy.families.opening.minimum !== 1
+    || openings.length !== 1
+    || openings[0].implementation.effectId !== "hook_title_behind_subject"
+    || openings[0].implementation.promiseBySeconds > 3
+  ) {
+    throw new Error("short-video template did not freeze the mandatory opening contract");
+  }
+
+  const missing = structuredClone(valid);
+  missing.events = missing.events.filter((event) => event.family !== "opening");
+  missing.digest = sha256Value({ ...missing, digest: undefined });
+  const missingFile = path.join(temporary, "capability-opening-missing.json");
+  writeJson(missingFile, missing);
+  const missingResult = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "visual-capabilities",
+    "validate",
+    "--plan",
+    missingFile,
+  ]);
+  if (!missingResult.stderr.includes("每条视频必须且只能选择一个主开场")) {
+    throw new Error("short-video gate did not explain the missing opening");
+  }
+
+  const late = structuredClone(valid);
+  const opening = late.events.find((event) => event.family === "opening");
+  opening.startSeconds = 1;
+  opening.endSeconds = 2;
+  opening.implementation.promiseBySeconds = 2;
+  late.digest = sha256Value({ ...late, digest: undefined });
+  const lateFile = path.join(temporary, "capability-opening-late.json");
+  writeJson(lateFile, late);
+  const lateResult = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "visual-capabilities",
+    "validate",
+    "--plan",
+    lateFile,
+  ]);
+  if (!lateResult.stderr.includes("开场必须在 0.5 秒内开始建立可见变化")) {
+    throw new Error("opening timing gate did not reject a late visual start");
+  }
+}, "visual");
+
+await test("xingzhe show profiles keep book-talk calmer than tool-share", () => {
+  const toolPlan = path.join(temporary, "capability-tool-share.json");
+  const bookPlan = path.join(temporary, "capability-book-talk.json");
+  for (const [showId, output] of [
+    ["tool-share", toolPlan],
+    ["book-talk", bookPlan],
+  ]) {
+    execute(process.execPath, [
+      path.join(scripts, "kacha.mjs"),
+      "visual-capabilities",
+      "template",
+      "--duration",
+      "399.28",
+      "--show",
+      showId,
+      "--output",
+      output,
+    ]);
+    execute(process.execPath, [
+      path.join(scripts, "kacha.mjs"),
+      "visual-capabilities",
+      "validate",
+      "--plan",
+      output,
+    ]);
+  }
+  const tool = readJson(toolPlan);
+  const book = readJson(bookPlan);
+  if (tool.showId !== "tool-share" || book.showId !== "book-talk") {
+    throw new Error("visual capability plans did not freeze showId");
+  }
+  if (book.events.length >= tool.events.length) {
+    throw new Error("book-talk should have a calmer minimum effect budget");
+  }
+  if (
+    tool.policy.capabilityProfile !== "tool-evidence-balanced"
+    || book.policy.capabilityProfile !== "book-calm-evidence"
+  ) {
+    throw new Error("show-specific capability profiles were not resolved");
+  }
+}, "visual");
+
+await test("design reference gallery covers every registered design item", () => {
+  const gallery = path.join(temporary, "design-reference-gallery");
+  const result = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "design",
+    "gallery",
+    "--output",
+    gallery,
+    "--overwrite",
+  ]).stdout);
+  const manifest = readJson(path.join(gallery, "manifest.json"));
+  const expected = {
+    component: 52,
+    scene: 69,
+    renderer: 8,
+    layout: 36,
+    motion: 75,
+    total: 240,
+  };
+  if (JSON.stringify(manifest.counts) !== JSON.stringify(expected)) {
+    throw new Error(`unexpected gallery counts: ${JSON.stringify(manifest.counts)}`);
+  }
+  if (result.digest !== manifest.digest || !fs.existsSync(path.join(gallery, "index.html"))) {
+    throw new Error("gallery index or digest is missing");
+  }
+  for (const entry of manifest.entries) {
+    const file = path.join(gallery, entry.path);
+    if (!fs.existsSync(file) || sha256File(file) !== entry.sha256) {
+      throw new Error(`gallery reference is missing or stale: ${entry.kind}.${entry.id}`);
+    }
+    const svg = fs.readFileSync(file, "utf8");
+    if (/\bundefined\b/.test(svg)) {
+      throw new Error(`gallery reference contains an undefined visual token: ${entry.kind}.${entry.id}`);
+    }
+    if (/[ \t]+$/m.test(svg)) {
+      throw new Error(`gallery reference contains trailing whitespace: ${entry.kind}.${entry.id}`);
+    }
+  }
+  const style = readJson(path.join(skillDirectory, "config", "styles", "xingzhe.json"));
+  if (
+    style.cover.subjectHeightRatio >= 0.5
+    || style.emphasis.conflict !== "accentSignal"
+    || !style.gradients.signalWarm
+    || style.cover.characterVisualLanguageId !== "cinematic-3d-adult-dahui"
+    || style.cover.preserveSemanticEditorialCollage !== true
+    || style.cover.specificCharacterImitation !== "forbidden"
+  ) {
+    throw new Error("Xingzhe 2.0 cover composition, character language or IP boundary regressed");
+  }
 }, "visual");
 
 await test("incremental telemetry blocks repeated full previews, final encodes and full QC", () => {
