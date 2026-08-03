@@ -26,6 +26,10 @@ node scripts/kacha.mjs design gallery \
 `config/effects/motion-contracts/design-effect-library-v3.json`，可直接检查
 和解析：
 
+当前全量报告为 `docs/generated/four-style-library-qc.json`。四套库的未声明近似
+构图、头脸覆盖、空间近黑块和未允许精确重复均为 0；后续任何一项回归都会使
+`design library-qc` 失败。
+
 ```bash
 node scripts/kacha.mjs templates validate
 node scripts/kacha.mjs templates list

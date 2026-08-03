@@ -109,6 +109,8 @@ seek-safe 动效合同。幽默漫画必须由真实反差、误会、尺度错�
 `docs/FOUR_STYLE_EDITING_GRAMMARS.md`。`config/design-system/visual-languages.json`
 中的 `grammarSignature` 是机器权威值，效果合同中的 `editingGrammarContract` 必须
 与之同源。只更换卡片材质、颜色、网点、像素边或玻璃光效将被判为换皮失败。
+生产库还必须通过同风格近似构图零容忍门禁；当前
+`docs/generated/four-style-library-qc.json` 记录四套 `nearDuplicatePairCount` 均为 0。
 
 ## 转场库
 

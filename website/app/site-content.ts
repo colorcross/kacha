@@ -158,7 +158,7 @@ export const zhContent: SiteContent = {
     { value: "LOCAL", label: "默认本地处理素材" },
     { value: "FULL", label: "覆盖完整后期流程" },
     { value: "DELTA", label: "返工只改受影响层" },
-    { value: "118", label: "自动回归检查" },
+    { value: "119", label: "自动回归检查" },
   ],
   problems: {
     title: "真正耗时间的，不只是拖动时间线。",
@@ -226,7 +226,7 @@ export const zhContent: SiteContent = {
     intro:
       "它们共享人物保护、字幕可读性和品牌规范，但使用不同的时间单位、空间拓扑、转场与声音逻辑。系统会逐对比较七个语法轴，发现换皮就停止。",
     auditLabel: "PRODUCTION EVIDENCE",
-    auditValue: "4 套语法 · 240 个效果 · 1920 张横竖峰值帧 · 960 份动效合同",
+    auditValue: "4 套语法 · 240 个效果 · 1920 张峰值帧 · 960 份合同 · 未声明近似构图 0 组",
     items: [
       {
         id: "light",
@@ -439,7 +439,7 @@ export const enContent: SiteContent = {
     { value: "LOCAL", label: "local-first media handling" },
     { value: "FULL", label: "end-to-end post workflow" },
     { value: "DELTA", label: "affected layers only" },
-    { value: "118", label: "regression checks" },
+    { value: "119", label: "regression checks" },
   ],
   problems: {
     title: "The timeline is not the only expensive part.",
@@ -507,7 +507,7 @@ export const enContent: SiteContent = {
     intro:
       "They share subject safety, caption legibility, and brand rules, but differ in time unit, spatial topology, transitions, and sound. Kacha compares seven grammar axes pairwise and fails a cosmetic reskin.",
     auditLabel: "PRODUCTION EVIDENCE",
-    auditValue: "4 grammars · 240 effects · 1,920 landscape/vertical peak frames · 960 motion contracts",
+    auditValue: "4 grammars · 240 effects · 1,920 peak frames · 960 contracts · 0 undeclared near-duplicate compositions",
     items: [
       {
         id: "light",

@@ -226,6 +226,10 @@ node scripts/kacha.mjs design library-qc \
   --output /path/to/four-style-qc-report.json
 ```
 
+`library-qc` 是阻断式生产门禁：同一风格内任何未声明家族关系的近似构图、人物
+头脸覆盖、空间近黑块或未允许的精确重复都会失败。当前四库通过报告固化在
+`docs/generated/four-style-library-qc.json`，四项计数均为 0。
+
 效果与资源解析：
 
 ```bash

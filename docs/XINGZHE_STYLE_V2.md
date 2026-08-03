@@ -229,8 +229,9 @@ node scripts/kacha.mjs design library-qc \
 ```
 
 该门禁验证 240 个效果、1920 张横竖参考图、真实金陵体文件哈希、60% 字幕阴影、
-人物头部碰撞、文字对比度、空间光路近黑区域、漫画/像素材质边界、素材重复和
-960 份独立动效核心。参考图使用显式字体 SVG，经 Chrome 或 `rsvg-convert` 生成；
+人物头部碰撞、文字对比度、空间光路近黑区域、漫画/像素材质边界、素材重复、
+同风格未声明近似构图和 960 份独立动效核心。同风格近似构图必须为 0，否则直接
+失败；当前通过证据见 `docs/generated/four-style-library-qc.json`。参考图使用显式字体 SVG，经 Chrome 或 `rsvg-convert` 生成；
 合同必须如实记录实际渲染路径，不能宣称未使用的 Pillow 渲染器。图库与合同清单
 不得写入构建时间戳，同一输入重复构建的 digest 必须一致。
 
@@ -242,6 +243,8 @@ node scripts/kacha.mjs design library-qc \
 - 设计系统、生产台、效果模板和栏目能力策略均通过验证；
 - 全部注册项都有参考图，数量与注册表完全一致；
 - `design library-qc` 对四套全量图库和动效合同返回 `pass`；
+- 四套库的 `nearDuplicatePairCount`、`headCollisionAssetCount`、
+  `spatialBlackAssetCount` 和 `exactDuplicateAssets` 均为 0；
 - `design qc --matrix` 覆盖所有模式、组件状态和场景状态；
 - 封面人物占比在合同范围，标题和人物不碰撞；
 - 亮底字幕使用深色变体；

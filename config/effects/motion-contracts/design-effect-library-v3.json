@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "kind": "kacha_design_effect_motion_contract_registry",
-  "sourceGalleryDigest": "21b844507f4a338e851c2edf0b86ffa9f6171b960542497ac2cc1f9bb231bf86",
+  "sourceGalleryDigest": "78d4a0f26476d96fbdc10b2275f680c015b1d550895f795359dd86d1f11a2374",
   "semanticCatalogDigest": "932cc5ee160f7cd9deafce436aac62d07ec3fac81cd9db41c278e68b75b5a688",
   "styles": {
     "xingzhe-light-overlay": {
@@ -369704,5 +369704,5 @@
       }
     }
   ],
-  "digest": "a5a6eb0693deff04a8679805350ba2a479a0fb4f9d9263549d3f0e0ff6dfd61c"
+  "digest": "29e7ab9527dc29ba1cf3e209c2efbca0aeabb92378fbdaa4a95a31299b8e9079"
 }

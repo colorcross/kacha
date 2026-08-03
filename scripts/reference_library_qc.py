@@ -461,7 +461,7 @@ def validate_library(directory: Path, style: str, semantics: dict, contracts: di
                     else:
                         near_pairs.append(pair)
     if near_pairs:
-        warnings.append(f"发现 {len(near_pairs)} 组未声明家族关系的近似峰值图，已写入报告供复核")
+        failures.append(f"存在 {len(near_pairs)} 组未声明家族关系的近似峰值图；生产效果库要求为 0")
 
     bindings = manifest.get("fonts", {}).get("bindings", {})
     for role, expected_hash in FONT_HASHES.items():
@@ -572,7 +572,9 @@ def main() -> None:
     report["failures"] = failures
     rendered = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
     if args.output:
-        Path(args.output).write_text(rendered, encoding="utf-8")
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(rendered, encoding="utf-8")
     print(rendered, end="")
     if failures:
         raise SystemExit(1)

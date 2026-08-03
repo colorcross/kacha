@@ -7168,6 +7168,38 @@ await test("design reference gallery covers every registered design item", () =>
   }
 }, "visual");
 
+await test("committed four-style library QC has zero unresolved composition collisions", () => {
+  const report = readJson(path.join(
+    skillDirectory,
+    "docs",
+    "generated",
+    "four-style-library-qc.json",
+  ));
+  if (
+    report.status !== "pass"
+    || report.distinctEditingGrammarCount !== 4
+    || report.crossStyleExactDuplicateGroupCount !== 0
+    || report.libraries?.length !== 4
+  ) {
+    throw new Error("four-style library QC summary is missing or did not pass");
+  }
+  for (const library of report.libraries) {
+    for (const key of [
+      "nearDuplicatePairCount",
+      "headCollisionAssetCount",
+      "spatialBlackAssetCount",
+      "exactDuplicateAssets",
+    ]) {
+      if (library[key] !== 0) {
+        throw new Error(`${library.style} has unresolved ${key}: ${library[key]}`);
+      }
+    }
+    if (library.effects !== 240 || library.images !== 480 || library.failures.length !== 0) {
+      throw new Error(`${library.style} library coverage or failure list regressed`);
+    }
+  }
+}, "visual");
+
 await test("incremental telemetry blocks repeated full previews, final encodes and full QC", () => {
   const root = path.join(temporary, "incremental-render-budget");
   fs.mkdirSync(root, { recursive: true });

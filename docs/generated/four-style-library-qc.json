@@ -1,0 +1,3092 @@
+{
+  "schemaVersion": "2.0",
+  "kind": "kacha_reference_triad_qc",
+  "semanticCatalogDigest": "932cc5ee160f7cd9deafce436aac62d07ec3fac81cd9db41c278e68b75b5a688",
+  "libraries": [
+    {
+      "style": "light",
+      "editingGrammarId": "editorial-continuity-margin-notes",
+      "effects": 240,
+      "images": 480,
+      "semanticTriads": 240,
+      "exactDuplicateAssets": 0,
+      "allowedExactDuplicateAssets": 13,
+      "allowedExactDuplicateGroups": [
+        [
+          "component:source_tag:horizontal",
+          "scene:source_tag_scene:horizontal"
+        ],
+        [
+          "component:source_tag:vertical",
+          "scene:source_tag_scene:vertical"
+        ],
+        [
+          "component:subtitle_single:horizontal",
+          "scene:subtitle_plain:horizontal"
+        ],
+        [
+          "component:subtitle_single:vertical",
+          "scene:subtitle_plain:vertical"
+        ],
+        [
+          "component:subtitle_bilingual:horizontal",
+          "scene:subtitle_bilingual_scene:horizontal"
+        ],
+        [
+          "component:subtitle_bilingual:vertical",
+          "scene:subtitle_bilingual_scene:vertical"
+        ],
+        [
+          "component:subtitle_emphasis:horizontal",
+          "scene:subtitle_emphasis_only:horizontal"
+        ],
+        [
+          "component:subtitle_emphasis:vertical",
+          "scene:subtitle_emphasis_only:vertical"
+        ],
+        [
+          "component:subtitle_quote:horizontal",
+          "scene:subtitle_quote_scene:horizontal"
+        ],
+        [
+          "component:subtitle_quote:vertical",
+          "scene:subtitle_quote_scene:vertical"
+        ],
+        [
+          "component:subtitle_speaker:horizontal",
+          "scene:subtitle_speaker_only:horizontal"
+        ],
+        [
+          "component:subtitle_speaker:vertical",
+          "scene:subtitle_speaker_only:vertical"
+        ],
+        [
+          "component:text_behind_subject:horizontal",
+          "scene:text_behind_subject_scene:horizontal"
+        ]
+      ],
+      "disallowedExactDuplicateGroups": [],
+      "nearDuplicatePairs": [],
+      "nearDuplicatePairCount": 0,
+      "declaredFamilySimilarityPairs": [
+        {
+          "aspect": "horizontal",
+          "left": "component:show_label",
+          "right": "component:status_tag",
+          "hashDistance": 2,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "component:show_label",
+          "right": "component:disclosure_tag",
+          "hashDistance": 1,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:claim_then_verdict",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:quote_then_source",
+          "hashDistance": 2,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:term_then_body",
+          "hashDistance": 1,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:term_then_definition",
+          "hashDistance": 1,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_next_event",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:cut_on_audio_end",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:before_next_event",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:before_next_event",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:before_subject_reply",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:quote_then_source",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:clean_cut_or_push",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:cut",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:converge",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:count_or_scale",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:grow_from_zero",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:scale_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:soft_pop",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:complete_then_fade",
+          "right": "motion:short_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:scale_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:grow_from_zero",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:scale_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cursor_release",
+          "right": "motion:per_character",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cursor_release",
+          "right": "motion:typing_or_soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_phrase",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:draw_line",
+          "right": "motion:line_grow",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:grow_from_zero",
+          "right": "motion:scale_fade",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:grow_from_zero",
+          "right": "motion:soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:grow_from_zero",
+          "right": "motion:task_card",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:highlight_turning_point",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:local_highlight",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:mark_current_level",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:local_highlight",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:mark_current_level",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:weight_color",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:phrase_groups",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:pip_then_focus",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:progressive",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:progressive_local",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:step_up",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:local_highlight",
+          "right": "motion:mark_current_level",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:mask_reveal",
+          "right": "motion:target_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:natural_action",
+          "right": "motion:static",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:none",
+          "right": "motion:response_sync",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:per_character",
+          "right": "motion:typing_or_soft_pop",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:progressive",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:progressive_local",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:stagger",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:step_up",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:stagger",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:progressive_local",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:step_up",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:step_up",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:quote_then_source",
+          "right": "motion:term_then_body",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:quote_then_source",
+          "right": "motion:term_then_definition",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:response_sync",
+          "right": "motion:speech_sync",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:result_tag",
+          "right": "motion:time_marker",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:return_to_dialogue",
+          "right": "motion:return_to_subject",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:scale_fade",
+          "right": "motion:soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:scale_fade",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:soft_pop",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:term_then_body",
+          "right": "motion:term_then_definition",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "component:comparison_card",
+          "right": "component:before_after_card",
+          "hashDistance": 1,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:a_then_b",
+          "right": "motion:claim_then_verdict",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:a_then_b",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:audio_end",
+          "right": "motion:cut_on_audio_end",
+          "hashDistance": 1,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 2,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:before_next_event",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:before_next_event",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:center_split",
+          "right": "motion:split_reveal",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:center_split",
+          "right": "motion:wipe_compare",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:quote_then_source",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:term_then_body",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:term_then_definition",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut",
+          "right": "motion:clean_cut_or_push",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut",
+          "right": "motion:cut",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut",
+          "right": "motion:j_or_l_cut",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        }
+      ],
+      "declaredFamilySimilarityPairCount": 188,
+      "headCollisionAssetCount": 0,
+      "headCollisionAssets": [],
+      "spatialBlackAssetCount": 0,
+      "spatialBlackAssets": [],
+      "fontBindings": {
+        "subtitle": {
+          "family": "方正粗金陵简体",
+          "file": "assets/private/fonts/FZCuJinLJW.ttf",
+          "sha256": "3c15643db0ef339e1faf39b8b0c12ffead661565876e617fd25ca5209eabb1ea",
+          "verifiedBy": "explicit-font-file-glyph-mask",
+          "fallbackUsed": false
+        },
+        "display": {
+          "family": "青鸟华光标题黑体",
+          "file": "华光标题黑.TTF",
+          "sha256": "7446486b30fd433fb56ea7b745549f326218ea9161785deaf1a7df0ec8e124a0",
+          "verified": true,
+          "fallbackUsed": false
+        },
+        "ui": {
+          "family": "思源黑体 CN Light",
+          "file": "细体-思源黑体7号.otf",
+          "sha256": "317e53f4b71c757b9c2317354570f03dacae2321cbd6eb3f256c0b71c45610da",
+          "verified": true,
+          "fallbackUsed": false
+        },
+        "cover": {
+          "family": "Aa封神榜书",
+          "file": "封神榜书.ttf",
+          "sha256": "4a2701607972a3b4804019b656800b7778deb6e1767093fc56a110eac48083ed",
+          "verified": true,
+          "fallbackUsed": false
+        }
+      },
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "style": "spatial",
+      "editingGrammarId": "single-take-depth-navigation",
+      "effects": 240,
+      "images": 480,
+      "semanticTriads": 240,
+      "exactDuplicateAssets": 0,
+      "allowedExactDuplicateAssets": 1,
+      "allowedExactDuplicateGroups": [
+        [
+          "component:text_behind_subject:horizontal",
+          "scene:text_behind_subject_scene:horizontal"
+        ]
+      ],
+      "disallowedExactDuplicateGroups": [],
+      "nearDuplicatePairs": [],
+      "nearDuplicatePairCount": 0,
+      "declaredFamilySimilarityPairs": [
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:cut_on_audio_end",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 1,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:before_next_event",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:center_split",
+          "right": "motion:split_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:cut",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:converge",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:count_or_scale",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:grow_from_zero",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:scale_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:soft_pop",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:task_card",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:count_or_scale",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:grow_from_zero",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:scale_fade",
+          "hashDistance": 1,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:grow_from_zero",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cursor_release",
+          "right": "motion:typing_or_soft_pop",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:grow_from_zero",
+          "right": "motion:scale_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:grow_from_zero",
+          "right": "motion:soft_pop",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:grow_from_zero",
+          "right": "motion:task_card",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:highlight_turning_point",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:mark_current_level",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:mark_current_level",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:weight_color",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:phrase_groups",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:pip_then_focus",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:mark_current_level",
+          "right": "motion:weight_color",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:pip_then_focus",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:stagger",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:step_up",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:return_to_dialogue",
+          "right": "motion:return_to_subject",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:scale_fade",
+          "right": "motion:soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:scale_fade",
+          "right": "motion:task_card",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:soft_pop",
+          "right": "motion:task_card",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:a_then_b",
+          "right": "motion:claim_then_verdict",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:a_then_b",
+          "right": "motion:pip_then_focus",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:a_then_b",
+          "right": "motion:stagger",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:a_then_b",
+          "right": "motion:term_then_body",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:a_then_b",
+          "right": "motion:term_then_definition",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_next_event",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:audio_end",
+          "right": "motion:cut_on_audio_end",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:before_next_event",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:before_next_event",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 0,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:before_subject_reply",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 0,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:center_split",
+          "right": "motion:split_reveal",
+          "hashDistance": 0,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:center_split",
+          "right": "motion:wipe_compare",
+          "hashDistance": 0,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:quote_then_source",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:term_then_body",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:term_then_definition",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut",
+          "right": "motion:clean_cut_or_push",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut",
+          "right": "motion:j_or_l_cut",
+          "hashDistance": 2,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 0,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:j_or_l_cut",
+          "hashDistance": 2,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:collapse",
+          "right": "motion:converge",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:collapse",
+          "right": "motion:grow_from_zero",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:collapse",
+          "right": "motion:scale_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:collapse",
+          "right": "motion:soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:collapse",
+          "right": "motion:task_card",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:complete_then_fade",
+          "right": "motion:fade",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:complete_then_fade",
+          "right": "motion:short_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:converge",
+          "right": "motion:grow_from_zero",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:converge",
+          "right": "motion:scale_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:converge",
+          "right": "motion:soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:converge",
+          "right": "motion:task_card",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:cursor_release",
+          "right": "motion:per_character",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:cursor_release",
+          "right": "motion:typing_or_soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:cut",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:cut",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 0,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:cut_on_audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:cut_on_audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:cut_on_phrase",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:cut_on_phrase",
+          "right": "motion:j_or_l_cut",
+          "hashDistance": 2,
+          "featureDistance": 0.01
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:directional_reveal",
+          "right": "motion:mask_reveal",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:directional_reveal",
+          "right": "motion:target_reveal",
+          "hashDistance": 0,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:draw_line",
+          "right": "motion:line_grow",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:fade",
+          "right": "motion:short_fade",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:grow_from_zero",
+          "right": "motion:scale_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:grow_from_zero",
+          "right": "motion:soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:grow_from_zero",
+          "right": "motion:task_card",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:highlight_segment",
+          "right": "motion:highlight_turning_point",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:highlight_segment",
+          "right": "motion:local_highlight",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:highlight_segment",
+          "right": "motion:mark_current_level",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:highlight_segment",
+          "right": "motion:result_tag",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        }
+      ],
+      "declaredFamilySimilarityPairCount": 161,
+      "headCollisionAssetCount": 0,
+      "headCollisionAssets": [],
+      "spatialBlackAssetCount": 0,
+      "spatialBlackAssets": [],
+      "fontBindings": {
+        "subtitle": {
+          "family": "方正粗金陵简体",
+          "file": "assets/private/fonts/FZCuJinLJW.ttf",
+          "sha256": "3c15643db0ef339e1faf39b8b0c12ffead661565876e617fd25ca5209eabb1ea",
+          "verifiedBy": "explicit-font-file-glyph-mask",
+          "fallbackUsed": false
+        },
+        "display": {
+          "family": "青鸟华光标题黑体",
+          "file": "华光标题黑.TTF",
+          "sha256": "7446486b30fd433fb56ea7b745549f326218ea9161785deaf1a7df0ec8e124a0",
+          "verified": true,
+          "fallbackUsed": false
+        },
+        "ui": {
+          "family": "思源黑体 CN Light",
+          "file": "细体-思源黑体7号.otf",
+          "sha256": "317e53f4b71c757b9c2317354570f03dacae2321cbd6eb3f256c0b71c45610da",
+          "verified": true,
+          "fallbackUsed": false
+        },
+        "cover": {
+          "family": "Aa封神榜书",
+          "file": "封神榜书.ttf",
+          "sha256": "4a2701607972a3b4804019b656800b7778deb6e1767093fc56a110eac48083ed",
+          "verified": true,
+          "fallbackUsed": false
+        }
+      },
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "style": "comic",
+      "editingGrammarId": "setup-reaction-punchline-callback",
+      "effects": 240,
+      "images": 480,
+      "semanticTriads": 240,
+      "exactDuplicateAssets": 0,
+      "allowedExactDuplicateAssets": 1,
+      "allowedExactDuplicateGroups": [
+        [
+          "component:text_behind_subject:horizontal",
+          "scene:text_behind_subject_scene:horizontal"
+        ]
+      ],
+      "disallowedExactDuplicateGroups": [],
+      "nearDuplicatePairs": [],
+      "nearDuplicatePairCount": 0,
+      "declaredFamilySimilarityPairs": [
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:claim_then_verdict",
+          "hashDistance": 1,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:label_then_title",
+          "hashDistance": 2,
+          "featureDistance": 0.01
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:pip_then_focus",
+          "hashDistance": 1,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:progressive",
+          "hashDistance": 2,
+          "featureDistance": 0.009
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:progressive_local",
+          "hashDistance": 1,
+          "featureDistance": 0.009
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:quote_then_source",
+          "hashDistance": 1,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:stagger",
+          "hashDistance": 0,
+          "featureDistance": 0.009
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:step_up",
+          "hashDistance": 2,
+          "featureDistance": 0.009
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 1,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:term_then_body",
+          "hashDistance": 1,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:term_then_definition",
+          "hashDistance": 1,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_next_event",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:cut_on_audio_end",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:before_next_event",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:before_next_event",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:before_subject_reply",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 1,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:center_split",
+          "right": "motion:split_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:center_split",
+          "right": "motion:wipe_compare",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:pip_then_focus",
+          "hashDistance": 2,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:progressive_local",
+          "hashDistance": 2,
+          "featureDistance": 0.009
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:quote_then_source",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:stagger",
+          "hashDistance": 1,
+          "featureDistance": 0.009
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:term_then_body",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:term_then_definition",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:clean_cut_or_push",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:cut",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 0,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:j_or_l_cut",
+          "hashDistance": 0,
+          "featureDistance": 0.011
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:j_or_l_cut",
+          "hashDistance": 1,
+          "featureDistance": 0.011
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:converge",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:count_or_scale",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:scale_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:task_card",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:count_or_scale",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:scale_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:soft_pop",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:task_card",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:scale_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:task_card",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cursor_release",
+          "right": "motion:typing_or_soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 1,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 0,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_phrase",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_phrase",
+          "right": "motion:j_or_l_cut",
+          "hashDistance": 1,
+          "featureDistance": 0.011
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:grow_from_zero",
+          "right": "motion:scale_fade",
+          "hashDistance": 1,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:grow_from_zero",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:highlight_turning_point",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:local_highlight",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:mark_current_level",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:result_tag",
+          "hashDistance": 0,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:time_marker",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:weight_color",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:local_highlight",
+          "hashDistance": 0,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:mark_current_level",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:result_tag",
+          "hashDistance": 1,
+          "featureDistance": 0.009
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:phrase_groups",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:progressive_local",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:quote_then_source",
+          "hashDistance": 1,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:stagger",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 1,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:term_then_definition",
+          "hashDistance": 1,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:local_highlight",
+          "right": "motion:mark_current_level",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:local_highlight",
+          "right": "motion:result_tag",
+          "hashDistance": 1,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:mark_current_level",
+          "right": "motion:result_tag",
+          "hashDistance": 1,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:mark_current_level",
+          "right": "motion:time_marker",
+          "hashDistance": 1,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:mask_reveal",
+          "right": "motion:target_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:none",
+          "right": "motion:speech_sync",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:pip_then_focus",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:progressive_local",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:quote_then_source",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:term_then_definition",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:progressive",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:progressive_local",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:quote_then_source",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:stagger",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:step_up",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:term_then_body",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:term_then_definition",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:stagger",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:step_up",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:term_then_body",
+          "hashDistance": 1,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:quote_then_source",
+          "hashDistance": 0,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:stagger",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:term_then_body",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        }
+      ],
+      "declaredFamilySimilarityPairCount": 138,
+      "headCollisionAssetCount": 0,
+      "headCollisionAssets": [],
+      "spatialBlackAssetCount": 0,
+      "spatialBlackAssets": [],
+      "fontBindings": {
+        "subtitle": {
+          "family": "方正粗金陵简体",
+          "file": "assets/private/fonts/FZCuJinLJW.ttf",
+          "sha256": "3c15643db0ef339e1faf39b8b0c12ffead661565876e617fd25ca5209eabb1ea",
+          "verifiedBy": "explicit-font-file-glyph-mask",
+          "fallbackUsed": false
+        },
+        "display": {
+          "family": "青鸟华光标题黑体",
+          "file": "华光标题黑.TTF",
+          "sha256": "7446486b30fd433fb56ea7b745549f326218ea9161785deaf1a7df0ec8e124a0",
+          "verified": true,
+          "fallbackUsed": false
+        },
+        "ui": {
+          "family": "思源黑体 CN Light",
+          "file": "细体-思源黑体7号.otf",
+          "sha256": "317e53f4b71c757b9c2317354570f03dacae2321cbd6eb3f256c0b71c45610da",
+          "verified": true,
+          "fallbackUsed": false
+        },
+        "cover": {
+          "family": "Aa封神榜书",
+          "file": "封神榜书.ttf",
+          "sha256": "4a2701607972a3b4804019b656800b7778deb6e1767093fc56a110eac48083ed",
+          "verified": true,
+          "fallbackUsed": false
+        }
+      },
+      "failures": [],
+      "warnings": []
+    },
+    {
+      "style": "pixel",
+      "editingGrammarId": "deterministic-state-machine",
+      "effects": 240,
+      "images": 480,
+      "semanticTriads": 240,
+      "exactDuplicateAssets": 0,
+      "allowedExactDuplicateAssets": 2,
+      "allowedExactDuplicateGroups": [
+        [
+          "component:source_tag:horizontal",
+          "scene:source_tag_scene:horizontal"
+        ],
+        [
+          "component:source_tag:vertical",
+          "scene:source_tag_scene:vertical"
+        ]
+      ],
+      "disallowedExactDuplicateGroups": [],
+      "nearDuplicatePairs": [],
+      "nearDuplicatePairCount": 0,
+      "declaredFamilySimilarityPairs": [
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:phrase_groups",
+          "hashDistance": 2,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:cut_on_audio_end",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:before_next_event",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:center_split",
+          "right": "motion:split_reveal",
+          "hashDistance": 1,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:center_split",
+          "right": "motion:wipe_compare",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:cut",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:converge",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:count_or_scale",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:grow_from_zero",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:soft_pop",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:task_card",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:count_or_scale",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cursor_release",
+          "right": "motion:per_character",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cursor_release",
+          "right": "motion:typing_or_soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_phrase",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:grow_from_zero",
+          "right": "motion:soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:grow_from_zero",
+          "right": "motion:task_card",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:local_highlight",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:mark_current_level",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:local_highlight",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:progressive",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:stagger",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:local_highlight",
+          "right": "motion:result_tag",
+          "hashDistance": 2,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:local_highlight",
+          "right": "motion:time_marker",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:natural_action",
+          "right": "motion:static",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:per_character",
+          "right": "motion:typing_or_soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:step_up",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:term_then_definition",
+          "hashDistance": 2,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:stagger",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:result_tag",
+          "right": "motion:time_marker",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:soft_pop",
+          "right": "motion:task_card",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:split_reveal",
+          "right": "motion:wipe_compare",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:step_up",
+          "right": "motion:term_then_body",
+          "hashDistance": 1,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:step_up",
+          "right": "motion:term_then_definition",
+          "hashDistance": 0,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:term_then_body",
+          "right": "motion:term_then_definition",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:audio_end",
+          "right": "motion:before_next_event",
+          "hashDistance": 1,
+          "featureDistance": 0.011
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:audio_end",
+          "right": "motion:cut_on_audio_end",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:before_next_event",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:before_next_event",
+          "right": "motion:cut_on_audio_end",
+          "hashDistance": 1,
+          "featureDistance": 0.01
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:before_next_event",
+          "right": "motion:speech_end",
+          "hashDistance": 2,
+          "featureDistance": 0.012
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:before_subject_reply",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:center_split",
+          "right": "motion:split_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:center_split",
+          "right": "motion:wipe_compare",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut",
+          "right": "motion:clean_cut_or_push",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut",
+          "right": "motion:cut",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:clear_before_a_roll",
+          "right": "motion:speech_end",
+          "hashDistance": 2,
+          "featureDistance": 0.011
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:collapse",
+          "right": "motion:grow_from_zero",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:collapse",
+          "right": "motion:soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:collapse",
+          "right": "motion:task_card",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:complete_then_fade",
+          "right": "motion:fade",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:converge",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:cut_on_audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:cut_on_audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:cut_on_phrase",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:directional_reveal",
+          "right": "motion:mask_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:directional_reveal",
+          "right": "motion:result_reveal",
+          "hashDistance": 0,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:directional_reveal",
+          "right": "motion:short_wipe",
+          "hashDistance": 2,
+          "featureDistance": 0.011
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:directional_reveal",
+          "right": "motion:target_reveal",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:grow_from_zero",
+          "right": "motion:soft_pop",
+          "hashDistance": 0,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:highlight_result",
+          "right": "motion:highlight_turning_point",
+          "hashDistance": 1,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:highlight_result",
+          "right": "motion:local_highlight",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:highlight_segment",
+          "right": "motion:mark_current_level",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:local_highlight",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:result_tag",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:time_marker",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:label_then_title",
+          "right": "motion:progressive_local",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:label_then_title",
+          "right": "motion:stagger",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:label_then_title",
+          "right": "motion:term_then_definition",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:local_highlight",
+          "right": "motion:time_marker",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:mark_current_level",
+          "right": "motion:weight_color",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:mask_reveal",
+          "right": "motion:result_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:mask_reveal",
+          "right": "motion:short_wipe",
+          "hashDistance": 2,
+          "featureDistance": 0.012
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:merge",
+          "right": "motion:split_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.011
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:merge",
+          "right": "motion:wipe_compare",
+          "hashDistance": 2,
+          "featureDistance": 0.01
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:per_character",
+          "right": "motion:typing_or_soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:phrase_groups",
+          "right": "motion:step_up",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:phrase_groups",
+          "right": "motion:term_then_body",
+          "hashDistance": 1,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:phrase_groups",
+          "right": "motion:term_then_definition",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:pip_then_focus",
+          "right": "motion:step_up",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:pip_then_focus",
+          "right": "motion:term_then_body",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:progressive_local",
+          "right": "motion:stagger",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:result_reveal",
+          "right": "motion:short_wipe",
+          "hashDistance": 2,
+          "featureDistance": 0.011
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:result_reveal",
+          "right": "motion:target_reveal",
+          "hashDistance": 1,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:split_reveal",
+          "right": "motion:wipe_compare",
+          "hashDistance": 0,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:stagger",
+          "right": "motion:term_then_definition",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:step_up",
+          "right": "motion:term_then_body",
+          "hashDistance": 0,
+          "featureDistance": 0.004
+        }
+      ],
+      "declaredFamilySimilarityPairCount": 102,
+      "headCollisionAssetCount": 0,
+      "headCollisionAssets": [],
+      "spatialBlackAssetCount": 0,
+      "spatialBlackAssets": [],
+      "fontBindings": {
+        "subtitle": {
+          "family": "方正粗金陵简体",
+          "file": "assets/private/fonts/FZCuJinLJW.ttf",
+          "sha256": "3c15643db0ef339e1faf39b8b0c12ffead661565876e617fd25ca5209eabb1ea",
+          "verifiedBy": "explicit-font-file-glyph-mask",
+          "fallbackUsed": false
+        },
+        "display": {
+          "family": "青鸟华光标题黑体",
+          "file": "华光标题黑.TTF",
+          "sha256": "7446486b30fd433fb56ea7b745549f326218ea9161785deaf1a7df0ec8e124a0",
+          "verified": true,
+          "fallbackUsed": false
+        },
+        "ui": {
+          "family": "思源黑体 CN Light",
+          "file": "细体-思源黑体7号.otf",
+          "sha256": "317e53f4b71c757b9c2317354570f03dacae2321cbd6eb3f256c0b71c45610da",
+          "verified": true,
+          "fallbackUsed": false
+        },
+        "cover": {
+          "family": "Aa封神榜书",
+          "file": "封神榜书.ttf",
+          "sha256": "4a2701607972a3b4804019b656800b7778deb6e1767093fc56a110eac48083ed",
+          "verified": true,
+          "fallbackUsed": false
+        }
+      },
+      "failures": [],
+      "warnings": []
+    }
+  ],
+  "crossStyleExactDuplicateGroupCount": 0,
+  "crossStyleExactDuplicateGroups": [],
+  "distinctEditingGrammarCount": 4,
+  "status": "pass",
+  "failures": []
+}
