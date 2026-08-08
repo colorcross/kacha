@@ -43,7 +43,7 @@ jobs:
           npm run lint
           npm run typecheck
           npm run test:pages
-          npm audit --audit-level=high
+          npm run audit:dependencies
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

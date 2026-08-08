@@ -146,7 +146,7 @@ export const zhContent: SiteContent = {
     titleLead: "从原始素材，",
     titleAccent: "到可以发布的成片。",
     summary:
-      "咔嚓让 Codex 或 Claude Code 按专业流程完成结构精剪、人声处理、字幕校准、视觉包装、增量返工与质量检查。AI 负责执行，你保留最后的判断。",
+      "咔嚓让 Codex 或 Claude Code 按专业流程完成结构精剪、人声处理、视觉包装与增量返工，再用全片导演计划、语义审片和真实编辑评测证明每个关键判断。",
     primaryCta: "看看能解决什么",
     secondaryCta: "快速安装",
     contracts: ["素材优先留在本地", "不剪断完整语义", "每次修改可追踪"],
@@ -158,7 +158,7 @@ export const zhContent: SiteContent = {
     { value: "LOCAL", label: "默认本地处理素材" },
     { value: "FULL", label: "覆盖完整后期流程" },
     { value: "DELTA", label: "返工只改受影响层" },
-    { value: "119", label: "自动回归检查" },
+    { value: "125", label: "自动回归检查" },
   ],
   problems: {
     title: "真正耗时间的，不只是拖动时间线。",
@@ -297,6 +297,16 @@ export const zhContent: SiteContent = {
         title: "质量门禁",
         body: "先检查解码、轨道、尺寸、响度、同步、黑帧与静音线索，再交给人完成最终通看。",
       },
+      {
+        kicker: "GLOBAL DIRECTOR",
+        title: "全片导演与留白预算",
+        body: "从主线、唯一开场、强调密度和安静比例约束全片；不用效果也可以是经过解释的正式决定。",
+      },
+      {
+        kicker: "SEMANTIC REVIEW",
+        title: "逐项审片与偏好学习",
+        body: "正常速度查看关键决策、理由和回退，明确接受、调整或拒绝；偏好只从审片证据生成并可回滚。",
+      },
     ],
   },
   workflow: {
@@ -308,8 +318,8 @@ export const zhContent: SiteContent = {
       { title: "结构精剪", body: "删除无效内容，校验每个切点的句义、节奏与连接。" },
       { title: "处理声音", body: "分离并优化人声，再安排音乐、音效和最终响度。" },
       { title: "包装画面", body: "按统一设计系统加入字幕、素材、PIP、蒙版与转场。" },
-      { title: "响应反馈", body: "把修改要求编译成差异，只重渲染受影响部分。" },
-      { title: "检查交付", body: "自动技术 QC、同源 A/B 与人工审片共同决定是否发布。" },
+      { title: "语义审片与反馈", body: "正常速度逐项接受、调整或拒绝关键决定，再把修改编译成差异。" },
+      { title: "评测与交付", body: "技术 QC、时序感知、人工审片和真实编辑指标共同决定是否发布。" },
     ],
     resultLabel: "DELIVERY STATE",
     result: "READY FOR HUMAN APPROVAL",
@@ -427,7 +437,7 @@ export const enContent: SiteContent = {
     titleLead: "From raw footage",
     titleAccent: "to a publishable cut.",
     summary:
-      "Kacha lets Codex or Claude Code run structure edits, dialogue cleanup, caption calibration, visual packaging, incremental revisions, and QC as one professional workflow. AI executes; you keep the final judgment.",
+      "Kacha lets Codex or Claude Code edit, mix, package, and revise through one professional workflow, then uses a global director plan, semantic review, and human editorial evaluation to make every high-impact decision inspectable.",
     primaryCta: "See what it solves",
     secondaryCta: "Install Kacha",
     contracts: ["Media stays local by default", "Complete meaning stays intact", "Every change is traceable"],
@@ -439,7 +449,7 @@ export const enContent: SiteContent = {
     { value: "LOCAL", label: "local-first media handling" },
     { value: "FULL", label: "end-to-end post workflow" },
     { value: "DELTA", label: "affected layers only" },
-    { value: "119", label: "regression checks" },
+    { value: "125", label: "regression checks" },
   ],
   problems: {
     title: "The timeline is not the only expensive part.",
@@ -578,6 +588,16 @@ export const enContent: SiteContent = {
         title: "Quality gates",
         body: "Check decode, tracks, geometry, loudness, sync, black frames, and silence clues before the human watch-through.",
       },
+      {
+        kicker: "GLOBAL DIRECTOR",
+        title: "Episode-level direction and quiet",
+        body: "Budget emphasis across the whole story, enforce one opening, and preserve deliberate stillness instead of maximizing effects.",
+      },
+      {
+        kicker: "SEMANTIC REVIEW",
+        title: "Decision review and preference evidence",
+        body: "Review rationale and fallback at normal speed, then explicitly accept, adjust, or reject. Learned preferences stay transparent and reversible.",
+      },
     ],
   },
   workflow: {
@@ -589,8 +609,8 @@ export const enContent: SiteContent = {
       { title: "Edit the structure", body: "Remove waste and check every cut for meaning, rhythm, and continuity." },
       { title: "Process the sound", body: "Separate and polish dialogue, then place music, SFX, and final loudness." },
       { title: "Package the picture", body: "Use the design system for captions, media, PIP, masks, and transitions." },
-      { title: "Respond to feedback", body: "Compile revision notes into a delta and render only affected work." },
-      { title: "Check delivery", body: "Technical QC, same-source A/B, and human review decide release status." },
+      { title: "Review decisions and feedback", body: "Accept, adjust, or reject high-impact decisions at normal speed, then compile changes into a delta." },
+      { title: "Evaluate and deliver", body: "Technical QC, temporal perception, human review, and real editorial metrics decide release status." },
     ],
     resultLabel: "DELIVERY STATE",
     result: "READY FOR HUMAN APPROVAL",

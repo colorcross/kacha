@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0",
+  "id": "kacha-intelligence-v6",
+  "version": "6.0.0",
+  "evaluation": {
+    "minimumComparisonCases": 8,
+    "firstDraftUsableThreshold": 0.8,
+    "requireHumanJudgment": true,
+    "metrics": [
+      "firstDraftUsableRate",
+      "highImpactDecisionAcceptRate",
+      "semanticDamageRate",
+      "manualInterventionMinutesPerOutputMinute",
+      "connectionRejectRate",
+      "captionCorrectionRate",
+      "styleGrammarViolationRate"
+    ]
+  },
+  "director": {
+    "minimumQuietRatio": 0.35,
+    "maximumHighImpactDecisionsPerMinute": 8,
+    "maximumConsecutiveHighImpactBeats": 2,
+    "maximumImpactSecondsPerDecision": 1.2,
+    "minimumOpeningCount": 1,
+    "maximumOpeningCount": 1,
+    "styles": {
+      "light-warm-overlay": {
+        "grammar": "editorial_continuity",
+        "defaultMechanism": "edge_annotation",
+        "quietMechanism": "clean_live_action"
+      },
+      "spatial-light-path": {
+        "grammar": "depth_navigation",
+        "defaultMechanism": "coordinate_path",
+        "quietMechanism": "stable_world_space"
+      },
+      "humor-comic": {
+        "grammar": "comedic_timing",
+        "defaultMechanism": "setup_hold_reaction",
+        "quietMechanism": "clean_panel_hold"
+      },
+      "pixel-editorial": {
+        "grammar": "state_machine",
+        "defaultMechanism": "state_commit",
+        "quietMechanism": "stable_high_definition_live_action"
+      }
+    }
+  },
+  "review": {
+    "outcomes": ["accept", "adjust", "reject"],
+    "minimumPreferenceEvidence": 2,
+    "preferenceActivationRequiresConfirmation": true,
+    "storeFreeformNotesInLongTermProfile": false
+  },
+  "perception": {
+    "minimumReadableTextSeconds": 0.8,
+    "minimumMobileTextHeightRatio": 0.035,
+    "maximumPrimaryEffectsAtOnce": 1,
+    "maximumMotionCoverageRatio": 0.65,
+    "minimumQuietRatio": 0.35,
+    "maximumFullFrameFlashSeconds": 0.16,
+    "sfxLandingToleranceFrames": 1
+  },
+  "interchange": {
+    "formats": ["otio", "fcpxml", "cmx3600"],
+    "importCreatesCandidateOnly": true,
+    "preserveSemanticIds": true
+  },
+  "observability": {
+    "exposeSecrets": false,
+    "costWithoutMeasuredUsage": "unavailable",
+    "etaWithoutHistoricalStageSamples": "unavailable"
+  }
+}

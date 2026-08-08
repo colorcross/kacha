@@ -140,6 +140,20 @@ a:focus-visible {
   letter-spacing: 0.04em;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.review-entry {
+  color: var(--ink);
+  border-bottom: 1px solid var(--signal);
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
 .runtime-dot {
   width: 8px;
   height: 8px;

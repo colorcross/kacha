@@ -189,6 +189,31 @@ node scripts/kacha.mjs cache inspect --project-root my-video-project
 
 See [Performance, token, and weak-model production](PERFORMANCE_TOKEN_STABILITY_V5.md).
 
+## V6 global direction and semantic review
+
+Compile the final timed semantic cues into an episode-level plan and an asset
+gap plan, then audit and review the candidate:
+
+```bash
+node scripts/kacha.mjs intelligence director \
+  --cues semantic-cues.json --show tool-share \
+  --style light-warm-overlay --output director-plan.json
+node scripts/kacha.mjs intelligence assets \
+  --director director-plan.json --media-index .kacha/media-index.json \
+  --output asset-gap-plan.json
+node scripts/kacha.mjs intelligence perception \
+  --timeline timeline.json --output perception-audit.json
+node scripts/kacha.mjs review build \
+  --timeline timeline.json --director director-plan.json \
+  --preview-dir preview --output-dir .kacha/review
+node scripts/kacha.mjs studio serve
+```
+
+Open `/review`, inspect each high-impact decision at normal speed, and record
+accept, adjust, or reject. See
+[V6 editorial evaluation and semantic review](INTELLIGENT_EDITING_V6.md) for
+evaluation, preference learning, NLE interchange, and gate integration.
+
 ## 7. Run automated technical QC
 
 ```bash

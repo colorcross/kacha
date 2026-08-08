@@ -61,6 +61,12 @@ node scripts/kacha.mjs studio serve --port 4187 --no-open
 右侧“当前剪辑合同”实时显示所选风格、字幕字体、声音、BGM、美颜、开场、
 效果数量和输出目标。步骤状态表示当前合同是否已有可执行配置；不是渲染进度。
 
+生产配置完成后，可从顶部进入 `/review` 语义审片台。它不是第六个配置表单，
+而是候选片阶段的正常速度决策界面：按高影响语义拍显示视频、剪辑理由、置信度、
+最简回退和接受/调整/拒绝结果。审片台只读取 `review build` 生成的审片包，
+调整或拒绝缺少当前解决证据时不会显示候选就绪。偏好学习只生成候选，不会从
+页面自动激活长期配置。
+
 自定义风格保存到 `~/.config/kacha/studio/styles/`，只保存偏好，不得包含上传、
 付费、发布、覆盖源文件、跳过 QC 等授权字段。同名自定义风格不会被静默
 覆盖；要保留新版本必须修改名称后另存。
@@ -141,10 +147,20 @@ node scripts/kacha.mjs studio probe --video /absolute/path/source.mov
 node scripts/kacha.mjs studio preview --request production-request.json
 node scripts/kacha.mjs studio save-style --input custom-style.json
 node scripts/kacha.mjs studio compile --request production-request.json
+
+node scripts/kacha.mjs review build \
+  --timeline TIMELINE.json --director DIRECTOR_PLAN.json \
+  --preview-dir PREVIEW_DIR --output-dir .kacha/review
+node scripts/kacha.mjs review validate \
+  --session .kacha/review/review-session.json --for-candidate
 ```
 
 请求示例见 `examples/production-request.json`。CLI 与页面使用同一校验器，
 不存在“页面能保存但命令行不能执行”的第二套格式。
+
+审片预览通过 loopback Range 接口按审片包内 SHA-256 身份读取，不开放任意媒体
+目录。页面仍不能授予上传、付费、发布、覆盖源片或跳过人工审片的权限。完整
+V6 合同见 `docs/INTELLIGENT_EDITING_V6.md`。
 
 ## 设计与验收
 

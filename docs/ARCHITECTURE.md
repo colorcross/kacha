@@ -200,6 +200,35 @@ stage packet + transcript window + semantic cues
 再比较最终视频解码音频与 mix stem 的残差信噪比。因此“组件文件正确但最终
 成片漏混”会被阻断。
 
+## V6 智能剪辑证据层
+
+V6 不改变 Timeline IR 与 Render Graph 的事实源地位，在其前后增加八个可审计
+对象：
+
+- `globalDirectorPlan`：全片主线、内容优先级、唯一开场、强调预算和安静比例；
+- `assetGapPlan`：许可本地候选、非事实生成候选和必须补真实证据的阻断项；
+- `temporalPerceptionAudit`：主效果并发、阅读时间、闪烁、字号、蒙版、声音
+  落点、运动覆盖和人工动态复核要求；
+- `semanticReviewBundle / Session`：高影响决策的理由、置信度、正常速度预览、
+  接受/调整/拒绝和解决证据；
+- `preferenceCandidate / Profile`：显式反馈的证据计数、版本激活与回滚；
+- `editorialEvalDataset / Report / Comparison`：人工评测基线和同源成对比较；
+- `nleExport / ImportReport`：OTIO/FCPXML/CMX3600 交换与 candidate-only 边界；
+- `projectObservability`：Jobs、遥测、缓存、编码和磁盘的用户可见摘要。
+
+```text
+semantic cues → director → asset gaps → Timeline IR / Render Graph
+                                          │
+                               perception + review session
+                                          │
+                         preference candidate + paired evaluation
+```
+
+`intelligenceV6.required=true` 时，`gate-plan`、`gate-render` 和 `gate-release`
+分别验证上述计划、执行缺口和审片证据。旧项目默认兼容。NLE 导入只建立独立
+preview candidate；偏好只建立候选并显式激活；自动审计永远保留人工正常速度
+通看。完整命令与证据边界见 `docs/INTELLIGENT_EDITING_V6.md`。
+
 ## 配置边界
 
 `scripts/kacha_config.mjs` 把内置、用户、项目、本机和显式配置合并成一份

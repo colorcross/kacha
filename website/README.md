@@ -41,18 +41,19 @@ npm run lint
 npm run typecheck
 npm test
 npm run test:pages
-npm audit --audit-level=high
+npm run audit:dependencies
 ```
 
 `npm test` 会重新构建并验证中英文服务端渲染内容、Logo 和社交分享图。官网
 通过不代表咔嚓 skill 本体通过；正式提交仍需在仓库根目录运行完整回归、安装器
-测试与隐私扫描。当前 lint 使用 Oxlint；生产依赖与完整开发依赖都必须保持
-`0 vulnerabilities`。
+测试与隐私扫描。当前 lint 使用 Oxlint；生产依赖必须保持 `0 vulnerabilities`。
+开发链只允许 `scripts/audit-dependencies.mjs` 中登记的 vinext/image-size 精确
+例外；包版本、依赖路径、GHSA 或修复状态发生任何变化都会重新阻断。
 
 首页的“四种剪辑语法”区块直接对应
 [`docs/FOUR_STYLE_EDITING_GRAMMARS.md`](../docs/FOUR_STYLE_EDITING_GRAMMARS.md)：
 四张卡必须分别表现连续旁注、纵深导航、喜剧节拍和状态机，不能退化为同一组件
-只换颜色或材质。中英文内容、119 项回归口径、1920 张峰值帧和 960 份合同数量
+只换颜色或材质。中英文内容、125 项回归口径、1920 张峰值帧和 960 份合同数量
 需要同步更新并由页面测试锁定。
 
 ## 目录

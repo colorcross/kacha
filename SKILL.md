@@ -72,6 +72,8 @@ Placeholder 的 ready 状态与产物 SHA；重复对象 ID 必须使用确定�
   `references/agent-chat-control-plane.md`
 - 性能、Token、统一渲染与弱模型稳定生产：
   `docs/PERFORMANCE_TOKEN_STABILITY_V5.md`
+- 全片导演、素材缺口、语义审片、偏好学习、编辑评测与 NLE 交换：
+  `docs/INTELLIGENT_EDITING_V6.md`
 - Claude Code 视觉补偿/关键帧证据：`references/visual-evidence.md`
 - 缓存与清理：`references/cleanup-retention.md`
 - 复盘生产缺陷或改门禁：`docs/PRODUCTION_HARDENING.md`
@@ -130,6 +132,48 @@ node scripts/kacha.mjs install status --agent both
 这些命令默认由 Agent 自动调用；不要把内部命令选择、索引建立或对象标注工作
 推给用户。mutation delta 是单次操作证据，v3 version delta 仍负责版本级
 失效、渲染和 QC，两者不能混用。
+
+## V6：智能剪辑证据闭环
+
+完整首剪在最终带时间语义 cues 稳定后，先编译全片导演计划与素材缺口，不得
+继续只按局部 cue 堆效果：
+
+```bash
+node scripts/kacha.mjs intelligence director \
+  --cues SEMANTIC_CUES.json --show SHOW --style STYLE \
+  --output DIRECTOR_PLAN.json
+node scripts/kacha.mjs intelligence assets \
+  --director DIRECTOR_PLAN.json --media-index .kacha/media-index.json \
+  --output ASSET_GAP_PLAN.json
+```
+
+导演计划必须且只能有一个主开场，限制高影响决策与连续强拍，保留最低安静
+比例，并把“刻意不用效果”写成正式决定。事实、真实人物、官方数据和产品实拍
+缺口不能由生成媒体冒充；素材索引截断或证据未补齐时不得执行。
+
+候选版用 Timeline IR 与导演计划建立语义审片包。每个高影响决定显示理由、
+置信度、最简回退和正常速度预览，并记录 `accept / adjust / reject`。调整或拒绝
+没有当前解决证据时不能进入候选就绪：
+
+```bash
+node scripts/kacha.mjs review build \
+  --timeline TIMELINE.json --director DIRECTOR_PLAN.json \
+  --preview-dir PREVIEW_DIR --output-dir .kacha/review
+node scripts/kacha.mjs studio serve
+node scripts/kacha.mjs review validate \
+  --session .kacha/review/review-session.json --for-candidate
+```
+
+长期偏好只从明确审片结果生成候选，同一规则至少两条证据；不保存自由文本备注，
+不自动激活，激活和回滚都要求 `--confirm`。真实质量用 `eval score/compare`
+逐项测量，至少 8 个同源人工复核项目才能宣称版本提升，禁止用单一综合分掩盖
+语义、连接、字幕或风格退化。
+
+专业 NLE 交换使用 `nle export/import`。OTIO/FCPXML 保留语义 ID，CMX3600
+只做兼容导出；任何导入都只生成 preview candidate，不能覆盖基线，也不能绕过
+Delta、变化层 QC 和人工审片。项目需完整执行 V6 门禁时，在 manifest 设置
+`intelligenceV6.required=true` 并登记 director、asset gap、perception audit 与
+semantic review session。完整合同见 `docs/INTELLIGENT_EDITING_V6.md`。
 
 ## 统一配置与默认剪辑要求
 

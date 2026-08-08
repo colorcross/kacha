@@ -53,6 +53,11 @@
 | 高成本复用 | ASR、人声分离、蒙版、Beauty、样式帧和生成素材按模型/实现强指纹缓存 |
 | 弱模型稳定生产 | 五种紧凑 packet + 十三阶段文件证据状态机，减少上下文与临场猜测 |
 | Agent 对话控制面 | 自然语言仍是主入口；Mutation Delta、确定性对象 `@` 引用、本地句向量素材搜索和终态受保护的异步任务在后台运行 |
+| 全片智能导演 | 从带时间语义 cues 编译主线、内容优先级、唯一开场、强调预算、安静比例、四风格语法和最简回退 |
+| 语义审片台 | 正常速度查看高影响决定、理由、置信度和 A/B 预览，逐项接受、调整或拒绝；接受不等于发布 |
+| 可解释偏好学习 | 只从明确审片结果生成证据计数的偏好候选；需显式激活，可版本回滚，不保存自由文本内容 |
+| 真实编辑评测 | 测量首稿可用、语义损坏、人工干预、连接、字幕和风格违规；至少 8 个同源人工项目才允许提升声明 |
+| NLE 语义交换 | OTIO/FCPXML 保留 clip、decision 与 semantic beat ID，CMX3600 兼容导出；导入只生成候选时间线 |
 | 可观测性能 | 自动采集耗时、Token 来源、缓存和编码次数；重型资源跨项目共享主机锁 |
 | BGM 成片证明 | 测量可听性、重建组件混音，并验证最终视频没有漏混音乐 |
 | 视频设计系统 | 行者风 2.0 统一栏目、画幅、语言、字幕、语义色、卡片、PIP、流程图、封面和运动语言 |
@@ -73,7 +78,7 @@
 核心资源、10 种转场、5 种开场、5 种画面呼吸运动、7 种口播字幕布局，以及
 从 6 条参考视频中验证出的 33 种语义网感机制。机制可从最终带时间文稿生成
 帧级计划、进入完整视频渲染，并通过摘要、资源、时序与媒体保真门禁。
-当前仓库完整回归为 119 项；四套图库另有跨风格重复、同风格未声明近似构图、
+当前仓库完整回归为 125 项；四套图库另有跨风格重复、同风格未声明近似构图、
 人物头部碰撞、黑块、字体和动效合同专项 QC。当前提交的四库报告中上述问题均为 0。
 
 <p align="center">
@@ -134,6 +139,11 @@ node scripts/kacha.mjs studio serve
 设计系统与效果解析预检。它不会上传素材、覆盖源片或跳过质量门禁。详见
 [本地视频生产台](references/production-studio.md)。
 
+候选片阶段从生产台顶部进入“语义审片台”，或直接打开
+`http://127.0.0.1:4179/review`。它围绕正常速度视频逐项呈现 AI 的高影响剪辑
+决定、理由、置信度、最简回退和接受/调整/拒绝结果，不把表单或静态效果图
+冒充审片。
+
 <p align="center">
   <a href="https://www.figma.com/design/uXfiviOI5rgi56awnD3Iut?node-id=1-2">
     <img src="docs/assets/kacha-production-studio.png" alt="咔嚓本地视频生产台" width="100%">
@@ -184,6 +194,8 @@ node scripts/kacha.mjs gate-release PROJECT.json
 Claude Code 可使用 `prepare → next` 确定性执行协议，详见
 [V4 工程化优化](docs/ENGINEERING_OPTIMIZATION_V4.md)与
 [V5 性能、Token 和弱模型稳定生产](docs/PERFORMANCE_TOKEN_STABILITY_V5.md)。
+全片导演、素材缺口、语义审片、偏好学习、真实编辑评测和 NLE 交换见
+[V6 智能剪辑证据闭环](docs/INTELLIGENT_EDITING_V6.md)。
 日常仍可直接在 Agent 中聊天；操作级 Delta、本地素材索引、后台任务、
 placeholder、对象短引用和双端安装状态见
 [Agent 对话控制面](docs/AGENT_CHAT_CONTROL_PLANE.md)。
@@ -269,6 +281,8 @@ node scripts/kacha.mjs doctor --profile core
 | [配置说明](docs/CONFIGURATION.md) | 用户、项目、本机和密钥配置 |
 | [架构说明](docs/ARCHITECTURE.md) | 工作流、证据链与模块边界 |
 | [性能与弱模型稳定生产](docs/PERFORMANCE_TOKEN_STABILITY_V5.md) | 一次编码、局部预览、缓存、Token 和审计 |
+| [V6 智能剪辑证据闭环](docs/INTELLIGENT_EDITING_V6.md) | 全片导演、素材缺口、语义审片、偏好学习、编辑评测、NLE 交换与可观测性 |
+| [V6 全面优化实施状态](docs/V6_IMPLEMENTATION_STATUS_2026-08-08.md) | 已实施范围、生产门禁、验证证据、依赖安全例外与真实项目待办 |
 | [视频设计系统](docs/VIDEO_DESIGN_SYSTEM_V1.md) | 视觉 token、组件、场景和 QC |
 | [行者风 2.0](docs/XINGZHE_STYLE_V2.md) | 拍摄基线、语义色、渐变、封面比例、栏目差异和参考图库 |
 | [四风格剪辑语法](docs/FOUR_STYLE_EDITING_GRAMMARS.md) | 四种风格各自的时间单位、空间拓扑、转场、声音与换皮失败门禁 |

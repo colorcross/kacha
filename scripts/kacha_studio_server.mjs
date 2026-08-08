@@ -12,6 +12,14 @@ import {
   saveCustomStyle,
 } from "./kacha_studio.mjs";
 import { loadKachaConfig } from "./kacha_config.mjs";
+import { readJson } from "./kacha_utils.mjs";
+import {
+  buildPreferenceCandidate,
+  loadReviewBundle,
+  recordReviewDecision,
+  resolveReviewMedia,
+} from "./kacha_review.mjs";
+import { observeProject } from "./kacha_intelligence.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(scriptDirectory, "..");
@@ -23,7 +31,7 @@ const SECURITY_HEADERS = {
     "default-src 'self'; base-uri 'none'; connect-src 'self'; "
       + "font-src 'self'; form-action 'none'; frame-ancestors 'none'; "
       + "img-src 'self' data:; object-src 'none'; script-src 'self'; "
-      + "style-src 'self' 'unsafe-inline'",
+      + "style-src 'self' 'unsafe-inline'; media-src 'self'",
   "Cross-Origin-Opener-Policy": "same-origin",
   "Cross-Origin-Resource-Policy": "same-origin",
   "Permissions-Policy": "camera=(), geolocation=(), microphone=()",
@@ -38,6 +46,10 @@ const MIME_TYPES = {
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
   ".svg": "image/svg+xml",
+  ".mp4": "video/mp4",
+  ".m4v": "video/mp4",
+  ".mov": "video/quicktime",
+  ".webm": "video/webm",
 };
 
 function json(response, status, value) {
@@ -146,18 +158,72 @@ function serveFile(response, file) {
   response.end(body);
 }
 
+function serveMedia(request, response, file) {
+  const stat = fs.statSync(file);
+  const range = request.headers.range;
+  const contentType = MIME_TYPES[path.extname(file).toLowerCase()] ?? "application/octet-stream";
+  if (!range) {
+    response.writeHead(200, {
+      ...SECURITY_HEADERS,
+      "Accept-Ranges": "bytes",
+      "Content-Type": contentType,
+      "Content-Length": stat.size,
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+    });
+    fs.createReadStream(file).pipe(response);
+    return;
+  }
+  const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+  if (!match) {
+    response.writeHead(416, { ...SECURITY_HEADERS, "Content-Range": `bytes */${stat.size}` });
+    response.end();
+    return;
+  }
+  if (!match[1] && !match[2]) {
+    response.writeHead(416, { ...SECURITY_HEADERS, "Content-Range": `bytes */${stat.size}` });
+    response.end();
+    return;
+  }
+  const suffixLength = !match[1] && match[2] ? Number(match[2]) : null;
+  const start = suffixLength === null ? Number(match[1]) : Math.max(0, stat.size - suffixLength);
+  const end = suffixLength === null && match[2]
+    ? Math.min(Number(match[2]), stat.size - 1)
+    : stat.size - 1;
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || start >= stat.size) {
+    response.writeHead(416, { ...SECURITY_HEADERS, "Content-Range": `bytes */${stat.size}` });
+    response.end();
+    return;
+  }
+  response.writeHead(206, {
+    ...SECURITY_HEADERS,
+    "Accept-Ranges": "bytes",
+    "Content-Range": `bytes ${start}-${end}/${stat.size}`,
+    "Content-Length": end - start + 1,
+    "Content-Type": contentType,
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+  });
+  fs.createReadStream(file, { start, end }).pipe(response);
+}
+
 function safeStaticFile(urlPath) {
   const routes = {
     "/": path.join(studioRoot, "index.html"),
     "/index.html": path.join(studioRoot, "index.html"),
     "/app.css": path.join(studioRoot, "app.css"),
     "/app.js": path.join(studioRoot, "app.js"),
+    "/review": path.join(studioRoot, "review.html"),
+    "/review.html": path.join(studioRoot, "review.html"),
+    "/review.css": path.join(studioRoot, "review.css"),
+    "/review.js": path.join(studioRoot, "review.js"),
     "/brand/kacha-logo.png": brandLogo,
   };
   return routes[urlPath] ?? null;
 }
 
-async function handleApi(request, response, pathname, port) {
+async function handleApi(request, response, url, port) {
+  const pathname = url.pathname;
   if (request.method === "GET" && pathname === "/api/health") {
     json(response, 200, {
       schemaVersion: "1.0",
@@ -181,6 +247,15 @@ async function handleApi(request, response, pathname, port) {
         localOnly: true,
       },
     });
+    return;
+  }
+  if (request.method === "GET" && pathname === "/api/review/media") {
+    const file = resolveReviewMedia(
+      url.searchParams.get("bundle"),
+      url.searchParams.get("decision"),
+      url.searchParams.get("variant") ?? "after",
+    );
+    serveMedia(request, response, file);
     return;
   }
   if (request.method !== "POST") {
@@ -218,6 +293,39 @@ async function handleApi(request, response, pathname, port) {
     json(response, 201, compileProductionRequest(body));
     return;
   }
+  if (pathname === "/api/review/open") {
+    const loaded = loadReviewBundle(body.bundlePath);
+    json(response, 200, {
+      schemaVersion: "1.0",
+      status: "pass",
+      bundle: loaded.bundle,
+      session: loaded.session ? { ...loaded.session, path: loaded.sessionFile } : null,
+    });
+    return;
+  }
+  if (pathname === "/api/review/record") {
+    const result = recordReviewDecision(body.bundlePath, body);
+    const session = readJson(result.session.path);
+    json(response, 200, {
+      schemaVersion: "1.0",
+      status: "pass",
+      decision: result.decision,
+      session: { ...session, path: result.session.path },
+    });
+    return;
+  }
+  if (pathname === "/api/review/learn") {
+    json(response, 201, {
+      schemaVersion: "1.0",
+      status: "pass",
+      ...buildPreferenceCandidate(body.sessionPath, body.outputPath),
+    });
+    return;
+  }
+  if (pathname === "/api/observe") {
+    json(response, 200, { status: "pass", ...observeProject(body.projectRoot) });
+    return;
+  }
   json(response, 404, { status: "blocked", error: "Unknown API route" });
 }
 
@@ -251,7 +359,7 @@ export function startStudioServerFromCli(args = process.argv.slice(2)) {
     const url = new URL(request.url ?? "/", `http://127.0.0.1:${requestedPort}`);
     try {
       if (url.pathname.startsWith("/api/")) {
-        await handleApi(request, response, url.pathname, requestedPort);
+        await handleApi(request, response, url, requestedPort);
         return;
       }
       const file = safeStaticFile(url.pathname);

@@ -164,6 +164,20 @@ For required BGM, technical QC reconstructs the mix from dialogue/BGM/SFX
 stems and compares decoded final audio with the declared mix stem. Correct
 component files cannot hide a final mux that omitted the music.
 
+## V6 editorial-intelligence evidence layer
+
+V6 keeps Timeline IR and Render Graph as the execution sources of truth. It
+adds a global director plan, asset-gap plan, temporal-perception audit,
+semantic review bundle/session, versioned preference candidate/profile,
+human editorial evaluation, NLE interchange reports, and a user-visible
+observability summary.
+
+With `intelligenceV6.required=true`, plan, render, and release gates validate
+those current file-backed artifacts. NLE import is candidate-only, preference
+activation is explicit and reversible, and automatic perception checks retain
+normal-speed human review. See
+[`INTELLIGENT_EDITING_V6.md`](INTELLIGENT_EDITING_V6.md).
+
 ## Configuration boundary
 
 `scripts/kacha_config.mjs` merges built-in, user, project, machine-local, and

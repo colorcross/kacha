@@ -46,6 +46,10 @@ function usage() {
       + "  kacha.mjs media index|search [options]\n"
       + "  kacha.mjs jobs submit|status|list|cancel|resume [options]\n"
       + "  kacha.mjs refs index|resolve|parse [options]\n"
+      + "  kacha.mjs intelligence validate|director|assets|perception|observe|validate-plan [options]\n"
+      + "  kacha.mjs eval template|validate|score|compare [options]\n"
+      + "  kacha.mjs review build|show|validate|record|learn|activate|rollback [options]\n"
+      + "  kacha.mjs nle export|import --format otio|fcpxml|cmx3600 [options]\n"
       + "  kacha.mjs install status|sync [options]\n"
       + "  kacha.mjs cache key|run|inspect [options]\n"
       + "  kacha.mjs transcribe INPUT --output TRANSCRIPT.json [options]\n"
@@ -142,6 +146,10 @@ const delegatedCommands = {
   media: "kacha_media.mjs",
   jobs: "kacha_jobs.mjs",
   refs: "kacha_refs.mjs",
+  intelligence: "kacha_intelligence.mjs",
+  eval: "kacha_eval.mjs",
+  review: "kacha_review.mjs",
+  nle: "kacha_nle.mjs",
   install: "kacha_install.mjs",
   cache: "artifact_cache.mjs",
   transcribe: "transcribe_local.mjs",
@@ -216,6 +224,21 @@ function gatePlanV2() {
   );
   invoke("validate_edit_proposal.mjs", [proposal]);
   invoke("validate_edit_plan.mjs", [editPlan]);
+  const intelligenceRequired = project.intelligenceV6?.required === true;
+  for (const [field, required] of [
+    ["directorPlan", intelligenceRequired],
+    ["assetGapPlan", intelligenceRequired],
+  ]) {
+    const entry = project.plans[field];
+    if (!entry && required) {
+      console.error(`V6 智能剪辑项目缺少 plans.${field}`);
+      process.exit(1);
+    }
+    if (entry) {
+      const plan = requireProjectPath(projectFile, entry, `plans.${field}`);
+      invoke("kacha_intelligence.mjs", ["validate-plan", "--plan", plan]);
+    }
+  }
   const proposalPlan = readJson(proposal);
   if (
     proposalPlan.authorization?.canExecute === true
@@ -550,6 +573,19 @@ if (command === "gate-plan") {
       const plan = requireProjectPath(projectFile, entry, "generatedShotPlans");
       invoke("validate_generated_shot_plan.mjs", [plan, "--for-execution"]);
     }
+    if (project.plans.assetGapPlan) {
+      const assetGapPlan = requireProjectPath(
+        projectFile,
+        project.plans.assetGapPlan,
+        "plans.assetGapPlan",
+      );
+      invoke("kacha_intelligence.mjs", [
+        "validate-plan",
+        "--plan",
+        assetGapPlan,
+        "--for-execution",
+      ]);
+    }
   }
 } else if (command === "qc") {
   if (project.schemaVersion === "3.0") {
@@ -595,6 +631,28 @@ if (command === "gate-plan") {
     if (proposal.authorization?.canExecute !== true) {
       console.error("方案未授权执行，release gate 拒绝通过");
       process.exit(1);
+    }
+    const intelligenceRequired = project.intelligenceV6?.required === true;
+    for (const [field, script, argumentsList] of [
+      [
+        "temporalPerceptionAudit",
+        "kacha_intelligence.mjs",
+        ["validate-plan", "--plan"],
+      ],
+      [
+        "semanticReviewSession",
+        "kacha_review.mjs",
+        ["validate", "--session"],
+      ],
+    ]) {
+      const entry = project.plans[field];
+      if (!entry && intelligenceRequired) {
+        console.error(`V6 智能剪辑发布缺少 plans.${field}`);
+        process.exit(1);
+      }
+      if (!entry) continue;
+      const evidence = requireProjectPath(projectFile, entry, `plans.${field}`);
+      invoke(script, [...argumentsList, evidence, ...(field === "semanticReviewSession" ? ["--for-candidate"] : [])]);
     }
     invoke("validate_release_report.mjs", [projectFile]);
   }

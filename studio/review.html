@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="咔嚓语义审片台：正常速度查看高影响剪辑决策，接受、调整或拒绝。" />
+    <title>咔嚓 · 语义审片台</title>
+    <link rel="icon" type="image/png" href="/brand/kacha-logo.png" />
+    <link rel="stylesheet" href="/review.css" />
+  </head>
+  <body>
+    <header class="review-topbar">
+      <a class="review-brand" href="/">
+        <span><img src="/brand/kacha-logo.png" alt="" /></span>
+        <strong>咔嚓</strong>
+        <em>语义审片台</em>
+      </a>
+      <div class="top-actions">
+        <a href="/">生产配置</a>
+        <span class="local-state"><i></i>LOCAL REVIEW</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="review-hero">
+        <div>
+          <p class="eyebrow">KACHA REVIEW WORKBENCH · V6</p>
+          <h1>不是看一串效果，<br /><span>而是判断每个剪辑决定。</span></h1>
+        </div>
+        <p class="hero-note">
+          正常速度播放候选片段，查看为什么这样剪、置信度和最简回退。接受不等于发布；调整与拒绝必须留下解决证据。
+        </p>
+      </section>
+
+      <section class="load-panel">
+        <label for="bundlePath">审片包绝对路径</label>
+        <div>
+          <input id="bundlePath" autocomplete="off" placeholder="/absolute/project/.kacha/review/review-bundle.json" />
+          <button id="openBundle" type="button">打开审片项目</button>
+        </div>
+        <p id="loadStatus">审片包由 <code>kacha review build</code> 生成，源片和候选文件不会上传。</p>
+      </section>
+
+      <section class="review-shell" id="reviewShell" hidden>
+        <aside class="decision-rail">
+          <div class="rail-heading">
+            <p>DECISIONS</p>
+            <strong id="decisionProgress">0 / 0</strong>
+          </div>
+          <div class="decision-list" id="decisionList"></div>
+          <button class="learn-button" id="learnPreferences" type="button">生成偏好候选</button>
+          <p class="rail-foot">候选不会自动写入长期偏好；激活仍需显式确认。</p>
+        </aside>
+
+        <section class="screening-room">
+          <div class="screen-meta">
+            <span id="projectMeta">—</span>
+            <span id="rangeMeta">—</span>
+          </div>
+          <div class="screen-frame">
+            <video id="reviewVideo" controls playsinline preload="metadata"></video>
+            <div class="no-preview" id="noPreview">
+              <strong>该决策还没有正常速度预览</strong>
+              <span>先渲染代表区间，再进行审美批准。</span>
+            </div>
+            <span class="screen-bug">NORMAL SPEED · AUDIO ON</span>
+          </div>
+          <div class="decision-detail">
+            <div class="decision-copy">
+              <p class="eyebrow" id="decisionCategory">DECISION</p>
+              <h2 id="decisionTitle">选择左侧剪辑决策</h2>
+              <p id="decisionRationale"></p>
+            </div>
+            <dl class="decision-facts">
+              <div><dt>建议</dt><dd id="proposedValue">—</dd></div>
+              <div><dt>置信度</dt><dd id="confidenceValue">—</dd></div>
+              <div><dt>最简回退</dt><dd id="fallbackValue">—</dd></div>
+            </dl>
+          </div>
+          <div class="review-controls">
+            <textarea id="reviewNote" rows="3" placeholder="调整或拒绝时，写清具体问题与预期结果。接受可留空。"></textarea>
+            <input id="adjustedValue" placeholder="调整后的偏好值（仅“调整”时可选）" />
+            <input id="resolutionEvidence" placeholder="解决证据路径（调整/拒绝完成后填写）" />
+            <div class="decision-actions">
+              <button type="button" data-outcome="reject">拒绝</button>
+              <button type="button" data-outcome="adjust">调整</button>
+              <button type="button" class="accept" data-outcome="accept">接受</button>
+            </div>
+            <p id="decisionStatus"></p>
+          </div>
+        </section>
+
+        <aside class="evidence-panel">
+          <p class="eyebrow">PROJECT EVIDENCE</p>
+          <h2>当前项目状态</h2>
+          <div class="evidence-grid">
+            <div><span>高影响决策</span><strong id="totalDecisions">0</strong></div>
+            <div><span>正常速度预览</span><strong id="previewDecisions">0</strong></div>
+            <div><span>待解决修改</span><strong id="unresolvedChanges">0</strong></div>
+            <div><span>候选就绪</span><strong id="candidateReady">否</strong></div>
+          </div>
+          <div class="boundary-note">
+            <strong>审片边界</strong>
+            <p>此处只批准剪辑决策，不授予上传、付费生成、发布或覆盖源文件权限。</p>
+          </div>
+          <details>
+            <summary>运行与资源状态</summary>
+            <div class="observe-row">
+              <input id="projectRoot" placeholder="项目根目录" />
+              <button id="loadObserve" type="button">读取</button>
+            </div>
+            <pre id="observeResult">尚未读取</pre>
+          </details>
+        </aside>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/review.js"></script>
+  </body>
+</html>

@@ -270,6 +270,40 @@ node scripts/kacha.mjs next /path/to/compiled/incremental-project.json
 性能、Token、缓存和弱模型完整说明见
 [V5 性能与稳定生产](PERFORMANCE_TOKEN_STABILITY_V5.md)。
 
+## V6 全片导演与语义审片
+
+最终带时间语义 cues 完成后，先建立全片约束和素材缺口：
+
+```bash
+node scripts/kacha.mjs intelligence director \
+  --cues semantic-cues.json --show tool-share \
+  --style light-warm-overlay --output director-plan.json
+node scripts/kacha.mjs intelligence assets \
+  --director director-plan.json --media-index .kacha/media-index.json \
+  --output asset-gap-plan.json
+```
+
+候选 Timeline 完成后运行时序审计并建立审片包：
+
+```bash
+node scripts/kacha.mjs intelligence perception \
+  --timeline timeline.json --output perception-audit.json
+node scripts/kacha.mjs review build \
+  --timeline timeline.json --director director-plan.json \
+  --preview-dir preview --output-dir .kacha/review
+node scripts/kacha.mjs studio serve
+```
+
+浏览器进入 `/review`，正常速度逐项接受、调整或拒绝。调整与拒绝解决后运行：
+
+```bash
+node scripts/kacha.mjs review validate \
+  --session .kacha/review/review-session.json --for-candidate
+```
+
+完整评测、偏好学习、NLE 交换和门禁见
+[V6 智能剪辑证据闭环](INTELLIGENT_EDITING_V6.md)。
+
 ## 10. Agent 对话式操作
 
 用户继续直接在 Codex/Claude Code 中描述目标。Agent 内部用以下能力减少整份

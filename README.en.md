@@ -77,6 +77,21 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
   lookup, terminal-state-safe background jobs with verified placeholders,
   deterministic object-level `@` references,
   and Codex/Claude installation status.
+- Compiles an episode-level director plan with a narrative spine, exactly one
+  opening, content priority, high-impact budget, deliberate quiet, four style
+  grammars, fallbacks, and explicit evidence gaps.
+- Provides a localhost semantic review workbench for normal-speed preview,
+  rationale, confidence, fallback, and explicit accept/adjust/reject decisions.
+  An accepted decision is not publishing approval.
+- Learns only transparent, evidence-counted preference candidates from explicit
+  review decisions. Activation is confirmed, versioned, reversible, and never
+  stores freeform review notes in the long-term profile.
+- Measures human-reviewed first-draft usability, semantic damage, manual
+  intervention, connection rejection, caption correction, and style grammar
+  violations. Improvement claims require at least eight paired source groups.
+- Exports OTIO, FCPXML, and CMX3600 while preserving Kacha semantic IDs where
+  supported. OTIO/FCPXML imports always create a candidate timeline and never
+  overwrite the Timeline IR baseline.
 - Routes context through five bounded packets while an ordered 13-stage state
   machine accepts only current file-backed evidence. Full word-level
   transcripts stay out of prompts; Agents read at most 180 seconds at a time.
@@ -209,6 +224,11 @@ and delivery. All 129 registered effects are searchable, and project
 generation is blocked until source media, the output directory, licensed font,
 design system, and selected effects pass preflight. It does not upload,
 overwrite, render, or publish by itself.
+
+After a candidate is built, open `http://127.0.0.1:4179/review` to review
+high-impact editing decisions at normal speed. The workbench records explicit
+decisions and resolution evidence without granting upload, paid generation,
+publishing, overwrite, or gate-bypass authority.
 
 <p align="center">
   <a href="https://www.figma.com/design/uXfiviOI5rgi56awnD3Iut?node-id=1-2">
@@ -412,6 +432,7 @@ The scanner reduces risk but cannot prove that a repository contains no sensitiv
 - [Configuration and credentials](docs/en/CONFIGURATION.md)
 - [Architecture and design boundaries](docs/en/ARCHITECTURE.md)
 - [Performance, token, and weak-model production](docs/en/PERFORMANCE_TOKEN_STABILITY_V5.md)
+- [V6 editorial evaluation and semantic review](docs/en/INTELLIGENT_EDITING_V6.md)
 - [Four-style editing grammar contract](docs/en/FOUR_STYLE_EDITING_GRAMMARS.md)
 - [Product brand and website system](docs/en/PRODUCT_BRAND_AND_WEBSITE.md)
 - [2026-07-29 completion review](docs/en/COMPLETION_REVIEW_2026-07-29.md)

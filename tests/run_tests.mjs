@@ -7304,6 +7304,529 @@ await test("incremental telemetry blocks repeated full previews, final encodes a
   ]);
 }, "incremental");
 
+await test("V6 global director budgets attention and routes factual asset gaps", () => {
+  const root = path.join(temporary, "v6-director");
+  fs.mkdirSync(root, { recursive: true });
+  const cues = path.join(root, "cues.json");
+  writeJson(cues, {
+    schemaVersion: "1.0",
+    cues: [
+      { id: "hook", start: 0, end: 2, text: "为什么很多 AI 剪辑看起来都一样？", signals: ["hook", "logical_emphasis"], confidence: 0.98 },
+      { id: "premise", start: 2, end: 10, text: "因为局部效果合理，不等于全片成立。", signals: ["ordinary_speech"], confidence: 0.97 },
+      { id: "evidence", start: 10, end: 20, text: "数据显示首稿返工时间增长了 42%。", signals: ["evidence", "data", "number"], confidence: 0.96 },
+      { id: "explain", start: 20, end: 30, text: "我们需要控制强调预算并保留安静段落。", signals: ["ordinary_speech"], confidence: 0.95 },
+      { id: "contrast", start: 30, end: 40, text: "不是增加效果，而是提高判断质量。", signals: ["contrast", "negation", "logical_emphasis"], confidence: 0.99 },
+      { id: "conclusion", start: 40, end: 50, text: "所以智能剪辑必须建立评价闭环。", signals: ["conclusion", "causality"], confidence: 0.99 }
+    ]
+  });
+  const director = path.join(root, "director.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "director",
+    "--cues", cues,
+    "--style", "spatial-light-path",
+    "--show", "very-ai",
+    "--output", director,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "validate-plan",
+    "--plan", director,
+  ]);
+  const directorValue = readJson(director);
+  if (
+    directorValue.opening.count !== 1
+    || directorValue.attentionBudget.quietRatio < 0.35
+    || directorValue.attentionBudget.deliberateNoneCount < 2
+    || directorValue.project.styleGrammar !== "depth_navigation"
+  ) throw new Error("V6 director did not enforce opening, quiet or style grammar budgets");
+
+  const evidenceAsset = path.join(root, "evidence.png");
+  fs.writeFileSync(evidenceAsset, "licensed factual evidence fixture");
+  const mediaIndex = path.join(root, "media-index.json");
+  writeJson(mediaIndex, {
+    schemaVersion: "1.0",
+    items: [{
+      id: "growth-data",
+      ref: "@asset:growth-data",
+      kind: "image",
+      path: evidenceAsset,
+      fields: { description: "数据显示首稿返工时间增长 42%" },
+      license: "project-owned",
+      provenance: { kind: "project_evidence", evidence: "fixture" }
+    }],
+    summary: { scan: { truncated: false } }
+  });
+  const gaps = path.join(root, "asset-gaps.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "assets",
+    "--director", director,
+    "--media-index", mediaIndex,
+    "--output", gaps,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "validate-plan",
+    "--plan", gaps,
+    "--for-execution",
+  ]);
+  const gapValue = readJson(gaps);
+  if (gapValue.summary.localCandidates !== 1 || gapValue.summary.productionReady !== true) {
+    throw new Error("V6 asset gap planner did not resolve licensed local evidence");
+  }
+  fs.appendFileSync(evidenceAsset, " changed-after-plan");
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "validate-plan",
+    "--plan", gaps,
+    "--for-execution",
+  ]);
+  fs.appendFileSync(cues, "\n");
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "validate-plan",
+    "--plan", director,
+  ]);
+}, "core");
+
+await test("V6 temporal perception audit blocks competing effects and preserves human review", () => {
+  const root = path.join(temporary, "v6-perception");
+  fs.mkdirSync(root, { recursive: true });
+  const source = path.join(root, "source.mov");
+  fs.writeFileSync(source, "source fixture");
+  const safeTimeline = path.join(root, "safe-timeline.json");
+  writeJson(safeTimeline, {
+    schemaVersion: "1.0",
+    projectId: "perception-safe",
+    mode: "preview",
+    source: { path: source },
+    edl: [{ id: "a", sourceStart: 0, sourceEnd: 10 }],
+    visual: {
+      breathing: [{ id: "push", start: 1, end: 3, scale: 1.04 }],
+      overlays: [{
+        id: "text", kind: "text", text: "稳定可读", start: 4, end: 6,
+        x: 100, y: 100, width: 500, height: 160, fontSizeRatio: 0.05,
+        primary: true, visibleLandingFrame: 100, sfxPeakFrame: 101
+      }]
+    },
+    audio: { sfx: [] },
+    output: { path: "preview.mp4", width: 1920, height: 1080, fps: 25 }
+  });
+  const report = path.join(root, "perception.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "perception",
+    "--timeline", safeTimeline,
+    "--output", report,
+  ]);
+  const safe = readJson(report);
+  if (safe.status !== "pass_with_human_review" || safe.humanReview.required !== true) {
+    throw new Error("perception audit must retain normal-speed human review");
+  }
+  const unsafeTimeline = path.join(root, "unsafe-timeline.json");
+  const unsafe = readJson(safeTimeline);
+  unsafe.visual.overlays.push({
+    id: "flash", kind: "text", text: "抢焦点", start: 4.02, end: 4.12,
+    x: 0, y: 0, width: 1920, height: 1080, opacity: 1, fontSizeRatio: 0.02,
+    primary: true
+  });
+  writeJson(unsafeTimeline, unsafe);
+  const failed = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "perception",
+    "--timeline", unsafeTimeline,
+  ]);
+  if (!/too_many_primary_effects|full_frame_flash_risk|mobile_text_too_small/.test(failed.stdout)) {
+    throw new Error("perception audit did not expose expected temporal blockers");
+  }
+  fs.appendFileSync(safeTimeline, "\n");
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "validate-plan",
+    "--plan", report,
+  ]);
+}, "visual");
+
+await test("V6 semantic review records every decision and learns only explicit versioned preferences", () => {
+  const root = path.join(temporary, "v6-review");
+  fs.mkdirSync(root, { recursive: true });
+  const source = path.join(root, "source.mov");
+  fs.writeFileSync(source, "source fixture");
+  const cues = path.join(root, "cues.json");
+  writeJson(cues, {
+    schemaVersion: "1.0",
+    cues: [
+      { id: "hook", start: 0, end: 2, text: "先看问题", signals: ["hook"], confidence: 0.99 },
+      { id: "quiet", start: 2, end: 8, text: "解释背景", signals: ["ordinary_speech"], confidence: 0.99 },
+      { id: "contrast", start: 8, end: 12, text: "但关键不是效果", signals: ["contrast"], confidence: 0.99 },
+      { id: "quiet-2", start: 12, end: 20, text: "继续解释", signals: ["ordinary_speech"], confidence: 0.99 },
+      { id: "conclusion", start: 20, end: 25, text: "判断决定上限", signals: ["conclusion"], confidence: 0.99 }
+    ]
+  });
+  const director = path.join(root, "director.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "director",
+    "--cues", cues,
+    "--style", "light-warm-overlay",
+    "--output", director,
+  ]);
+  const timeline = path.join(root, "timeline.json");
+  writeJson(timeline, {
+    schemaVersion: "1.0",
+    projectId: "review-project",
+    mode: "preview",
+    source: { path: source },
+    edl: [{ id: "source", sourceStart: 0, sourceEnd: 25 }],
+    visual: {
+      overlays: [
+        { id: "callout-a", kind: "text", effectType: "callout", text: "A", reason: "事实落位", start: 4, end: 6, x: 100, y: 100, width: 500, height: 120 },
+        { id: "callout-b", kind: "text", effectType: "callout", text: "B", reason: "结论落位", start: 14, end: 16, x: 100, y: 100, width: 500, height: 120 }
+      ]
+    },
+    audio: { sfx: [] },
+    output: { path: "candidate.mp4", width: 1920, height: 1080, fps: 25 }
+  });
+  const reviewDirectory = path.join(root, "review");
+  const previewDirectory = path.join(root, "preview");
+  fs.mkdirSync(previewDirectory, { recursive: true });
+  fs.writeFileSync(path.join(previewDirectory, "hook-after.mp4"), "0123456789abcdef");
+  const built = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "build",
+    "--timeline", timeline,
+    "--director", director,
+    "--preview-dir", previewDirectory,
+    "--output-dir", reviewDirectory,
+  ]).stdout);
+  const bundle = readJson(built.bundle.path);
+  for (const decision of bundle.decisions) {
+    execute(process.execPath, [
+      path.join(scripts, "kacha.mjs"), "review", "record",
+      "--bundle", built.bundle.path,
+      "--decision", decision.id,
+      "--outcome", "accept",
+      "--reviewer", "test-reviewer",
+    ]);
+  }
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "validate",
+    "--session", built.session.path,
+    "--for-candidate",
+  ]);
+  const candidate = path.join(root, "preference-candidate.json");
+  const learned = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "learn",
+    "--session", built.session.path,
+    "--output", candidate,
+  ]).stdout);
+  if (learned.rules < 1 || readJson(candidate).activation.automatic !== false) {
+    throw new Error("preference learning did not produce an explicit candidate");
+  }
+  const profile = path.join(root, "preferences.json");
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "activate",
+    "--candidate", candidate,
+    "--profile", profile,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "activate",
+    "--candidate", candidate,
+    "--profile", profile,
+    "--confirm",
+  ]);
+  if (readJson(profile).versionNumber !== 1) throw new Error("preference profile was not versioned");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "activate",
+    "--candidate", candidate,
+    "--profile", profile,
+    "--confirm",
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "rollback",
+    "--profile", profile,
+    "--version", "1",
+    "--confirm",
+  ]);
+  if (
+    readJson(profile).versionNumber !== 3
+    || readJson(profile).rollback.restoredFromVersion !== 1
+  ) throw new Error("preference rollback did not create an auditable monotonic version");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "record",
+    "--bundle", built.bundle.path,
+    "--decision", bundle.decisions[0].id,
+    "--outcome", "accept",
+    "--reviewer", "test-reviewer-updated",
+  ]);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "activate",
+    "--candidate", candidate,
+    "--profile", profile,
+    "--confirm",
+  ]);
+}, "core");
+
+await test("V6 editorial evaluation measures paired human-reviewed improvement without a composite vanity score", () => {
+  const root = path.join(temporary, "v6-eval");
+  fs.mkdirSync(root, { recursive: true });
+  const makeDataset = (candidate) => ({
+    schemaVersion: "1.0",
+    kind: "kacha_editorial_eval_dataset",
+    id: candidate ? "candidate" : "baseline",
+    version: "v1",
+    cases: [
+      ...Array.from({ length: 8 }, (_, index) => ({
+        id: `case-${index + 1}`,
+        sourceGroupId: `source-${index + 1}`,
+        showId: ["tool-share", "book-talk", "infinite-game", "very-ai"][index % 4],
+        styleId: ["light-warm-overlay", "spatial-light-path", "humor-comic", "pixel-editorial"][index % 4],
+        platform: index % 2 ? "douyin" : "wechat-channels",
+        editorialJudgment: {
+          humanReviewed: true,
+          firstDraftUsability: candidate ? 0.9 : 0.65,
+          outputDurationSeconds: 60,
+          manualInterventionMinutes: candidate ? 3 : 9,
+          semanticUnits: { total: 20, damaged: candidate ? 0 : 1 },
+          highImpactDecisions: { total: 10, accepted: candidate ? 8 : 5, adjusted: candidate ? 2 : 3, rejected: candidate ? 0 : 2 },
+          connections: { total: 8, rejected: candidate ? 0 : 1 },
+          captions: { total: 30, corrected: candidate ? 1 : 4 },
+          styleGrammar: { total: 12, violations: candidate ? 0 : 2 }
+        },
+        evidence: {
+          reviewer: "test-reviewer",
+          reviewedAt: "2026-08-08T00:00:00.000Z",
+          normalSpeedReview: true,
+          phoneAndHeadphoneReview: true
+        }
+      })),
+      ...(!candidate ? [{
+        id: "baseline-only-case",
+        sourceGroupId: "baseline-only-source",
+        showId: "tool-share",
+        styleId: "light-warm-overlay",
+        platform: "douyin",
+        editorialJudgment: {
+          humanReviewed: true,
+          firstDraftUsability: 1,
+          outputDurationSeconds: 60,
+          manualInterventionMinutes: 0,
+          semanticUnits: { total: 20, damaged: 0 },
+          highImpactDecisions: { total: 10, accepted: 10, adjusted: 0, rejected: 0 },
+          connections: { total: 8, rejected: 0 },
+          captions: { total: 30, corrected: 0 },
+          styleGrammar: { total: 12, violations: 0 },
+        },
+        evidence: {
+          reviewer: "test-reviewer",
+          reviewedAt: "2026-08-08T00:00:00.000Z",
+          normalSpeedReview: true,
+          phoneAndHeadphoneReview: true,
+        },
+      }] : []),
+    ]
+  });
+  const baselineData = path.join(root, "baseline-data.json");
+  const candidateData = path.join(root, "candidate-data.json");
+  writeJson(baselineData, makeDataset(false));
+  writeJson(candidateData, makeDataset(true));
+  const baselineReport = path.join(root, "baseline-report.json");
+  const candidateReport = path.join(root, "candidate-report.json");
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "eval", "score", "--dataset", baselineData, "--output", baselineReport]);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "eval", "score", "--dataset", candidateData, "--output", candidateReport]);
+  const comparison = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "eval", "compare",
+    "--baseline", baselineReport,
+    "--candidate", candidateReport,
+  ]).stdout);
+  if (
+    comparison.claimPolicy.improvementClaimAllowed !== true
+    || comparison.deltas.firstDraftUsableRate.direction !== "improved"
+    || comparison.deltas.firstDraftUsableRate.baseline !== 0
+    || comparison.deltas.semanticDamageRate.direction !== "improved"
+    || Object.hasOwn(comparison, "compositeScore")
+  ) throw new Error("paired editorial evaluation policy regressed");
+  const tampered = readJson(baselineData);
+  tampered.version = "tampered-after-report";
+  writeJson(baselineData, tampered);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "eval", "compare",
+    "--baseline", baselineReport,
+    "--candidate", candidateReport,
+  ]);
+}, "core");
+
+await test("V6 NLE interchange round-trips semantic clip IDs as candidate-only timelines", () => {
+  const root = path.join(temporary, "v6-nle");
+  fs.mkdirSync(root, { recursive: true });
+  const source = path.join(root, "source.mov");
+  fs.writeFileSync(source, "source fixture");
+  const timeline = path.join(root, "timeline.json");
+  writeJson(timeline, {
+    schemaVersion: "1.0",
+    projectId: "nle-project",
+    mode: "preview",
+    source: { path: source, sha256: sha256File(source) },
+    edl: [
+      { id: "hook", sourceStart: 1, sourceEnd: 3, sourceDecisionId: "decision-hook", semanticBeatId: "beat-hook" },
+      { id: "proof", sourceStart: 6, sourceEnd: 10, sourceDecisionId: "decision-proof", semanticBeatId: "beat-proof" }
+    ],
+    visual: { overlays: [] },
+    audio: { sfx: [] },
+    output: { path: "preview.mp4", width: 1920, height: 1080, fps: 25 }
+  });
+  for (const format of ["otio", "fcpxml", "cmx3600"]) {
+    const extension = format === "fcpxml" ? "fcpxml" : format === "otio" ? "otio" : "edl";
+    execute(process.execPath, [
+      path.join(scripts, "kacha.mjs"), "nle", "export",
+      "--timeline", timeline,
+      "--format", format,
+      "--output", path.join(root, `timeline.${extension}`),
+    ]);
+  }
+  for (const format of ["otio", "fcpxml"]) {
+    const input = path.join(root, format === "otio" ? "timeline.otio" : "timeline.fcpxml");
+    const output = path.join(root, `${format}-candidate.json`);
+    execute(process.execPath, [
+      path.join(scripts, "kacha.mjs"), "nle", "import",
+      "--input", input,
+      "--format", format,
+      "--base-timeline", timeline,
+      "--output", output,
+    ]);
+    const candidate = readJson(output);
+    if (
+      candidate.mode !== "preview"
+      || candidate.interchangeCandidate.candidateOnly !== true
+      || candidate.edl.map((clip) => clip.id).join(",") !== "hook,proof"
+      || candidate.edl[1].semanticBeatId !== "beat-proof"
+    ) throw new Error(`${format} semantic round-trip failed`);
+  }
+}, "core");
+
+await test("V6 review workbench is local-only and exposes the new review assets", async () => {
+  const server = fs.readFileSync(path.join(scripts, "kacha_studio_server.mjs"), "utf8");
+  const html = fs.readFileSync(path.join(skillDirectory, "studio", "review.html"), "utf8");
+  const css = fs.readFileSync(path.join(skillDirectory, "studio", "review.css"), "utf8");
+  if (
+    !server.includes("/api/review/media")
+    || !server.includes("127.0.0.1")
+    || !server.includes("media-src 'self'")
+    || !html.includes("正常速度")
+    || !html.includes("接受不等于发布")
+    || !css.includes("--signal: #ff6b1a")
+  ) throw new Error("V6 local semantic review workbench contract is incomplete");
+  const root = path.join(temporary, "v6-review-workbench");
+  const reviewDirectory = path.join(root, "review");
+  const previewDirectory = path.join(root, "preview");
+  fs.mkdirSync(previewDirectory, { recursive: true });
+  const source = path.join(root, "source.mov");
+  fs.writeFileSync(source, "source fixture");
+  const cues = path.join(root, "cues.json");
+  writeJson(cues, {
+    schemaVersion: "1.0",
+    cues: [
+      { id: "hook", start: 0, end: 2, text: "先看问题", signals: ["hook"] },
+      { id: "quiet", start: 2, end: 8, text: "解释背景", signals: ["ordinary_speech"] },
+      { id: "close", start: 8, end: 10, text: "最后给出判断", signals: ["conclusion"] },
+    ],
+  });
+  const director = path.join(root, "director.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "director",
+    "--cues", cues,
+    "--style", "light-warm-overlay",
+    "--output", director,
+  ]);
+  const timeline = path.join(root, "timeline.json");
+  writeJson(timeline, {
+    schemaVersion: "1.0",
+    projectId: "review-workbench-project",
+    mode: "preview",
+    source: { path: source },
+    edl: [{ id: "source", sourceStart: 0, sourceEnd: 10 }],
+    visual: { overlays: [] },
+    audio: { sfx: [] },
+    output: { path: "candidate.mp4", width: 1920, height: 1080, fps: 25 },
+  });
+  fs.writeFileSync(path.join(previewDirectory, "hook-after.mp4"), "0123456789abcdef");
+  const built = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "build",
+    "--timeline", timeline,
+    "--director", director,
+    "--preview-dir", previewDirectory,
+    "--output-dir", reviewDirectory,
+  ]).stdout);
+  const bundleFile = built.bundle.path;
+  const port = 47000 + (process.pid % 1000);
+  const origin = `http://127.0.0.1:${port}`;
+  const child = spawn(process.execPath, [
+    path.join(scripts, "kacha_studio_server.mjs"),
+    "--port", String(port),
+    "--no-open",
+  ], { cwd: skillDirectory, stdio: ["ignore", "pipe", "pipe"] });
+  let stderr = "";
+  child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
+  try {
+    let ready = false;
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      try {
+        const response = await fetch(`${origin}/api/health`);
+        ready = response.ok;
+        if (ready) break;
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+    if (!ready) throw new Error(`studio review server did not start\n${stderr}`);
+    const mutationHeaders = {
+      "content-type": "application/json",
+      "x-kacha-studio": "1",
+      origin,
+      referer: `${origin}/review`,
+    };
+    const openedResponse = await fetch(`${origin}/api/review/open`, {
+      method: "POST",
+      headers: mutationHeaders,
+      body: JSON.stringify({ bundlePath: bundleFile }),
+    });
+    const opened = await openedResponse.json();
+    const previewDecision = opened.bundle?.decisions?.find((item) => item.preview?.after);
+    if (!openedResponse.ok || !previewDecision || !opened.session?.path) {
+      throw new Error(`review open API failed: ${JSON.stringify(opened)}`);
+    }
+    const mediaUrl = new URL("/api/review/media", origin);
+    mediaUrl.searchParams.set("bundle", bundleFile);
+    mediaUrl.searchParams.set("decision", previewDecision.id);
+    mediaUrl.searchParams.set("variant", "after");
+    const mediaResponse = await fetch(mediaUrl, { headers: { range: "bytes=-4" } });
+    if (
+      mediaResponse.status !== 206
+      || mediaResponse.headers.get("content-range") !== "bytes 12-15/16"
+      || (await mediaResponse.text()) !== "cdef"
+    ) throw new Error("review media Range endpoint did not preserve the bound preview");
+    const recordedResponse = await fetch(`${origin}/api/review/record`, {
+      method: "POST",
+      headers: mutationHeaders,
+      body: JSON.stringify({
+        bundlePath: bundleFile,
+        decisionId: previewDecision.id,
+        outcome: "accept",
+        reviewer: "studio-api-test",
+      }),
+    });
+    const recorded = await recordedResponse.json();
+    if (!recordedResponse.ok || recorded.decision?.outcome !== "accept" || !recorded.session?.path) {
+      throw new Error(`review record API failed: ${JSON.stringify(recorded)}`);
+    }
+    const observedResponse = await fetch(`${origin}/api/observe`, {
+      method: "POST",
+      headers: mutationHeaders,
+      body: JSON.stringify({ projectRoot: root }),
+    });
+    const observed = await observedResponse.json();
+    if (!observedResponse.ok || observed.cost?.status !== "unavailable") {
+      throw new Error(`review observability API fabricated cost evidence: ${JSON.stringify(observed)}`);
+    }
+  } finally {
+    child.kill("SIGTERM");
+    await Promise.race([
+      new Promise((resolve) => child.once("exit", resolve)),
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ]);
+  }
+}, "core");
+
 try {
   if (listOnly) {
     console.log(
