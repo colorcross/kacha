@@ -179,6 +179,13 @@ export function sha256Value(value) {
   return crypto.createHash("sha256").update(stableStringify(value)).digest("hex");
 }
 
+export function mediaIndexDigest(value) {
+  const copy = structuredClone(value);
+  delete copy.generatedAt;
+  delete copy.digest;
+  return sha256Value(copy);
+}
+
 export function fileIdentity(file, { includeHash = true } = {}) {
   const resolved = path.resolve(file);
   const beforeKey = statCacheKey(resolved);

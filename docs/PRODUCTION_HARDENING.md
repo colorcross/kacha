@@ -269,3 +269,30 @@
 9. **执行图按路径误复用**：Render Graph 必须冻结 proposal/edit plan、
    overlay、字幕、dialogue、BGM、SFX、字体与输出合同的内容身份；同路径文件
    原地替换后必须重新编译，已有正式输出不得被无证据覆盖。
+
+## 14. V6 二次深审新增的证据完整性门禁
+
+1. **素材索引只冻结 mtime/size**：index digest v2 必须覆盖完整 SHA-256 文件
+   身份、许可、来源、语义字段和扫描完整性；重复 ref、原地替换与重算局部字段
+   都不能沿用旧结果。
+2. **跨项目拼装各自有效的证据**：manifest 门禁交叉核对 director、asset gap、
+   Timeline、perception audit 与 review bundle 的路径、SHA 和 project id；单件
+   验证通过不代表证据集一致。
+3. **审片 scope 被 CLI 改挂**：项目、栏目、风格和平台只从当前 Timeline 与
+   director 重建；candidate video、决策集合与发布边界也必须可重建。
+4. **文本文件冒充解决预览或评测成片**：preview/resolution evidence 必须是
+   可解码、有视频、有音轨和代表时长的真实媒体；评测输出还要与申报时长一致。
+5. **评测重复计样本或错配来源**：同一 source SHA 不能占多个 group；基线与
+   候选必须保持 source/show/style/platform 一致，输出完全相同时不能宣称提升。
+6. **偏好学习吃入未解决 session 或并发丢规则**：只有 candidate-ready session
+   可以学习；activate/rollback 共享 profile 文件锁并保留单调版本历史。
+7. **NLE 导入制造新语义身份或覆盖产物**：clip ID 必须来自基线，decision 与
+   semantic ID 必须一致；空时间线、重复 ID、短于一帧区间和已存在输出都失败。
+8. **后台任务持久化后改命令**：submission digest 固定 argv/cwd/output/
+   placeholder/log/pid 合同，读取、执行与状态写入前重新验证；shell 必须为 false。
+9. **生产台验证后换文件或 DNS rebinding**：审片服务只接受精确 loopback Host，
+   视频在同一 `O_NOFOLLOW` 文件描述符上复核身份并完成 HEAD/Range 读取。
+10. **历史遥测拖垮生产台**：观察层最多读取最近 8 MiB JSONL 和最近 500 个 job，
+    截断必须写入 integrity warning，不能静默把窗口样本描述成全量历史。
+11. **双端安装并发交错**：Codex/Claude `install sync --apply` 使用主机级互斥锁；
+    第二个 apply 失败，不能并行备份/替换同一用户级安装。

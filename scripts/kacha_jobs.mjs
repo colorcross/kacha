@@ -22,6 +22,7 @@ import {
   resolveRuntimeCommand,
   sha256Value,
 } from "./kacha_utils.mjs";
+import { jobSubmissionDigest, validateJobContract } from "./job_contract.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -62,7 +63,10 @@ function loadJob(root, input) {
   const id = resolveId(input);
   const file = jobPath(root, id);
   if (!fs.existsSync(file)) fail("KACHA-E100", `任务不存在：@job:${id}`, 2);
-  return { file, value: readJson(file) };
+  const value = readJson(file);
+  const errors = validateJobContract(file, value);
+  if (errors.length > 0) fail("KACHA-E120", `任务合同完整性检查失败：${errors.join("; ")}`);
+  return { file, value };
 }
 
 function alive(pid) {
@@ -342,6 +346,7 @@ if (action === "submit") {
     },
     runtimePidFile: path.join(directory, "worker.pid"),
   };
+  job.submissionDigest = jobSubmissionDigest(job);
   writeJson(file, job);
   writeJson(placeholder, {
     schemaVersion: "1.0",
@@ -373,7 +378,12 @@ if (action === "list") {
     .filter((entry) => entry.isDirectory() && fs.existsSync(jobPath(root, entry.name)))
     .map((entry) => {
       const file = jobPath(root, entry.name);
-      return reconcileJob(file, readJson(file));
+      const value = readJson(file);
+      const errors = validateJobContract(file, value);
+      if (errors.length > 0) {
+        fail("KACHA-E120", `任务合同完整性检查失败：${errors.join("; ")}`);
+      }
+      return reconcileJob(file, value);
     })
     .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
   console.log(JSON.stringify({

@@ -3,8 +3,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { validateJobContract } from "./job_contract.mjs";
 import {
   fileIdentity,
+  fileIdentityMatches,
+  mediaIndexDigest,
+  mediaSummary,
   readJson,
   resolveFrom,
   sha256File,
@@ -327,6 +331,11 @@ export function validateDirectorPlan(plan) {
   }
   if (plan.version !== config.version) errors.push("director plan 使用了过期的 V6 配置版本");
   if (!Array.isArray(plan.beats) || plan.beats.length === 0) errors.push("beats 不能为空");
+  if (![plan.project?.id, plan.project?.showId, plan.project?.styleId].every((value) => (
+    typeof value === "string" && value.trim().length > 0
+  ))) {
+    errors.push("director plan 的 project id/showId/styleId 必须是非空字符串");
+  }
   if (plan.opening?.count !== 1) errors.push("全片必须且只能有一个主开场");
   if (plan.project?.styleGrammar !== config.director.styles[plan.project?.styleId]?.grammar) {
     errors.push("全片风格语法与已注册 V6 风格不一致");
@@ -426,18 +435,52 @@ function lexicalScore(query, item) {
 
 function resolvedMediaIdentity(item) {
   try {
-    const current = fileIdentity(assertFile(item.path, "素材候选"));
+    const file = assertFile(item.path, "素材候选");
     if (
-      item.identity
-      && (
-        Number(item.identity.sizeBytes) !== current.sizeBytes
-        || Number(item.identity.mtimeMs) !== current.mtimeMs
-      )
+      !item.identity?.sha256
+      || path.resolve(item.identity.path ?? "") !== file
+      || !fileIdentityMatches(file, item.identity)
     ) return null;
+    const current = fileIdentity(file);
     return current;
   } catch {
     return null;
   }
+}
+
+function validateMediaIndex(index) {
+  const errors = [];
+  if (
+    index?.schemaVersion !== "1.0"
+    || index?.kind !== "kacha_media_index"
+    || index?.digestVersion !== "2"
+    || !Array.isArray(index?.items)
+  ) {
+    errors.push("素材索引必须是带强文件身份的 kacha_media_index@1.0 digest v2");
+  } else if (index.digest !== mediaIndexDigest(index)) {
+    errors.push("素材索引 digest 无效；许可、来源或文件身份可能已被修改");
+  } else {
+    const refs = new Set();
+    for (const [itemIndex, item] of index.items.entries()) {
+      if (!item.ref || refs.has(item.ref)) errors.push(`素材索引 items[${itemIndex}].ref 缺失或重复`);
+      refs.add(item.ref);
+      if (
+        !item.identity?.sha256
+        || path.resolve(item.identity.path ?? "") !== path.resolve(item.path ?? "")
+      ) errors.push(`素材索引 items[${itemIndex}] 缺少与 path 一致的强文件身份`);
+    }
+  }
+  return errors;
+}
+
+function hasUsableProvenance(value) {
+  return Boolean(
+    value
+    && typeof value === "object"
+    && typeof value.kind === "string"
+    && value.kind.trim()
+    && (value.evidence || value.source || value.generator || value.assetId)
+  );
 }
 
 export function buildAssetGapPlan(directorFile, mediaIndexFile = null) {
@@ -446,7 +489,11 @@ export function buildAssetGapPlan(directorFile, mediaIndexFile = null) {
   const errors = validateDirectorPlan(director);
   if (errors.length > 0) throw new Error(errors.join("\n"));
   let index = null;
-  if (mediaIndexFile) index = readJson(assertFile(mediaIndexFile, "media index"));
+  if (mediaIndexFile) {
+    index = readJson(assertFile(mediaIndexFile, "media index"));
+    const indexErrors = validateMediaIndex(index);
+    if (indexErrors.length > 0) throw new Error(indexErrors.join("\n"));
+  }
   const items = index?.items ?? index?.assets ?? [];
   const gaps = director.beats
     .filter((beat) => beat.assetNeed?.required)
@@ -473,7 +520,7 @@ export function buildAssetGapPlan(directorFile, mediaIndexFile = null) {
         candidate.score >= 0.25
         && candidate.identity
         && !["unknown", "unverified"].includes(candidate.license)
-        && candidate.provenance
+        && hasUsableProvenance(candidate.provenance)
       ));
       const identitySensitive = /(?:本人|真实人物|原始截图|官方数据|具体研究|证件|产品实拍)/
         .test(beat.text);
@@ -542,6 +589,8 @@ export function validateAssetGapPlan(plan) {
   }
   if (plan.mediaIndex && !currentFileIdentityMatches(plan.mediaIndex)) {
     errors.push("素材缺口计划绑定的 media index 内容已变化");
+  } else if (plan.mediaIndex) {
+    errors.push(...validateMediaIndex(readJson(plan.mediaIndex.path)));
   }
   if (plan.searchCompleteness === "truncated") errors.push("素材索引被截断，不能视为完整搜索");
   for (const [index, gap] of (plan.gaps ?? []).entries()) {
@@ -558,7 +607,7 @@ export function validateAssetGapPlan(plan) {
         Number(item.score) >= 0.25
         && item.identity
         && !["unknown", "unverified"].includes(item.license)
-        && item.provenance
+        && hasUsableProvenance(item.provenance)
       ));
       if (!candidate || !currentFileIdentityMatches(candidate.identity)) {
         errors.push(`gaps[${index}] 本地素材候选内容已变化，或缺少语义、许可、来源与 SHA-256 证据`);
@@ -632,38 +681,63 @@ export function auditPerception(timelineFile, options = {}) {
   const file = assertFile(timelineFile, "Timeline IR");
   const timeline = readJson(file);
   const config = readJson(configFile).perception;
-  const duration = (timeline.edl ?? []).reduce(
-    (total, clip) => total + number(clip.sourceEnd, 0) - number(clip.sourceStart, 0),
+  const edl = Array.isArray(timeline.edl) ? timeline.edl : [];
+  const invalidClip = edl.find((clip) => (
+    !Number.isFinite(Number(clip.sourceStart))
+    || !Number.isFinite(Number(clip.sourceEnd))
+    || Number(clip.sourceStart) < 0
+    || Number(clip.sourceEnd) <= Number(clip.sourceStart)
+  ));
+  if (invalidClip) throw new Error("Timeline IR 包含无效 EDL 区间");
+  const duration = edl.reduce(
+    (total, clip) => total + Number(clip.sourceEnd) - Number(clip.sourceStart),
     0,
   );
   if (!(duration > 0)) throw new Error("Timeline IR 缺少有效 EDL 时长");
-  const width = number(timeline.output?.width, 1920);
-  const height = number(timeline.output?.height, 1080);
-  const fps = number(timeline.output?.fps, 25);
+  const width = number(timeline.output?.width, null);
+  const height = number(timeline.output?.height, null);
+  const fps = number(timeline.output?.fps, null);
+  if (!(width > 0 && height > 0 && fps > 0)) {
+    throw new Error("Timeline IR 必须明确有效的 output.width/height/fps");
+  }
   const events = [
     ...(timeline.visual?.breathing ?? []).map((event, index) => ({
       id: event.id ?? `breathing-${index + 1}`,
       kind: "breathing",
-      start: number(event.start, 0),
-      end: number(event.end, 0),
+      start: number(event.start, NaN),
+      end: number(event.end, NaN),
       primary: event.primary !== false,
       source: event,
     })),
     ...(timeline.visual?.overlays ?? []).map((event, index) => ({
       id: event.id ?? `overlay-${index + 1}`,
       kind: "overlay",
-      start: number(event.start, 0),
-      end: number(event.end, 0),
+      start: number(event.start, NaN),
+      end: number(event.end, NaN),
       primary: event.primary !== false,
       source: event,
     })),
   ];
   const blockers = [];
   const warnings = [];
+  const eventIds = new Set();
   for (const event of events) {
     const length = event.end - event.start;
     const source = event.source;
-    if (length <= 0) blockers.push({ code: "invalid_interval", eventId: event.id });
+    if (eventIds.has(event.id)) blockers.push({ code: "duplicate_event_id", eventId: event.id });
+    eventIds.add(event.id);
+    if (
+      !Number.isFinite(event.start)
+      || !Number.isFinite(event.end)
+      || event.start < 0
+      || event.end <= event.start
+    ) {
+      blockers.push({ code: "invalid_interval", eventId: event.id });
+      continue;
+    }
+    if (event.end > duration + 0.001) {
+      blockers.push({ code: "event_outside_timeline", eventId: event.id, timelineDuration: round(duration) });
+    }
     const hasText = Boolean(source.text || source.textContent || source.kind === "text");
     if (hasText && length < config.minimumReadableTextSeconds) {
       blockers.push({ code: "text_exposure_too_short", eventId: event.id, seconds: round(length) });
@@ -678,7 +752,12 @@ export function auditPerception(timelineFile, options = {}) {
     } else if (hasText && fontRatio < config.minimumMobileTextHeightRatio) {
       blockers.push({ code: "mobile_text_too_small", eventId: event.id, fontHeightRatio: round(fontRatio) });
     }
-    const areaRatio = number(source.width, 0) * number(source.height, 0) / (width * height);
+    const overlayWidth = number(source.width, null);
+    const overlayHeight = number(source.height, null);
+    if (event.kind === "overlay" && !(overlayWidth > 0 && overlayHeight > 0)) {
+      blockers.push({ code: "overlay_geometry_evidence_missing", eventId: event.id });
+    }
+    const areaRatio = (overlayWidth ?? 0) * (overlayHeight ?? 0) / (width * height);
     if (
       event.kind === "overlay"
       && areaRatio >= 0.85
@@ -696,7 +775,14 @@ export function auditPerception(timelineFile, options = {}) {
       }
     }
   }
-  const primary = events.filter((event) => event.primary);
+  const validEvents = events.filter((event) => (
+    Number.isFinite(event.start)
+    && Number.isFinite(event.end)
+    && event.start >= 0
+    && event.end > event.start
+    && event.end <= duration + 0.001
+  ));
+  const primary = validEvents.filter((event) => event.primary);
   const concurrency = overlappingPrimary(primary, config.maximumPrimaryEffectsAtOnce);
   if (concurrency.failures.length > 0) {
     blockers.push({
@@ -705,7 +791,7 @@ export function auditPerception(timelineFile, options = {}) {
       samples: concurrency.failures.slice(0, 8),
     });
   }
-  const moving = events.filter((event) => event.kind === "breathing" || event.source.motion);
+  const moving = validEvents.filter((event) => event.kind === "breathing" || event.source.motion);
   const motionCoverage = intervalCoverage(moving, duration) / duration;
   if (motionCoverage > config.maximumMotionCoverageRatio) {
     blockers.push({ code: "motion_coverage_exceeded", ratio: round(motionCoverage) });
@@ -713,10 +799,31 @@ export function auditPerception(timelineFile, options = {}) {
   if (1 - motionCoverage < config.minimumQuietRatio) {
     blockers.push({ code: "quiet_ratio_too_low", ratio: round(1 - motionCoverage) });
   }
+  let dynamicEvidence = null;
   if (!options.dynamicEvidenceFile) {
     warnings.push({
       code: "dynamic_pixel_evidence_missing",
       detail: "合同级时序审计不能证明真实视频没有蒙版边缘抖动、闪烁或观感冲突",
+    });
+  } else {
+    const dynamicFile = assertFile(options.dynamicEvidenceFile, "动态视觉证据");
+    const summary = mediaSummary(dynamicFile);
+    const durationTolerance = Math.max(0.1, 2 / fps);
+    if (
+      !summary.video
+      || !(summary.duration > 0)
+      || !(summary.averageFps > 0)
+      || summary.width !== width
+      || summary.height !== height
+      || Math.abs(summary.averageFps - fps) > 0.02
+      || Math.abs(summary.duration - duration) > durationTolerance
+    ) {
+      throw new Error("动态视觉证据必须是与 Timeline 几何、帧率和时长匹配的可解码完整视频");
+    }
+    dynamicEvidence = fileIdentity(dynamicFile);
+    warnings.push({
+      code: "dynamic_pixel_analysis_requires_human_review",
+      detail: "已绑定完整动态视频，但自动合同审计不能替代正常速度人工时域检查",
     });
   }
   const report = {
@@ -724,9 +831,7 @@ export function auditPerception(timelineFile, options = {}) {
     kind: "kacha_temporal_perception_audit",
     generatedAt: new Date().toISOString(),
     timeline: fileIdentity(file),
-    dynamicEvidence: options.dynamicEvidenceFile
-      ? fileIdentity(assertFile(options.dynamicEvidenceFile, "动态视觉证据"))
-      : null,
+    dynamicEvidence,
     media: { durationSeconds: round(duration, 3), width, height, fps },
     measurements: {
       eventCount: events.length,
@@ -786,7 +891,23 @@ function readJsonLines(file) {
   if (!fs.existsSync(file)) return { items: [], warnings: [] };
   const items = [];
   const warnings = [];
-  for (const [index, line] of fs.readFileSync(file, "utf8").split(/\r?\n/).entries()) {
+  const maximumBytes = 8 * 1024 * 1024;
+  const stat = fs.statSync(file);
+  const start = Math.max(0, stat.size - maximumBytes);
+  const descriptor = fs.openSync(file, "r");
+  const buffer = Buffer.allocUnsafe(stat.size - start);
+  try {
+    fs.readSync(descriptor, buffer, 0, buffer.length, start);
+  } finally {
+    fs.closeSync(descriptor);
+  }
+  let text = buffer.toString("utf8");
+  if (start > 0) {
+    const firstNewline = text.indexOf("\n");
+    text = firstNewline >= 0 ? text.slice(firstNewline + 1) : "";
+    warnings.push({ code: "metrics_log_windowed", omittedBytes: start, retainedBytes: buffer.length });
+  }
+  for (const [index, line] of text.split(/\r?\n/).entries()) {
     if (!line.trim()) continue;
     try {
       items.push(JSON.parse(line));
@@ -804,14 +925,38 @@ export function observeProject(projectRoot) {
   }
   const jobsRoot = path.join(root, ".kacha", "jobs");
   const warnings = [];
-  const jobs = fs.existsSync(jobsRoot)
+  const jobDirectories = fs.existsSync(jobsRoot)
     ? fs.readdirSync(jobsRoot, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => path.join(jobsRoot, entry.name, "job.json"))
       .filter((file) => fs.existsSync(file))
+      .map((file) => ({ file, mtimeMs: fs.statSync(file).mtimeMs }))
+      .sort((left, right) => right.mtimeMs - left.mtimeMs)
+    : [];
+  const maximumJobs = 500;
+  if (jobDirectories.length > maximumJobs) {
+    warnings.push({
+      code: "job_scan_windowed",
+      totalJobs: jobDirectories.length,
+      retainedJobs: maximumJobs,
+    });
+  }
+  const jobs = jobDirectories
+      .slice(0, maximumJobs)
+      .map((entry) => entry.file)
       .map((file) => {
         try {
-          return readJson(file);
+          const job = readJson(file);
+          const contractErrors = validateJobContract(file, job);
+          if (contractErrors.length > 0) {
+            warnings.push({
+              code: "invalid_job_contract",
+              jobDirectory: path.basename(path.dirname(file)),
+              details: contractErrors.map((item) => redactDiagnostic(item)),
+            });
+            return null;
+          }
+          return job;
         } catch {
           warnings.push({ code: "invalid_job_json", jobDirectory: path.basename(path.dirname(file)) });
           return null;
@@ -828,8 +973,7 @@ export function observeProject(projectRoot) {
         finishedAt: job.finishedAt ?? null,
         outputs: job.outputs ?? [],
         error: redactDiagnostic(job.error ?? null),
-      }))
-    : [];
+      }));
   const eventsFile = path.join(root, ".kacha", "metrics", "events.jsonl");
   const loadedEvents = readJsonLines(eventsFile);
   const events = loadedEvents.items;

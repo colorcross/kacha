@@ -80,7 +80,10 @@ node scripts/kacha.mjs intelligence assets \
 素材索引截断、许可未知或真实证据未补齐时，`--for-execution` 失败。生成候选
 不会预授权外传或付费调用，也不会因为存在 prompt 就变成执行就绪。生成结果要先
 作为本地素材写入索引，带当前 SHA-256、明确许可与来源，再重新生成 gap plan；
-否则 `generated_asset_not_materialized` 持续阻断渲染。
+否则 `generated_asset_not_materialized` 持续阻断渲染。素材索引使用 digest v2
+冻结每个候选的完整 SHA-256 文件身份、许可、来源、语义证据与扫描完整性；任何
+字段被改写、ref 重复、文件原地替换或索引截断都会使搜索/缺口计划失效。gap plan
+验证时会从当前 director 与索引确定性重建，不能靠重算 plan digest 注入候选。
 
 ### 3. 时序感知审计
 
@@ -98,10 +101,12 @@ node scripts/kacha.mjs intelligence perception \
 - 人物分层效果缺少蒙版证据；
 - 声音峰值与可见落位超过一帧；
 - 运动覆盖率过高、安静比例不足；
-- 时间区间无效。
+- 时间区间无效、重复事件 ID、事件越出成片时长和 overlay 几何证据缺失。
 
-没有真实动态像素证据时，报告只能是 `pass_with_human_review`。蒙版边缘抖动、
-真实闪烁、观感层级和手机实际阅读仍要正常速度人工确认。
+绑定动态证据时，它必须是与 Timeline 宽高、FPS 和完整时长一致的可解码视频；
+这仍只把证据固定到当前版本，不把合同审计冒充像素级人工判断。没有动态证据时
+报告只能是 `pass_with_human_review`。蒙版边缘抖动、真实闪烁、观感层级和手机
+实际阅读仍要正常速度人工确认。
 
 ### 4. 语义审片台
 
@@ -131,7 +136,11 @@ node scripts/kacha.mjs studio serve
 不等于发布。候选就绪要求每个决策的 after 预览都能被 FFprobe 解码为动态视频，
 包含可试听音轨并达到最小代表时长；播放器固定 1×。缺预览时，全部 `accept`
 也不能把 session 变成 `readyForCandidate=true`。调整和拒绝没有当前解决证据时
-同样不能成为候选就绪状态。
+同样不能成为候选就绪状态；解决证据本身也必须通过真实动态视频、音轨和代表
+时长检查。审片 project/scope、候选视频和决策集合会从当前 Timeline/director
+重建；CLI 不能改挂栏目、风格或平台，bundle 也不能弱化“接受不等于发布”等边界。
+媒体服务拒绝非 loopback Host，并在同一只读文件描述符上完成身份复核与 Range
+读取，避免验证后替换文件。
 
 命令行等价入口：
 
@@ -162,9 +171,10 @@ node scripts/kacha.mjs review activate \
 偏好只从明确的接受、调整和拒绝建立；同一规则至少需要两条证据。候选不保存
 自由文本备注，不保存人物或内容身份，不自动激活。激活前会复核来源 session 的
 SHA-256，并从 session 重新计算候选规则，不能通过修改 candidate JSON 后重算
-digest 伪造学习结果。新规则按项目、栏目、风格和平台 scope 合并；其他 scope
+digest 伪造学习结果。只有全部决策与解决证据候选就绪的 session 才能学习。新规则按项目、栏目、风格和平台 scope 合并；其他 scope
 及当前候选未再次出现的既有规则不会被清空。激活后形成单调递增的版本号和不可
-冲突历史目录。回滚不会把版本号倒退，而是以目标规则建立一个新的可审计版本：
+冲突历史目录；激活与回滚共享 profile 文件锁，避免并发丢失规则。回滚不会把
+版本号倒退，而是以目标规则建立一个新的可审计版本：
 
 ```bash
 node scripts/kacha.mjs review rollback \
@@ -199,7 +209,10 @@ node scripts/kacha.mjs eval compare \
 前会复核数据集 SHA-256，并且所有差值只计算双方真实共有的配对来源，不让未配对
 样本污染结论。8 组只是必要条件：语义损坏、人工干预、连接拒绝、字幕修正、
 风格违规和高影响决策拒绝等护栏必须全部可测且无退化，并且至少一个主要质量
-指标改善，才允许整体提升声明。报告保留所有维度，不生成可掩盖退化的综合虚荣分数。
+指标改善，才允许整体提升声明。每组 source 必须绑定可解码动态视频，reviewed
+output 必须是有音轨的可解码视频且实测时长匹配申报值；同一 source SHA 不能
+换 group 重复计数。比较还会核对源 SHA、栏目、风格与平台，并阻止用与基线完全
+相同的输出宣称新版本提升。报告保留所有维度，不生成可掩盖退化的综合虚荣分数。
 
 ### 7. 专业 NLE 交换
 
@@ -225,7 +238,9 @@ node scripts/kacha.mjs nle import \
 
 导入不覆盖基线，强制 `mode=preview`，并要求 Timeline validate、Delta、变化层
 QC 和人工正常速度复核；交换文件与当前基线或源片不一致时直接拒绝，不能跨项目
-套用区间。CMX3600 因语义承载能力有限，目前只用于兼容导出。
+套用区间。导入 clip ID 必须已存在于基线，decision/semantic ID 必须逐项一致；
+空时间线、重复 ID、无效/短于一帧区间、已存在的候选或报告路径全部拒绝。CMX3600
+因语义承载能力有限，目前只用于兼容导出。
 复杂字幕、蒙版、Beauty、混音和动效仍以 Timeline IR 为唯一事实源。
 
 ### 8. 项目可观测性
@@ -238,8 +253,10 @@ node scripts/kacha.mjs intelligence observe \
 报告汇总：后台任务状态、失败/中断、阶段历史耗时、Token 证据、缓存命中、
 视频编码次数和磁盘空间。崩溃留下的截断 JSONL 或单个损坏 job 不再使整个页面
 失效，而是跳过坏记录并标记 `integrity.status=degraded`；Token 同时区分 actual、
-estimated 和 unavailable。没有可靠进度分母时不猜 ETA；没有 provider 真实费用
-时不按 Token 猜价格。
+estimated 和 unavailable。读取只保留最近 8 MiB 遥测和最近 500 个 job，并显式
+报告窗口化，避免历史文件耗尽内存。job 的命令、cwd、输出、placeholder 和日志
+路径受提交 digest 与目录合同保护，状态变更前再次复核。没有可靠进度分母时不猜
+ETA；没有 provider 真实费用时不按 Token 猜价格。
 
 ## 二、与现有项目门禁的连接
 
@@ -252,6 +269,7 @@ estimated 和 unavailable。没有可靠进度分母时不猜 ETA；没有 provi
   "plans": {
     "directorPlan": "./director-plan.json",
     "assetGapPlan": "./asset-gap-plan.json",
+    "timeline": "./timeline.json",
     "temporalPerceptionAudit": "./temporal-perception-audit.json",
     "semanticReviewSession": "./.kacha/review/review-session.json"
   }
@@ -264,6 +282,8 @@ estimated 和 unavailable。没有可靠进度分母时不猜 ETA；没有 provi
 - `gate-render`：素材索引截断、生成候选尚未物化或真实证据缺口未解决时停止；
 - `gate-release`：时序审计有 blocker、人工动态审片被取消、审片决策未覆盖或
   正常速度带声音预览缺失、调整/拒绝没有解决证据时停止；
+- 每个阶段交叉核对 director、asset plan、Timeline、perception audit 与 review
+  bundle 的路径、SHA 和 project id；各自单独有效但来自不同项目的证据集仍失败；
 - V6 证据不能降低 proposal、Timeline IR、QC、release report 的既有要求。
 
 ## 三、验证策略
@@ -274,9 +294,10 @@ estimated 和 unavailable。没有可靠进度分母时不猜 ETA；没有 provi
 - 许可素材命中与真实证据阻断；
 - 主效果冲突、闪烁、字号和声音落点阻断；
 - 审片全覆盖、真实媒体预览、偏好候选重建、未确认激活失败；
-- 8 组同源人工评测且关键护栏无退化才允许提升声明；
-- OTIO/FCPXML 语义 ID、基线与源片绑定、分数帧率往返和 candidate-only；
-- 审片台 loopback、CSP 与本地视频播放边界。
+- 8 组真实媒体同源人工评测、重复源片/错配/未变化输出失败路径，以及关键护栏
+  无退化才允许提升声明；
+- OTIO/FCPXML 已知语义 ID、基线与源片绑定、分数帧率往返和 candidate-only；
+- 审片台 loopback Host、CSP、同一文件描述符 Range 播放和路径边界。
 
 运行：
 

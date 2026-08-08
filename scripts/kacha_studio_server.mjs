@@ -106,6 +106,13 @@ function sameOrigin(request, port) {
   ]).has(origin);
 }
 
+function validLoopbackHost(request, port) {
+  return new Set([
+    `127.0.0.1:${port}`,
+    `localhost:${port}`,
+  ]).has(String(request.headers.host ?? "").toLowerCase());
+}
+
 function requireLocalMutation(request, port) {
   if (!sameOrigin(request, port)) throw new Error("拒绝跨站请求");
   if (request.headers["x-kacha-studio"] !== "1") {
@@ -158,10 +165,29 @@ function serveFile(response, file) {
   response.end(body);
 }
 
-function serveMedia(request, response, file) {
-  const stat = fs.statSync(file);
+function serveMedia(request, response, media) {
+  const flags = fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0);
+  const descriptor = fs.openSync(media.path, flags);
+  const stat = fs.fstatSync(descriptor);
+  if (
+    !stat.isFile()
+    || stat.size !== Number(media.identity.sizeBytes)
+    || Math.abs(Math.trunc(stat.mtimeMs) - Number(media.identity.mtimeMs)) > 1
+    || Math.abs(Math.trunc(stat.ctimeMs) - Number(media.identity.ctimeMs)) > 1
+    || (
+      media.identity.inode !== null
+      && media.identity.inode !== undefined
+      && Number(stat.ino) !== Number(media.identity.inode)
+    )
+  ) {
+    fs.closeSync(descriptor);
+    throw new Error("审片媒体在验证与读取之间发生变化");
+  }
   const range = request.headers.range;
-  const contentType = MIME_TYPES[path.extname(file).toLowerCase()] ?? "application/octet-stream";
+  const contentType = MIME_TYPES[path.extname(media.path).toLowerCase()] ?? "application/octet-stream";
+  const close = () => {
+    try { fs.closeSync(descriptor); } catch {}
+  };
   if (!range) {
     response.writeHead(200, {
       ...SECURITY_HEADERS,
@@ -171,17 +197,21 @@ function serveMedia(request, response, file) {
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
     });
-    if (request.method === "HEAD") response.end();
-    else fs.createReadStream(file).pipe(response);
+    if (request.method === "HEAD") {
+      close();
+      response.end();
+    } else fs.createReadStream(null, { fd: descriptor, autoClose: true }).pipe(response);
     return;
   }
   const match = /^bytes=(\d*)-(\d*)$/.exec(range);
   if (!match) {
+    close();
     response.writeHead(416, { ...SECURITY_HEADERS, "Content-Range": `bytes */${stat.size}` });
     response.end();
     return;
   }
   if (!match[1] && !match[2]) {
+    close();
     response.writeHead(416, { ...SECURITY_HEADERS, "Content-Range": `bytes */${stat.size}` });
     response.end();
     return;
@@ -192,6 +222,7 @@ function serveMedia(request, response, file) {
     ? Math.min(Number(match[2]), stat.size - 1)
     : stat.size - 1;
   if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || start >= stat.size) {
+    close();
     response.writeHead(416, { ...SECURITY_HEADERS, "Content-Range": `bytes */${stat.size}` });
     response.end();
     return;
@@ -205,8 +236,10 @@ function serveMedia(request, response, file) {
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
   });
-  if (request.method === "HEAD") response.end();
-  else fs.createReadStream(file, { start, end }).pipe(response);
+  if (request.method === "HEAD") {
+    close();
+    response.end();
+  } else fs.createReadStream(null, { fd: descriptor, start, end, autoClose: true }).pipe(response);
 }
 
 function safeStaticFile(urlPath) {
@@ -252,12 +285,12 @@ async function handleApi(request, response, url, port) {
     return;
   }
   if (["GET", "HEAD"].includes(request.method) && pathname === "/api/review/media") {
-    const file = resolveReviewMedia(
+    const media = resolveReviewMedia(
       url.searchParams.get("bundle"),
       url.searchParams.get("decision"),
       url.searchParams.get("variant") ?? "after",
     );
-    serveMedia(request, response, file);
+    serveMedia(request, response, media);
     return;
   }
   if (request.method !== "POST") {
@@ -360,6 +393,14 @@ export function startStudioServerFromCli(args = process.argv.slice(2)) {
   const server = http.createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", `http://127.0.0.1:${requestedPort}`);
     try {
+      if (!validLoopbackHost(request, requestedPort)) {
+        json(response, 421, {
+          schemaVersion: "1.0",
+          status: "blocked",
+          error: "拒绝非 loopback Host；可能存在 DNS rebinding",
+        });
+        return;
+      }
       if (url.pathname.startsWith("/api/")) {
         await handleApi(request, response, url, requestedPort);
         return;

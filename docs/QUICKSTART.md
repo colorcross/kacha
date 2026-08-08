@@ -296,7 +296,8 @@ node scripts/kacha.mjs studio serve
 
 浏览器进入 `/review`，用真实可解码、带音轨、达到代表时长的 1× 预览逐项接受、
 调整或拒绝。缺少任何一项预览时，即使全部接受也不能进入候选就绪。调整与拒绝
-解决后运行：
+的解决证据同样必须是带音轨动态视频；项目/栏目/风格/平台 scope 从当前
+Timeline 与 director 确定，不能在审片命令中改挂。解决后运行：
 
 ```bash
 node scripts/kacha.mjs review validate \

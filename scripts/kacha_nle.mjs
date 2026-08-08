@@ -7,7 +7,6 @@ import {
   fileIdentity,
   readJson,
   sha256Value,
-  writeJsonAtomic,
 } from "./kacha_utils.mjs";
 
 function option(args, name, fallback = null) {
@@ -32,6 +31,11 @@ function stableDigest(value) {
   delete copy.generatedAt;
   delete copy.digest;
   return sha256Value(copy);
+}
+
+function writeJsonExclusive(file, value) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, { flag: "wx" });
 }
 
 function xmlEscape(value) {
@@ -99,17 +103,37 @@ function timecode(frameCount, fps) {
 
 function clipRows(timeline) {
   const fps = Number(timeline.output?.fps ?? 25);
-  if (!(fps > 0)) throw new Error("Timeline output.fps 无效");
+  if (!(Number.isFinite(fps) && fps > 0)) throw new Error("Timeline output.fps 无效");
+  if (!Array.isArray(timeline.edl) || timeline.edl.length === 0) {
+    throw new Error("Timeline EDL 不能为空");
+  }
   let outputFrame = 0;
+  const ids = new Set();
   return {
     fps,
     clips: (timeline.edl ?? []).map((clip, index) => {
-      const sourceStartFrame = frames(clip.sourceStart, fps);
-      const sourceEndFrame = frames(clip.sourceEnd, fps);
-      if (sourceEndFrame <= sourceStartFrame) throw new Error(`edl[${index}] 区间无效`);
+      const sourceStart = Number(clip.sourceStart);
+      const sourceEnd = Number(clip.sourceEnd);
+      const id = String(clip.id ?? `clip-${String(index + 1).padStart(4, "0")}`);
+      if (
+        !Number.isFinite(sourceStart)
+        || !Number.isFinite(sourceEnd)
+        || sourceStart < 0
+        || sourceEnd <= sourceStart
+      ) throw new Error(`edl[${index}] 区间无效`);
+      if (!id || ids.has(id)) throw new Error(`edl[${index}].id 缺失或重复`);
+      ids.add(id);
+      for (const field of ["sourceDecisionId", "semanticBeatId"]) {
+        if (clip[field] !== undefined && clip[field] !== null && typeof clip[field] !== "string") {
+          throw new Error(`edl[${index}].${field} 必须是字符串或 null`);
+        }
+      }
+      const sourceStartFrame = frames(sourceStart, fps);
+      const sourceEndFrame = frames(sourceEnd, fps);
+      if (sourceEndFrame <= sourceStartFrame) throw new Error(`edl[${index}] 区间短于一个输出帧`);
       const durationFrames = sourceEndFrame - sourceStartFrame;
       const result = {
-        id: String(clip.id ?? `clip-${String(index + 1).padStart(4, "0")}`),
+        id,
         sourceStartFrame,
         durationFrames,
         outputStartFrame: outputFrame,
@@ -267,14 +291,17 @@ export function exportNle(timelineFile, format, outputFile) {
   const timeline = readJson(file);
   const output = path.resolve(outputFile ?? "");
   if (!outputFile) throw new Error("nle export 需要 --output FILE");
-  if (fs.existsSync(output)) throw new Error(`拒绝覆盖 NLE 文件：${output}`);
+  const reportFile = `${output}.kacha-report.json`;
+  if (fs.existsSync(output) || fs.existsSync(reportFile)) {
+    throw new Error(`拒绝覆盖 NLE 文件或既有报告：${output}`);
+  }
   fs.mkdirSync(path.dirname(output), { recursive: true });
   let body;
   if (format === "otio") body = `${JSON.stringify(otioExport(file, timeline), null, 2)}\n`;
   else if (format === "fcpxml") body = fcpxmlExport(file, timeline);
   else if (format === "cmx3600") body = cmxExport(file, timeline);
   else throw new Error(`不支持 NLE 格式：${format}`);
-  fs.writeFileSync(output, body);
+  fs.writeFileSync(output, body, { flag: "wx" });
   const report = {
     schemaVersion: "1.0",
     kind: "kacha_nle_export_report",
@@ -292,12 +319,11 @@ export function exportNle(timelineFile, format, outputFile) {
     ],
   };
   report.digest = stableDigest(report);
-  const reportFile = `${output}.kacha-report.json`;
-  writeJsonAtomic(reportFile, report);
+  writeJsonExclusive(reportFile, report);
   return { ...report, report: fileIdentity(reportFile) };
 }
 
-function otioClips(value, baseIdentity, source) {
+function otioClips(value, baseIdentity, source, sourceSha256) {
   if (value.OTIO_SCHEMA !== "Timeline.1" || value.metadata?.kacha?.semanticIdsPreserved !== true) {
     throw new Error("只导入由咔嚓导出且保留语义 ID 的 OTIO");
   }
@@ -322,6 +348,9 @@ function otioClips(value, baseIdentity, source) {
     }
     if (path.resolve(referencedSource) !== path.resolve(source)) {
       throw new Error(`OTIO clip[${index}] 引用了其他源素材`);
+    }
+    if (clip.media_reference?.metadata?.kachaSourceSha256 !== sourceSha256) {
+      throw new Error(`OTIO clip[${index}] 源素材 SHA-256 元数据已失效`);
     }
     if (!clip.metadata?.kacha?.kachaId) throw new Error(`OTIO clip[${index}] 丢失咔嚓 clip ID`);
     return {
@@ -401,11 +430,23 @@ function fcpxmlClips(xml, baseIdentity, source, sourceSha256) {
   return clips;
 }
 
-function validateImportedClips(clips) {
+function validateImportedClips(clips, base) {
+  if (!Array.isArray(clips) || clips.length === 0) {
+    throw new Error("NLE 导入不能生成空时间线");
+  }
+  const baseClips = new Map((base.edl ?? []).map((clip) => [String(clip.id), clip]));
   const ids = new Set();
   for (const [index, clip] of clips.entries()) {
     if (!clip.id || ids.has(clip.id)) throw new Error(`导入 clip[${index}].id 缺失或重复`);
     ids.add(clip.id);
+    const original = baseClips.get(String(clip.id));
+    if (!original) throw new Error(`导入 clip[${index}] 使用了基线不存在的咔嚓 clip ID`);
+    if (
+      (clip.sourceDecisionId ?? null) !== (original.sourceDecisionId ?? null)
+      || (clip.semanticBeatId ?? null) !== (original.semanticBeatId ?? null)
+    ) {
+      throw new Error(`导入 clip[${index}] 的 decision/semantic ID 与基线不一致`);
+    }
   }
 }
 
@@ -415,17 +456,20 @@ export function importNle(inputFile, format, baseTimelineFile, outputFile) {
   const output = path.resolve(outputFile ?? "");
   if (!outputFile) throw new Error("nle import 需要 --output FILE");
   if (output === baseFile) throw new Error("NLE 导入不得覆盖基线 Timeline IR");
-  if (fs.existsSync(output)) throw new Error(`拒绝覆盖候选时间线：${output}`);
+  const reportFile = `${output}.nle-import-report.json`;
+  if (fs.existsSync(output) || fs.existsSync(reportFile)) {
+    throw new Error(`拒绝覆盖候选时间线或既有报告：${output}`);
+  }
   const base = readJson(baseFile);
   const baseIdentity = fileIdentity(baseFile);
   const source = timelineSource(baseFile, base);
   let clips;
-  if (format === "otio") clips = otioClips(readJson(input), baseIdentity, source);
+  if (format === "otio") clips = otioClips(readJson(input), baseIdentity, source, base.source.sha256);
   else if (format === "fcpxml") {
     clips = fcpxmlClips(fs.readFileSync(input, "utf8"), baseIdentity, source, base.source.sha256);
   }
   else throw new Error("NLE 导入当前支持 otio 或 fcpxml；CMX3600 只用于兼容导出");
-  validateImportedClips(clips);
+  validateImportedClips(clips, base);
   const candidate = structuredClone(base);
   candidate.mode = "preview";
   candidate.edl = clips;
@@ -446,7 +490,7 @@ export function importNle(inputFile, format, baseTimelineFile, outputFile) {
     requires: ["timeline validate", "delta diff", "变化层 QC", "人工正常速度审片"],
   };
   candidate.interchangeCandidate.digest = sha256Value(candidate.interchangeCandidate);
-  writeJsonAtomic(output, candidate);
+  writeJsonExclusive(output, candidate);
   const report = {
     schemaVersion: "1.0",
     kind: "kacha_nle_import_report",
@@ -465,8 +509,7 @@ export function importNle(inputFile, format, baseTimelineFile, outputFile) {
     ],
   };
   report.digest = stableDigest(report);
-  const reportFile = `${output}.nle-import-report.json`;
-  writeJsonAtomic(reportFile, report);
+  writeJsonExclusive(reportFile, report);
   return { ...report, report: fileIdentity(reportFile) };
 }
 

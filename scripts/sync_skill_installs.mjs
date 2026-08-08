@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { acquireFileLock } from "./kacha_utils.mjs";
 
 function option(args, name, fallback = null) {
   const index = args.indexOf(name);
@@ -250,7 +251,14 @@ const targets = [
 ];
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "kacha-bundle-"));
 const bundle = path.join(temporary, "kacha");
+let releaseInstallLock = null;
 try {
+  if (apply) {
+    releaseInstallLock = acquireFileLock(path.join(home, ".kacha-install.lock"), {
+      purpose: "kacha-install-sync",
+      staleAfterMs: 24 * 60 * 60 * 1000,
+    });
+  }
   copyCore(source, bundle);
   run("python3", [path.join(bundle, "scripts", "scan_secrets.py")], bundle);
   const coreContentDigest = treeDigest(bundle);
@@ -365,5 +373,6 @@ try {
   console.error(`同步失败，当前安装未被无证据覆盖：${error.message}`);
   process.exitCode = 1;
 } finally {
+  try { releaseInstallLock?.(); } catch {}
   fs.rmSync(temporary, { recursive: true, force: true });
 }

@@ -7,6 +7,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
+  acquireFileLock,
   fileIdentity,
   readJson,
   resolveRuntimeCommand,
@@ -156,6 +157,25 @@ try {
   ]);
   assert.equal(search.results[0].ref, "@asset:pearl-night");
   assert.equal(search.privacy.externalUpload, false);
+  fs.appendFileSync(pearl, "changed-after-index");
+  blocked([
+    "media", "search", mediaIndex,
+    "--query", "都市建筑夜景",
+    "--limit", "2",
+  ]);
+  const mergedMediaIndex = path.join(temporary, "media-index-merged.json");
+  run([
+    "media", "index",
+    "--root", mediaRoot,
+    "--catalog", catalog,
+    "--output", mergedMediaIndex,
+  ]);
+  const mergedPearl = readJson(mergedMediaIndex).items.find((item) => item.path === pearl);
+  assert.equal(mergedPearl.license, "project_licensed");
+  assert.ok(
+    mergedPearl.provenance.sources.some((source) => source.kind === "local_catalog"),
+    "catalog provenance was lost when the scanned file and catalog entry merged",
+  );
   const cappedIndex = path.join(temporary, "media-index-capped.json");
   const capped = run([
     "media", "index",
@@ -382,6 +402,43 @@ try {
     "partial",
   );
 
+  const tamperOutput = path.join(project, "tampered-worker-output.txt");
+  const outsideTamperOutput = path.join(temporary, "outside-tampered-worker-output.txt");
+  const tamperJob = run([
+    "jobs", "submit",
+    "--project-root", project,
+    "--kind", "tamper-contract",
+    "--expected-output", tamperOutput,
+    "--foreground",
+    "--",
+    process.execPath,
+    "-e",
+    "process.exit(7)",
+  ]);
+  assert.equal(tamperJob.status, "failed");
+  const tamperJobFile = path.join(
+    project,
+    ".kacha",
+    "jobs",
+    tamperJob.ref.split(":")[1],
+    "job.json",
+  );
+  const tamperedJobRecord = readJson(tamperJobFile);
+  tamperedJobRecord.command.argv = [
+    process.execPath,
+    "-e",
+    `require("node:fs").writeFileSync(${JSON.stringify(outsideTamperOutput)},"executed")`,
+  ];
+  writeJson(tamperJobFile, tamperedJobRecord);
+  const tamperedResume = invoke([
+    "jobs", "resume", tamperJob.ref,
+    "--project-root", project,
+    "--foreground",
+  ]);
+  assert.notEqual(tamperedResume.status, 0);
+  assert.equal(fs.existsSync(outsideTamperOutput), false);
+  assert.match(`${tamperedResume.stdout}\n${tamperedResume.stderr}`, /argvDigest|完整性检查失败/);
+
   const objectIndex = path.join(temporary, "object-index.json");
   run(["refs", "index", after, mediaIndex, "--output", objectIndex]);
   const resolved = run([
@@ -511,6 +568,24 @@ try {
   assert.equal(install.status, "sync_required");
   assert.equal(install.mode, "read_only_status");
   assert.equal(install.targets.length, 2);
+  const syncHome = path.join(temporary, "sync-lock-home");
+  fs.mkdirSync(syncHome, { recursive: true });
+  const releaseSyncLock = acquireFileLock(path.join(syncHome, ".kacha-install.lock"), {
+    purpose: "test-existing-install-sync",
+  });
+  try {
+    const blockedSync = spawnSync(process.execPath, [
+      path.join(root, "scripts", "sync_skill_installs.mjs"),
+      "--source", root,
+      "--home", syncHome,
+      "--agent", "codex",
+      "--apply",
+    ], { cwd: root, encoding: "utf8" });
+    assert.notEqual(blockedSync.status, 0);
+    assert.match(`${blockedSync.stdout}\n${blockedSync.stderr}`, /operation lock is active/);
+  } finally {
+    releaseSyncLock();
+  }
 
   console.log(JSON.stringify({
     status: "pass",
@@ -519,10 +594,12 @@ try {
       "local_semantic_media_search",
       "async_job_placeholder",
       "async_job_cancellation_and_security",
+      "async_job_contract_tamper_rejection",
       "object_mentions",
       "object_reference_collision_safety",
       "timeline_placeholder_gate",
       "install_sync_status",
+      "install_sync_concurrency_lock",
     ],
   }, null, 2));
 } finally {

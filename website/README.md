@@ -53,7 +53,7 @@ npm run audit:dependencies
 首页的“四种剪辑语法”区块直接对应
 [`docs/FOUR_STYLE_EDITING_GRAMMARS.md`](../docs/FOUR_STYLE_EDITING_GRAMMARS.md)：
 四张卡必须分别表现连续旁注、纵深导航、喜剧节拍和状态机，不能退化为同一组件
-只换颜色或材质。中英文内容、126 项回归口径、1920 张峰值帧和 960 份合同数量
+只换颜色或材质。中英文内容、127 项回归口径、1920 张峰值帧和 960 份合同数量
 需要同步更新并由页面测试锁定。
 
 ## 目录

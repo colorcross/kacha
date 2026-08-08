@@ -225,10 +225,12 @@ semantic cues → director → asset gaps → Timeline IR / Render Graph
 ```
 
 `intelligenceV6.required=true` 时，v2 与 v3 的 `gate-plan`、`gate-render` 和
-`gate-release` 分别验证上述计划、执行缺口和审片证据。旧项目默认兼容。NLE
-交换绑定基线与源片 SHA，导入只建立独立 preview candidate；偏好候选激活时从
-source session 重建并按 scope 合并；自动审计永远保留人工正常速度通看。完整
-命令与证据边界见 `docs/INTELLIGENT_EDITING_V6.md`。
+`gate-release` 分别验证上述计划、执行缺口和审片证据，并交叉核对 director、
+asset plan、Timeline、perception 与 review 是否属于同一 project/SHA 证据集。
+旧项目默认兼容。素材索引 digest v2 冻结许可、来源和强文件身份；NLE 交换绑定
+基线与源片 SHA，导入只接受基线已知语义 ID 并建立独立 preview candidate；
+偏好候选只从 candidate-ready session 重建并按 scope 加锁合并；自动审计永远
+保留人工正常速度通看。完整命令与证据边界见 `docs/INTELLIGENT_EDITING_V6.md`。
 
 ## 配置边界
 

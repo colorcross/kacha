@@ -9,6 +9,7 @@ import {
   withOperationLock,
   writeJson,
 } from "./agent_workspace_utils.mjs";
+import { validateJobContract } from "./job_contract.mjs";
 import {
   acquireFileLock,
   fileIdentity,
@@ -30,6 +31,24 @@ try {
 }
 
 let job = readJson(jobFile);
+
+const contractErrors = validateJobContract(jobFile, job);
+if (contractErrors.length > 0) {
+  writeJson(jobFile, {
+    ...job,
+    status: "failed",
+    finishedAt: now(),
+    updatedAt: now(),
+    workerPid: null,
+    childPid: null,
+    activeRunId: null,
+    error: `任务合同完整性检查失败：${contractErrors.join("; ")}`,
+  });
+  try { releaseRunLock?.(); } catch {}
+  releaseRunLock = null;
+  process.stderr.write(`${contractErrors.join("\n")}\n`);
+  process.exit(4);
+}
 const stdoutFile = path.join(path.dirname(jobFile), "stdout.log");
 const stderrFile = path.join(path.dirname(jobFile), "stderr.log");
 const placeholderFile = job.placeholder.path;
@@ -58,6 +77,10 @@ function placeholder(currentJob, state, extra = {}) {
 function mutateState(purpose, updater) {
   return withOperationLock(stateLockFile, purpose, () => {
     const current = readJson(jobFile);
+    const errors = validateJobContract(jobFile, current);
+    if (errors.length > 0) {
+      throw new Error(`任务合同在状态变更前失效：${errors.join("; ")}`);
+    }
     const next = updater(current);
     if (next) writeJson(jobFile, next);
     return next ?? current;

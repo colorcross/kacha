@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   fileIdentity,
+  mediaSummary,
   readJson,
   sha256Value,
   writeJsonAtomic,
@@ -48,7 +49,35 @@ function write(value, output = null) {
 }
 
 function nonnegativeInteger(value) {
-  return Number.isInteger(Number(value)) && Number(value) >= 0;
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+
+function nonemptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function finiteNumber(value, predicate) {
+  return typeof value === "number" && Number.isFinite(value) && predicate(value);
+}
+
+function validateEvidenceIdentity(identity, label, errors) {
+  if (!identity || !nonemptyString(identity.path) || !/^[a-f0-9]{64}$/i.test(String(identity.sha256 ?? ""))) {
+    errors.push(`${label} 必须绑定当前真实文件路径与 SHA-256`);
+    return false;
+  }
+  try {
+    const current = fileIdentity(identity.path);
+    if (current.sha256 !== identity.sha256) throw new Error("SHA-256 mismatch");
+    for (const field of ["sizeBytes", "mtimeMs", "ctimeMs", "inode"]) {
+      if (identity[field] !== undefined && identity[field] !== null && Number(identity[field]) !== Number(current[field])) {
+        throw new Error(`${field} mismatch`);
+      }
+    }
+    return true;
+  } catch {
+    errors.push(`${label} 必须绑定当前真实文件路径与 SHA-256`);
+    return false;
+  }
 }
 
 function validateDataset(dataset) {
@@ -56,20 +85,23 @@ function validateDataset(dataset) {
   if (dataset.schemaVersion !== "1.0" || dataset.kind !== "kacha_editorial_eval_dataset") {
     errors.push("dataset 必须是 kacha_editorial_eval_dataset@1.0");
   }
-  if (!dataset.id || !dataset.version) errors.push("dataset id/version 不能为空");
+  if (!nonemptyString(dataset.id) || !nonemptyString(dataset.version)) {
+    errors.push("dataset id/version 必须是非空字符串");
+  }
   if (!Array.isArray(dataset.cases) || dataset.cases.length === 0) {
     errors.push("dataset.cases 不能为空");
   }
   const ids = new Set();
   const sourceGroups = new Set();
+  const sourceHashes = new Map();
   for (const [index, item] of (dataset.cases ?? []).entries()) {
     const label = `cases[${index}]`;
-    if (!item.id || ids.has(item.id)) errors.push(`${label}.id 缺失或重复`);
+    if (!nonemptyString(item.id) || ids.has(item.id)) errors.push(`${label}.id 缺失、类型错误或重复`);
     ids.add(item.id);
-    if (!item.sourceGroupId) errors.push(`${label}.sourceGroupId 不能为空`);
+    if (!nonemptyString(item.sourceGroupId)) errors.push(`${label}.sourceGroupId 必须是非空字符串`);
     else if (sourceGroups.has(item.sourceGroupId)) errors.push(`${label}.sourceGroupId 在同一版本中重复`);
     else sourceGroups.add(item.sourceGroupId);
-    if (!item.showId || !item.styleId || !item.platform) {
+    if (![item.showId, item.styleId, item.platform].every(nonemptyString)) {
       errors.push(`${label} 缺少 showId/styleId/platform`);
     }
     const judgment = item.editorialJudgment;
@@ -77,13 +109,13 @@ function validateDataset(dataset) {
       errors.push(`${label}.editorialJudgment 必须由人类明确复核`);
       continue;
     }
-    if (!(Number(judgment.outputDurationSeconds) > 0)) {
+    if (!finiteNumber(judgment.outputDurationSeconds, (value) => value > 0)) {
       errors.push(`${label}.outputDurationSeconds 必须大于 0`);
     }
-    if (!(Number(judgment.manualInterventionMinutes) >= 0)) {
+    if (!finiteNumber(judgment.manualInterventionMinutes, (value) => value >= 0)) {
       errors.push(`${label}.manualInterventionMinutes 必须为非负数`);
     }
-    if (!(Number(judgment.firstDraftUsability) >= 0 && Number(judgment.firstDraftUsability) <= 1)) {
+    if (!finiteNumber(judgment.firstDraftUsability, (value) => value >= 0 && value <= 1)) {
       errors.push(`${label}.firstDraftUsability 必须在 0–1`);
     }
     for (const group of ["semanticUnits", "highImpactDecisions", "connections", "captions", "styleGrammar"]) {
@@ -116,8 +148,8 @@ function validateDataset(dataset) {
     }
     if (
       !item.evidence
-      || !item.evidence.reviewer
-      || !item.evidence.reviewedAt
+      || !nonemptyString(item.evidence.reviewer)
+      || !nonemptyString(item.evidence.reviewedAt)
       || !Number.isFinite(Date.parse(item.evidence.reviewedAt))
     ) {
       errors.push(`${label}.evidence 必须记录 reviewer 和有效 reviewedAt`);
@@ -127,6 +159,55 @@ function validateDataset(dataset) {
     }
     if (item.evidence?.phoneAndHeadphoneReview !== true) {
       errors.push(`${label}.evidence.phoneAndHeadphoneReview 必须为 true`);
+    }
+    const sourceValid = validateEvidenceIdentity(
+      item.evidence?.sourceMedia,
+      `${label}.evidence.sourceMedia`,
+      errors,
+    );
+    const outputValid = validateEvidenceIdentity(
+      item.evidence?.reviewedOutput,
+      `${label}.evidence.reviewedOutput`,
+      errors,
+    );
+    if (sourceValid) {
+      try {
+        const sourceSummary = mediaSummary(item.evidence.sourceMedia.path);
+        if (!sourceSummary.video || !(sourceSummary.duration > 0) || !(sourceSummary.averageFps > 0)) {
+          errors.push(`${label}.evidence.sourceMedia 不是可解码动态视频`);
+        }
+      } catch (error) {
+        errors.push(`${label}.evidence.sourceMedia 媒体探测失败：${error.message}`);
+      }
+      const previousGroup = sourceHashes.get(item.evidence.sourceMedia.sha256);
+      if (previousGroup && previousGroup !== item.sourceGroupId) {
+        errors.push(`${label}.sourceGroupId 复用了另一组的同一源片 SHA-256，不能重复计样本`);
+      } else if (nonemptyString(item.sourceGroupId)) {
+        sourceHashes.set(item.evidence.sourceMedia.sha256, item.sourceGroupId);
+      }
+    }
+    if (outputValid) {
+      try {
+        const outputSummary = mediaSummary(item.evidence.reviewedOutput.path);
+        const expectedDuration = Number(judgment.outputDurationSeconds);
+        const durationTolerance = Math.max(0.25, 2 / Number(outputSummary.averageFps || 25));
+        if (
+          !outputSummary.video
+          || !outputSummary.audio
+          || !(outputSummary.duration > 0)
+          || !(outputSummary.audioDuration > 0)
+          || !(outputSummary.averageFps > 0)
+        ) {
+          errors.push(`${label}.evidence.reviewedOutput 必须是可解码、有音轨的动态视频`);
+        } else if (
+          Number.isFinite(expectedDuration)
+          && Math.abs(outputSummary.duration - expectedDuration) > durationTolerance
+        ) {
+          errors.push(`${label}.outputDurationSeconds 与 reviewedOutput 实测时长不一致`);
+        }
+      } catch (error) {
+        errors.push(`${label}.evidence.reviewedOutput 媒体探测失败：${error.message}`);
+      }
     }
   }
   return errors;
@@ -265,6 +346,22 @@ export function compareReports(baselineFile, candidateFile) {
   const baselineByGroup = new Map(baselineDataset.cases.map((item) => [item.sourceGroupId, item]));
   const candidateByGroup = new Map(candidateDataset.cases.map((item) => [item.sourceGroupId, item]));
   const shared = [...baselineByGroup.keys()].filter((id) => candidateByGroup.has(id)).sort();
+  const unchangedOutputGroups = [];
+  for (const id of shared) {
+    const before = baselineByGroup.get(id);
+    const after = candidateByGroup.get(id);
+    if (
+      before.evidence.sourceMedia.sha256 !== after.evidence.sourceMedia.sha256
+      || before.showId !== after.showId
+      || before.styleId !== after.styleId
+      || before.platform !== after.platform
+    ) {
+      throw new Error(`同源组 ${id} 的源素材或栏目/风格/平台合同不一致`);
+    }
+    if (before.evidence.reviewedOutput.sha256 === after.evidence.reviewedOutput.sha256) {
+      unchangedOutputGroups.push(id);
+    }
+  }
   const config = readJson(configFile).evaluation;
   const minimum = config.minimumComparisonCases;
   const baselinePaired = summarizeCases(shared.map((id) => baselineByGroup.get(id)), config);
@@ -316,11 +413,14 @@ export function compareReports(baselineFile, candidateFile) {
   const primaryImproved = claimConfig.requireAtLeastOnePrimaryImprovement !== true
     || improvedPrimaryMetrics.length > 0;
   const improvementClaimAllowed = sampleEligible
+    && unchangedOutputGroups.length === 0
     && guardrailsMeasured
     && regressedGuardrails.length === 0
     && primaryImproved;
   const reason = !sampleEligible
     ? `仅 ${shared.length} 个同源样本，少于最低 ${minimum} 个，不能宣称整体提升`
+    : unchangedOutputGroups.length > 0
+      ? `有 ${unchangedOutputGroups.length} 个配对组的候选输出与基线内容完全相同，不能据此宣称版本提升`
     : unmeasuredGuardrails.length > 0 && claimConfig.requireAllGuardrailsMeasured === true
       ? `关键护栏未完整测量：${unmeasuredGuardrails.join(", ")}`
       : regressedGuardrails.length > 0
@@ -345,6 +445,8 @@ export function compareReports(baselineFile, candidateFile) {
     claimPolicy: {
       sampleEligible,
       improvementClaimAllowed,
+      sourceIdentityVerified: true,
+      unchangedOutputGroups,
       guardrailMetrics,
       unmeasuredGuardrails,
       regressedGuardrails,
@@ -384,7 +486,9 @@ function templateDataset() {
           reviewer: "replace-with-reviewer",
           reviewedAt: "replace-with-ISO-8601-time",
           normalSpeedReview: true,
-          phoneAndHeadphoneReview: true
+          phoneAndHeadphoneReview: true,
+          sourceMedia: { path: "replace-with-source-path", sha256: "replace-with-source-sha256" },
+          reviewedOutput: { path: "replace-with-output-path", sha256: "replace-with-output-sha256" }
         }
       }
     ]

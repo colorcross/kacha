@@ -495,6 +495,74 @@ function gatePlanV3() {
   ]);
 }
 
+function identityBindsFile(identity, file) {
+  return Boolean(
+    identity?.path
+    && identity?.sha256
+    && path.resolve(identity.path) === path.resolve(file)
+    && identity.sha256 === sha256File(file)
+  );
+}
+
+function validateV6Coherence(stage) {
+  const plans = project.plans ?? {};
+  const existing = (field) => {
+    if (!plans[field]) return null;
+    return requireProjectPath(projectFile, plans[field], `plans.${field}`);
+  };
+  const directorFile = existing("directorPlan");
+  const assetFile = existing("assetGapPlan");
+  const perceptionFile = existing("temporalPerceptionAudit");
+  const sessionFile = existing("semanticReviewSession");
+  const timelineEntry = plans.timeline ?? plans.timelineIr;
+  const timelineFile = timelineEntry
+    ? requireProjectPath(projectFile, timelineEntry, "plans.timeline")
+    : null;
+  const errors = [];
+  const director = directorFile ? readJson(directorFile) : null;
+  const asset = assetFile ? readJson(assetFile) : null;
+  const perception = perceptionFile ? readJson(perceptionFile) : null;
+  let bundle = null;
+  if (sessionFile) {
+    const session = readJson(sessionFile);
+    if (session.bundle?.path && fs.existsSync(path.resolve(session.bundle.path))) {
+      bundle = readJson(path.resolve(session.bundle.path));
+    }
+  }
+  if (directorFile && asset && !identityBindsFile(asset.directorPlan, directorFile)) {
+    errors.push("V6 coherence: assetGapPlan 没有绑定 manifest 当前的 directorPlan");
+  }
+  if (directorFile && bundle && !identityBindsFile(bundle.directorPlan, directorFile)) {
+    errors.push("V6 coherence: semantic review 没有绑定 manifest 当前的 directorPlan");
+  }
+  if (perception && bundle && (
+    perception.timeline?.sha256 !== bundle.timeline?.sha256
+    || path.resolve(perception.timeline?.path ?? "") !== path.resolve(bundle.timeline?.path ?? "")
+  )) {
+    errors.push("V6 coherence: perception audit 与 semantic review 使用了不同 Timeline IR");
+  }
+  if (timelineFile && perception && !identityBindsFile(perception.timeline, timelineFile)) {
+    errors.push("V6 coherence: perception audit 没有绑定 manifest 当前 Timeline IR");
+  }
+  if (timelineFile && bundle && !identityBindsFile(bundle.timeline, timelineFile)) {
+    errors.push("V6 coherence: semantic review 没有绑定 manifest 当前 Timeline IR");
+  }
+  if (director && bundle && director.project?.id !== bundle.project?.id) {
+    errors.push("V6 coherence: director 与 semantic review 的 project id 不一致");
+  }
+  if (timelineFile && director) {
+    const timeline = readJson(timelineFile);
+    if (timeline.projectId && director.project?.id && timeline.projectId !== director.project.id) {
+      errors.push("V6 coherence: Timeline 与 director 的 project id 不一致");
+    }
+  }
+  if (errors.length > 0) {
+    errors.forEach((error) => console.error(error));
+    console.error(`V6 ${stage} evidence set is internally inconsistent`);
+    process.exit(1);
+  }
+}
+
 function validateV6Evidence(stage) {
   const required = project.intelligenceV6?.required === true;
   const plans = project.plans ?? {};
@@ -519,6 +587,7 @@ function validateV6Evidence(stage) {
     const evidence = requireProjectPath(projectFile, entry, `plans.${field}`);
     invoke(script, argumentTemplate.map((item) => item === null ? evidence : item));
   }
+  validateV6Coherence(stage);
 }
 
 function gatePlan() {

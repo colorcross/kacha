@@ -55,12 +55,66 @@ function write(value, output = null) {
 }
 
 function existingPreview(previewRoot, names) {
-  if (!previewRoot) return null;
+  if (!previewRoot || !fs.existsSync(previewRoot) || !fs.statSync(previewRoot).isDirectory()) {
+    return null;
+  }
+  const realRoot = fs.realpathSync(previewRoot);
   for (const name of names) {
-    const file = path.join(previewRoot, name);
-    if (fs.existsSync(file) && fs.statSync(file).isFile()) return fileIdentity(file);
+    if (!name || path.basename(name) !== name) continue;
+    const file = path.join(realRoot, name);
+    if (!fs.existsSync(file) || !fs.statSync(file).isFile()) continue;
+    const realFile = fs.realpathSync(file);
+    if (!realFile.startsWith(`${realRoot}${path.sep}`)) continue;
+    return fileIdentity(realFile);
   }
   return null;
+}
+
+function reviewPlatform(timeline, director, requested = null) {
+  const declared = timeline.platform
+    ?? timeline.output?.platform
+    ?? director.project?.platform
+    ?? "general";
+  if (typeof declared !== "string" || !declared.trim()) {
+    throw new Error("审片平台必须是 Timeline/director 声明的非空字符串");
+  }
+  if (requested !== null && (typeof requested !== "string" || !requested.trim())) {
+    throw new Error("--platform 必须是非空字符串");
+  }
+  if (requested && requested !== declared) {
+    throw new Error(`审片平台必须由 Timeline/director 声明；当前为 ${declared}，不能改成 ${requested}`);
+  }
+  return declared;
+}
+
+function reviewProject(timeline, director, requestedPlatform = null) {
+  if (
+    timeline.projectId
+    && director.project?.id
+    && timeline.projectId !== director.project.id
+  ) {
+    throw new Error("Timeline 与 director 的 project id 不一致，不能建立审片 scope");
+  }
+  const project = {
+    id: timeline.projectId ?? director.project.id,
+    showId: director.project.showId,
+    styleId: director.project.styleId,
+    platform: reviewPlatform(timeline, director, requestedPlatform),
+  };
+  if (![project.id, project.showId, project.styleId].every((value) => (
+    typeof value === "string" && value.trim().length > 0
+  ))) {
+    throw new Error("审片 project 必须具有非空 id/showId/styleId");
+  }
+  return project;
+}
+
+function candidateVideoIdentity(timelinePath, timeline) {
+  if (!timeline.output?.path) return null;
+  const candidate = path.resolve(path.dirname(timelinePath), timeline.output.path);
+  return fs.existsSync(candidate) && fs.statSync(candidate).isFile()
+    ? fileIdentity(candidate)
+    : { path: candidate, missing: true };
 }
 
 function preferenceMetadata(category, value) {
@@ -158,22 +212,10 @@ export function buildReviewBundle(timelineFile, directorFile, options = {}) {
     schemaVersion: "1.0",
     kind: "kacha_semantic_review_bundle",
     generatedAt: new Date().toISOString(),
-    project: {
-      id: timeline.projectId ?? director.project.id,
-      showId: director.project.showId,
-      styleId: director.project.styleId,
-      platform: options.platform ?? "general",
-    },
+    project: reviewProject(timeline, director, options.platform),
     timeline: fileIdentity(timelinePath),
     directorPlan: fileIdentity(directorPath),
-    candidateVideo: timeline.output?.path
-      ? (() => {
-          const candidate = path.resolve(path.dirname(timelinePath), timeline.output.path);
-          return fs.existsSync(candidate) && fs.statSync(candidate).isFile()
-            ? fileIdentity(candidate)
-            : { path: candidate, missing: true };
-        })()
-      : null,
+    candidateVideo: candidateVideoIdentity(timelinePath, timeline),
     decisions,
     summary: {
       total: decisions.length,
@@ -307,6 +349,26 @@ function reviewBundleErrors(bundle) {
     && bundle.candidateVideo.missing !== true
     && !currentIdentityMatches(bundle.candidateVideo)
   ) errors.push("审片包绑定的候选视频内容已变化");
+  if (currentIdentityMatches(bundle.timeline) && currentIdentityMatches(bundle.directorPlan)) {
+    const timeline = readJson(bundle.timeline.path);
+    const director = readJson(bundle.directorPlan.path);
+    const expectedProject = reviewProject(timeline, director);
+    if (sha256Value(bundle.project) !== sha256Value(expectedProject)) {
+      errors.push("审片包 project/scope 与当前 Timeline 和 director 不一致");
+    }
+    const expectedCandidate = candidateVideoIdentity(bundle.timeline.path, timeline);
+    if (sha256Value(bundle.candidateVideo) !== sha256Value(expectedCandidate)) {
+      errors.push("审片包候选视频身份与当前 Timeline output 不一致");
+    }
+  }
+  const expectedBoundaries = {
+    notAReleaseApproval: true,
+    acceptDoesNotPublish: true,
+    adjustOrRejectRequiresResolutionEvidence: true,
+  };
+  if (sha256Value(bundle.boundaries) !== sha256Value(expectedBoundaries)) {
+    errors.push("审片包不得弱化候选、发布或解决证据边界");
+  }
   const decisions = Array.isArray(bundle.decisions) ? bundle.decisions : [];
   if (!Array.isArray(bundle.decisions) || decisions.length === 0) {
     errors.push("审片包 decisions 不能为空");
@@ -455,6 +517,11 @@ function reviewSessionErrors(session, bundle, bundleFile) {
     }
     if (record.resolutionEvidence && !currentIdentityMatches(record.resolutionEvidence)) {
       errors.push(`${label}.resolutionEvidence 内容已变化或不存在`);
+    } else if (record.resolutionEvidence) {
+      const evidenceError = normalSpeedPreviewError(record.resolutionEvidence, decision);
+      if (evidenceError) {
+        errors.push(`${label}.resolutionEvidence 不是有效的正常速度带声音解决预览：${evidenceError}`);
+      }
     }
   }
   if (Array.isArray(session.decisions)) {
@@ -504,6 +571,8 @@ export function recordReviewDecision(bundleFile, input) {
   let resolutionEvidence = null;
   if (input.resolutionEvidence) {
     resolutionEvidence = fileIdentity(ensureFile(input.resolutionEvidence, "调整解决证据"));
+    const evidenceError = normalSpeedPreviewError(resolutionEvidence, decision);
+    if (evidenceError) throw new Error(`调整解决证据无效：${evidenceError}`);
   }
   const release = acquireFileLock(`${sessionFile}.lock`, { purpose: "review-decision" });
   try {
@@ -557,7 +626,7 @@ export function validateReviewSession(sessionFile, { requireCandidateReady = fal
 }
 
 function derivePreferenceCandidate(sessionFile) {
-  const validation = validateReviewSession(sessionFile);
+  const validation = validateReviewSession(sessionFile, { requireCandidateReady: true });
   if (validation.errors.length > 0) throw new Error(validation.errors.join("\n"));
   const file = validation.file;
   const session = validation.session;
@@ -700,81 +769,91 @@ export function activatePreferenceCandidate(candidateFile, profileFile = null, c
   }
   const profilePath = path.resolve(profileFile ?? defaultPreferenceProfile());
   fs.mkdirSync(path.dirname(profilePath), { recursive: true });
-  let previous = null;
-  if (fs.existsSync(profilePath)) {
-    previous = readJson(profilePath);
-    validatePreferenceProfile(previous, "现有偏好 profile");
+  const release = acquireFileLock(`${profilePath}.lock`, { purpose: "preference-activate" });
+  try {
+    let previous = null;
+    if (fs.existsSync(profilePath)) {
+      previous = readJson(profilePath);
+      validatePreferenceProfile(previous, "现有偏好 profile");
+    }
+    const versionNumber = Number(previous?.versionNumber ?? 0) + 1;
+    if (previous) {
+      const history = `${profilePath}.history`;
+      storeHistoryVersion(history, previous);
+    }
+    const merged = new Map();
+    for (const rule of previous?.rules ?? []) {
+      const scopedRule = { ...rule, scope: rule.scope ?? previous.scope };
+      merged.set(`${sha256Value(scopedRule.scope)}\u0000${scopedRule.key}`, scopedRule);
+    }
+    for (const rule of candidate.rules) {
+      const scopedRule = { ...rule, scope: candidate.scope };
+      merged.set(`${sha256Value(scopedRule.scope)}\u0000${scopedRule.key}`, scopedRule);
+    }
+    const rules = [...merged.values()].sort((left, right) => (
+      sha256Value(left.scope).localeCompare(sha256Value(right.scope))
+      || left.key.localeCompare(right.key)
+    ));
+    const scopes = [...new Map(rules.map((rule) => [sha256Value(rule.scope), rule.scope])).values()];
+    const profile = {
+      schemaVersion: "1.0",
+      kind: "kacha_preference_profile",
+      versionNumber,
+      activatedAt: new Date().toISOString(),
+      previousDigest: previous?.digest ?? null,
+      sourceCandidate: fileIdentity(candidatePath),
+      scope: candidate.scope,
+      scopes,
+      rules,
+      rollback: { historyDirectory: `${profilePath}.history` },
+    };
+    profile.digest = stableDigest(profile);
+    writeJsonAtomic(profilePath, profile);
+    return { profile: fileIdentity(profilePath), versionNumber, rules: profile.rules.length };
+  } finally {
+    release();
   }
-  const versionNumber = Number(previous?.versionNumber ?? 0) + 1;
-  if (previous) {
-    const history = `${profilePath}.history`;
-    storeHistoryVersion(history, previous);
-  }
-  const merged = new Map();
-  for (const rule of previous?.rules ?? []) {
-    const scopedRule = { ...rule, scope: rule.scope ?? previous.scope };
-    merged.set(`${sha256Value(scopedRule.scope)}\u0000${scopedRule.key}`, scopedRule);
-  }
-  for (const rule of candidate.rules) {
-    const scopedRule = { ...rule, scope: candidate.scope };
-    merged.set(`${sha256Value(scopedRule.scope)}\u0000${scopedRule.key}`, scopedRule);
-  }
-  const rules = [...merged.values()].sort((left, right) => (
-    sha256Value(left.scope).localeCompare(sha256Value(right.scope))
-    || left.key.localeCompare(right.key)
-  ));
-  const scopes = [...new Map(rules.map((rule) => [sha256Value(rule.scope), rule.scope])).values()];
-  const profile = {
-    schemaVersion: "1.0",
-    kind: "kacha_preference_profile",
-    versionNumber,
-    activatedAt: new Date().toISOString(),
-    previousDigest: previous?.digest ?? null,
-    sourceCandidate: fileIdentity(candidatePath),
-    scope: candidate.scope,
-    scopes,
-    rules,
-    rollback: { historyDirectory: `${profilePath}.history` },
-  };
-  profile.digest = stableDigest(profile);
-  writeJsonAtomic(profilePath, profile);
-  return { profile: fileIdentity(profilePath), versionNumber, rules: profile.rules.length };
 }
 
 export function rollbackPreferenceProfile(profileFile, versionNumber, confirmed = false) {
   if (!confirmed) throw new Error("偏好回滚需要显式 --confirm");
   const profilePath = ensureFile(profileFile ?? defaultPreferenceProfile(), "偏好 profile");
-  const historyFile = ensureFile(
-    path.join(`${profilePath}.history`, `v${Number(versionNumber)}.json`),
-    "历史偏好版本",
-  );
-  const current = readJson(profilePath);
-  const target = readJson(historyFile);
-  validatePreferenceProfile(current, "当前偏好 profile");
-  validatePreferenceProfile(target, "历史偏好 profile");
-  if (Number(target.versionNumber) !== Number(versionNumber)) {
-    throw new Error("历史偏好版本号与文件名不一致");
-  }
-  const history = `${profilePath}.history`;
-  storeHistoryVersion(history, current);
-  const restored = {
-    ...target,
-    versionNumber: Number(current.versionNumber) + 1,
-    activatedAt: new Date().toISOString(),
-    previousDigest: current.digest,
-    rollback: {
-      historyDirectory: history,
+  const release = acquireFileLock(`${profilePath}.lock`, { purpose: "preference-rollback" });
+  try {
+    const historyFile = ensureFile(
+      path.join(`${profilePath}.history`, `v${Number(versionNumber)}.json`),
+      "历史偏好版本",
+    );
+    const current = readJson(profilePath);
+    const target = readJson(historyFile);
+    validatePreferenceProfile(current, "当前偏好 profile");
+    validatePreferenceProfile(target, "历史偏好 profile");
+    if (Number(target.versionNumber) !== Number(versionNumber)) {
+      throw new Error("历史偏好版本号与文件名不一致");
+    }
+    const history = `${profilePath}.history`;
+    storeHistoryVersion(history, current);
+    const restored = {
+      ...target,
+      versionNumber: Number(current.versionNumber) + 1,
+      activatedAt: new Date().toISOString(),
+      previousDigest: current.digest,
+      rollback: {
+        historyDirectory: history,
+        restoredFromVersion: target.versionNumber,
+        rollbackFromVersion: current.versionNumber,
+      },
+    };
+    restored.digest = stableDigest(restored);
+    writeJsonAtomic(profilePath, restored);
+    return {
+      profile: fileIdentity(profilePath),
+      versionNumber: restored.versionNumber,
       restoredFromVersion: target.versionNumber,
-      rollbackFromVersion: current.versionNumber,
-    },
-  };
-  restored.digest = stableDigest(restored);
-  writeJsonAtomic(profilePath, restored);
-  return {
-    profile: fileIdentity(profilePath),
-    versionNumber: restored.versionNumber,
-    restoredFromVersion: target.versionNumber,
-  };
+    };
+  } finally {
+    release();
+  }
 }
 
 export function resolveReviewMedia(bundleFile, decisionId, variant = "after") {
@@ -784,8 +863,9 @@ export function resolveReviewMedia(bundleFile, decisionId, variant = "after") {
   const identity = decision.preview?.[variant];
   if (!identity?.path) throw new Error(`该决策没有 ${variant} 预览`);
   const file = ensureFile(identity.path, "审片预览");
-  if (fileIdentity(file).sha256 !== identity.sha256) throw new Error("审片预览内容已变化");
-  return file;
+  const current = fileIdentity(file);
+  if (current.sha256 !== identity.sha256) throw new Error("审片预览内容已变化");
+  return { path: file, identity: current };
 }
 
 export function runReviewCli(args = process.argv.slice(2)) {
@@ -794,7 +874,7 @@ export function runReviewCli(args = process.argv.slice(2)) {
     write(buildReviewBundle(option(args, "--timeline"), option(args, "--director"), {
       outputDirectory: option(args, "--output-dir"),
       previewDirectory: option(args, "--preview-dir"),
-      platform: option(args, "--platform", "general"),
+      platform: option(args, "--platform"),
       reviewer: option(args, "--reviewer"),
       overwrite: args.includes("--overwrite"),
     }));

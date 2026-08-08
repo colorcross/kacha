@@ -126,6 +126,11 @@ placeholder。stdout/stderr 写入任务目录，不回填上下文；Agent 只�
 旧的部分产物先移动到任务目录的 `partial/attempt-*` 留证，再启动新 attempt，
 不能让旧文件冒充新任务产物。
 
+提交时还会冻结 `submissionDigest`：job id/ref、命令 argv 与 argvDigest、cwd、
+预期产物、placeholder、日志和 pid 路径必须与 `.kacha/jobs/ID/` 目录合同一致。
+`status/list/cancel/resume`、worker 启动、每次 worker 状态写入和生产台观察都会
+重新验证；持久化后改命令或把路径指向项目外会阻断执行，而不是按新内容续跑。
+
 Timeline IR 会自动发现项目 `.kacha/placeholders` 中对输入素材的声明，也支持
 素材显式携带 `placeholder.path/ref`。只要匹配到后台任务，编译前必须验证
 `state=ready`、outputs 中存在当前真实路径和 SHA-256；pending、failed、
@@ -182,7 +187,9 @@ node scripts/kacha.mjs install sync --agent both --apply
 `sync` 默认 dry-run；`--apply` 才会备份旧目录、原子替换并核对 Codex/Claude
 bundle hash。项目配置、用户配置、私有素材和密钥不进入安装 bundle，也不能
 被同步覆盖。当前安装已经包含私有 overlay 时，未传同一 `--overlay` 的 apply
-会直接阻断，不能用公开 core 静默抹掉本机能力。
+会直接阻断，不能用公开 core 静默抹掉本机能力。同一台机器的 apply 使用
+`~/.kacha-install.lock` 互斥；第二个并发同步必须失败，不能让两个备份/替换流程
+交错后留下来源 ref 与 bundle 不一致的安装。
 
 ## Agent 默认编排
 

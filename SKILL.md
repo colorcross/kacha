@@ -152,7 +152,8 @@ node scripts/kacha.mjs intelligence assets \
 缺口不能由生成媒体冒充；素材索引截断或证据未补齐时不得执行。
 `generated_visual_candidate` 只是待生产路线，不是已经可用的素材；生成结果必须
 先回填本地素材索引，具备当前文件 SHA-256、许可和来源，再重新编译素材缺口计划，
-否则 `gate-render` 继续阻断。
+否则 `gate-render` 继续阻断。素材索引本身使用 digest v2 冻结完整文件身份、许可、
+来源和语义字段；索引或文件发生变化后，旧搜索结果与旧缺口计划都不能继续执行。
 
 候选版用 Timeline IR 与导演计划建立语义审片包。每个高影响决定显示理由、
 置信度、最简回退和正常速度预览，并记录 `accept / adjust / reject`。调整或拒绝
@@ -169,7 +170,9 @@ node scripts/kacha.mjs review validate \
 
 每个决策的正常速度预览必须是可解码、有动态视频、有可试听音轨且达到最小代表
 时长的真实媒体；只有路径或扩展名不算证据。任一决策缺失时，即使全部点击
-`accept`，`readyForCandidate` 仍为 false。
+`accept`，`readyForCandidate` 仍为 false。项目、栏目、风格和平台 scope 必须由
+当前 Timeline 与 director 确定，CLI 不能把审片结果改挂到其他 scope；调整/拒绝的
+解决证据也必须通过同一真实媒体门禁。
 
 长期偏好只从明确审片结果生成候选，同一规则至少两条证据；不保存自由文本备注，
 不自动激活，激活和回滚都要求 `--confirm`。激活时必须从当前 source session
@@ -177,14 +180,20 @@ node scripts/kacha.mjs review validate \
 或本轮未再次出现的既有规则。真实质量用 `eval score/compare` 逐项测量；至少
 8 个同源人工复核项目只是提升声明的必要条件，还必须关键护栏全部可测且无退化，
 并至少有一个主要质量指标改善。禁止用单一综合分掩盖语义、连接、字幕、风格或
-人工干预退化。
+人工干预退化。评测的 source 必须是可解码动态视频，reviewed output 必须是带
+音轨视频并与申报时长一致；同一源片不能换 group 重复计数，源片错配或候选输出
+与基线完全相同都不得支持“版本提升”。偏好激活/回滚使用同一 profile 文件锁，
+且只有候选就绪的完整 session 才能学习。
 
 专业 NLE 交换使用 `nle export/import`。OTIO/FCPXML 保留语义 ID，CMX3600
 只做兼容导出；交换文件必须绑定当前基线 Timeline 与源片 SHA，FCPXML 的小数
 帧率使用标准有理数时间。任何导入都只生成 preview candidate，不能跨项目套用、
-覆盖基线或绕过 Delta、变化层 QC 和人工审片。项目需完整执行 V6 门禁时，在 manifest 设置
+覆盖既有输出或基线；导入 clip ID 必须来自基线，decision/semantic ID 必须保持
+一致，空时间线和小于一帧的区间直接失败。项目需完整执行 V6 门禁时，在 manifest 设置
 `intelligenceV6.required=true` 并登记 director、asset gap、perception audit 与
 semantic review session；v2 首剪和 v3 增量 manifest 使用同一开关，均不得忽略。
+门禁还会交叉核对 director、asset plan、Timeline、perception audit 与 review bundle
+是否属于同一证据集，单个文件各自有效仍不能跨项目拼装。
 完整合同见 `docs/INTELLIGENT_EDITING_V6.md`。
 
 ## 统一配置与默认剪辑要求

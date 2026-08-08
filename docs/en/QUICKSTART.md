@@ -211,7 +211,10 @@ node scripts/kacha.mjs studio serve
 
 Open `/review`, inspect each high-impact decision in a verified 1x preview with
 decodable video, audio, and representative duration, then record accept,
-adjust, or reject. Missing previews keep the candidate blocked. See
+adjust, or reject. Resolution evidence uses the same real video/audio gate, and
+the project/show/style/platform scope is derived from the current Timeline and
+director rather than reassigned by the review command. Missing previews keep
+the candidate blocked. See
 [V6 editorial evaluation and semantic review](INTELLIGENT_EDITING_V6.md) for
 evaluation, preference learning, NLE interchange, and gate integration.
 

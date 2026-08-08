@@ -20,6 +20,8 @@ import {
 } from "./agent_workspace_utils.mjs";
 import {
   fileIdentity,
+  fileIdentityMatches,
+  mediaIndexDigest,
   readJson,
   sha256File,
   sha256Value,
@@ -284,10 +286,28 @@ function visualEntries(files) {
   return entries;
 }
 
+function mergeProvenance(left, right) {
+  const flatten = (value) => value?.kind === "merged_local_sources"
+    ? value.sources ?? []
+    : value ? [value] : [];
+  const sources = [...flatten(left), ...flatten(right)];
+  const unique = [...new Map(sources.map((source) => [sha256Value(source), source])).values()];
+  if (unique.length <= 1) return unique[0] ?? null;
+  const evidence = unique
+    .map((source) => source.evidence ?? source.source ?? source.assetId ?? null)
+    .filter(Boolean);
+  return {
+    kind: "merged_local_sources",
+    evidence: evidence.length > 0 ? evidence : null,
+    sources: unique,
+    externalUpload: false,
+  };
+}
+
 function normalizeEntry(entry, root) {
   const file = path.resolve(root, entry.path);
   if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return null;
-  const identity = fileIdentity(file, { includeHash: false });
+  const identity = fileIdentity(file);
   const sidecar = sidecarMetadata(file);
   const merged = { ...sidecar.value, ...entry };
   const id = safeId(
@@ -300,10 +320,7 @@ function normalizeEntry(entry, root) {
     kind: merged.kind ?? kindFromPath(file),
     path: file,
     sourcePath: merged.sourcePath ? path.resolve(root, merged.sourcePath) : null,
-    identity: {
-      sizeBytes: identity.sizeBytes,
-      mtimeMs: identity.mtimeMs,
-    },
+    identity,
     range: (
       Number.isFinite(Number(merged.start))
       || Number.isFinite(Number(merged.end))
@@ -321,8 +338,9 @@ function normalizeEntry(entry, root) {
     },
     license: merged.license ?? merged.provenance?.license ?? "unknown",
     provenance: merged.provenance ?? {
-      kind: sidecar.path ? "local_sidecar" : "local_file",
-      evidence: sidecar.path,
+      kind: entry.__catalog ? "local_catalog" : sidecar.path ? "local_sidecar" : "local_file",
+      evidence: entry.__catalog ?? sidecar.path,
+      ...(entry.__catalog ? { catalogIndex: entry.__index } : {}),
       externalUpload: false,
     },
     semanticEvidence: [
@@ -372,6 +390,12 @@ if (action === "index") {
     byKey.set(key, prior
       ? {
           ...prior,
+          kind: normalized.kind ?? prior.kind,
+          sourcePath: normalized.sourcePath ?? prior.sourcePath,
+          license: !["unknown", "unverified"].includes(normalized.license)
+            ? normalized.license
+            : prior.license,
+          provenance: mergeProvenance(prior.provenance, normalized.provenance),
           fields: Object.fromEntries(
             Object.keys(prior.fields).map((field) => [
               field,
@@ -386,8 +410,17 @@ if (action === "index") {
       : normalized);
   }
   const items = [...byKey.values()];
+  const itemRefs = new Set();
+  for (const item of items) {
+    if (itemRefs.has(item.ref)) {
+      fail("KACHA-E140", `素材索引出现重复 ref：${item.ref}；请为 catalog 项提供唯一 id`, 2);
+    }
+    itemRefs.add(item.ref);
+  }
   const report = {
     schemaVersion: "1.0",
+    kind: "kacha_media_index",
+    digestVersion: "2",
     generatedAt: now(),
     status: "pass",
     engine: configuration.engine,
@@ -418,15 +451,7 @@ if (action === "index") {
       },
     },
   };
-  report.digest = sha256Value({
-    root,
-    items: items.map((item) => ({
-      ref: item.ref,
-      identity: item.identity,
-      range: item.range,
-      fields: item.fields,
-    })),
-  });
+  report.digest = mediaIndexDigest(report);
   writeJson(output, report);
   console.log(JSON.stringify({
     schemaVersion: "1.0",
@@ -451,8 +476,27 @@ const query = option(args, "--query");
 const limit = Number(option(args, "--limit", "8"));
 if (!query || !Number.isInteger(limit) || limit < 1 || limit > 50) usage();
 const index = readJson(indexFile);
-if (index.schemaVersion !== "1.0" || !Array.isArray(index.items)) {
+if (
+  index.schemaVersion !== "1.0"
+  || index.kind !== "kacha_media_index"
+  || index.digestVersion !== "2"
+  || !Array.isArray(index.items)
+  || index.digest !== mediaIndexDigest(index)
+) {
   fail("KACHA-E140", "素材索引格式无效", 2);
+}
+const indexRefs = new Set();
+for (const [itemIndex, item] of index.items.entries()) {
+  if (!item.ref || indexRefs.has(item.ref)) {
+    fail("KACHA-E140", `素材索引 items[${itemIndex}].ref 缺失或重复`, 2);
+  }
+  indexRefs.add(item.ref);
+  if (
+    !item.identity?.sha256
+    || path.resolve(item.identity.path ?? "") !== path.resolve(item.path ?? "")
+  ) {
+    fail("KACHA-E140", `素材索引 items[${itemIndex}] 缺少与 path 一致的强文件身份`, 2);
+  }
 }
 const configuration = loadConfiguration();
 const baseTokens = tokenize(query);
@@ -500,6 +544,9 @@ for (const item of eligible) {
     });
   }
   if (score <= 0) continue;
+  if (!fileIdentityMatches(item.path, item.identity)) {
+    fail("KACHA-E120", `素材索引已过期：${item.ref} 的文件内容或身份已变化，请重建索引`);
+  }
   const evidenceFactor = item.semanticEvidence?.includes("filename_only") ? 0.6 : 1;
   scored.push({
     score: Number((score * evidenceFactor).toFixed(4)),
