@@ -78,7 +78,9 @@ node scripts/kacha.mjs intelligence assets \
    必须补来源证据。
 
 素材索引截断、许可未知或真实证据未补齐时，`--for-execution` 失败。生成候选
-不会预授权外传或付费调用。
+不会预授权外传或付费调用，也不会因为存在 prompt 就变成执行就绪。生成结果要先
+作为本地素材写入索引，带当前 SHA-256、明确许可与来源，再重新生成 gap plan；
+否则 `generated_asset_not_materialized` 持续阻断渲染。
 
 ### 3. 时序感知审计
 
@@ -126,7 +128,10 @@ node scripts/kacha.mjs studio serve
 - 项目 Jobs、遥测、缓存、编码、磁盘、ETA 与费用证据状态。
 
 视频通过受 SHA-256 约束的本地 Range 接口播放，服务仍只监听 loopback。接受
-不等于发布；调整和拒绝没有当前解决证据时不能成为候选就绪状态。
+不等于发布。候选就绪要求每个决策的 after 预览都能被 FFprobe 解码为动态视频，
+包含可试听音轨并达到最小代表时长；播放器固定 1×。缺预览时，全部 `accept`
+也不能把 session 变成 `readyForCandidate=true`。调整和拒绝没有当前解决证据时
+同样不能成为候选就绪状态。
 
 命令行等价入口：
 
@@ -156,8 +161,10 @@ node scripts/kacha.mjs review activate \
 
 偏好只从明确的接受、调整和拒绝建立；同一规则至少需要两条证据。候选不保存
 自由文本备注，不保存人物或内容身份，不自动激活。激活前会复核来源 session 的
-SHA-256；激活后形成单调递增的版本号和不可冲突历史目录。回滚不会把版本号倒退，
-而是以目标规则建立一个新的可审计版本：
+SHA-256，并从 session 重新计算候选规则，不能通过修改 candidate JSON 后重算
+digest 伪造学习结果。新规则按项目、栏目、风格和平台 scope 合并；其他 scope
+及当前候选未再次出现的既有规则不会被清空。激活后形成单调递增的版本号和不可
+冲突历史目录。回滚不会把版本号倒退，而是以目标规则建立一个新的可审计版本：
 
 ```bash
 node scripts/kacha.mjs review rollback \
@@ -190,7 +197,9 @@ node scripts/kacha.mjs eval compare \
 
 单份报告只能建立基线，不能宣称提升。同源成对比较至少需要 8 个来源组；比较
 前会复核数据集 SHA-256，并且所有差值只计算双方真实共有的配对来源，不让未配对
-样本污染结论。报告保留所有维度，不生成可掩盖退化的综合虚荣分数。
+样本污染结论。8 组只是必要条件：语义损坏、人工干预、连接拒绝、字幕修正、
+风格违规和高影响决策拒绝等护栏必须全部可测且无退化，并且至少一个主要质量
+指标改善，才允许整体提升声明。报告保留所有维度，不生成可掩盖退化的综合虚荣分数。
 
 ### 7. 专业 NLE 交换
 
@@ -203,8 +212,9 @@ node scripts/kacha.mjs nle export \
   --timeline timeline.json --format cmx3600 --output timeline.edl
 ```
 
-OTIO 与 FCPXML 保留咔嚓 clip ID、semantic beat ID 和 decision ID。人工在 NLE
-修改后，只能导入为独立候选：
+OTIO 与 FCPXML 保留咔嚓 clip ID、semantic beat ID 和 decision ID，并绑定导出时
+的基线 Timeline SHA 与源片 SHA。FCPXML 对 23.976/29.97/59.94 等帧率使用标准
+有理数时间，不输出无效的小数分母。人工在 NLE 修改后，只能导入为独立候选：
 
 ```bash
 node scripts/kacha.mjs nle import \
@@ -214,7 +224,8 @@ node scripts/kacha.mjs nle import \
 ```
 
 导入不覆盖基线，强制 `mode=preview`，并要求 Timeline validate、Delta、变化层
-QC 和人工正常速度复核。CMX3600 因语义承载能力有限，目前只用于兼容导出。
+QC 和人工正常速度复核；交换文件与当前基线或源片不一致时直接拒绝，不能跨项目
+套用区间。CMX3600 因语义承载能力有限，目前只用于兼容导出。
 复杂字幕、蒙版、Beauty、混音和动效仍以 Timeline IR 为唯一事实源。
 
 ### 8. 项目可观测性
@@ -225,12 +236,15 @@ node scripts/kacha.mjs intelligence observe \
 ```
 
 报告汇总：后台任务状态、失败/中断、阶段历史耗时、Token 证据、缓存命中、
-视频编码次数和磁盘空间。没有可靠进度分母时不猜 ETA；没有 provider 真实费用
+视频编码次数和磁盘空间。崩溃留下的截断 JSONL 或单个损坏 job 不再使整个页面
+失效，而是跳过坏记录并标记 `integrity.status=degraded`；Token 同时区分 actual、
+estimated 和 unavailable。没有可靠进度分母时不猜 ETA；没有 provider 真实费用
 时不按 Token 猜价格。
 
 ## 二、与现有项目门禁的连接
 
-旧项目保持兼容。需要启用完整 V6 门禁时，在项目 manifest 增加：
+旧项目保持兼容。需要启用完整 V6 门禁时，在项目 manifest 增加；v2 首剪和 v3
+增量项目使用同一开关：
 
 ```json
 {
@@ -247,9 +261,9 @@ node scripts/kacha.mjs intelligence observe \
 门禁行为：
 
 - `gate-plan`：校验导演计划和素材缺口计划的 schema、digest 与全片预算；
-- `gate-render`：素材索引截断或真实证据缺口未解决时停止；
+- `gate-render`：素材索引截断、生成候选尚未物化或真实证据缺口未解决时停止；
 - `gate-release`：时序审计有 blocker、人工动态审片被取消、审片决策未覆盖或
-  调整/拒绝没有解决证据时停止；
+  正常速度带声音预览缺失、调整/拒绝没有解决证据时停止；
 - V6 证据不能降低 proposal、Timeline IR、QC、release report 的既有要求。
 
 ## 三、验证策略
@@ -259,9 +273,9 @@ node scripts/kacha.mjs intelligence observe \
 - 全片导演唯一开场、安静比例和四风格语法；
 - 许可素材命中与真实证据阻断；
 - 主效果冲突、闪烁、字号和声音落点阻断；
-- 审片全覆盖、偏好候选、未确认激活失败；
-- 8 组同源人工评测才允许提升声明；
-- OTIO/FCPXML 语义 ID 往返和 candidate-only；
+- 审片全覆盖、真实媒体预览、偏好候选重建、未确认激活失败；
+- 8 组同源人工评测且关键护栏无退化才允许提升声明；
+- OTIO/FCPXML 语义 ID、基线与源片绑定、分数帧率往返和 candidate-only；
 - 审片台 loopback、CSP 与本地视频播放边界。
 
 运行：

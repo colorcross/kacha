@@ -209,8 +209,9 @@ node scripts/kacha.mjs review build \
 node scripts/kacha.mjs studio serve
 ```
 
-Open `/review`, inspect each high-impact decision at normal speed, and record
-accept, adjust, or reject. See
+Open `/review`, inspect each high-impact decision in a verified 1x preview with
+decodable video, audio, and representative duration, then record accept,
+adjust, or reject. Missing previews keep the candidate blocked. See
 [V6 editorial evaluation and semantic review](INTELLIGENT_EDITING_V6.md) for
 evaluation, preference learning, NLE interchange, and gate integration.
 

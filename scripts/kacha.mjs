@@ -224,21 +224,6 @@ function gatePlanV2() {
   );
   invoke("validate_edit_proposal.mjs", [proposal]);
   invoke("validate_edit_plan.mjs", [editPlan]);
-  const intelligenceRequired = project.intelligenceV6?.required === true;
-  for (const [field, required] of [
-    ["directorPlan", intelligenceRequired],
-    ["assetGapPlan", intelligenceRequired],
-  ]) {
-    const entry = project.plans[field];
-    if (!entry && required) {
-      console.error(`V6 智能剪辑项目缺少 plans.${field}`);
-      process.exit(1);
-    }
-    if (entry) {
-      const plan = requireProjectPath(projectFile, entry, `plans.${field}`);
-      invoke("kacha_intelligence.mjs", ["validate-plan", "--plan", plan]);
-    }
-  }
   const proposalPlan = readJson(proposal);
   if (
     proposalPlan.authorization?.canExecute === true
@@ -510,9 +495,36 @@ function gatePlanV3() {
   ]);
 }
 
+function validateV6Evidence(stage) {
+  const required = project.intelligenceV6?.required === true;
+  const plans = project.plans ?? {};
+  const entries = stage === "plan"
+    ? [
+        ["directorPlan", "kacha_intelligence.mjs", ["validate-plan", "--plan", null]],
+        ["assetGapPlan", "kacha_intelligence.mjs", ["validate-plan", "--plan", null]],
+      ]
+    : stage === "render"
+      ? [["assetGapPlan", "kacha_intelligence.mjs", ["validate-plan", "--plan", null, "--for-execution"]]]
+      : [
+          ["temporalPerceptionAudit", "kacha_intelligence.mjs", ["validate-plan", "--plan", null]],
+          ["semanticReviewSession", "kacha_review.mjs", ["validate", "--session", null, "--for-candidate"]],
+        ];
+  for (const [field, script, argumentTemplate] of entries) {
+    const entry = plans[field];
+    if (!entry && required) {
+      console.error(`V6 智能剪辑${stage === "release" ? "发布" : "项目"}缺少 plans.${field}`);
+      process.exit(1);
+    }
+    if (!entry) continue;
+    const evidence = requireProjectPath(projectFile, entry, `plans.${field}`);
+    invoke(script, argumentTemplate.map((item) => item === null ? evidence : item));
+  }
+}
+
 function gatePlan() {
   if (project.schemaVersion === "3.0") gatePlanV3();
   else gatePlanV2();
+  validateV6Evidence("plan");
 }
 
 if (command === "gate-plan") {
@@ -573,20 +585,8 @@ if (command === "gate-plan") {
       const plan = requireProjectPath(projectFile, entry, "generatedShotPlans");
       invoke("validate_generated_shot_plan.mjs", [plan, "--for-execution"]);
     }
-    if (project.plans.assetGapPlan) {
-      const assetGapPlan = requireProjectPath(
-        projectFile,
-        project.plans.assetGapPlan,
-        "plans.assetGapPlan",
-      );
-      invoke("kacha_intelligence.mjs", [
-        "validate-plan",
-        "--plan",
-        assetGapPlan,
-        "--for-execution",
-      ]);
-    }
   }
+  validateV6Evidence("render");
 } else if (command === "qc") {
   if (project.schemaVersion === "3.0") {
     gatePlanV3();
@@ -607,6 +607,7 @@ if (command === "gate-plan") {
   ]);
 } else if (command === "gate-release") {
   gatePlan();
+  validateV6Evidence("release");
   if (project.schemaVersion === "3.0") {
     const context = requireProjectPath(projectFile, project.context, "context");
     const artifactIndex = requireProjectPath(
@@ -631,28 +632,6 @@ if (command === "gate-plan") {
     if (proposal.authorization?.canExecute !== true) {
       console.error("方案未授权执行，release gate 拒绝通过");
       process.exit(1);
-    }
-    const intelligenceRequired = project.intelligenceV6?.required === true;
-    for (const [field, script, argumentsList] of [
-      [
-        "temporalPerceptionAudit",
-        "kacha_intelligence.mjs",
-        ["validate-plan", "--plan"],
-      ],
-      [
-        "semanticReviewSession",
-        "kacha_review.mjs",
-        ["validate", "--session"],
-      ],
-    ]) {
-      const entry = project.plans[field];
-      if (!entry && intelligenceRequired) {
-        console.error(`V6 智能剪辑发布缺少 plans.${field}`);
-        process.exit(1);
-      }
-      if (!entry) continue;
-      const evidence = requireProjectPath(projectFile, entry, `plans.${field}`);
-      invoke(script, [...argumentsList, evidence, ...(field === "semanticReviewSession" ? ["--for-candidate"] : [])]);
     }
     invoke("validate_release_report.mjs", [projectFile]);
   }

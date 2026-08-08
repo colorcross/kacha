@@ -206,11 +206,11 @@ V6 不改变 Timeline IR 与 Render Graph 的事实源地位，在其前后增�
 对象：
 
 - `globalDirectorPlan`：全片主线、内容优先级、唯一开场、强调预算和安静比例；
-- `assetGapPlan`：许可本地候选、非事实生成候选和必须补真实证据的阻断项；
+- `assetGapPlan`：许可本地候选、尚未物化的非事实生成候选和必须补真实证据的阻断项；
 - `temporalPerceptionAudit`：主效果并发、阅读时间、闪烁、字号、蒙版、声音
   落点、运动覆盖和人工动态复核要求；
-- `semanticReviewBundle / Session`：高影响决策的理由、置信度、正常速度预览、
-  接受/调整/拒绝和解决证据；
+- `semanticReviewBundle / Session`：高影响决策的理由、置信度、经解码/视频/音轨/
+  代表时长验证的 1× 正常速度预览、接受/调整/拒绝和解决证据；
 - `preferenceCandidate / Profile`：显式反馈的证据计数、版本激活与回滚；
 - `editorialEvalDataset / Report / Comparison`：人工评测基线和同源成对比较；
 - `nleExport / ImportReport`：OTIO/FCPXML/CMX3600 交换与 candidate-only 边界；
@@ -224,10 +224,11 @@ semantic cues → director → asset gaps → Timeline IR / Render Graph
                          preference candidate + paired evaluation
 ```
 
-`intelligenceV6.required=true` 时，`gate-plan`、`gate-render` 和 `gate-release`
-分别验证上述计划、执行缺口和审片证据。旧项目默认兼容。NLE 导入只建立独立
-preview candidate；偏好只建立候选并显式激活；自动审计永远保留人工正常速度
-通看。完整命令与证据边界见 `docs/INTELLIGENT_EDITING_V6.md`。
+`intelligenceV6.required=true` 时，v2 与 v3 的 `gate-plan`、`gate-render` 和
+`gate-release` 分别验证上述计划、执行缺口和审片证据。旧项目默认兼容。NLE
+交换绑定基线与源片 SHA，导入只建立独立 preview candidate；偏好候选激活时从
+source session 重建并按 scope 合并；自动审计永远保留人工正常速度通看。完整
+命令与证据边界见 `docs/INTELLIGENT_EDITING_V6.md`。
 
 ## 配置边界
 

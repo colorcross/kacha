@@ -56,8 +56,35 @@ function frames(seconds, fps) {
   return Math.round(Number(seconds) * fps);
 }
 
+function gcd(left, right) {
+  let a = Math.abs(Math.trunc(left));
+  let b = Math.abs(Math.trunc(right));
+  while (b !== 0) [a, b] = [b, a % b];
+  return a || 1;
+}
+
+function fpsFraction(fps) {
+  for (const [value, numerator, denominator] of [
+    [23.976, 24000, 1001],
+    [29.97, 30000, 1001],
+    [59.94, 60000, 1001],
+  ]) {
+    if (Math.abs(Number(fps) - value) < 0.001) return { numerator, denominator };
+  }
+  const text = Number(fps).toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
+  const decimals = text.includes(".") ? text.split(".")[1].length : 0;
+  const denominator = 10 ** decimals;
+  const numerator = Math.round(Number(text) * denominator);
+  const divisor = gcd(numerator, denominator);
+  return { numerator: numerator / divisor, denominator: denominator / divisor };
+}
+
 function rational(frameCount, fps) {
-  return `${frameCount}/${fps}s`;
+  const rate = fpsFraction(fps);
+  const numerator = Math.round(frameCount) * rate.denominator;
+  const denominator = rate.numerator;
+  const divisor = gcd(numerator, denominator);
+  return `${numerator / divisor}/${denominator / divisor}s`;
 }
 
 function timecode(frameCount, fps) {
@@ -105,6 +132,10 @@ function timelineSource(timelineFile, timeline) {
   const source = path.resolve(path.dirname(timelineFile), candidate ?? "");
   if (!candidate || !fs.existsSync(source) || !fs.statSync(source).isFile()) {
     throw new Error(`Timeline source 不存在：${source}`);
+  }
+  const current = fileIdentity(source);
+  if (!timeline.source?.sha256 || timeline.source.sha256 !== current.sha256) {
+    throw new Error("NLE 交换要求 Timeline source 绑定当前真实 SHA-256");
   }
   return source;
 }
@@ -168,6 +199,12 @@ function fcpxmlExport(timelineFile, timeline) {
   const { fps, clips, durationFrames } = clipRows(timeline);
   const formatId = "r1";
   const assetId = "r2";
+  const rate = fpsFraction(fps);
+  const timelineMetadata = Buffer.from(JSON.stringify({
+    timelineSha256: fileIdentity(timelineFile).sha256,
+    sourceSha256: timeline.source.sha256,
+    sourceUrl: pathToFileURL(source).href,
+  }), "utf8").toString("base64");
   const clipXml = clips.map((clip) => {
     const metadata = Buffer.from(JSON.stringify(clip.metadata), "utf8").toString("base64");
     return [
@@ -184,7 +221,7 @@ function fcpxmlExport(timelineFile, timeline) {
     "<!DOCTYPE fcpxml>",
     "<fcpxml version=\"1.11\">",
     "  <resources>",
-    `    <format id="${formatId}" name="Kacha ${timeline.output?.width ?? 1920}x${timeline.output?.height ?? 1080}" frameDuration="1/${fps}s" width="${timeline.output?.width ?? 1920}" height="${timeline.output?.height ?? 1080}"/>`,
+    `    <format id="${formatId}" name="Kacha ${timeline.output?.width ?? 1920}x${timeline.output?.height ?? 1080}" frameDuration="${rate.denominator}/${rate.numerator}s" width="${timeline.output?.width ?? 1920}" height="${timeline.output?.height ?? 1080}"/>`,
     `    <asset id="${assetId}" name="${xmlEscape(path.basename(source))}" src="${xmlEscape(pathToFileURL(source).href)}" start="0s" hasVideo="1" hasAudio="1"/>`,
     "  </resources>",
     "  <library>",
@@ -194,6 +231,7 @@ function fcpxmlExport(timelineFile, timeline) {
     "          <spine>",
     clipXml,
     "          </spine>",
+    `          <metadata><md key="com.kacha.timeline" value="${timelineMetadata}"/></metadata>`,
     "        </sequence>",
     "      </project>",
     "    </event>",
@@ -259,19 +297,35 @@ export function exportNle(timelineFile, format, outputFile) {
   return { ...report, report: fileIdentity(reportFile) };
 }
 
-function otioClips(value) {
+function otioClips(value, baseIdentity, source) {
   if (value.OTIO_SCHEMA !== "Timeline.1" || value.metadata?.kacha?.semanticIdsPreserved !== true) {
     throw new Error("只导入由咔嚓导出且保留语义 ID 的 OTIO");
   }
   const track = value.tracks?.children?.find((item) => item.OTIO_SCHEMA === "Track.1");
   if (!track) throw new Error("OTIO 缺少视频 Track");
+  if (value.metadata?.kacha?.timelineSha256 !== baseIdentity.sha256) {
+    throw new Error("OTIO 不是从当前基线 Timeline 导出，拒绝跨项目套用区间");
+  }
   return (track.children ?? []).filter((item) => item.OTIO_SCHEMA === "Clip.2").map((clip, index) => {
-    const rate = Number(clip.source_range?.start_time?.rate);
-    const start = Number(clip.source_range?.start_time?.value) / rate;
-    const duration = Number(clip.source_range?.duration?.value) / rate;
-    if (!(rate > 0 && start >= 0 && duration > 0)) throw new Error(`OTIO clip[${index}] 时间无效`);
+    const startRate = Number(clip.source_range?.start_time?.rate);
+    const durationRate = Number(clip.source_range?.duration?.rate);
+    const start = Number(clip.source_range?.start_time?.value) / startRate;
+    const duration = Number(clip.source_range?.duration?.value) / durationRate;
+    if (!(startRate > 0 && durationRate > 0 && start >= 0 && duration > 0)) {
+      throw new Error(`OTIO clip[${index}] 时间无效`);
+    }
+    let referencedSource = null;
+    try {
+      referencedSource = fileURLToPath(clip.media_reference?.target_url ?? "");
+    } catch {
+      throw new Error(`OTIO clip[${index}] 源素材 URL 无效`);
+    }
+    if (path.resolve(referencedSource) !== path.resolve(source)) {
+      throw new Error(`OTIO clip[${index}] 引用了其他源素材`);
+    }
+    if (!clip.metadata?.kacha?.kachaId) throw new Error(`OTIO clip[${index}] 丢失咔嚓 clip ID`);
     return {
-      id: clip.metadata?.kacha?.kachaId ?? clip.name ?? `clip-${index + 1}`,
+      id: clip.metadata.kacha.kachaId,
       sourceStart: round(start),
       sourceEnd: round(start + duration),
       sourceDecisionId: clip.metadata?.kacha?.sourceDecisionId ?? null,
@@ -288,12 +342,40 @@ function attribute(tag, name) {
 function rationalSeconds(value) {
   const match = /^(\d+)(?:\/(\d+))?s$/.exec(String(value ?? ""));
   if (!match) throw new Error(`FCPXML 时间值无效：${value}`);
-  return Number(match[1]) / Number(match[2] ?? 1);
+  const denominator = Number(match[2] ?? 1);
+  if (!(denominator > 0)) throw new Error(`FCPXML 时间分母无效：${value}`);
+  return Number(match[1]) / denominator;
 }
 
-function fcpxmlClips(xml) {
+function fcpxmlClips(xml, baseIdentity, source, sourceSha256) {
   if (!/<fcpxml version="1\.11">/.test(xml) || !/com\.kacha\.clip/.test(xml)) {
     throw new Error("只导入由咔嚓导出且带 com.kacha.clip 元数据的 FCPXML");
+  }
+  const timelineMd = /<md key="com\.kacha\.timeline" value="([^"]+)"\/>/.exec(xml);
+  let timelineMetadata = null;
+  try {
+    timelineMetadata = timelineMd
+      ? JSON.parse(Buffer.from(timelineMd[1], "base64").toString("utf8"))
+      : null;
+  } catch {
+    throw new Error("FCPXML 的咔嚓基线元数据无效");
+  }
+  if (
+    timelineMetadata?.timelineSha256 !== baseIdentity.sha256
+    || timelineMetadata?.sourceSha256 !== sourceSha256
+    || timelineMetadata?.sourceUrl !== pathToFileURL(source).href
+  ) throw new Error("FCPXML 不是从当前基线与源素材导出，拒绝跨项目套用区间");
+  const assetTag = /<asset\b([^>]*)\/>/.exec(xml)?.[1] ?? null;
+  if (!assetTag) throw new Error("FCPXML 缺少源素材 asset");
+  const assetId = attribute(assetTag, "id");
+  let assetSource = null;
+  try {
+    assetSource = fileURLToPath(attribute(assetTag, "src") ?? "");
+  } catch {
+    throw new Error("FCPXML 源素材 URL 无效");
+  }
+  if (!assetId || path.resolve(assetSource) !== path.resolve(source)) {
+    throw new Error("FCPXML asset 与当前基线源素材不一致");
   }
   const clips = [];
   const expression = /<asset-clip\b([^>]*)>([\s\S]*?)<\/asset-clip>/g;
@@ -303,10 +385,12 @@ function fcpxmlClips(xml) {
     const body = match[2];
     const start = rationalSeconds(attribute(tag, "start"));
     const duration = rationalSeconds(attribute(tag, "duration"));
+    if (attribute(tag, "ref") !== assetId) throw new Error("FCPXML clip 引用了其他 asset");
     const md = /<md key="com\.kacha\.clip" value="([^"]+)"\/>/.exec(body);
     const metadata = md ? JSON.parse(Buffer.from(md[1], "base64").toString("utf8")) : {};
+    if (!metadata.kachaId) throw new Error("FCPXML clip 丢失咔嚓 clip ID");
     clips.push({
-      id: metadata.kachaId ?? attribute(tag, "name") ?? `clip-${clips.length + 1}`,
+      id: metadata.kachaId,
       sourceStart: round(start),
       sourceEnd: round(start + duration),
       sourceDecisionId: metadata.sourceDecisionId ?? null,
@@ -317,6 +401,14 @@ function fcpxmlClips(xml) {
   return clips;
 }
 
+function validateImportedClips(clips) {
+  const ids = new Set();
+  for (const [index, clip] of clips.entries()) {
+    if (!clip.id || ids.has(clip.id)) throw new Error(`导入 clip[${index}].id 缺失或重复`);
+    ids.add(clip.id);
+  }
+}
+
 export function importNle(inputFile, format, baseTimelineFile, outputFile) {
   const input = ensureFile(inputFile, "NLE 交换文件");
   const baseFile = ensureFile(baseTimelineFile, "基线 Timeline IR");
@@ -325,10 +417,15 @@ export function importNle(inputFile, format, baseTimelineFile, outputFile) {
   if (output === baseFile) throw new Error("NLE 导入不得覆盖基线 Timeline IR");
   if (fs.existsSync(output)) throw new Error(`拒绝覆盖候选时间线：${output}`);
   const base = readJson(baseFile);
+  const baseIdentity = fileIdentity(baseFile);
+  const source = timelineSource(baseFile, base);
   let clips;
-  if (format === "otio") clips = otioClips(readJson(input));
-  else if (format === "fcpxml") clips = fcpxmlClips(fs.readFileSync(input, "utf8"));
+  if (format === "otio") clips = otioClips(readJson(input), baseIdentity, source);
+  else if (format === "fcpxml") {
+    clips = fcpxmlClips(fs.readFileSync(input, "utf8"), baseIdentity, source, base.source.sha256);
+  }
   else throw new Error("NLE 导入当前支持 otio 或 fcpxml；CMX3600 只用于兼容导出");
+  validateImportedClips(clips);
   const candidate = structuredClone(base);
   candidate.mode = "preview";
   candidate.edl = clips;

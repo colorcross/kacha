@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   acquireFileLock,
   fileIdentity,
+  mediaSummary,
   readJson,
   sha256Value,
   writeJsonAtomic,
@@ -176,7 +177,7 @@ export function buildReviewBundle(timelineFile, directorFile, options = {}) {
     decisions,
     summary: {
       total: decisions.length,
-      withNormalSpeedPreview: decisions.filter((item) => item.preview.after).length,
+      withNormalSpeedPreview: decisions.filter(hasValidNormalSpeedPreview).length,
       requiresHuman: decisions.filter((item) => item.requiresHuman).length,
     },
     boundaries: {
@@ -205,6 +206,9 @@ export function buildReviewBundle(timelineFile, directorFile, options = {}) {
       adjusted: 0,
       rejected: 0,
       unresolvedChanges: 0,
+      missingNormalSpeedPreviews: decisions.filter((item) => (
+        item.preview?.normalSpeedRequired === true && !hasValidNormalSpeedPreview(item)
+      )).length,
       readyForCandidate: false,
     },
   };
@@ -224,20 +228,8 @@ export function loadReviewBundle(bundleFile) {
   const file = ensureFile(bundleFile, "审片包");
   if (fs.statSync(file).size > 8 * 1024 * 1024) throw new Error("审片包超过 8 MB");
   const bundle = readJson(file);
-  if (
-    bundle.schemaVersion !== "1.0"
-    || bundle.kind !== "kacha_semantic_review_bundle"
-    || bundle.digest !== stableDigest(bundle)
-  ) throw new Error("审片包 schema 或 digest 无效");
-  if (!currentIdentityMatches(bundle.timeline)) throw new Error("审片包绑定的 Timeline IR 内容已变化");
-  if (!currentIdentityMatches(bundle.directorPlan)) throw new Error("审片包绑定的 director plan 内容已变化");
-  const directorErrors = validateDirectorPlan(readJson(bundle.directorPlan.path));
-  if (directorErrors.length > 0) throw new Error(directorErrors.join("\n"));
-  if (
-    bundle.candidateVideo
-    && bundle.candidateVideo.missing !== true
-    && !currentIdentityMatches(bundle.candidateVideo)
-  ) throw new Error("审片包绑定的候选视频内容已变化");
+  const bundleErrors = reviewBundleErrors(bundle);
+  if (bundleErrors.length > 0) throw new Error(bundleErrors.join("\n"));
   const sessionFile = path.join(path.dirname(file), "review-session.json");
   const session = fs.existsSync(sessionFile) ? readJson(sessionFile) : null;
   if (session) {
@@ -256,8 +248,54 @@ function currentIdentityMatches(identity) {
   }
 }
 
-function reviewSessionErrors(session, bundle, bundleFile) {
+function normalSpeedPreviewError(identity, decision) {
+  if (!currentIdentityMatches(identity)) return "文件不存在或 SHA-256 已变化";
+  try {
+    const summary = mediaSummary(identity.path);
+    if (!summary.video || !(summary.duration > 0) || !(summary.averageFps > 0)) {
+      return "不是可解码的动态视频";
+    }
+    if (!summary.audio || !(summary.audioDuration > 0)) return "缺少可试听音轨";
+    const decisionSeconds = Number(decision.range?.end) - Number(decision.range?.start);
+    const minimumSeconds = Math.min(1, Math.max(0.1, decisionSeconds));
+    if (summary.duration + 0.05 < minimumSeconds) {
+      return `动态预览短于最小代表时长 ${minimumSeconds.toFixed(2)} 秒`;
+    }
+    return null;
+  } catch (error) {
+    return `媒体探测失败：${error.message}`;
+  }
+}
+
+function hasValidNormalSpeedPreview(decision) {
+  return !normalSpeedPreviewError(decision.preview?.after, decision);
+}
+
+function reviewDecisionContract(decision) {
+  return {
+    id: decision.id,
+    objectRef: decision.objectRef,
+    category: decision.category,
+    title: decision.title,
+    range: decision.range,
+    rationale: decision.rationale,
+    confidence: decision.confidence,
+    proposed: decision.proposed,
+    fallback: decision.fallback,
+    sourceDigest: decision.sourceDigest,
+    preference: decision.preference,
+    requiresHuman: decision.requiresHuman,
+    normalSpeedRequired: decision.preview?.normalSpeedRequired,
+  };
+}
+
+function reviewBundleErrors(bundle) {
   const errors = [];
+  if (
+    bundle.schemaVersion !== "1.0"
+    || bundle.kind !== "kacha_semantic_review_bundle"
+    || bundle.digest !== stableDigest(bundle)
+  ) errors.push("审片包 schema 或 digest 无效");
   if (!currentIdentityMatches(bundle.timeline)) errors.push("审片包绑定的 Timeline IR 内容已变化");
   if (!currentIdentityMatches(bundle.directorPlan)) {
     errors.push("审片包绑定的 director plan 内容已变化");
@@ -269,6 +307,116 @@ function reviewSessionErrors(session, bundle, bundleFile) {
     && bundle.candidateVideo.missing !== true
     && !currentIdentityMatches(bundle.candidateVideo)
   ) errors.push("审片包绑定的候选视频内容已变化");
+  const decisions = Array.isArray(bundle.decisions) ? bundle.decisions : [];
+  if (!Array.isArray(bundle.decisions) || decisions.length === 0) {
+    errors.push("审片包 decisions 不能为空");
+    return errors;
+  }
+  const ids = new Set();
+  for (const [index, decision] of decisions.entries()) {
+    if (!decision.id || ids.has(decision.id)) errors.push(`decisions[${index}].id 缺失或重复`);
+    ids.add(decision.id);
+    if (!(Number(decision.range?.start) >= 0 && Number(decision.range?.end) > Number(decision.range?.start))) {
+      errors.push(`decisions[${index}].range 无效`);
+    }
+    if (decision.preview?.normalSpeedRequired !== true) {
+      errors.push(`decisions[${index}] 不得取消正常速度动态预览`);
+    }
+    for (const variant of ["before", "after"]) {
+      if (decision.preview?.[variant] && !currentIdentityMatches(decision.preview[variant])) {
+        errors.push(`decisions[${index}].preview.${variant} 内容已变化或不存在`);
+      }
+    }
+    if (decision.preview?.after) {
+      const previewError = normalSpeedPreviewError(decision.preview.after, decision);
+      if (previewError) errors.push(`decisions[${index}].preview.after 不是有效的正常速度带声音预览：${previewError}`);
+    }
+  }
+  if (currentIdentityMatches(bundle.timeline) && currentIdentityMatches(bundle.directorPlan)) {
+    const timeline = readJson(bundle.timeline.path);
+    const director = readJson(bundle.directorPlan.path);
+    const expected = new Map();
+    for (const beat of director.beats.filter((item) => (
+      item.attentionClass === "high_impact" || item.humanReviewRequired
+    ))) {
+      const category = beat.narrativeRole === "evidence"
+        ? "evidence"
+        : beat.narrativeRole === "hook"
+          ? "opening"
+          : "effect";
+      const id = safeId(`beat-${beat.id}`);
+      expected.set(id, reviewDecisionContract({
+        id,
+        objectRef: `@range:${safeId(beat.id, "beat")}`,
+        category,
+        title: `${beat.narrativeRole} · ${beat.text || beat.id}`,
+        range: { start: beat.start, end: beat.end },
+        rationale: beat.effectReason,
+        confidence: beat.confidence,
+        proposed: {
+          intent: beat.visualIntent,
+          mechanism: beat.styleMechanism,
+          effectDecision: beat.effectDecision,
+        },
+        fallback: beat.simplerAlternative,
+        sourceDigest: sha256Value(beat),
+        preference: preferenceMetadata(category, beat.styleMechanism),
+        requiresHuman: true,
+        preview: { normalSpeedRequired: true },
+      }));
+    }
+    for (const [index, overlay] of (timeline.visual?.overlays ?? []).entries()) {
+      const id = safeId(`overlay-${overlay.id ?? index + 1}`);
+      expected.set(id, reviewDecisionContract({
+        id,
+        objectRef: `@overlay:${safeId(overlay.id ?? `overlay-${index + 1}`, "overlay")}`,
+        category: "overlay",
+        title: overlay.title ?? overlay.text ?? overlay.id ?? `画面叠加 ${index + 1}`,
+        range: { start: Number(overlay.start), end: Number(overlay.end) },
+        rationale: overlay.reason ?? overlay.trigger ?? "时间线中的高影响画面叠加",
+        confidence: Number(overlay.confidence ?? 1),
+        proposed: {
+          kind: overlay.kind ?? "image",
+          effectType: overlay.effectType ?? null,
+          geometry: {
+            x: overlay.x,
+            y: overlay.y,
+            width: overlay.width,
+            height: overlay.height,
+          },
+        },
+        fallback: overlay.simplerAlternative ?? "remove_overlay_and_hold_live_action",
+        sourceDigest: sha256Value(overlay),
+        preference: preferenceMetadata("overlay", overlay.effectType ?? overlay.kind ?? "overlay"),
+        requiresHuman: true,
+        preview: { normalSpeedRequired: true },
+      }));
+    }
+    if (expected.size !== decisions.length) {
+      errors.push("审片包未完整覆盖当前 director 高影响语义拍与 Timeline overlays");
+    }
+    for (const decision of decisions) {
+      if (
+        !expected.has(decision.id)
+        || sha256Value(expected.get(decision.id)) !== sha256Value(reviewDecisionContract(decision))
+      ) {
+        errors.push(`审片决策 ${decision.id} 不属于当前 director/Timeline，或显示合同已失效`);
+      }
+    }
+  }
+  const expectedSummary = {
+    total: decisions.length,
+    withNormalSpeedPreview: decisions.filter(hasValidNormalSpeedPreview).length,
+    requiresHuman: decisions.filter((item) => item.requiresHuman).length,
+  };
+  if (JSON.stringify(expectedSummary) !== JSON.stringify(bundle.summary)) {
+    errors.push("审片包 summary 与真实决策及预览证据不一致");
+  }
+  return errors;
+}
+
+function reviewSessionErrors(session, bundle, bundleFile) {
+  const errors = reviewBundleErrors(bundle);
   if (
     session.schemaVersion !== "1.0"
     || session.kind !== "kacha_semantic_review_session"
@@ -326,6 +474,10 @@ function summarizeSession(session, bundle) {
     ["adjust", "reject"].includes(decision.outcome)
       && !currentIdentityMatches(decision.resolutionEvidence)
   ));
+  const missingNormalSpeedPreviews = bundle.decisions.filter((decision) => (
+    decision.preview?.normalSpeedRequired === true
+      && !hasValidNormalSpeedPreview(decision)
+  ));
   return {
     total: bundle.decisions.length,
     decided: values.length,
@@ -333,7 +485,10 @@ function summarizeSession(session, bundle) {
     adjusted: values.filter((decision) => decision.outcome === "adjust").length,
     rejected: values.filter((decision) => decision.outcome === "reject").length,
     unresolvedChanges: unresolved.length,
-    readyForCandidate: values.length === bundle.decisions.length && unresolved.length === 0,
+    missingNormalSpeedPreviews: missingNormalSpeedPreviews.length,
+    readyForCandidate: values.length === bundle.decisions.length
+      && unresolved.length === 0
+      && missingNormalSpeedPreviews.length === 0,
   };
 }
 
@@ -386,11 +541,8 @@ export function validateReviewSession(sessionFile, { requireCandidateReady = fal
   try {
     const bundleFile = ensureFile(session.bundle?.path, "审片包");
     bundle = readJson(bundleFile);
-    if (
-      bundle.schemaVersion !== "1.0"
-      || bundle.kind !== "kacha_semantic_review_bundle"
-      || bundle.digest !== stableDigest(bundle)
-    ) throw new Error("审片包 schema 或 digest 无效");
+    const bundleErrors = reviewBundleErrors(bundle);
+    if (bundleErrors.length > 0) throw new Error(bundleErrors.join("\n"));
     errors.push(...reviewSessionErrors(session, bundle, bundleFile));
   } catch (error) {
     errors.push(error.message);
@@ -398,13 +550,13 @@ export function validateReviewSession(sessionFile, { requireCandidateReady = fal
   if (bundle) {
     const summary = summarizeSession(session, bundle);
     if (requireCandidateReady && !summary.readyForCandidate) {
-      errors.push("审片尚未覆盖全部高影响决策，或调整/拒绝缺少解决证据");
+      errors.push("审片尚未覆盖全部高影响决策、缺少正常速度动态预览，或调整/拒绝缺少解决证据");
     }
   }
   return { file, session, bundle, errors };
 }
 
-export function buildPreferenceCandidate(sessionFile, outputFile) {
+function derivePreferenceCandidate(sessionFile) {
   const validation = validateReviewSession(sessionFile);
   if (validation.errors.length > 0) throw new Error(validation.errors.join("\n"));
   const file = validation.file;
@@ -436,16 +588,28 @@ export function buildPreferenceCandidate(sessionFile, outputFile) {
     group.evidence.push(item);
     groups.set(key, group);
   }
-  const rules = [...groups.values()]
-    .filter((group) => group.evidence.length >= minimum)
-    .map((group) => ({
-      key: group.key,
-      value: group.value,
-      evidenceCount: group.evidence.length,
-      decisionIds: group.evidence.map((item) => item.decisionId).sort(),
-      confidence: Math.min(1, Number((0.55 + group.evidence.length * 0.1).toFixed(2))),
-    }))
-    .sort((left, right) => left.key.localeCompare(right.key));
+  const qualifiedByKey = new Map();
+  for (const group of [...groups.values()].filter((item) => item.evidence.length >= minimum)) {
+    const list = qualifiedByKey.get(group.key) ?? [];
+    list.push(group);
+    qualifiedByKey.set(group.key, list);
+  }
+  const selectedGroups = [];
+  for (const list of qualifiedByKey.values()) {
+    list.sort((left, right) => (
+      right.evidence.length - left.evidence.length
+      || JSON.stringify(left.value).localeCompare(JSON.stringify(right.value))
+    ));
+    if (list.length > 1 && list[0].evidence.length === list[1].evidence.length) continue;
+    selectedGroups.push(list[0]);
+  }
+  const rules = selectedGroups.map((group) => ({
+    key: group.key,
+    value: group.value,
+    evidenceCount: group.evidence.length,
+    decisionIds: group.evidence.map((item) => item.decisionId).sort(),
+    confidence: Math.min(1, Number((0.55 + group.evidence.length * 0.1).toFixed(2))),
+  })).sort((left, right) => left.key.localeCompare(right.key));
   const candidate = {
     schemaVersion: "1.0",
     kind: "kacha_preference_candidate",
@@ -461,9 +625,15 @@ export function buildPreferenceCandidate(sessionFile, outputFile) {
     },
   };
   candidate.digest = stableDigest(candidate);
+  return candidate;
+}
+
+export function buildPreferenceCandidate(sessionFile, outputFile) {
+  const file = ensureFile(sessionFile, "审片 session");
+  const candidate = derivePreferenceCandidate(file);
   const output = path.resolve(outputFile ?? path.join(path.dirname(file), "preference-candidate.json"));
   writeJsonAtomic(output, candidate);
-  return { candidate: fileIdentity(output), rules: rules.length, activationRequired: true };
+  return { candidate: fileIdentity(output), rules: candidate.rules.length, activationRequired: true };
 }
 
 function defaultPreferenceProfile() {
@@ -481,6 +651,15 @@ function validatePreferenceProfile(profile, label = "偏好 profile") {
     || Number(profile.versionNumber) < 1
     || profile.digest !== stableDigest(profile)
   ) throw new Error(`${label} schema 或 digest 无效`);
+  if (!Array.isArray(profile.rules)) throw new Error(`${label}.rules 必须是数组`);
+  const seen = new Set();
+  for (const [index, rule] of profile.rules.entries()) {
+    const scope = rule.scope ?? profile.scope;
+    if (!rule.key || !scope) throw new Error(`${label}.rules[${index}] 缺少 key 或 scope`);
+    const key = `${sha256Value(scope)}\u0000${rule.key}`;
+    if (seen.has(key)) throw new Error(`${label}.rules 存在同 scope 的重复 key`);
+    seen.add(key);
+  }
 }
 
 function storeHistoryVersion(history, profile) {
@@ -500,7 +679,12 @@ export function activatePreferenceCandidate(candidateFile, profileFile = null, c
   if (!confirmed) throw new Error("长期偏好激活需要显式 --confirm");
   const candidatePath = ensureFile(candidateFile, "偏好候选");
   const candidate = readJson(candidatePath);
-  if (candidate.kind !== "kacha_preference_candidate" || candidate.digest !== stableDigest(candidate)) {
+  if (
+    candidate.schemaVersion !== "1.0"
+    || candidate.kind !== "kacha_preference_candidate"
+    || !Array.isArray(candidate.rules)
+    || candidate.digest !== stableDigest(candidate)
+  ) {
     throw new Error("偏好候选 schema 或 digest 无效");
   }
   if (candidate.rules.length === 0) throw new Error("偏好候选没有达到证据阈值的规则");
@@ -510,6 +694,10 @@ export function activatePreferenceCandidate(candidateFile, profileFile = null, c
   }
   const sourceValidation = validateReviewSession(sourceSession);
   if (sourceValidation.errors.length > 0) throw new Error(sourceValidation.errors.join("\n"));
+  const expectedCandidate = derivePreferenceCandidate(sourceSession);
+  if (candidate.digest !== expectedCandidate.digest) {
+    throw new Error("偏好候选与当前审片证据的确定性学习结果不一致");
+  }
   const profilePath = path.resolve(profileFile ?? defaultPreferenceProfile());
   fs.mkdirSync(path.dirname(profilePath), { recursive: true });
   let previous = null;
@@ -522,6 +710,20 @@ export function activatePreferenceCandidate(candidateFile, profileFile = null, c
     const history = `${profilePath}.history`;
     storeHistoryVersion(history, previous);
   }
+  const merged = new Map();
+  for (const rule of previous?.rules ?? []) {
+    const scopedRule = { ...rule, scope: rule.scope ?? previous.scope };
+    merged.set(`${sha256Value(scopedRule.scope)}\u0000${scopedRule.key}`, scopedRule);
+  }
+  for (const rule of candidate.rules) {
+    const scopedRule = { ...rule, scope: candidate.scope };
+    merged.set(`${sha256Value(scopedRule.scope)}\u0000${scopedRule.key}`, scopedRule);
+  }
+  const rules = [...merged.values()].sort((left, right) => (
+    sha256Value(left.scope).localeCompare(sha256Value(right.scope))
+    || left.key.localeCompare(right.key)
+  ));
+  const scopes = [...new Map(rules.map((rule) => [sha256Value(rule.scope), rule.scope])).values()];
   const profile = {
     schemaVersion: "1.0",
     kind: "kacha_preference_profile",
@@ -530,7 +732,8 @@ export function activatePreferenceCandidate(candidateFile, profileFile = null, c
     previousDigest: previous?.digest ?? null,
     sourceCandidate: fileIdentity(candidatePath),
     scope: candidate.scope,
-    rules: candidate.rules,
+    scopes,
+    rules,
     rollback: { historyDirectory: `${profilePath}.history` },
   };
   profile.digest = stableDigest(profile);

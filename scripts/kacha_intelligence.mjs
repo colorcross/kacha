@@ -17,6 +17,7 @@ const skillRoot = path.resolve(scriptDirectory, "..");
 const configFile = path.join(skillRoot, "config", "intelligence-v6.json");
 
 function number(value, fallback = null) {
+  if (value === null || value === undefined || value === "") return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
@@ -47,6 +48,24 @@ function outputJson(value, file = null) {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
+function redactDiagnostic(value, key = "") {
+  if (Array.isArray(value)) return value.map((item) => redactDiagnostic(item));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([childKey, child]) => [
+      childKey,
+      /(?:key|token|secret|password|authorization)/i.test(childKey)
+        ? "[REDACTED]"
+        : redactDiagnostic(child, childKey),
+    ]));
+  }
+  if (typeof value !== "string") return value;
+  if (/(?:key|token|secret|password|authorization)/i.test(key)) return "[REDACTED]";
+  return value
+    .replace(/((?:authorization\s*:\s*)?(?:Bearer|Basic))\s+\S+/gi, "$1 [REDACTED]")
+    .replace(/([?&](?:api[_-]?key|token|secret|password)=)[^&\s]+/gi, "$1[REDACTED]")
+    .replace(/([A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD)=)[^\s]+/gi, "$1[REDACTED]");
+}
+
 function stableDigest(value) {
   const copy = structuredClone(value);
   delete copy.generatedAt;
@@ -59,7 +78,7 @@ function timedCues(value) {
   if (!Array.isArray(candidates) || candidates.length === 0) {
     throw new Error("输入必须包含非空 cues/segments");
   }
-  return candidates.map((cue, index) => {
+  const result = candidates.map((cue, index) => {
     const start = number(cue.start ?? cue.startSeconds);
     const end = number(cue.end ?? cue.endSeconds);
     if (start === null || end === null || start < 0 || end <= start) {
@@ -75,6 +94,15 @@ function timedCues(value) {
       source: cue,
     };
   }).sort((left, right) => left.start - right.start || left.end - right.end);
+  const ids = new Set();
+  for (const [index, cue] of result.entries()) {
+    if (ids.has(cue.id)) throw new Error(`cues[${index}].id 重复：${cue.id}`);
+    ids.add(cue.id);
+    if (index > 0 && cue.start < result[index - 1].end) {
+      throw new Error(`cues[${index}] 与前一语义拍重叠，不能建立确定性全片预算`);
+    }
+  }
+  return result;
 }
 
 function narrativeRole(cue, index, total) {
@@ -297,6 +325,7 @@ export function validateDirectorPlan(plan) {
   if (plan.schemaVersion !== "1.0" || plan.kind !== "kacha_global_director_plan") {
     errors.push("不是有效的 V6 全片导演计划");
   }
+  if (plan.version !== config.version) errors.push("director plan 使用了过期的 V6 配置版本");
   if (!Array.isArray(plan.beats) || plan.beats.length === 0) errors.push("beats 不能为空");
   if (plan.opening?.count !== 1) errors.push("全片必须且只能有一个主开场");
   if (plan.project?.styleGrammar !== config.director.styles[plan.project?.styleId]?.grammar) {
@@ -336,6 +365,20 @@ export function validateDirectorPlan(plan) {
     > plan.attentionBudget?.maximumHighImpactDecisions
   ) errors.push("高影响决策超过全片预算");
   if (plan.digest !== stableDigest(plan)) errors.push("director plan digest 无效");
+  if (currentFileIdentityMatches(plan.source)) {
+    try {
+      const expected = buildDirectorPlan(plan.source.path, {
+        projectId: plan.project?.id,
+        showId: plan.project?.showId,
+        styleId: plan.project?.styleId,
+      });
+      if (plan.digest !== expected.digest) {
+        errors.push("director plan 与当前语义 cues 和 V6 导演规则的确定性结果不一致");
+      }
+    } catch (error) {
+      errors.push(`director plan 无法从当前语义 cues 重建：${error.message}`);
+    }
+  }
   return errors;
 }
 
@@ -430,6 +473,7 @@ export function buildAssetGapPlan(directorFile, mediaIndexFile = null) {
         candidate.score >= 0.25
         && candidate.identity
         && !["unknown", "unverified"].includes(candidate.license)
+        && candidate.provenance
       ));
       const identitySensitive = /(?:本人|真实人物|原始截图|官方数据|具体研究|证件|产品实拍)/
         .test(beat.text);
@@ -454,7 +498,12 @@ export function buildAssetGapPlan(directorFile, mediaIndexFile = null) {
               externalOrPaidActionAuthorized: false,
             }
           : null,
-        blocker: resolution === "user_or_source_evidence_required",
+        blocker: resolution !== "local_candidate",
+        blockerReason: resolution === "generated_visual_candidate"
+          ? "generated_asset_not_materialized"
+          : resolution === "user_or_source_evidence_required"
+            ? "source_evidence_required"
+            : null,
       };
     });
   const report = {
@@ -469,7 +518,12 @@ export function buildAssetGapPlan(directorFile, mediaIndexFile = null) {
       total: gaps.length,
       localCandidates: gaps.filter((gap) => gap.resolution === "local_candidate").length,
       generatedCandidates: gaps.filter((gap) => gap.resolution === "generated_visual_candidate").length,
-      userEvidenceRequired: gaps.filter((gap) => gap.blocker).length,
+      unresolvedGeneratedCandidates: gaps.filter((gap) => (
+        gap.resolution === "generated_visual_candidate" && gap.blocker
+      )).length,
+      userEvidenceRequired: gaps.filter((gap) => (
+        gap.resolution === "user_or_source_evidence_required"
+      )).length,
       productionReady: gaps.every((gap) => !gap.blocker),
     },
   };
@@ -496,12 +550,18 @@ export function validateAssetGapPlan(plan) {
       gap.resolution === "generated_visual_candidate"
       && gap.generationSpec?.externalOrPaidActionAuthorized !== false
     ) errors.push(`gaps[${index}] 不能预授权外传或付费生成`);
+    if (gap.blocker !== (gap.resolution !== "local_candidate")) {
+      errors.push(`gaps[${index}].blocker 与素材是否已物化不一致`);
+    }
     if (gap.resolution === "local_candidate") {
       const candidate = (gap.candidates ?? []).find((item) => (
-        item.identity && !["unknown", "unverified"].includes(item.license)
+        Number(item.score) >= 0.25
+        && item.identity
+        && !["unknown", "unverified"].includes(item.license)
+        && item.provenance
       ));
       if (!candidate || !currentFileIdentityMatches(candidate.identity)) {
-        errors.push(`gaps[${index}] 本地素材候选内容已变化或缺少 SHA-256`);
+        errors.push(`gaps[${index}] 本地素材候选内容已变化，或缺少语义、许可、来源与 SHA-256 证据`);
       }
     }
   }
@@ -510,13 +570,28 @@ export function validateAssetGapPlan(plan) {
     total: gaps.length,
     localCandidates: gaps.filter((gap) => gap.resolution === "local_candidate").length,
     generatedCandidates: gaps.filter((gap) => gap.resolution === "generated_visual_candidate").length,
-    userEvidenceRequired: gaps.filter((gap) => gap.blocker).length,
+    unresolvedGeneratedCandidates: gaps.filter((gap) => (
+      gap.resolution === "generated_visual_candidate" && gap.blocker
+    )).length,
+    userEvidenceRequired: gaps.filter((gap) => (
+      gap.resolution === "user_or_source_evidence_required"
+    )).length,
     productionReady: gaps.every((gap) => !gap.blocker),
   };
   if (JSON.stringify(expectedSummary) !== JSON.stringify(plan.summary)) {
     errors.push("素材缺口计划 summary 与真实缺口不一致");
   }
   if (plan.digest !== stableDigest(plan)) errors.push("asset gap plan digest 无效");
+  if (currentFileIdentityMatches(plan.directorPlan) && (!plan.mediaIndex || currentFileIdentityMatches(plan.mediaIndex))) {
+    try {
+      const expected = buildAssetGapPlan(plan.directorPlan.path, plan.mediaIndex?.path ?? null);
+      if (plan.digest !== expected.digest) {
+        errors.push("素材缺口计划与当前 director、素材索引和 V6 路由规则的确定性结果不一致");
+      }
+    } catch (error) {
+      errors.push(`素材缺口计划无法从当前证据重建：${error.message}`);
+    }
+  }
   return errors;
 }
 
@@ -593,8 +668,14 @@ export function auditPerception(timelineFile, options = {}) {
     if (hasText && length < config.minimumReadableTextSeconds) {
       blockers.push({ code: "text_exposure_too_short", eventId: event.id, seconds: round(length) });
     }
-    const fontRatio = number(source.fontSizeRatio, number(source.fontSize, null) / height);
-    if (hasText && fontRatio !== null && fontRatio < config.minimumMobileTextHeightRatio) {
+    const fontSize = number(source.fontSize ?? source.style?.fontSizePx, null);
+    const fontRatio = number(
+      source.fontSizeRatio,
+      fontSize === null ? null : fontSize / height,
+    );
+    if (hasText && fontRatio === null) {
+      blockers.push({ code: "text_size_evidence_missing", eventId: event.id });
+    } else if (hasText && fontRatio < config.minimumMobileTextHeightRatio) {
       blockers.push({ code: "mobile_text_too_small", eventId: event.id, fontHeightRatio: round(fontRatio) });
     }
     const areaRatio = number(source.width, 0) * number(source.height, 0) / (width * height);
@@ -669,9 +750,51 @@ export function auditPerception(timelineFile, options = {}) {
   return report;
 }
 
+export function validatePerceptionAudit(value) {
+  const errors = [];
+  if (value.schemaVersion !== "1.0" || value.kind !== "kacha_temporal_perception_audit") {
+    errors.push("不是有效的时序感知审计");
+  }
+  if (value.digest !== stableDigest(value)) errors.push("perception audit digest 无效");
+  if (!currentFileIdentityMatches(value.timeline)) {
+    errors.push("perception audit 绑定的 Timeline IR 内容已变化");
+  }
+  if (value.dynamicEvidence && !currentFileIdentityMatches(value.dynamicEvidence)) {
+    errors.push("perception audit 的动态视觉证据内容已变化");
+  }
+  if (value.status === "blocked") errors.push("perception audit 存在未解决阻断项");
+  if (value.humanReview?.required !== true) errors.push("perception audit 不得取消人工动态审片");
+  if (
+    currentFileIdentityMatches(value.timeline)
+    && (!value.dynamicEvidence || currentFileIdentityMatches(value.dynamicEvidence))
+  ) {
+    try {
+      const expected = auditPerception(value.timeline.path, {
+        dynamicEvidenceFile: value.dynamicEvidence?.path ?? null,
+      });
+      if (value.digest !== expected.digest) {
+        errors.push("perception audit 与当前 Timeline IR 和 V6 时序规则的确定性结果不一致");
+      }
+    } catch (error) {
+      errors.push(`perception audit 无法从当前 Timeline IR 重建：${error.message}`);
+    }
+  }
+  return errors;
+}
+
 function readJsonLines(file) {
-  if (!fs.existsSync(file)) return [];
-  return fs.readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map(JSON.parse);
+  if (!fs.existsSync(file)) return { items: [], warnings: [] };
+  const items = [];
+  const warnings = [];
+  for (const [index, line] of fs.readFileSync(file, "utf8").split(/\r?\n/).entries()) {
+    if (!line.trim()) continue;
+    try {
+      items.push(JSON.parse(line));
+    } catch {
+      warnings.push({ code: "invalid_metrics_jsonl", line: index + 1 });
+    }
+  }
+  return { items, warnings };
 }
 
 export function observeProject(projectRoot) {
@@ -680,12 +803,21 @@ export function observeProject(projectRoot) {
     throw new Error(`项目目录不存在：${root}`);
   }
   const jobsRoot = path.join(root, ".kacha", "jobs");
+  const warnings = [];
   const jobs = fs.existsSync(jobsRoot)
     ? fs.readdirSync(jobsRoot, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => path.join(jobsRoot, entry.name, "job.json"))
       .filter((file) => fs.existsSync(file))
-      .map((file) => readJson(file))
+      .map((file) => {
+        try {
+          return readJson(file);
+        } catch {
+          warnings.push({ code: "invalid_job_json", jobDirectory: path.basename(path.dirname(file)) });
+          return null;
+        }
+      })
+      .filter(Boolean)
       .map((job) => ({
         ref: job.ref,
         kind: job.kind,
@@ -695,11 +827,13 @@ export function observeProject(projectRoot) {
         startedAt: job.startedAt ?? null,
         finishedAt: job.finishedAt ?? null,
         outputs: job.outputs ?? [],
-        error: job.error ?? null,
+        error: redactDiagnostic(job.error ?? null),
       }))
     : [];
   const eventsFile = path.join(root, ".kacha", "metrics", "events.jsonl");
-  const events = readJsonLines(eventsFile);
+  const loadedEvents = readJsonLines(eventsFile);
+  const events = loadedEvents.items;
+  warnings.push(...loadedEvents.warnings);
   const stageHistory = {};
   let inputTokens = 0;
   let outputTokens = 0;
@@ -707,6 +841,7 @@ export function observeProject(projectRoot) {
   let cacheHits = 0;
   let cacheEvents = 0;
   let videoEncodes = 0;
+  const tokenMeasurements = { actual: 0, estimated: 0, unavailable: 0 };
   for (const event of events) {
     const seconds = number(event.timing?.wallSeconds, 0);
     const list = stageHistory[event.stage] ?? [];
@@ -718,6 +853,10 @@ export function observeProject(projectRoot) {
     if (event.cache?.status) cacheEvents += 1;
     if (event.cache?.status === "hit") cacheHits += 1;
     videoEncodes += number(event.media?.videoEncodes, 0);
+    const tokenMeasurement = event.tokens?.measurement;
+    if (tokenMeasurement === "actual") tokenMeasurements.actual += 1;
+    else if (tokenMeasurement === "estimated") tokenMeasurements.estimated += 1;
+    else tokenMeasurements.unavailable += 1;
   }
   const stages = Object.fromEntries(Object.entries(stageHistory).map(([stage, values]) => [
     stage,
@@ -753,7 +892,13 @@ export function observeProject(projectRoot) {
         input: inputTokens,
         output: outputTokens,
         references: referenceTokens,
-        measurement: events.length > 0 ? "from_recorded_events" : "unavailable",
+        measurement: tokenMeasurements.actual > 0 && tokenMeasurements.estimated === 0
+          && tokenMeasurements.unavailable === 0
+          ? "actual"
+          : tokenMeasurements.actual > 0 || tokenMeasurements.estimated > 0
+            ? "mixed_or_estimated"
+            : "unavailable",
+        events: tokenMeasurements,
       },
       cacheHitRatio: cacheEvents > 0 ? round(cacheHits / cacheEvents) : null,
       videoEncodes,
@@ -763,6 +908,10 @@ export function observeProject(projectRoot) {
       : { status: "unavailable", reason: "当前任务没有可靠的阶段进度分母" },
     cost: { status: "unavailable", reason: "没有实测 provider 费用时不按 Token 猜价格" },
     disk,
+    integrity: {
+      status: warnings.length === 0 ? "pass" : "degraded",
+      warnings,
+    },
     privacy: { localOnly: true, secretsExposed: false },
   };
   report.digest = stableDigest(report);
@@ -784,6 +933,12 @@ function validateConfig() {
   if (config.interchange?.importCreatesCandidateOnly !== true) {
     errors.push("NLE 导入必须只创建候选时间线");
   }
+  if (
+    !Array.isArray(config.evaluation?.improvementClaim?.guardrailMetrics)
+    || config.evaluation.improvementClaim.guardrailMetrics.length === 0
+    || !Array.isArray(config.evaluation?.improvementClaim?.primaryMetrics)
+    || config.evaluation.improvementClaim.primaryMetrics.length === 0
+  ) errors.push("版本提升声明必须配置可测量的护栏与主要指标");
   return { config, errors };
 }
 
@@ -838,16 +993,8 @@ export function runIntelligenceCli(args = process.argv.slice(2)) {
       ? validateDirectorPlan(value)
       : value.kind === "kacha_asset_gap_plan"
         ? validateAssetGapPlan(value)
-        : value.kind === "kacha_temporal_perception_audit"
-        ? [
-              ...(value.digest === stableDigest(value) ? [] : ["perception audit digest 无效"]),
-              ...(currentFileIdentityMatches(value.timeline) ? [] : ["perception audit 绑定的 Timeline IR 内容已变化"]),
-              ...(!value.dynamicEvidence || currentFileIdentityMatches(value.dynamicEvidence)
-                ? []
-                : ["perception audit 的动态视觉证据内容已变化"]),
-              ...(value.status === "blocked" ? ["perception audit 存在未解决阻断项"] : []),
-              ...(value.humanReview?.required === true ? [] : ["perception audit 不得取消人工动态审片"]),
-            ]
+      : value.kind === "kacha_temporal_perception_audit"
+        ? validatePerceptionAudit(value)
         : ["未知 V6 计划 kind"];
     if (
       args.includes("--for-execution")

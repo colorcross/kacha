@@ -158,7 +158,7 @@ export const zhContent: SiteContent = {
     { value: "LOCAL", label: "默认本地处理素材" },
     { value: "FULL", label: "覆盖完整后期流程" },
     { value: "DELTA", label: "返工只改受影响层" },
-    { value: "125", label: "自动回归检查" },
+    { value: "126", label: "自动回归检查" },
   ],
   problems: {
     title: "真正耗时间的，不只是拖动时间线。",
@@ -305,7 +305,7 @@ export const zhContent: SiteContent = {
       {
         kicker: "SEMANTIC REVIEW",
         title: "逐项审片与偏好学习",
-        body: "正常速度查看关键决策、理由和回退，明确接受、调整或拒绝；偏好只从审片证据生成并可回滚。",
+        body: "用可解码、有视频和音轨的 1× 预览审查关键决策；偏好从当前审片证据重建、按 scope 合并并可回滚。",
       },
     ],
   },
@@ -318,7 +318,7 @@ export const zhContent: SiteContent = {
       { title: "结构精剪", body: "删除无效内容，校验每个切点的句义、节奏与连接。" },
       { title: "处理声音", body: "分离并优化人声，再安排音乐、音效和最终响度。" },
       { title: "包装画面", body: "按统一设计系统加入字幕、素材、PIP、蒙版与转场。" },
-      { title: "语义审片与反馈", body: "正常速度逐项接受、调整或拒绝关键决定，再把修改编译成差异。" },
+      { title: "语义审片与反馈", body: "用真实 1× 视频/音轨预览逐项接受、调整或拒绝关键决定，再把修改编译成差异。" },
       { title: "评测与交付", body: "技术 QC、时序感知、人工审片和真实编辑指标共同决定是否发布。" },
     ],
     resultLabel: "DELIVERY STATE",
@@ -449,7 +449,7 @@ export const enContent: SiteContent = {
     { value: "LOCAL", label: "local-first media handling" },
     { value: "FULL", label: "end-to-end post workflow" },
     { value: "DELTA", label: "affected layers only" },
-    { value: "125", label: "regression checks" },
+    { value: "126", label: "regression checks" },
   ],
   problems: {
     title: "The timeline is not the only expensive part.",
@@ -596,7 +596,7 @@ export const enContent: SiteContent = {
       {
         kicker: "SEMANTIC REVIEW",
         title: "Decision review and preference evidence",
-        body: "Review rationale and fallback at normal speed, then explicitly accept, adjust, or reject. Learned preferences stay transparent and reversible.",
+        body: "Review rationale and fallback in a verified 1x video/audio preview, then accept, adjust, or reject. Preferences are rebuilt from current evidence, scoped, and reversible.",
       },
     ],
   },
@@ -609,7 +609,7 @@ export const enContent: SiteContent = {
       { title: "Edit the structure", body: "Remove waste and check every cut for meaning, rhythm, and continuity." },
       { title: "Process the sound", body: "Separate and polish dialogue, then place music, SFX, and final loudness." },
       { title: "Package the picture", body: "Use the design system for captions, media, PIP, masks, and transitions." },
-      { title: "Review decisions and feedback", body: "Accept, adjust, or reject high-impact decisions at normal speed, then compile changes into a delta." },
+      { title: "Review decisions and feedback", body: "Accept, adjust, or reject high-impact decisions in verified 1x video/audio previews, then compile changes into a delta." },
       { title: "Evaluate and deliver", body: "Technical QC, temporal perception, human review, and real editorial metrics decide release status." },
     ],
     resultLabel: "DELIVERY STATE",

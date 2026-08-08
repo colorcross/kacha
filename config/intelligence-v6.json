@@ -6,6 +6,27 @@
     "minimumComparisonCases": 8,
     "firstDraftUsableThreshold": 0.8,
     "requireHumanJudgment": true,
+    "improvementClaim": {
+      "guardrailMetrics": [
+        "firstDraftUsableRate",
+        "meanFirstDraftUsability",
+        "highImpactDecisionAcceptRate",
+        "highImpactDecisionRejectRate",
+        "semanticDamageRate",
+        "manualInterventionMinutesPerOutputMinute",
+        "connectionRejectRate",
+        "captionCorrectionRate",
+        "styleGrammarViolationRate"
+      ],
+      "primaryMetrics": [
+        "firstDraftUsableRate",
+        "meanFirstDraftUsability",
+        "highImpactDecisionAcceptRate",
+        "manualInterventionMinutesPerOutputMinute"
+      ],
+      "requireAllGuardrailsMeasured": true,
+      "requireAtLeastOnePrimaryImprovement": true
+    },
     "metrics": [
       "firstDraftUsableRate",
       "highImpactDecisionAcceptRate",

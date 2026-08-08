@@ -7338,6 +7338,17 @@ await test("V6 global director budgets attention and routes factual asset gaps",
     || directorValue.attentionBudget.deliberateNoneCount < 2
     || directorValue.project.styleGrammar !== "depth_navigation"
   ) throw new Error("V6 director did not enforce opening, quiet or style grammar budgets");
+  const tamperedDirector = path.join(root, "director-tampered.json");
+  const tamperedDirectorValue = structuredClone(directorValue);
+  tamperedDirectorValue.beats[0].effectReason = "tampered but re-digested";
+  delete tamperedDirectorValue.generatedAt;
+  delete tamperedDirectorValue.digest;
+  tamperedDirectorValue.digest = sha256Value(tamperedDirectorValue);
+  writeJson(tamperedDirector, tamperedDirectorValue);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "validate-plan",
+    "--plan", tamperedDirector,
+  ]);
 
   const evidenceAsset = path.join(root, "evidence.png");
   fs.writeFileSync(evidenceAsset, "licensed factual evidence fixture");
@@ -7371,6 +7382,36 @@ await test("V6 global director budgets attention and routes factual asset gaps",
   if (gapValue.summary.localCandidates !== 1 || gapValue.summary.productionReady !== true) {
     throw new Error("V6 asset gap planner did not resolve licensed local evidence");
   }
+  const illustrativeCues = path.join(root, "illustrative-cues.json");
+  writeJson(illustrativeCues, {
+    schemaVersion: "1.0",
+    cues: [
+      { id: "hook", start: 0, end: 2, text: "先看一个模型", signals: ["hook"], confidence: 1 },
+      { id: "illustration", start: 2, end: 10, text: "把流程想象成一条发光路径", signals: ["illustration_required"], confidence: 1 },
+    ],
+  });
+  const illustrativeDirector = path.join(root, "illustrative-director.json");
+  const illustrativeGaps = path.join(root, "illustrative-gaps.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "director",
+    "--cues", illustrativeCues,
+    "--output", illustrativeDirector,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "assets",
+    "--director", illustrativeDirector,
+    "--output", illustrativeGaps,
+  ]);
+  const illustrativeGapValue = readJson(illustrativeGaps);
+  if (
+    illustrativeGapValue.summary.unresolvedGeneratedCandidates !== 1
+    || illustrativeGapValue.summary.productionReady !== false
+  ) throw new Error("unmaterialized generated asset candidate was incorrectly execution-ready");
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "validate-plan",
+    "--plan", illustrativeGaps,
+    "--for-execution",
+  ]);
   fs.appendFileSync(evidenceAsset, " changed-after-plan");
   expectFailure(process.execPath, [
     path.join(scripts, "kacha.mjs"), "intelligence", "validate-plan",
@@ -7383,6 +7424,25 @@ await test("V6 global director budgets attention and routes factual asset gaps",
     "--plan", director,
   ]);
 }, "core");
+
+await test("V6 required evidence cannot be bypassed by an incremental v3 manifest", () => {
+  const fixture = initializeIncrementalFixture("v6-required-gate");
+  const project = createIncrementalCase(fixture, {
+    versionId: "v2",
+    type: "caption_layout",
+    outputVideo: path.join(fixture.root, "v2.mov"),
+  });
+  const manifest = readJson(project.project);
+  manifest.intelligenceV6 = { required: true };
+  manifest.plans = {};
+  writeJson(project.project, manifest);
+  const failed = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "gate-plan", project.project,
+  ]);
+  if (!/plans\.directorPlan/.test(`${failed.stdout}\n${failed.stderr}`)) {
+    throw new Error("incremental v3 gate did not expose the missing V6 evidence");
+  }
+}, "incremental");
 
 await test("V6 temporal perception audit blocks competing effects and preserves human review", () => {
   const root = path.join(temporary, "v6-perception");
@@ -7417,6 +7477,17 @@ await test("V6 temporal perception audit blocks competing effects and preserves 
   if (safe.status !== "pass_with_human_review" || safe.humanReview.required !== true) {
     throw new Error("perception audit must retain normal-speed human review");
   }
+  const tamperedReport = path.join(root, "perception-tampered.json");
+  const tamperedReportValue = structuredClone(safe);
+  tamperedReportValue.measurements.motionCoverageRatio = 0;
+  delete tamperedReportValue.generatedAt;
+  delete tamperedReportValue.digest;
+  tamperedReportValue.digest = sha256Value(tamperedReportValue);
+  writeJson(tamperedReport, tamperedReportValue);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "validate-plan",
+    "--plan", tamperedReport,
+  ]);
   const unsafeTimeline = path.join(root, "unsafe-timeline.json");
   const unsafe = readJson(safeTimeline);
   unsafe.visual.overlays.push({
@@ -7481,7 +7552,40 @@ await test("V6 semantic review records every decision and learns only explicit v
   const reviewDirectory = path.join(root, "review");
   const previewDirectory = path.join(root, "preview");
   fs.mkdirSync(previewDirectory, { recursive: true });
-  fs.writeFileSync(path.join(previewDirectory, "hook-after.mp4"), "0123456789abcdef");
+  const previewFixture = path.join(root, "normal-speed-preview.mp4");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "color=c=0x20242b:s=320x180:r=25:d=3",
+    "-f", "lavfi", "-i", "sine=frequency=440:duration=3:sample_rate=48000",
+    "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac",
+    previewFixture,
+  ]);
+  fs.copyFileSync(previewFixture, path.join(previewDirectory, "hook-after.mp4"));
+  const missingPreviewReviewDirectory = path.join(root, "review-missing-previews");
+  const missingPreviewBuild = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "build",
+    "--timeline", timeline,
+    "--director", director,
+    "--preview-dir", previewDirectory,
+    "--output-dir", missingPreviewReviewDirectory,
+  ]).stdout);
+  const missingPreviewBundle = readJson(missingPreviewBuild.bundle.path);
+  for (const decision of missingPreviewBundle.decisions) {
+    execute(process.execPath, [
+      path.join(scripts, "kacha.mjs"), "review", "record",
+      "--bundle", missingPreviewBuild.bundle.path,
+      "--decision", decision.id,
+      "--outcome", "accept",
+    ]);
+  }
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "validate",
+    "--session", missingPreviewBuild.session.path,
+    "--for-candidate",
+  ]);
+  for (const id of ["contrast", "conclusion", "callout-a", "callout-b"]) {
+    fs.copyFileSync(previewFixture, path.join(previewDirectory, `${id}-after.mp4`));
+  }
   const built = JSON.parse(execute(process.execPath, [
     path.join(scripts, "kacha.mjs"), "review", "build",
     "--timeline", timeline,
@@ -7490,6 +7594,36 @@ await test("V6 semantic review records every decision and learns only explicit v
     "--output-dir", reviewDirectory,
   ]).stdout);
   const bundle = readJson(built.bundle.path);
+  if (bundle.summary.withNormalSpeedPreview !== bundle.summary.total) {
+    throw new Error("complete normal-speed preview evidence was not recognized");
+  }
+  const tamperedReviewDirectory = path.join(root, "review-tampered");
+  fs.mkdirSync(tamperedReviewDirectory, { recursive: true });
+  const tamperedBundle = structuredClone(bundle);
+  tamperedBundle.decisions.pop();
+  tamperedBundle.summary.total = tamperedBundle.decisions.length;
+  tamperedBundle.summary.withNormalSpeedPreview = tamperedBundle.decisions.length;
+  tamperedBundle.summary.requiresHuman = tamperedBundle.decisions.length;
+  delete tamperedBundle.generatedAt;
+  delete tamperedBundle.digest;
+  tamperedBundle.digest = sha256Value(tamperedBundle);
+  const tamperedBundleFile = path.join(tamperedReviewDirectory, "review-bundle.json");
+  writeJson(tamperedBundleFile, tamperedBundle);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "show",
+    "--bundle", tamperedBundleFile,
+  ]);
+  const misleadingBundle = structuredClone(bundle);
+  misleadingBundle.decisions[0].rationale = "与真实导演计划相反的伪造理由";
+  delete misleadingBundle.generatedAt;
+  delete misleadingBundle.digest;
+  misleadingBundle.digest = sha256Value(misleadingBundle);
+  const misleadingBundleFile = path.join(tamperedReviewDirectory, "misleading-review-bundle.json");
+  writeJson(misleadingBundleFile, misleadingBundle);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "show",
+    "--bundle", misleadingBundleFile,
+  ]);
   for (const decision of bundle.decisions) {
     execute(process.execPath, [
       path.join(scripts, "kacha.mjs"), "review", "record",
@@ -7519,6 +7653,19 @@ await test("V6 semantic review records every decision and learns only explicit v
     "--candidate", candidate,
     "--profile", profile,
   ]);
+  const tamperedCandidate = path.join(root, "preference-candidate-tampered.json");
+  const tamperedCandidateValue = readJson(candidate);
+  tamperedCandidateValue.rules[0].value = "forged-without-review-evidence";
+  delete tamperedCandidateValue.generatedAt;
+  delete tamperedCandidateValue.digest;
+  tamperedCandidateValue.digest = sha256Value(tamperedCandidateValue);
+  writeJson(tamperedCandidate, tamperedCandidateValue);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "activate",
+    "--candidate", tamperedCandidate,
+    "--profile", profile,
+    "--confirm",
+  ]);
   execute(process.execPath, [
     path.join(scripts, "kacha.mjs"), "review", "activate",
     "--candidate", candidate,
@@ -7526,12 +7673,32 @@ await test("V6 semantic review records every decision and learns only explicit v
     "--confirm",
   ]);
   if (readJson(profile).versionNumber !== 1) throw new Error("preference profile was not versioned");
+  const initialRules = readJson(profile).rules.map((rule) => `${rule.key}:${JSON.stringify(rule.value)}`);
+  const overlayDecision = bundle.decisions.find((decision) => decision.category === "overlay");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "record",
+    "--bundle", built.bundle.path,
+    "--decision", overlayDecision.id,
+    "--outcome", "reject",
+    "--note", "不再沿用这一处 overlay 偏好",
+  ]);
+  const candidateV2 = path.join(root, "preference-candidate-v2.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "review", "learn",
+    "--session", built.session.path,
+    "--output", candidateV2,
+  ]);
   execute(process.execPath, [
     path.join(scripts, "kacha.mjs"), "review", "activate",
-    "--candidate", candidate,
+    "--candidate", candidateV2,
     "--profile", profile,
     "--confirm",
   ]);
+  const mergedRules = readJson(profile).rules.map((rule) => `${rule.key}:${JSON.stringify(rule.value)}`);
+  if (!initialRules.every((rule) => mergedRules.includes(rule))) {
+    throw new Error("activating a partial preference candidate dropped previously learned rules");
+  }
+  if (readJson(profile).versionNumber !== 2) throw new Error("preference profile did not advance monotonically");
   execute(process.execPath, [
     path.join(scripts, "kacha.mjs"), "review", "rollback",
     "--profile", profile,
@@ -7551,7 +7718,7 @@ await test("V6 semantic review records every decision and learns only explicit v
   ]);
   expectFailure(process.execPath, [
     path.join(scripts, "kacha.mjs"), "review", "activate",
-    "--candidate", candidate,
+    "--candidate", candidateV2,
     "--profile", profile,
     "--confirm",
   ]);
@@ -7636,6 +7803,26 @@ await test("V6 editorial evaluation measures paired human-reviewed improvement w
     || comparison.deltas.semanticDamageRate.direction !== "improved"
     || Object.hasOwn(comparison, "compositeScore")
   ) throw new Error("paired editorial evaluation policy regressed");
+  const regressedData = path.join(root, "regressed-candidate-data.json");
+  const regressedDataset = makeDataset(true);
+  regressedDataset.id = "candidate-with-semantic-regression";
+  for (const item of regressedDataset.cases) item.editorialJudgment.semanticUnits.damaged = 2;
+  writeJson(regressedData, regressedDataset);
+  const regressedReport = path.join(root, "regressed-candidate-report.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "eval", "score",
+    "--dataset", regressedData,
+    "--output", regressedReport,
+  ]);
+  const regressedComparison = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "eval", "compare",
+    "--baseline", baselineReport,
+    "--candidate", regressedReport,
+  ]).stdout);
+  if (
+    regressedComparison.claimPolicy.improvementClaimAllowed !== false
+    || !regressedComparison.claimPolicy.regressedGuardrails.includes("semanticDamageRate")
+  ) throw new Error("sample count incorrectly overrode a regressed quality guardrail");
   const tampered = readJson(baselineData);
   tampered.version = "tampered-after-report";
   writeJson(baselineData, tampered);
@@ -7663,7 +7850,7 @@ await test("V6 NLE interchange round-trips semantic clip IDs as candidate-only t
     ],
     visual: { overlays: [] },
     audio: { sfx: [] },
-    output: { path: "preview.mp4", width: 1920, height: 1080, fps: 25 }
+    output: { path: "preview.mp4", width: 1920, height: 1080, fps: 29.97 }
   });
   for (const format of ["otio", "fcpxml", "cmx3600"]) {
     const extension = format === "fcpxml" ? "fcpxml" : format === "otio" ? "otio" : "edl";
@@ -7673,6 +7860,10 @@ await test("V6 NLE interchange round-trips semantic clip IDs as candidate-only t
       "--format", format,
       "--output", path.join(root, `timeline.${extension}`),
     ]);
+  }
+  const fcpxmlText = fs.readFileSync(path.join(root, "timeline.fcpxml"), "utf8");
+  if (!fcpxmlText.includes('frameDuration="1001/30000s"') || fcpxmlText.includes("1/29.97s")) {
+    throw new Error("FCPXML did not encode fractional frame rate as a valid rational time");
   }
   for (const format of ["otio", "fcpxml"]) {
     const input = path.join(root, format === "otio" ? "timeline.otio" : "timeline.fcpxml");
@@ -7692,6 +7883,19 @@ await test("V6 NLE interchange round-trips semantic clip IDs as candidate-only t
       || candidate.edl[1].semanticBeatId !== "beat-proof"
     ) throw new Error(`${format} semantic round-trip failed`);
   }
+  const otherSource = path.join(root, "other-source.mov");
+  fs.writeFileSync(otherSource, "unrelated source fixture");
+  const otherTimeline = path.join(root, "other-timeline.json");
+  const otherTimelineValue = readJson(timeline);
+  otherTimelineValue.source = { path: otherSource, sha256: sha256File(otherSource) };
+  writeJson(otherTimeline, otherTimelineValue);
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "nle", "import",
+    "--input", path.join(root, "timeline.otio"),
+    "--format", "otio",
+    "--base-timeline", otherTimeline,
+    "--output", path.join(root, "wrong-base-candidate.json"),
+  ]);
 }, "core");
 
 await test("V6 review workbench is local-only and exposes the new review assets", async () => {
@@ -7739,7 +7943,14 @@ await test("V6 review workbench is local-only and exposes the new review assets"
     audio: { sfx: [] },
     output: { path: "candidate.mp4", width: 1920, height: 1080, fps: 25 },
   });
-  fs.writeFileSync(path.join(previewDirectory, "hook-after.mp4"), "0123456789abcdef");
+  const workbenchPreview = path.join(previewDirectory, "hook-after.mp4");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "color=c=0x20242b:s=320x180:r=25:d=3",
+    "-f", "lavfi", "-i", "sine=frequency=440:duration=3:sample_rate=48000",
+    "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac",
+    workbenchPreview,
+  ]);
   const built = JSON.parse(execute(process.execPath, [
     path.join(scripts, "kacha.mjs"), "review", "build",
     "--timeline", timeline,
@@ -7789,12 +8000,20 @@ await test("V6 review workbench is local-only and exposes the new review assets"
     mediaUrl.searchParams.set("bundle", bundleFile);
     mediaUrl.searchParams.set("decision", previewDecision.id);
     mediaUrl.searchParams.set("variant", "after");
+    const previewBytes = fs.readFileSync(workbenchPreview);
+    const expectedSuffix = previewBytes.subarray(previewBytes.length - 4);
     const mediaResponse = await fetch(mediaUrl, { headers: { range: "bytes=-4" } });
     if (
       mediaResponse.status !== 206
-      || mediaResponse.headers.get("content-range") !== "bytes 12-15/16"
-      || (await mediaResponse.text()) !== "cdef"
+      || mediaResponse.headers.get("content-range") !== `bytes ${previewBytes.length - 4}-${previewBytes.length - 1}/${previewBytes.length}`
+      || !Buffer.from(await mediaResponse.arrayBuffer()).equals(expectedSuffix)
     ) throw new Error("review media Range endpoint did not preserve the bound preview");
+    const headResponse = await fetch(mediaUrl, { method: "HEAD" });
+    if (
+      headResponse.status !== 200
+      || headResponse.headers.get("content-length") !== String(previewBytes.length)
+      || (await headResponse.text()) !== ""
+    ) throw new Error("review media HEAD endpoint did not expose metadata without a body");
     const recordedResponse = await fetch(`${origin}/api/review/record`, {
       method: "POST",
       headers: mutationHeaders,
@@ -7809,13 +8028,44 @@ await test("V6 review workbench is local-only and exposes the new review assets"
     if (!recordedResponse.ok || recorded.decision?.outcome !== "accept" || !recorded.session?.path) {
       throw new Error(`review record API failed: ${JSON.stringify(recorded)}`);
     }
+    const metricsDirectory = path.join(root, ".kacha", "metrics");
+    fs.mkdirSync(metricsDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(metricsDirectory, "events.jsonl"),
+      `${JSON.stringify({
+        stage: "preview_render",
+        status: "pass",
+        timing: { wallSeconds: 1.25 },
+        tokens: { input: 8, output: 2, references: 3, measurement: "actual" },
+        cache: { status: "hit" },
+        media: { videoEncodes: 1 },
+      })}\n{truncated-json\n`,
+    );
+    const failedJobDirectory = path.join(root, ".kacha", "jobs", "failed-job");
+    fs.mkdirSync(failedJobDirectory, { recursive: true });
+    writeJson(path.join(failedJobDirectory, "job.json"), {
+      ref: "@job:failed-job",
+      kind: "render",
+      status: "failed",
+      attempt: 1,
+      createdAt: "2026-08-08T00:00:00.000Z",
+      error: ["Author", "ization: Be", "arer should-never-reach-the-review-ui"].join(""),
+    });
     const observedResponse = await fetch(`${origin}/api/observe`, {
       method: "POST",
       headers: mutationHeaders,
       body: JSON.stringify({ projectRoot: root }),
     });
     const observed = await observedResponse.json();
-    if (!observedResponse.ok || observed.cost?.status !== "unavailable") {
+    if (
+      !observedResponse.ok
+      || observed.cost?.status !== "unavailable"
+      || observed.metrics?.events !== 1
+      || observed.metrics?.tokens?.measurement !== "actual"
+      || observed.integrity?.status !== "degraded"
+      || observed.integrity?.warnings?.[0]?.code !== "invalid_metrics_jsonl"
+      || JSON.stringify(observed).includes("should-never-reach-the-review-ui")
+    ) {
       throw new Error(`review observability API fabricated cost evidence: ${JSON.stringify(observed)}`);
     }
   } finally {

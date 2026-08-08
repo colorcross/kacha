@@ -298,6 +298,36 @@ export function compareReports(baselineFile, candidateFile) {
       direction: delta === 0 ? "unchanged" : improved ? "improved" : "regressed",
     };
   }
+  const claimConfig = config.improvementClaim ?? {};
+  const guardrailMetrics = claimConfig.guardrailMetrics ?? [];
+  const primaryMetrics = claimConfig.primaryMetrics ?? [];
+  const unmeasuredGuardrails = guardrailMetrics.filter((key) => (
+    deltas[key]?.direction === "unavailable"
+  ));
+  const regressedGuardrails = guardrailMetrics.filter((key) => (
+    deltas[key]?.direction === "regressed"
+  ));
+  const improvedPrimaryMetrics = primaryMetrics.filter((key) => (
+    deltas[key]?.direction === "improved"
+  ));
+  const sampleEligible = shared.length >= minimum;
+  const guardrailsMeasured = claimConfig.requireAllGuardrailsMeasured !== true
+    || unmeasuredGuardrails.length === 0;
+  const primaryImproved = claimConfig.requireAtLeastOnePrimaryImprovement !== true
+    || improvedPrimaryMetrics.length > 0;
+  const improvementClaimAllowed = sampleEligible
+    && guardrailsMeasured
+    && regressedGuardrails.length === 0
+    && primaryImproved;
+  const reason = !sampleEligible
+    ? `仅 ${shared.length} 个同源样本，少于最低 ${minimum} 个，不能宣称整体提升`
+    : unmeasuredGuardrails.length > 0 && claimConfig.requireAllGuardrailsMeasured === true
+      ? `关键护栏未完整测量：${unmeasuredGuardrails.join(", ")}`
+      : regressedGuardrails.length > 0
+        ? `关键质量维度退化：${regressedGuardrails.join(", ")}`
+        : !primaryImproved
+          ? "没有任何主要编辑质量指标得到改善"
+          : "达到同源样本下限，关键护栏无退化，且至少一个主要质量指标改善";
   const report = {
     schemaVersion: "1.0",
     kind: "kacha_editorial_eval_comparison",
@@ -313,10 +343,13 @@ export function compareReports(baselineFile, candidateFile) {
     },
     deltas,
     claimPolicy: {
-      improvementClaimAllowed: shared.length >= minimum,
-      reason: shared.length >= minimum
-        ? "达到最小同源成对样本数；仍须报告各维度而非只报综合分"
-        : `仅 ${shared.length} 个同源样本，少于最低 ${minimum} 个，不能宣称整体提升`,
+      sampleEligible,
+      improvementClaimAllowed,
+      guardrailMetrics,
+      unmeasuredGuardrails,
+      regressedGuardrails,
+      improvedPrimaryMetrics,
+      reason,
     },
   };
   report.digest = stableDigest(report);

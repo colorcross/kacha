@@ -98,7 +98,10 @@ function renderDecision() {
     url.searchParams.set("bundle", state.bundlePath);
     url.searchParams.set("decision", decision.id);
     url.searchParams.set("variant", "after");
-    if ($("reviewVideo").src !== url.href) $("reviewVideo").src = url.href;
+    const video = $("reviewVideo");
+    video.defaultPlaybackRate = 1;
+    video.playbackRate = 1;
+    if (video.src !== url.href) video.src = url.href;
   } else {
     $("reviewVideo").removeAttribute("src");
     $("reviewVideo").load();
@@ -177,6 +180,12 @@ $("loadObserve").addEventListener("click", async () => {
     const result = await api("/api/observe", { projectRoot: $("projectRoot").value.trim() });
     $("observeResult").textContent = JSON.stringify({ jobs: result.jobs, metrics: result.metrics, eta: result.eta, cost: result.cost, disk: result.disk }, null, 2);
   } catch (error) { toast(error.message, true); }
+});
+$("reviewVideo").addEventListener("ratechange", () => {
+  if ($("reviewVideo").playbackRate !== 1) {
+    $("reviewVideo").playbackRate = 1;
+    toast("语义审片固定使用正常速度 1×", true);
+  }
 });
 
 const query = new URLSearchParams(window.location.search);

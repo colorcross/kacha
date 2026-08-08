@@ -150,6 +150,9 @@ node scripts/kacha.mjs intelligence assets \
 导演计划必须且只能有一个主开场，限制高影响决策与连续强拍，保留最低安静
 比例，并把“刻意不用效果”写成正式决定。事实、真实人物、官方数据和产品实拍
 缺口不能由生成媒体冒充；素材索引截断或证据未补齐时不得执行。
+`generated_visual_candidate` 只是待生产路线，不是已经可用的素材；生成结果必须
+先回填本地素材索引，具备当前文件 SHA-256、许可和来源，再重新编译素材缺口计划，
+否则 `gate-render` 继续阻断。
 
 候选版用 Timeline IR 与导演计划建立语义审片包。每个高影响决定显示理由、
 置信度、最简回退和正常速度预览，并记录 `accept / adjust / reject`。调整或拒绝
@@ -164,16 +167,25 @@ node scripts/kacha.mjs review validate \
   --session .kacha/review/review-session.json --for-candidate
 ```
 
+每个决策的正常速度预览必须是可解码、有动态视频、有可试听音轨且达到最小代表
+时长的真实媒体；只有路径或扩展名不算证据。任一决策缺失时，即使全部点击
+`accept`，`readyForCandidate` 仍为 false。
+
 长期偏好只从明确审片结果生成候选，同一规则至少两条证据；不保存自由文本备注，
-不自动激活，激活和回滚都要求 `--confirm`。真实质量用 `eval score/compare`
-逐项测量，至少 8 个同源人工复核项目才能宣称版本提升，禁止用单一综合分掩盖
-语义、连接、字幕或风格退化。
+不自动激活，激活和回滚都要求 `--confirm`。激活时必须从当前 source session
+重建学习结果；新候选按栏目、风格、平台和项目 scope 合并，不得清空其他 scope
+或本轮未再次出现的既有规则。真实质量用 `eval score/compare` 逐项测量；至少
+8 个同源人工复核项目只是提升声明的必要条件，还必须关键护栏全部可测且无退化，
+并至少有一个主要质量指标改善。禁止用单一综合分掩盖语义、连接、字幕、风格或
+人工干预退化。
 
 专业 NLE 交换使用 `nle export/import`。OTIO/FCPXML 保留语义 ID，CMX3600
-只做兼容导出；任何导入都只生成 preview candidate，不能覆盖基线，也不能绕过
-Delta、变化层 QC 和人工审片。项目需完整执行 V6 门禁时，在 manifest 设置
+只做兼容导出；交换文件必须绑定当前基线 Timeline 与源片 SHA，FCPXML 的小数
+帧率使用标准有理数时间。任何导入都只生成 preview candidate，不能跨项目套用、
+覆盖基线或绕过 Delta、变化层 QC 和人工审片。项目需完整执行 V6 门禁时，在 manifest 设置
 `intelligenceV6.required=true` 并登记 director、asset gap、perception audit 与
-semantic review session。完整合同见 `docs/INTELLIGENT_EDITING_V6.md`。
+semantic review session；v2 首剪和 v3 增量 manifest 使用同一开关，均不得忽略。
+完整合同见 `docs/INTELLIGENT_EDITING_V6.md`。
 
 ## 统一配置与默认剪辑要求
 

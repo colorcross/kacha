@@ -171,7 +171,8 @@ function serveMedia(request, response, file) {
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
     });
-    fs.createReadStream(file).pipe(response);
+    if (request.method === "HEAD") response.end();
+    else fs.createReadStream(file).pipe(response);
     return;
   }
   const match = /^bytes=(\d*)-(\d*)$/.exec(range);
@@ -204,7 +205,8 @@ function serveMedia(request, response, file) {
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
   });
-  fs.createReadStream(file, { start, end }).pipe(response);
+  if (request.method === "HEAD") response.end();
+  else fs.createReadStream(file, { start, end }).pipe(response);
 }
 
 function safeStaticFile(urlPath) {
@@ -249,7 +251,7 @@ async function handleApi(request, response, url, port) {
     });
     return;
   }
-  if (request.method === "GET" && pathname === "/api/review/media") {
+  if (["GET", "HEAD"].includes(request.method) && pathname === "/api/review/media") {
     const file = resolveReviewMedia(
       url.searchParams.get("bundle"),
       url.searchParams.get("decision"),

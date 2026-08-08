@@ -172,9 +172,11 @@ semantic review bundle/session, versioned preference candidate/profile,
 human editorial evaluation, NLE interchange reports, and a user-visible
 observability summary.
 
-With `intelligenceV6.required=true`, plan, render, and release gates validate
-those current file-backed artifacts. NLE import is candidate-only, preference
-activation is explicit and reversible, and automatic perception checks retain
+With `intelligenceV6.required=true`, v2 and v3 plan, render, and release gates
+validate those current file-backed artifacts. NLE exchange binds the baseline
+and source SHA and import is candidate-only. Preference activation rebuilds
+evidence and merges scoped rules instead of replacing unrelated history.
+Automatic perception checks retain verified 1x video/audio previews and
 normal-speed human review. See
 [`INTELLIGENT_EDITING_V6.md`](INTELLIGENT_EDITING_V6.md).
 

@@ -294,7 +294,9 @@ node scripts/kacha.mjs review build \
 node scripts/kacha.mjs studio serve
 ```
 
-浏览器进入 `/review`，正常速度逐项接受、调整或拒绝。调整与拒绝解决后运行：
+浏览器进入 `/review`，用真实可解码、带音轨、达到代表时长的 1× 预览逐项接受、
+调整或拒绝。缺少任何一项预览时，即使全部接受也不能进入候选就绪。调整与拒绝
+解决后运行：
 
 ```bash
 node scripts/kacha.mjs review validate \
