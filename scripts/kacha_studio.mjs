@@ -396,8 +396,11 @@ function normalizeAudio(value, label) {
 function normalizeBgm(value, label) {
   if (!isPlainObject(value)) throw new Error(`${label} 必须是 object`);
   const presetId = enumValue(value.presetId, BGM_PRESET_IDS, `${label}.presetId`);
+  const enabled = presetId === "none" ? false : booleanValue(value.enabled, `${label}.enabled`);
   return {
-    enabled: presetId === "none" ? false : booleanValue(value.enabled, `${label}.enabled`),
+    enabled,
+    adaptive: enabled ? booleanValue(value.adaptive ?? true, `${label}.adaptive`) : false,
+    policyId: value.policyId ?? "xingzhe-adaptive-bgm-v1",
     presetId,
     targetBelowDialogueDb: finiteNumber(
       value.targetBelowDialogueDb ?? 18,
@@ -986,6 +989,15 @@ function productionInstructions(request, catalog) {
       priority: "required",
     });
   }
+  if (request.backgroundMusicEnabled) {
+    instructions.push({
+      id: "studio-adaptive-bgm",
+      text: "背景音乐必须按最终对白的说话速度、情绪、叙事功能和信息密度建立自适应配乐计划；允许留白，禁止一条循环音乐铺满全片。提示词必须明确乐器、风格、BPM、节奏、音色、和声、低中高频、动态、声像、乐句编辑点和负面约束；事实核查与不确定性优先退乐。",
+      appliesTo: [request.task],
+      modules: ["audio", "bgm"],
+      priority: "required",
+    });
+  }
   for (const assignment of request.effectAssignments) {
     instructions.push({
       id: `studio-${assignment.id}`,
@@ -1067,6 +1079,8 @@ function buildProjectConfig(request, media, catalog) {
           truePeakMaxDbtp: style.audio.truePeakDbtp,
           bgm: {
             enabled: request.backgroundMusicEnabled && style.bgm.presetId !== "none",
+            adaptive: style.bgm.adaptive,
+            policyId: style.bgm.policyId,
             presetId: style.bgm.presetId,
             targetBelowDialogueDb: style.bgm.targetBelowDialogueDb,
             ducking: style.bgm.ducking,
@@ -1136,6 +1150,8 @@ function buildProjectConfig(request, media, catalog) {
           tuning: clone(style.beauty.tuning),
         },
         bgm: {
+          adaptive: style.bgm.adaptive,
+          policyId: style.bgm.policyId,
           presetId: style.bgm.presetId,
           targetBelowDialogueDb: style.bgm.targetBelowDialogueDb,
         },

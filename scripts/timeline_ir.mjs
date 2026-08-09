@@ -51,6 +51,10 @@ function between(value, minimum, maximum) {
   return finite(value) && Number(value) >= minimum && Number(value) <= maximum;
 }
 
+function round(value, digits = 6) {
+  return Number(Number(value).toFixed(digits));
+}
+
 function mediaPath(owner, entry) {
   const candidate = typeof entry === "string" ? entry : entry?.path;
   return candidate ? resolveFrom(owner, candidate) : null;
@@ -714,13 +718,78 @@ function validatePlan(planFile) {
   }
   for (const [label, entry] of [
     ["audio.dialogue", plan.audio?.dialogue],
-    ["audio.bgm", plan.audio?.bgm],
+    ...(plan.audio?.bgm?.segments ? [] : [["audio.bgm", plan.audio?.bgm]]),
   ]) {
     if (entry && !existingFile(planFile, entry)) errors.push(`${label} 不存在`);
     const file = entry ? existingFile(planFile, entry) : null;
     validatePlaceholder(planFile, label, entry, file, errors);
     if (file && entry.sha256 && entry.sha256 !== sha256File(file)) {
       errors.push(`${label} SHA-256 已失效`);
+    }
+  }
+  const bgmSegments = plan.audio?.bgm?.segments;
+  if (bgmSegments !== undefined && !Array.isArray(bgmSegments)) {
+    errors.push("audio.bgm.segments 必须是数组");
+  }
+  if (Array.isArray(bgmSegments)) {
+    if (bgmSegments.length === 0) errors.push("audio.bgm.segments 不能为空");
+    if (plan.audio.bgm.path) errors.push("audio.bgm 不能同时声明 path 与 segments");
+    let previousEnd = 0;
+    bgmSegments.forEach((segment, index) => {
+      const label = `audio.bgm.segments[${index}]`;
+      const file = existingFile(planFile, segment);
+      if (!file) errors.push(`${label} 不存在`);
+      validatePlaceholder(planFile, label, segment, file, errors);
+      if (file && segment.sha256 && segment.sha256 !== sha256File(file)) {
+        errors.push(`${label} SHA-256 已失效`);
+      }
+      const start = Number(segment.start);
+      const end = Number(segment.end);
+      if (!finite(start) || !finite(end) || start < 0 || end <= start || end > duration + 0.001) {
+        errors.push(`${label} start/end 无效或超出时间线`);
+      }
+      if (finite(start) && start < previousEnd - 0.001) {
+        errors.push(`${label} 与前一音乐段重叠；如需叠层请先离线合成单个 cue`);
+      }
+      if (finite(end)) previousEnd = end;
+      const sourceStart = Number(segment.sourceStart ?? 0);
+      if (!finite(sourceStart) || sourceStart < 0) errors.push(`${label}.sourceStart 无效`);
+      const level = Number(segment.levelBelowDialogueDb ?? 18);
+      if (!between(level, 0, 40)) errors.push(`${label}.levelBelowDialogueDb 必须在 0 到 40 dB`);
+      for (const field of ["fadeInSeconds", "fadeOutSeconds"]) {
+        const value = Number(segment[field] ?? 0);
+        if (!finite(value) || value < 0 || (finite(end) && finite(start) && value > (end - start) / 2 + 0.001)) {
+          errors.push(`${label}.${field} 无效`);
+        }
+      }
+    });
+  }
+  if (plan.audio?.bgm?.adaptivePlan) {
+    const adaptivePlanFile = existingFile(planFile, plan.audio.bgm.adaptivePlan);
+    if (!adaptivePlanFile) errors.push("audio.bgm.adaptivePlan 不存在");
+    if (
+      adaptivePlanFile
+      && plan.audio.bgm.adaptivePlan.sha256
+      && plan.audio.bgm.adaptivePlan.sha256 !== sha256File(adaptivePlanFile)
+    ) {
+      errors.push("audio.bgm.adaptivePlan SHA-256 已失效");
+    }
+  }
+  if (
+    plan.audio?.bgm?.sidechain
+    && typeof plan.audio.bgm.sidechain === "object"
+  ) {
+    const sidechain = plan.audio.bgm.sidechain;
+    for (const [field, minimum, maximum] of [
+      ["attackMs", 1, 2000],
+      ["releaseMs", 10, 9000],
+      ["threshold", 0.000001, 1],
+      ["ratio", 1, 20],
+    ]) {
+      if (
+        sidechain[field] !== undefined
+        && !between(sidechain[field], minimum, maximum)
+      ) errors.push(`audio.bgm.sidechain.${field} 必须在 ${minimum} 到 ${maximum}`);
     }
   }
   if (
@@ -756,7 +825,12 @@ function validatePlan(planFile) {
         ? [["visual.subtitles", plan.visual.subtitles]]
         : []),
       ...(plan.audio?.dialogue ? [["audio.dialogue", plan.audio.dialogue]] : []),
-      ...(plan.audio?.bgm ? [["audio.bgm", plan.audio.bgm]] : []),
+      ...(plan.audio?.bgm?.segments
+        ? plan.audio.bgm.segments.map((entry, index) => [
+            `audio.bgm.segments[${index}]`,
+            entry,
+          ])
+        : plan.audio?.bgm ? [["audio.bgm", plan.audio.bgm]] : []),
       ...(plan.audio?.sfx ?? []).map((entry, index) => [
         `audio.sfx[${index}]`,
         entry,
@@ -863,6 +937,35 @@ function compileGraph(validated, loadedConfig) {
       ? [{ ...entry, time: time - range.start }]
       : [];
   });
+  const bgm = plan.audio?.bgm?.segments
+    ? {
+        ...plan.audio.bgm,
+        segments: plan.audio.bgm.segments.flatMap((entry) => {
+          const originalStart = Number(entry.start);
+          const originalEnd = Number(entry.end);
+          const intersectionStart = range ? Math.max(originalStart, range.start) : originalStart;
+          const intersectionEnd = range ? Math.min(originalEnd, range.end) : originalEnd;
+          if (intersectionEnd <= intersectionStart) return [];
+          return [{
+            ...entry,
+            start: round(intersectionStart - (range?.start ?? 0), 6),
+            end: round(intersectionEnd - (range?.start ?? 0), 6),
+            sourceStart: round(
+              Number(entry.sourceStart ?? 0) + intersectionStart - originalStart,
+              6,
+            ),
+            path: existingFile(validated.planFile, entry),
+            identity: assetIdentity(validated.planFile, entry),
+          }];
+        }),
+      }
+    : plan.audio?.bgm
+      ? {
+          ...plan.audio.bgm,
+          path: existingFile(validated.planFile, plan.audio.bgm),
+          identity: assetIdentity(validated.planFile, plan.audio.bgm),
+        }
+      : null;
   const graph = {
     schemaVersion: "1.0",
     projectId: plan.projectId,
@@ -941,13 +1044,7 @@ function compileGraph(validated, loadedConfig) {
             identity: assetIdentity(validated.planFile, plan.audio.dialogue),
           }
         : null,
-      bgm: plan.audio?.bgm
-        ? {
-            ...plan.audio.bgm,
-            path: existingFile(validated.planFile, plan.audio.bgm),
-            identity: assetIdentity(validated.planFile, plan.audio.bgm),
-          }
-        : null,
+      bgm,
       sfx: sfx.map((entry) => ({
         ...entry,
         path: existingFile(validated.planFile, entry),
@@ -1012,7 +1109,7 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
     overlays: [],
     subtitles: null,
     dialogue: null,
-    bgm: null,
+    bgm: [],
     sfx: [],
   };
   let inputIndex = 1;
@@ -1034,9 +1131,12 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
     inputIndex += 1;
   }
   if (graph.audio.bgm) {
-    command.push("-stream_loop", "-1", "-i", graph.audio.bgm.path);
-    inputIndexes.bgm = inputIndex;
-    inputIndex += 1;
+    const entries = graph.audio.bgm.segments ?? [graph.audio.bgm];
+    for (const entry of entries) {
+      command.push("-stream_loop", "-1", "-i", entry.path);
+      inputIndexes.bgm.push(inputIndex);
+      inputIndex += 1;
+    }
   }
   for (const sfx of graph.audio.sfx) {
     command.push("-i", sfx.path);
@@ -1219,7 +1319,7 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
   if (hasVoice) {
     const needStem = Boolean(graph.output.dialogueStem);
     const needSidechain = Boolean(
-      inputIndexes.bgm !== null && graph.audio.bgm.sidechain !== false,
+      inputIndexes.bgm.length > 0 && graph.audio.bgm.sidechain !== false,
     );
     const branches = ["voiceMix"];
     if (needSidechain) branches.push("voiceSidechain");
@@ -1238,20 +1338,62 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
   }
 
   let bgmForMix = null;
-  if (inputIndexes.bgm !== null) {
-    const level = -Math.abs(Number(graph.audio.bgm.levelBelowDialogueDb ?? 16));
-    const bgmStart = graph.previewRange?.start ?? 0;
-    const bgmEnd = graph.previewRange?.end ?? graph.durationSeconds;
-    filters.push(
-      `[${inputIndexes.bgm}:a]atrim=start=${formatNumber(bgmStart)}:`
-        + `end=${formatNumber(bgmEnd)},`
-        + "asetpts=PTS-STARTPTS,aresample=48000:async=0:first_pts=0,"
-        + `aformat=sample_rates=48000:channel_layouts=stereo,volume=${level}dB[bgmRaw]`,
-    );
-    if (graph.audio.bgm.sidechain !== false && hasVoice) {
+  if (inputIndexes.bgm.length > 0) {
+    if (graph.audio.bgm.segments) {
+      const segmentLabels = [];
+      graph.audio.bgm.segments.forEach((segment, index) => {
+        const duration = Number(segment.end) - Number(segment.start);
+        const sourceStart = Number(segment.sourceStart ?? 0);
+        const fadeIn = Math.min(Number(segment.fadeInSeconds ?? 0.8), duration / 2);
+        const fadeOut = Math.min(Number(segment.fadeOutSeconds ?? 0.8), duration / 2);
+        const level = -Math.abs(Number(segment.levelBelowDialogueDb ?? 18));
+        const delay = Math.max(0, Math.round(Number(segment.start) * 1000));
+        const fades = [
+          fadeIn > 0
+            ? `afade=t=in:st=0:d=${formatNumber(fadeIn)}`
+            : null,
+          fadeOut > 0
+            ? `afade=t=out:st=${formatNumber(Math.max(0, duration - fadeOut))}:`
+              + `d=${formatNumber(fadeOut)}`
+            : null,
+        ].filter(Boolean);
+        const fadeFilters = fades.length > 0 ? `${fades.join(",")},` : "";
+        const label = `bgmSegment${index}`;
+        filters.push(
+          `[${inputIndexes.bgm[index]}:a]atrim=start=${formatNumber(sourceStart)}:`
+            + `end=${formatNumber(sourceStart + duration)},asetpts=PTS-STARTPTS,`
+            + "aresample=48000:async=0:first_pts=0,"
+            + "aformat=sample_rates=48000:channel_layouts=stereo,"
+            + `${fadeFilters}volume=${level}dB,adelay=${delay}|${delay}[${label}]`,
+        );
+        segmentLabels.push(`[${label}]`);
+      });
       filters.push(
-        "[bgmRaw][voiceSidechain]sidechaincompress=threshold=0.03:ratio=4:"
-          + "attack=20:release=280[bgmDucked]",
+        `${segmentLabels.join("")}amix=inputs=${segmentLabels.length}:normalize=0:`
+          + `duration=longest:dropout_transition=0,apad,`
+          + `atrim=0:${formatNumber(graph.durationSeconds)}[bgmRaw]`,
+      );
+    } else {
+      const level = -Math.abs(Number(graph.audio.bgm.levelBelowDialogueDb ?? 16));
+      const bgmStart = graph.previewRange?.start ?? 0;
+      const bgmEnd = graph.previewRange?.end ?? graph.durationSeconds;
+      filters.push(
+        `[${inputIndexes.bgm[0]}:a]atrim=start=${formatNumber(bgmStart)}:`
+          + `end=${formatNumber(bgmEnd)},`
+          + "asetpts=PTS-STARTPTS,aresample=48000:async=0:first_pts=0,"
+          + `aformat=sample_rates=48000:channel_layouts=stereo,volume=${level}dB[bgmRaw]`,
+      );
+    }
+    if (graph.audio.bgm.sidechain !== false && hasVoice) {
+      const sidechain = graph.audio.bgm.sidechain ?? {};
+      const attack = Number(sidechain.attackMs ?? 20);
+      const release = Number(sidechain.releaseMs ?? 280);
+      const threshold = Number(sidechain.threshold ?? 0.03);
+      const ratio = Number(sidechain.ratio ?? 4);
+      filters.push(
+        `[bgmRaw][voiceSidechain]sidechaincompress=threshold=${formatNumber(threshold)}:`
+          + `ratio=${formatNumber(ratio)}:attack=${formatNumber(attack)}:`
+          + `release=${formatNumber(release)}[bgmDucked]`,
       );
       bgmForMix = "bgmDucked";
     } else {

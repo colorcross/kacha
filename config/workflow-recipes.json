@@ -129,8 +129,8 @@
       "resources": ["cpuHeavy", "ioHeavy"],
       "parallelSafe": true,
       "outputGroups": ["audio_mix"],
-      "summary": "在视觉时序冻结后完成 dialogue、BGM、SFX、闪避和母带",
-      "evidence": ["component stems", "mix stem", "audio QC"]
+      "summary": "在视觉时序冻结后，按说话节奏、情绪、内容和信息密度执行自适应 BGM 段落、留白、SFX、闪避和母带",
+      "evidence": ["adaptive BGM plan", "professional music prompts", "BGM segment program", "component stems", "mix stem", "audio QC"]
     },
     {
       "id": "cover",

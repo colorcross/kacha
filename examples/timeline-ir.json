@@ -68,14 +68,46 @@
   "audio": {
     "dialogue": null,
     "bgm": {
-      "path": "./assets/bgm.wav",
-      "sha256": "replace-with-real-sha256",
-      "provenance": {
-        "kind": "licensed_local_audio",
-        "evidence": "./assets/bgm.license.json"
+      "adaptivePlan": {
+        "path": "./adaptive-bgm-plan.json",
+        "sha256": "replace-with-real-sha256"
       },
-      "levelBelowDialogueDb": 16,
-      "sidechain": true
+      "sidechain": {
+        "attackMs": 18,
+        "releaseMs": 320,
+        "threshold": 0.03,
+        "ratio": 4
+      },
+      "segments": [
+        {
+          "path": "./assets/bgm-hook.wav",
+          "sha256": "replace-with-real-sha256",
+          "provenance": {
+            "kind": "licensed_or_generated_project_audio",
+            "evidence": "./assets/bgm-hook.license.json"
+          },
+          "start": 0,
+          "end": 1.6,
+          "sourceStart": 0,
+          "levelBelowDialogueDb": 14,
+          "fadeInSeconds": 0.35,
+          "fadeOutSeconds": 0.5
+        },
+        {
+          "path": "./assets/bgm-result.wav",
+          "sha256": "replace-with-real-sha256",
+          "provenance": {
+            "kind": "licensed_or_generated_project_audio",
+            "evidence": "./assets/bgm-result.license.json"
+          },
+          "start": 3.2,
+          "end": 5,
+          "sourceStart": 0,
+          "levelBelowDialogueDb": 18,
+          "fadeInSeconds": 0.5,
+          "fadeOutSeconds": 0.8
+        }
+      ]
     },
     "sfx": [
       {

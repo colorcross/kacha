@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   mediaSummary,
+  readJson,
   resolveFrom,
   run,
 } from "./kacha_utils.mjs";
@@ -64,6 +65,32 @@ function measureStem(file, qcConfig) {
     truePeakDbtp: Number(loudness.input_tp),
     loudnessRangeLu: Number(loudness.input_lra),
   };
+}
+
+function measureStemIntervals(file, intervals, qcConfig) {
+  if (!Array.isArray(intervals) || intervals.length === 0) return null;
+  const selection = intervals.map(({ start, end }) => (
+    `between(t\\,${Number(start).toFixed(6)}\\,${Number(end).toFixed(6)})`
+  )).join("+");
+  const temporary = path.join(
+    path.dirname(file),
+    `.kacha-qc-intervals-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}.wav`,
+  );
+  const result = run("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+    "-i", file,
+    "-af", `aselect='${selection}',asetpts=N/SR/TB`,
+    "-c:a", "pcm_s24le",
+    temporary,
+  ]);
+  if (result.status !== 0) {
+    throw new Error(`无法提取自适应 BGM 计划区间：${result.stderr.trim()}`);
+  }
+  try {
+    return measureStem(temporary, qcConfig);
+  } finally {
+    fs.rmSync(temporary, { force: true });
+  }
 }
 
 function parseAstatsRms(stderr) {
@@ -209,6 +236,7 @@ export function evaluateAudioStems({
   const checks = [];
   const measurements = {};
   const required = contract?.bgmRequired === true;
+  const adaptiveRequired = contract?.adaptiveBgmRequired === true;
   const dialogueEntry = declared?.dialogue ?? declared?.voice;
   const bgmEntry = declared?.bgm;
   const sfxEntry = declared?.sfx;
@@ -225,6 +253,46 @@ export function evaluateAudioStems({
   const mixFile = mixEntry
     ? resolveFrom(projectFile, entryPath(mixEntry))
     : null;
+  const adaptivePlanEntry = project.plans?.adaptiveBgm;
+  const adaptivePlanFile = adaptivePlanEntry
+    ? resolveFrom(projectFile, entryPath(adaptivePlanEntry))
+    : null;
+  let adaptivePlan = null;
+  checks.push(check(
+    "adaptive_bgm_plan_declared",
+    !adaptiveRequired || Boolean(adaptivePlanFile),
+    adaptivePlanFile ?? "missing",
+    adaptiveRequired ? "plans.adaptiveBgm" : "optional",
+  ));
+  if (adaptivePlanFile) {
+    const exists = fs.existsSync(adaptivePlanFile) && fs.statSync(adaptivePlanFile).isFile();
+    checks.push(check(
+      "adaptive_bgm_plan_exists",
+      exists,
+      adaptivePlanFile,
+      "existing adaptive BGM plan",
+    ));
+    if (exists) {
+      try {
+        adaptivePlan = readJson(adaptivePlanFile);
+        checks.push(check(
+          "adaptive_bgm_plan_shape",
+          adaptivePlan.kind === "kacha-adaptive-bgm-plan"
+            && Array.isArray(adaptivePlan.scenes)
+            && adaptivePlan.scenes.length > 0,
+          adaptivePlan.kind ?? "unknown",
+          "validated kacha-adaptive-bgm-plan",
+        ));
+      } catch (error) {
+        checks.push(check(
+          "adaptive_bgm_plan_shape",
+          false,
+          error.message,
+          "readable adaptive BGM plan",
+        ));
+      }
+    }
+  }
 
   checks.push(check(
     "dialogue_stem_declared",
@@ -280,8 +348,38 @@ export function evaluateAudioStems({
 
   let bgmBelowDialogueDb = null;
   if (measurements.dialogue && measurements.bgm) {
+    const musicIntervals = (adaptivePlan?.scenes ?? [])
+      .filter((scene) => scene.mode === "music")
+      .map((scene) => ({ start: Number(scene.start), end: Number(scene.end) }))
+      .filter((scene) => Number.isFinite(scene.start) && Number.isFinite(scene.end));
+    let comparisonDialogue = measurements.dialogue;
+    let comparisonBgm = measurements.bgm;
+    if (musicIntervals.length > 0) {
+      try {
+        comparisonDialogue = measureStemIntervals(dialogueFile, musicIntervals, qcConfig);
+        comparisonBgm = measureStemIntervals(bgmFile, musicIntervals, qcConfig);
+        measurements.adaptiveBgmOverlap = {
+          intervals: musicIntervals,
+          dialogue: comparisonDialogue,
+          bgm: comparisonBgm,
+        };
+        checks.push(check(
+          "adaptive_bgm_overlap_measurement",
+          true,
+          `${musicIntervals.length} planned music intervals`,
+          "measure dialogue and BGM only where music is planned",
+        ));
+      } catch (error) {
+        checks.push(check(
+          "adaptive_bgm_overlap_measurement",
+          false,
+          error.message,
+          "measurable planned music intervals",
+        ));
+      }
+    }
     bgmBelowDialogueDb = Number(
-      (measurements.dialogue.integratedLufs - measurements.bgm.integratedLufs)
+      (comparisonDialogue.integratedLufs - comparisonBgm.integratedLufs)
         .toFixed(2),
     );
     const minimum = Number(
@@ -373,6 +471,8 @@ export function evaluateAudioStems({
     status: failures.length > 0 ? "fail" : "pass",
     contract: {
       bgmRequired: required,
+      adaptiveBgmRequired: adaptiveRequired,
+      adaptiveBgmPlan: adaptivePlanFile,
       masterTruePeakDb: Number(contract?.masterTruePeakDb ?? -4),
       bgmBelowDialogueDbMin: Number(
         contract?.bgmBelowDialogueDbMin

@@ -234,10 +234,18 @@ function outputContractFor(input) {
     integratedLufsMin: -21.5,
     integratedLufsMax: -19,
     truePeakMax: -3,
+    audioMix: {
+      bgmRequired: true,
+      adaptiveBgmRequired: true,
+      masterTruePeakDb: -4,
+      bgmBelowDialogueDbMin: 12,
+      bgmBelowDialogueDbMax: 24,
+      bgmMinimumCoverageRatio: 0.95,
+    },
   };
 }
 
-function buildManifest({ projectId, projectRoot, input, runtimeLock }) {
+function buildManifest({ projectId, projectRoot, input, runtimeLock, options }) {
   const contracts = path.join(projectRoot, "contracts");
   const manifestFile = path.join(contracts, "project-manifest.json");
   const rel = (file) => relativeFrom(manifestFile, file);
@@ -251,11 +259,16 @@ function buildManifest({ projectId, projectRoot, input, runtimeLock }) {
       productionMilestones: ["proposal", "first_cut", "review", "delivery"],
     },
     runtimeLock,
+    show: options.show,
+    style: options.style,
+    platform: options.platform,
+    language: options.language,
     intelligenceV6: { required: true },
     plans: {
       proposal: rel(path.join(contracts, "edit-proposal.json")),
       editPlan: rel(path.join(contracts, "edit-plan.json")),
       directorPlan: rel(path.join(contracts, "director-plan.json")),
+      adaptiveBgm: rel(path.join(contracts, "adaptive-bgm-plan.json")),
       assetGapPlan: rel(path.join(contracts, "asset-gap-plan.json")),
       temporalPerceptionAudit: rel(path.join(contracts, "temporal-perception-audit.json")),
       semanticReviewSession: rel(path.join(projectRoot, ".kacha", "review", "review-session.json")),
@@ -402,6 +415,7 @@ export function initializeProject({
       projectRoot: baseRoot,
       input,
       runtimeLock,
+      options,
     }));
   } else {
     contentContractFile = path.join(baseRoot, "contracts", "content-project.json");

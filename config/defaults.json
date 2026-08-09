@@ -22,8 +22,13 @@
           "max": 5.5
         },
         "bgm": {
+          "adaptive": true,
+          "policyId": "xingzhe-adaptive-bgm-v1",
           "targetBelowDialogueDb": 18.0,
-          "stereoWidth": 0.5
+          "stereoWidth": 0.5,
+          "allowIntentionalSilence": true,
+          "forbidFullLengthUnchangedLoop": true,
+          "requirePhraseSafeTransitions": true
         },
         "sfx": {
           "defaultBelowDialogueDb": 12.0,
@@ -207,7 +212,7 @@
       "measurementTruePeakDbtp": -2,
       "measurementLoudnessRange": 7,
       "bgmBelowDialogueMinDb": 12,
-      "bgmBelowDialogueMaxDb": 18,
+      "bgmBelowDialogueMaxDb": 24,
       "bgmMinimumCoverageRatio": 0.85,
       "mixStemReconstructionPsnrMinDb": 70,
       "finalMixPsnrMinDb": 24

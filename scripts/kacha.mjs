@@ -24,6 +24,7 @@ function usage() {
       + "  kacha.mjs beauty validate|show|authorize|render|qc [options]\n"
       + "  kacha.mjs effects list|show|validate|preview [options]\n"
       + "  kacha.mjs sfx validate|import [options]\n"
+      + "  kacha.mjs bgm plan|validate [options]\n"
       + "  kacha.mjs facefusion probe|profiles|template|validate|run [options]\n"
       + "  kacha.mjs templates validate|list|show|resolve [options]\n"
       + "  kacha.mjs contracts validate|list|show|resolve [options]\n"
@@ -134,6 +135,7 @@ const delegatedCommands = {
   beauty: "kacha_beauty.mjs",
   effects: "kacha_effects.mjs",
   sfx: "kacha_sfx.mjs",
+  bgm: "adaptive_bgm.mjs",
   facefusion: "kacha_facefusion.mjs",
   templates: "kacha_templates.mjs",
   contracts: "kacha_motion_contracts.mjs",
@@ -250,6 +252,15 @@ function gatePlanV2() {
   );
   invoke("validate_edit_proposal.mjs", [proposal]);
   invoke("validate_edit_plan.mjs", [editPlan]);
+  let adaptiveBgm = null;
+  if (project.expectedMedia?.audioMix?.adaptiveBgmRequired === true) {
+    adaptiveBgm = requireProjectPath(
+      projectFile,
+      project.plans.adaptiveBgm,
+      "plans.adaptiveBgm",
+    );
+    invoke("adaptive_bgm.mjs", ["validate", "--plan", adaptiveBgm]);
+  }
   if (project.plans.qualityEfficiency) {
     const qualityEfficiency = requireProjectPath(
       projectFile,
@@ -336,7 +347,9 @@ function gatePlanV2() {
       ...(timelinePlan.visual?.overlays ?? []),
       ...(timelinePlan.visual?.subtitles ? [timelinePlan.visual.subtitles] : []),
       ...(timelinePlan.audio?.dialogue ? [timelinePlan.audio.dialogue] : []),
-      ...(timelinePlan.audio?.bgm ? [timelinePlan.audio.bgm] : []),
+      ...(timelinePlan.audio?.bgm?.segments
+        ? timelinePlan.audio.bgm.segments
+        : timelinePlan.audio?.bgm ? [timelinePlan.audio.bgm] : []),
       ...(timelinePlan.audio?.sfx ?? []),
     ];
     for (const [index, asset] of timelineAssets.entries()) {
@@ -423,6 +436,20 @@ function gatePlanV2() {
     ) {
       console.error("项目要求 BGM 时，Timeline IR 必须声明 audio.bgm 与 output.mixStem");
       process.exit(1);
+    }
+    if (adaptiveBgm) {
+      const binding = timelinePlan.audio?.bgm?.adaptivePlan;
+      const boundFile = binding ? resolveFrom(timeline, entryPath(binding)) : null;
+      if (
+        !boundFile
+        || path.resolve(boundFile) !== path.resolve(adaptiveBgm)
+        || binding.sha256 !== sha256File(adaptiveBgm)
+      ) {
+        console.error(
+          "Timeline IR audio.bgm.adaptivePlan 必须绑定当前自适应配乐计划及真实 SHA-256",
+        );
+        process.exit(1);
+      }
     }
   }
 

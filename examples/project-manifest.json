@@ -8,6 +8,7 @@
     "proposal": "./edit-proposal.json",
     "editPlan": "./edit-plan.json",
     "directorPlan": "./director-plan.json",
+    "adaptiveBgm": "./adaptive-bgm-plan.json",
     "assetGapPlan": "./asset-gap-plan.json",
     "temporalPerceptionAudit": "./temporal-perception-audit.json",
     "semanticReviewSession": "./.kacha/review/review-session.json",
@@ -52,9 +53,10 @@
     "truePeakMax": -3.0,
     "audioMix": {
       "bgmRequired": true,
+      "adaptiveBgmRequired": true,
       "masterTruePeakDb": -4,
       "bgmBelowDialogueDbMin": 12,
-      "bgmBelowDialogueDbMax": 18,
+      "bgmBelowDialogueDbMax": 24,
       "bgmMinimumCoverageRatio": 0.85
     }
   },

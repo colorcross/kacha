@@ -195,11 +195,63 @@ FFmpeg `alimiter` 必须显式设置 `level=false`，否则默认自动补偿会
 - 最终至少保留一份同响度 A/B，覆盖普通叙述、强调句和轻声收尾，并在手机
   扬声器与耳机上确认：主体居中、齿音不过亮、口水音不过分突出、强弱仍自然。
 
-## BGM
+## 自适应 BGM
 
-BGM 应能感知但不抢注意力：
+BGM 应能感知但不抢注意力，也不能从头到尾保持同一条循环、同一编配和同一
+响度。先按最终对白建立 `adaptive-bgm-plan.json`：逐段判断叙事功能、情绪、
+语速、信息密度和环境声价值，再决定音乐进入、变奏、退出或保持留白。
 
-- 连续口播中，人声通常比闪避后的 BGM 高约 12–18 dB，再按频谱和设备实听；
+```bash
+node scripts/kacha.mjs bgm plan \
+  --cues semantic-cues.json --show tool-share \
+  --style xingzhe --output adaptive-bgm-plan.json
+node scripts/kacha.mjs bgm validate --plan adaptive-bgm-plan.json
+```
+
+### 专业提示词合同
+
+每个有音乐的段落必须明确 `purpose / duration / bpm / meter / groove /
+instruments / timbre / harmony / frequencyStrategy / dynamics / stereo /
+editPoints / negativePrompt`。提示词不能只写“高级、温暖、有氛围”：
+
+- 乐器与节奏：按说话速度选择脉冲密度；快速说明减少音符，操作步骤才增加
+  短促节拍，反思段移除打击乐；
+- 音色与和声：全片保持共同的二至四音动机、调性中心和一组核心音色，优先
+  改变编配密度、音区与和声色彩，不把动态理解成频繁换歌；
+- 低频：约 `45–60 Hz` 以下谨慎高通，`70–180 Hz` 低频短而克制，避免与
+  爆破音、胸腔共鸣和环境底噪叠加；
+- 人声频段：`180 Hz–4 kHz` 尤其 `1–3.5 kHz` 给旁白留中心空间，pad 与
+  主旋律避开人声共振和语音中心；
+- 高频：持续的 `6–10 kHz` 镲片、shaker 和空气感要收敛，不能盖住辅音；
+- 声像：低频保持 mono，纹理与氛围可放两侧，中间稳定留给对白；
+- 动态：入场、退场和变奏同时服从语义边界与四/八小节乐句，生成素材保留
+  可用 fade handle 和干净尾音；禁止 audible pumping；
+- 负面约束：固定排除歌词/人声、占据人声区的强主旋律、繁忙琶音、低频轰鸣、
+  高频常亮、预告片式冲击、廉价企业配乐和游戏循环感。
+
+栏目级语法由 `config/audio/adaptive-bgm-policy.json` 统一管理：
+
+- 工具分享：`92–112 BPM`，短促电子拨弦、干燥打击与轻 marimba 服务步骤和
+  结果；参数、数字密集处退乐；
+- 解读好书：`60–82 BPM`，felt piano、木质/室内乐纹理；核心论证和引用大多
+  保持纯人声，音乐主要用于开场、章节、反思和结尾；
+- 有限的无限游戏：`68–96 BPM`，地点环境声优先，使用有机打击和真实材质；
+  只在过程、时间跳转和情绪转折进入，禁止英雄化；
+- 灰常AI：`96–124 BPM`，干燥 modular pluck、克制 glitch 与短模拟和弦；
+  允许喜剧停顿，事实核查区间必须收稳或退出。
+
+### 混音与执行合同
+
+- 一般段落 BGM 约在人声下 `18 dB`；hook/结果可约 `14 dB`；高密度、事实、
+  轻声和专有名词段约 `21 dB` 或直接退出，合法范围 `12–24 dB`；这些数值
+  是起点，最终以频谱、表演和设备实听为准；
+- sidechain 以约 `18 ms attack / 320 ms release / 最大约 6 dB gain
+  reduction` 起步，只恢复可懂度，不制造抽吸；
+- Timeline 使用 `audio.bgm.segments[]` 绑定每段真实 WAV、时间、源入点、相对
+  人声音量、fade、SHA-256 和 provenance；渲染器会把段落、留白与分段增益
+  合成为 BGM stem，再统一做人声闪避；
+- 项目设置 `expectedMedia.audioMix.adaptiveBgmRequired=true`，并让
+  `plans.adaptiveBgm` 与 `audio.bgm.adaptivePlan` 绑定同一文件及真实 SHA；
 - 最终混音必须导出独立 dialogue/BGM/SFX 组件 stem 与 mix stem，并测量
   **闪避之后**的综合响度；不能只检查 BGM 源文件存在、混音命令执行成功或
   最终母带总响度；
@@ -214,6 +266,12 @@ BGM 应能感知但不抢注意力：
 - 同时冻结人声、SFX、sidechain 和母带；
 - 禁止降低整片音量冒充 BGM 变小；
 - 入场、章节换挡和结尾服从音乐乐句，不为对拍切断语义。
+
+QC 对自适应项目只在计划中的音乐/对白重叠区间计算相对响度，避免把有意留白
+误判成“音乐太小”；同时仍要求 BGM stem 覆盖完整时间轴、留白真实存在、组件
+可重建 mix、最终视频音轨与 mix stem 匹配。正常速度人工听审至少覆盖开场、
+密集事实、轻声、一次音乐退出、一次编配变化、结论和结尾，并使用监听、耳机与
+手机扬声器三种环境。
 
 ## SFX
 

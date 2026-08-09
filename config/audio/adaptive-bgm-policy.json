@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "kacha-adaptive-bgm-policy",
+  "id": "xingzhe-adaptive-bgm-v1",
+  "principles": [
+    "背景音乐服务叙事、理解和观看节奏，不用持续铺底制造虚假完成度。",
+    "先锁定人声、环境声和事实语气，再决定音乐进入、变化、退出或保持留白。",
+    "动态不等于频繁换歌；同一视频保持共同主题动机与音色家族，用编配、密度、和声、频段和留白形成变化。",
+    "事实、数据、限定条件、引用和不确定性不得被音乐渲染成更确定、更英雄化或更煽情。",
+    "所有转场优先落在语义边界与乐句边界，禁止在词中、数字中、否定关系中或自然呼吸中硬切。"
+  ],
+  "universal": {
+    "minimumSceneSeconds": 6,
+    "maximumUnchangedMusicSeconds": 55,
+    "minimumMeaningfulChangesForLongVideo": 3,
+    "longVideoSeconds": 90,
+    "dialogueFirst": true,
+    "vocalsAllowed": false,
+    "silenceIsValid": true,
+    "sharedMotifRequired": true,
+    "phraseSafeTransitionsRequired": true,
+    "frequencyStrategy": {
+      "sub": "high-pass musical material around 45-60 Hz unless the scene explicitly needs weight; never let sub energy mask room tone or plosives",
+      "low": "keep bass short, sparse and controlled around 70-180 Hz; avoid sustained low-mid bloom",
+      "speechBand": "leave a center pocket from roughly 180 Hz to 4 kHz, especially 1-3.5 kHz; move pads and melodic detail away from the narration formants",
+      "high": "soften persistent 6-10 kHz hats, shakers and air; no bright wash competing with consonants",
+      "stereo": "keep low frequencies mono, move texture and ambience to the sides, and preserve a stable center for dialogue"
+    },
+    "mix": {
+      "targetBelowDialogueDb": {
+        "hookOrResult": 14,
+        "ordinary": 18,
+        "denseOrFactual": 21,
+        "range": [12, 24]
+      },
+      "sidechain": {
+        "enabled": true,
+        "attackMs": 18,
+        "releaseMs": 320,
+        "maximumGainReductionDb": 6,
+        "rule": "duck only enough to restore intelligibility; no audible pumping"
+      },
+      "fadeSeconds": {
+        "minimum": 0.35,
+        "default": 0.8,
+        "maximum": 2.5
+      },
+      "reviewContexts": ["studio monitors", "headphones", "phone speaker"]
+    },
+    "negativePrompt": [
+      "vocals or spoken words",
+      "a dominant lead melody in the vocal range",
+      "busy arpeggios under dense speech",
+      "boomy sub bass or muddy low mids",
+      "constant bright cymbal or hi-hat wash",
+      "trailer impacts, heroic swells or manipulative sentiment",
+      "corporate ukulele, stock-music cheerfulness or game-loop repetition",
+      "abrupt ending, unresolved tail or edit-hostile long reverb"
+    ]
+  },
+  "showProfiles": {
+    "tool-share": {
+      "label": "工具分享",
+      "bpmRange": [92, 112],
+      "meter": "4/4",
+      "coverageMaximum": 0.78,
+      "maximumContinuousMusicSeconds": 48,
+      "palette": ["muted electronic pluck", "dry rim and fingertip percussion", "soft marimba accents", "short warm bass", "subtle interface texture"],
+      "style": "precise modern editorial electronica with a human touch",
+      "timbre": "clean, tactile, dry, warm-neutral, quick transient recovery",
+      "harmony": "clear add9 and suspended voicings, low harmonic rhythm, restrained optimism",
+      "groove": "light forward pulse with space around instructions and clicks",
+      "avoid": ["corporate explainer jingle", "continuous four-on-the-floor kick", "cute tutorial music"],
+      "defaultRolesWithMusic": ["hook", "setup", "process", "example", "contrast", "result", "transition", "conclusion"]
+    },
+    "book-talk": {
+      "label": "解读好书",
+      "bpmRange": [60, 82],
+      "meter": "4/4 or free pulse",
+      "coverageMaximum": 0.45,
+      "maximumContinuousMusicSeconds": 38,
+      "palette": ["felt piano fragments", "soft cello harmonics", "breath-like clarinet texture", "paper and room ambience", "very restrained warm pad"],
+      "style": "sparse literary chamber ambience with editorial restraint",
+      "timbre": "intimate, woody, matte, slow-decaying, never sentimental",
+      "harmony": "open fifths, add2/add9 colors and unresolved but calm modal movement",
+      "groove": "mostly rubato or a barely perceptible pulse",
+      "avoid": ["sentimental piano score", "lush cinematic strings", "music under dense reasoning or quotations"],
+      "defaultRolesWithMusic": ["hook", "transition", "reflection", "conclusion"]
+    },
+    "infinite-game": {
+      "label": "有限的无限游戏",
+      "bpmRange": [68, 96],
+      "meter": "4/4 with organic asymmetry",
+      "coverageMaximum": 0.62,
+      "maximumContinuousMusicSeconds": 44,
+      "palette": ["location ambience", "prepared acoustic percussion", "muted guitar or dulcimer texture", "bowed organic drone", "restrained pulse"],
+      "style": "observational documentary score led by place, process and physical texture",
+      "timbre": "organic, weathered, dimensional, natural transient detail",
+      "harmony": "modal pedal tones with gradual color changes and no forced resolution",
+      "groove": "movement derived from real action; environment sound remains primary",
+      "avoid": ["heroic documentary trailer", "inspirational crescendo", "music that replaces location sound"],
+      "defaultRolesWithMusic": ["hook", "transition", "process", "contrast", "reflection", "conclusion"]
+    },
+    "very-ai": {
+      "label": "灰常AI",
+      "bpmRange": [96, 124],
+      "meter": "4/4",
+      "coverageMaximum": 0.74,
+      "maximumContinuousMusicSeconds": 42,
+      "palette": ["dry modular pluck", "muted synth bass", "micro-glitch percussion", "short analog chord stab", "clean digital texture"],
+      "style": "playful but credible human-machine editorial electronica",
+      "timbre": "crisp, compact, witty, controlled, not gamer-like",
+      "harmony": "minor-add9 and suspended colors that can resolve cleanly at verified results",
+      "groove": "agile syncopation with deliberate comic stops and fact-check resets",
+      "avoid": ["arcade loop", "cyberpunk trailer", "constant glitch", "music under fact-check conclusions"],
+      "defaultRolesWithMusic": ["hook", "setup", "process", "example", "humor", "contrast", "result", "transition", "conclusion"]
+    }
+  },
+  "narrativeFunctions": {
+    "hook": {"energy": 0.68, "arrangement": "start with one distinctive motif and a clean rhythmic question; reveal the full pulse only after the spoken hook", "harmonicMove": "open or suspended, no oversized resolution"},
+    "setup": {"energy": 0.38, "arrangement": "thin bed, one pulse and one texture, leave space for context", "harmonicMove": "stable tonal center"},
+    "explanation": {"energy": 0.24, "arrangement": "remove lead elements and reduce note density; silence is preferred when speech is dense", "harmonicMove": "very slow harmonic rhythm"},
+    "process": {"energy": 0.48, "arrangement": "add a precise pulse tied to visible steps, with short transients and clear edit points", "harmonicMove": "small forward-moving voicing changes"},
+    "example": {"energy": 0.44, "arrangement": "introduce one concrete color instrument, then return to the shared motif", "harmonicMove": "brief color chord without changing the tonal identity"},
+    "evidence": {"energy": 0.16, "arrangement": "prefer silence or a nearly static texture; no pulse competing with numbers, names, quotations or proof", "harmonicMove": "neutral pedal tone"},
+    "fact_check": {"energy": 0.0, "arrangement": "intentional silence or room tone only", "harmonicMove": "none"},
+    "uncertainty": {"energy": 0.0, "arrangement": "intentional silence; do not imply certainty through harmony", "harmonicMove": "none"},
+    "contrast": {"energy": 0.56, "arrangement": "change register, rhythmic subdivision or timbre while preserving the motif; avoid trailer impacts", "harmonicMove": "controlled modal shift or borrowed chord"},
+    "humor": {"energy": 0.52, "arrangement": "one dry setup gesture followed by a real pause at the punchline; never stack comic sounds", "harmonicMove": "short unresolved accent and stop"},
+    "reflection": {"energy": 0.22, "arrangement": "remove percussion, widen ambience and let one organic voice breathe", "harmonicMove": "open voicing with slow color change"},
+    "result": {"energy": 0.62, "arrangement": "restore pulse and one upper texture after the spoken result lands, not before", "harmonicMove": "modest earned resolution"},
+    "transition": {"energy": 0.42, "arrangement": "four- or eight-bar bridge with an obvious edit-safe tail", "harmonicMove": "pivot chord or shared pedal"},
+    "conclusion": {"energy": 0.36, "arrangement": "return to the opening motif in a simpler form and leave a clean tail", "harmonicMove": "quiet partial resolution, no triumphal cadence"}
+  }
+}

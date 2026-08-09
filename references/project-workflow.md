@@ -56,7 +56,7 @@ node scripts/validate_edit_proposal.mjs edit-proposal.json
 6. `fine_cut`：景别、节奏、重构图、切点和转场精修；
 7. `visual_packaging`：先完成高影响模块 `designPreflight`，再实施插镜、图解、跟踪、蒙版、调色和动效；
 8. `subtitles`：按冻结后的最终音频生成、校准和排版；
-9. `final_mix`：视觉时序冻结后完成 BGM、SFX、闪避和母带；
+9. `final_mix`：视觉时序冻结后，按自适应 BGM 计划完成分段音乐、留白、SFX、闪避和母带；
 10. `cover`：独立制作并核验各封面画幅；
 11. `preview_render`：关键段、A/B、代表帧和设备试听；
 12. `final_qc`：一次高质量正式渲染、完整解码和全片检查；

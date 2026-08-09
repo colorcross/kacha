@@ -504,10 +504,18 @@ picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共�
   do_not_use_when`；重复文件只建 alias。来源未记录的项目音效永不进入公开包。
 - 用户要求 BGM 时，最终混音必须保留闪避后的 dialogue/BGM/SFX 组件 stem
   和最终 mix stem，并在项目 manifest 声明 `outputs.audioStems` 与
-  `expectedMedia.audioMix.bgmRequired=true`。最终 `qc` 直接测量 BGM 相对
-  dialogue 的响度差和时长覆盖，重建组件混音，并把最终视频解码音频与 mix
-  stem 做残差信噪比比对；只检查音乐文件存在、轨道已连接或母带总响度不算
-  完成。默认 12–18 dB，超过上限或成片漏混都直接阻断。
+  `expectedMedia.audioMix.bgmRequired=true`。同时必须从最终语义 cues 运行
+  `kacha bgm plan`，按说话节奏、情绪、叙事功能、信息密度和环境声价值建立
+  音乐段落、编配变化和主动留白；禁止单一循环铺满全片。每段生成提示词必须
+  包含乐器、风格、BPM、节拍、音色、和声、低中高频、动态、声像、编辑点与
+  negative prompt，并保持全片共同主题动机，不能拼成歌单。
+- 自适应项目声明 `expectedMedia.audioMix.adaptiveBgmRequired=true`，由
+  `plans.adaptiveBgm` 绑定计划，Timeline 用 `audio.bgm.segments[]` 绑定真实
+  WAV、时间、增益、fade、SHA-256 与 provenance，并用
+  `audio.bgm.adaptivePlan` 冻结计划身份。最终 `qc` 只在计划音乐区间测量 BGM
+  相对 dialogue 的响度差，避免把留白误判为过低，同时检查完整 stem、组件
+  重建和最终成片漏混。相对人声通常按 hook/结果约 14 dB、普通段 18 dB、
+  高密度或事实段 21 dB 或退乐起步，合法范围 12–24 dB，最终服从实听。
 - 增量音频返工创建 manifest 时传入 `--dialogue-stem`、`--bgm-stem` 与
   `--mix-stem`（有 SFX 时再传 `--sfx-stem`），沿用相同 BGM 可感知和成片
   漏混门禁，不能把局部返工当成例外。

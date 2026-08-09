@@ -175,6 +175,20 @@ node scripts/kacha.mjs render \
 EDL、画面呼吸、叠加层、字幕、dialogue、BGM 和 SFX 会在一个 Render Graph
 中完成，正式视觉版本最多一次完整视频编码。
 
+在进入 `final_mix` 前，先从最终语义 cues 建立并验证自适应配乐计划：
+
+```bash
+node scripts/kacha.mjs bgm plan \
+  --cues semantic-cues.json --show tool-share \
+  --style xingzhe --output contracts/adaptive-bgm-plan.json
+node scripts/kacha.mjs bgm validate \
+  --plan contracts/adaptive-bgm-plan.json
+```
+
+计划会输出每段音乐或留白、专业生成提示词、分段响度与闪避参数。生成并验收
+真实音乐后，用 `audio.bgm.segments[]` 绑定 WAV 和素材证据；不要把同一首循环
+音乐直接铺满全片。
+
 参数探索先做局部代理：
 
 ```bash

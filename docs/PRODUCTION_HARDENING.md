@@ -195,7 +195,8 @@
    dialogue/BGM/SFX 组件 stem 与 mix stem；要求 BGM 的项目在 manifest
    声明 `outputs.audioStems` 与 `expectedMedia.audioMix`。自动 QC 直接测量
    dialogue/BGM 的综合响度差和 BGM 时长覆盖，重建组件混音，并把最终视频
-   解码音频与 mix stem 做残差信噪比比对。默认差值必须在 12–18 dB；音乐过低、
+   解码音频与 mix stem 做残差信噪比比对。自适应项目只在计划音乐区间测量，
+   默认差值必须在 12–24 dB；音乐过低、
    组件无法重建或成片漏混均阻断交付。
 9. **前置验证通过、项目门禁才发现素材不可追溯**：`timeline validate` 对
    final 模式提前要求 proposal/editPlan 合同、source SHA，以及字幕、外部

@@ -222,7 +222,7 @@ The `execution` section currently covers:
 - stock-media batch size and timeouts.
 
 When BGM is required, `outputs.audioStems` must declare dialogue/BGM/SFX
-component stems and a final mix stem. QC checks BGM at 12–18 dB below dialogue
+component stems and a final mix stem. Adaptive projects measure only planned music/dialogue overlap; QC checks BGM at 12–24 dB below dialogue
 with at least 85% duration coverage, reconstructs the mix at a default minimum
 70 dB residual SNR, and compares decoded final audio with the mix stem at a
 default minimum 24 dB. This catches both inaudible music and a final mux that

@@ -3892,6 +3892,175 @@ await test("semantic netstyle production plan renders real timeline events witho
   }
 }, "visual");
 
+await test("adaptive BGM planner follows narrative, speech density and show-specific music grammar", () => {
+  const directory = path.join(temporary, "adaptive-bgm-plan");
+  fs.mkdirSync(directory, { recursive: true });
+  const cues = path.join(directory, "cues.json");
+  const planFile = path.join(directory, "plan.json");
+  writeJson(cues, {
+    cues: [
+      { id: "hook", start: 0, end: 12, text: "为什么我们总是高估一个工具？", signals: ["hook"], emotion: "curious" },
+      { id: "reasoning", start: 12, end: 42, text: "先把判断依据一层一层说清楚。", role: "explanation" },
+      { id: "evidence", start: 42, end: 65, text: "报告中的样本是 1280 人，误差范围 3.2%，这里还要核验来源。", signals: ["fact_check", "data"] },
+      { id: "transition", start: 65, end: 78, text: "换个角度，再看作者真正的问题。", signals: ["transition"] },
+      { id: "reflection", start: 78, end: 106, text: "回头看，答案也许不在效率，而在选择。", signals: ["reflection"] },
+      { id: "conclusion", start: 106, end: 120, text: "所以，先保留判断，再使用工具。", signals: ["conclusion"] },
+    ],
+  });
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "bgm", "plan",
+    "--cues", cues,
+    "--show", "book-talk",
+    "--output", planFile,
+  ]);
+  const plan = readJson(planFile);
+  const validation = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "bgm", "validate",
+    "--plan", planFile,
+  ]).stdout);
+  const factScene = plan.scenes.find((scene) => scene.cueIds?.includes("evidence"));
+  const musicScenes = plan.scenes.filter((scene) => scene.mode === "music");
+  if (
+    validation.status !== "pass"
+    || plan.coverage.musicRatio > 0.45
+    || factScene?.mode !== "silence"
+    || musicScenes.length < 2
+    || !musicScenes.every((scene) => (
+      scene.prompt?.bpm
+      && scene.prompt?.instruments?.length >= 3
+      && /Frequency design:/.test(scene.prompt?.generationPrompt ?? "")
+      && /Stereo:/.test(scene.prompt?.generationPrompt ?? "")
+      && /no vocals|instrumental only/i.test(scene.prompt?.generationPrompt ?? "")
+      && scene.mixAutomation?.phraseSafeEntry === true
+      && scene.mixAutomation?.phraseSafeExit === true
+    ))
+  ) {
+    throw new Error("adaptive BGM plan did not preserve sparse book-talk scoring and professional prompt fields");
+  }
+  const invalidFile = path.join(directory, "invalid.json");
+  const invalid = structuredClone(plan);
+  invalid.scenes = [{
+    ...musicScenes[0],
+    id: "constant-bed",
+    start: 0,
+    end: 120,
+    cueIds: plan.scenes.flatMap((scene) => scene.cueIds ?? []),
+  }];
+  delete invalid.digest;
+  delete invalid.generatedAt;
+  invalid.digest = sha256Value(invalid);
+  writeJson(invalidFile, invalid);
+  const rejected = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "bgm", "validate",
+    "--plan", invalidFile,
+  ]);
+  if (!/覆盖率|铺满全片|连续/.test(rejected.stdout + rejected.stderr)) {
+    throw new Error("adaptive BGM validator accepted an unchanged full-length loop");
+  }
+}, "audio");
+
+await test("segmented adaptive BGM renderer executes music entries, exits and intentional silence", () => {
+  const directory = path.join(temporary, "adaptive-bgm-render");
+  fs.mkdirSync(directory, { recursive: true });
+  const source = path.join(directory, "source.mp4");
+  const cueA = path.join(directory, "cue-a.wav");
+  const cueB = path.join(directory, "cue-b.wav");
+  const output = path.join(directory, "preview.mp4");
+  const bgmStem = path.join(directory, "bgm-stem.wav");
+  const graph = path.join(directory, "render-graph.json");
+  const timeline = path.join(directory, "timeline.json");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "testsrc2=size=160x90:rate=25:duration=4",
+    "-f", "lavfi", "-i", "sine=frequency=220:duration=4:sample_rate=48000",
+    "-shortest", "-c:v", "libx264", "-preset", "ultrafast",
+    "-pix_fmt", "yuv420p", "-c:a", "aac", source,
+  ]);
+  for (const [file, frequency] of [[cueA, 330], [cueB, 550]]) {
+    execute("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-y",
+      "-f", "lavfi", "-i", `sine=frequency=${frequency}:duration=2:sample_rate=48000`,
+      "-c:a", "pcm_s24le", file,
+    ]);
+  }
+  writeJson(path.join(directory, "kacha.config.json"), {
+    schemaVersion: "1.0",
+    execution: {
+      unifiedRender: {
+        preview: { encoder: "libx264", fallbackEncoder: "libx264", preset: "ultrafast", crf: 23 },
+        final: { encoder: "libx264", fallbackEncoder: "libx264", preset: "ultrafast", crf: 18 },
+      },
+    },
+  });
+  writeJson(timeline, {
+    schemaVersion: "1.0",
+    projectId: "adaptive-bgm-render",
+    mode: "preview",
+    source: { path: source, sha256: sha256File(source) },
+    edl: [{ id: "full", sourceStart: 0, sourceEnd: 4 }],
+    visual: { breathing: [], overlays: [] },
+    audio: {
+      masterTruePeakDb: -4,
+      bgm: {
+        sidechain: false,
+        segments: [
+          { path: cueA, start: 0, end: 0.9, sourceStart: 0, levelBelowDialogueDb: 14, fadeInSeconds: 0.1, fadeOutSeconds: 0.1 },
+          { path: cueB, start: 2, end: 3.8, sourceStart: 0, levelBelowDialogueDb: 18, fadeInSeconds: 0.2, fadeOutSeconds: 0.2 },
+        ],
+      },
+      sfx: [],
+    },
+    output: { path: output, width: 160, height: 90, fps: 25, bgmStem },
+  });
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "timeline", "validate", "--plan", timeline,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "timeline", "render", "--plan", timeline, "--graph", graph,
+  ]);
+  const compiled = readJson(graph);
+  if (
+    compiled.audio?.bgm?.segments?.length !== 2
+    || !fs.existsSync(output)
+    || !fs.existsSync(bgmStem)
+    || !mediaSummary(bgmStem).audio
+  ) {
+    throw new Error("segmented BGM program was not compiled and rendered");
+  }
+  const silenceProbe = run("ffmpeg", [
+    "-hide_banner", "-nostats", "-ss", "1.15", "-t", "0.45", "-i", bgmStem,
+    "-af", "volumedetect", "-f", "null", "-",
+  ]);
+  const activeProbe = run("ffmpeg", [
+    "-hide_banner", "-nostats", "-ss", "2.3", "-t", "0.45", "-i", bgmStem,
+    "-af", "volumedetect", "-f", "null", "-",
+  ]);
+  const meanVolume = (stderr) => {
+    const match = stderr.match(/mean_volume:\s+(-?(?:\d+(?:\.\d+)?|inf)) dB/);
+    if (!match) return null;
+    return match[1] === "-inf" ? Number.NEGATIVE_INFINITY : Number(match[1]);
+  };
+  const silenceMean = meanVolume(silenceProbe.stderr);
+  const activeMean = meanVolume(activeProbe.stderr);
+  if (
+    silenceProbe.status !== 0
+    || activeProbe.status !== 0
+    || silenceMean === null
+    || activeMean === null
+    || silenceMean > -80
+    || activeMean < -70
+    || activeMean - silenceMean < 20
+  ) {
+    throw new Error(
+      "rendered BGM stem did not preserve the planned intentional silence\n"
+        + `silence:\n${silenceProbe.stderr}\nactive:\n${activeProbe.stderr}`,
+    );
+  }
+}, "audio");
+
 await test("unified timeline renders EDL, motion, overlays, subtitles and audio in one encode", () => {
   const directory = path.join(temporary, "unified-timeline");
   fs.mkdirSync(directory, { recursive: true });
@@ -7491,6 +7660,7 @@ await test("technical QC decodes media and writes a report", () => {
   const bgmStem = path.join(temporary, "qc-bgm-stem.wav");
   const mixStem = path.join(temporary, "qc-mix-stem.wav");
   const finalWithMix = path.join(temporary, "qc-final-with-mix.mov");
+  const adaptiveBgmPlan = path.join(temporary, "qc-adaptive-bgm-plan.json");
   execute("ffmpeg", [
     "-hide_banner", "-loglevel", "error", "-y",
     "-f", "lavfi", "-i", "sine=frequency=220:duration=2:sample_rate=48000",
@@ -7523,10 +7693,21 @@ await test("technical QC decodes media and writes a report", () => {
     "-c:v", "copy", "-c:a", "aac", "-b:a", "256k",
     "-t", "2", finalWithMix,
   ]);
+  writeJson(adaptiveBgmPlan, {
+    schemaVersion: "1.0",
+    kind: "kacha-adaptive-bgm-plan",
+    showId: "tool-share",
+    durationSeconds: 2,
+    scenes: [
+      { id: "silence-in", start: 0, end: 0.2, mode: "silence" },
+      { id: "music", start: 0.2, end: 1.8, mode: "music" },
+      { id: "silence-out", start: 1.8, end: 2, mode: "silence" },
+    ],
+  });
   const project = {
     schemaVersion: "2.0",
     projectId: "synthetic-qc",
-    plans: {},
+    plans: { adaptiveBgm: adaptiveBgmPlan },
     requiredCoverAspectRatios: [],
     expectedMedia: {
       width: 320,
@@ -7542,6 +7723,7 @@ await test("technical QC decodes media and writes a report", () => {
       truePeakMax: 0,
       audioMix: {
         bgmRequired: true,
+        adaptiveBgmRequired: true,
         masterTruePeakDb: -4,
         bgmBelowDialogueDbMin: 12,
         bgmBelowDialogueDbMax: 18,
@@ -7587,6 +7769,8 @@ await test("technical QC decodes media and writes a report", () => {
     || !["videotoolbox", "software"].includes(report.execution?.detectorDecoder)
     || report.audioStemQc?.status !== "pass"
     || report.audioStemQc?.measurements?.mixReconstruction?.exactMatch !== true
+    || report.audioStemQc?.checks?.find((item) => item.id === "adaptive_bgm_overlap_measurement")?.status !== "pass"
+    || report.audioStemQc?.measurements?.adaptiveBgmOverlap?.intervals?.length !== 1
     || report.audioStemQc?.bgmBelowDialogueDb < 12
     || report.audioStemQc?.bgmBelowDialogueDb > 18
   ) {

@@ -161,11 +161,15 @@ chmod 600 ~/.config/kacha/secrets.json
 
 - 人声使用更暖、更柔、不过分强调 2–5 kHz 的知识口播音色；
 - 最终 LRA 从 `4.5–5.5 LU` 起步；
-- 连续口播 BGM 默认在人声下约 `18 dB`，立体声宽度约 `0.5`；
+- BGM 默认启用 `xingzhe-adaptive-bgm-v1`：先按说话节奏、情绪、内容和信息
+  密度规划音乐段落、编配与留白，禁止一条循环铺满全片；普通段约在人声下
+  `18 dB`，hook/结果约 `14 dB`，高密度或事实段约 `21 dB` 或退乐，允许
+  范围 `12–24 dB`，立体声宽度起点约 `0.5`；
 - 要求 BGM 的正式项目在 `outputs.audioStems` 声明闪避后的
   dialogue/BGM/SFX 组件 stem 与 mix stem，并在 `expectedMedia.audioMix`
-  声明可听性合同。自动 QC 默认要求 BGM 低于 dialogue `12–18 dB` 且覆盖
-  至少 85% 成片时长，同时要求组件重建 mix 的残差信噪比不低于 `70 dB`、
+  声明可听性合同；自适应项目再声明 `adaptiveBgmRequired=true` 与
+  `plans.adaptiveBgm`。自动 QC 在计划音乐/对白重叠区间检查 `12–24 dB`，
+  BGM stem 仍覆盖完整时间轴并显式保留静音，同时要求组件重建 mix 的残差信噪比不低于 `70 dB`、
   最终视频解码音频匹配 mix stem 不低于 `24 dB`；音乐过低或成片漏混都会
   失败；
 - SFX 默认在人声下约 `12 dB`，并轻收 `4.5 kHz` 以上高频。

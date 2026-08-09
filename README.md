@@ -234,6 +234,8 @@ node scripts/kacha.mjs doctor --profile core
 
 - 默认保持原视频像素尺寸和宽高比；
 - 含口播的音频先做人声/非人声分离，只让验收通过的人声进入后续处理；
+- 背景音乐按最终对白的语速、情绪、叙事功能和信息密度分段规划，允许主动
+  留白；禁止一条循环音乐、固定配器和固定响度铺满全片；
 - 自动发现的项目配置不能改写 provider、凭证入口或本机工具路径；
 - 网络素材、生成镜头、字体、音乐和音效必须记录来源、授权与哈希；
 - 本地字体文件不会进入公开仓库；项目授权记录只用于当前本地制作范围；
@@ -289,6 +291,7 @@ node scripts/kacha.mjs doctor --profile core
 | [生产台深度 review](docs/STUDIO_REVIEW.md) | 功能、流程、UI、安全与验证结论 |
 | [安装与依赖](docs/INSTALLATION.md) | 环境、平台与可选能力 |
 | [配置说明](docs/CONFIGURATION.md) | 用户、项目、本机和密钥配置 |
+| [自适应背景音乐](docs/ADAPTIVE_BGM.md) | 四栏目音乐语法、专业提示词、多段 Timeline、混音与 QC |
 | [架构说明](docs/ARCHITECTURE.md) | 工作流、证据链与模块边界 |
 | [性能与弱模型稳定生产](docs/PERFORMANCE_TOKEN_STABILITY_V5.md) | 一次编码、局部预览、缓存、Token 和审计 |
 | [质量不降级效率 V8](docs/QUALITY_PRESERVING_EFFICIENCY_V8.md) | 风险、代表区间、依赖波次、强指纹缓存与成对效率证据 |
