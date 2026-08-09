@@ -5,6 +5,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateJobContract } from "./job_contract.mjs";
 import {
+  auditHighValueCache,
+  validateEfficiencyPlan,
+} from "./quality_efficiency.mjs";
+import {
   fileIdentity,
   fileIdentityMatches,
   mediaIndexDigest,
@@ -1054,12 +1058,55 @@ export function observeProject(projectRoot) {
     disk,
     efficiency: (() => {
       const planFile = path.join(root, ".kacha", "efficiency-plan.json");
-      const cacheFile = path.join(root, ".kacha", "cache-audit.json");
-      const plan = fs.existsSync(planFile) ? readJson(planFile) : null;
-      const cache = fs.existsSync(cacheFile) ? readJson(cacheFile) : null;
+      let plan = null;
+      let planLoadError = null;
+      if (fs.existsSync(planFile)) {
+        try {
+          const stat = fs.lstatSync(planFile);
+          if (stat.isSymbolicLink() || !stat.isFile()) {
+            throw new Error("expected a regular non-symbolic-link file");
+          }
+          plan = readJson(planFile);
+        } catch (error) {
+          planLoadError = `efficiency plan cannot be read: ${error.message}`;
+        }
+      }
+      let validation = null;
+      let cache = null;
+      if (plan) {
+        try {
+          validation = validateEfficiencyPlan(plan);
+          cache = auditHighValueCache({
+            projectRoot: root,
+            applicableKinds: plan.cache?.applicableKinds ?? [],
+            expectedEntries: plan.cache?.expectedEntries ?? [],
+            writeReport: false,
+            includeNonApplicableEntries: false,
+          }).report;
+        } catch (error) {
+          validation = { status: "blocked", errors: [error.message] };
+        }
+      }
+      if (planLoadError) {
+        return {
+          status: "blocked",
+          validation: { status: "blocked", errors: [planLoadError] },
+          cache: null,
+          speedImprovementClaimed: false,
+        };
+      }
+      if (!plan && fs.existsSync(path.join(root, ".kacha", "orchestration.json"))) {
+        return {
+          status: "blocked",
+          validation: { status: "blocked", errors: ["efficiency plan is missing"] },
+          cache: null,
+          speedImprovementClaimed: false,
+        };
+      }
       return plan ? {
         policyVersion: plan.policyVersion,
-        status: plan.status,
+        status: validation?.status ?? plan.status,
+        validation,
         risk: plan.risk,
         representativeRanges: plan.representativePreview?.ranges?.length ?? 0,
         fullCandidatePlaybackRequired: plan.representativePreview?.fullCandidatePlaybackRequired === true,

@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   fileIdentity,
   fileIdentityMatches,
+  mediaSummary,
   readJson,
   sha256File,
   sha256Value,
@@ -17,19 +18,59 @@ const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(scriptDirectory, "..");
 const policyFile = path.join(skillRoot, "config", "efficiency-policy.json");
 const recipeFile = path.join(skillRoot, "config", "workflow-recipes.json");
-const policy = readJson(policyFile);
+let policy = readJson(policyFile);
+
+const REQUIRED_QUALITY_INVARIANTS = [
+  "sourceReadOnly",
+  "semanticIntegrityRequired",
+  "representativeApprovalBeforeFullPreview",
+  "fullCandidatePlaybackRequired",
+  "singleFinalVideoEncode",
+  "proxyUpscaleForbidden",
+  "currentArtifactEvidenceRequired",
+  "assetLicenseAndProvenanceRequired",
+];
+const REQUIRED_RESOURCES = [
+  "agent", "cpuHeavy", "ioHeavy", "network", "mps", "videoEncode", "human",
+];
+const REQUIRED_CACHE_CONTRACT_FIELDS = [
+  "inputs", "implementation", "parameters", "operationVersion", "outputs",
+];
+const REQUIRED_CACHE_OUTPUT_FIELDS = ["name", "type", "sha256", "sizeBytes"];
+const REQUIRED_GUARDRAILS = [
+  "semanticIntegrity", "connectionPlayback", "subtitleAccuracy",
+  "visualContinuity", "audioQuality", "fullCandidatePlayback",
+];
+const REQUIRED_EXECUTION_SCRIPTS = ["route_references.mjs"];
 
 export function validateEfficiencyPolicy() {
   const errors = [];
+  try {
+    policy = readJson(policyFile);
+  } catch (error) {
+    return {
+      schemaVersion: "1.0",
+      status: "blocked",
+      policy: fs.existsSync(policyFile) ? fileIdentity(policyFile) : null,
+      errors: [`efficiency policy cannot be read: ${error.message}`],
+    };
+  }
   if (policy.schemaVersion !== "1.0" || policy.kind !== "kacha-quality-preserving-efficiency-policy") {
     errors.push("efficiency policy identity is invalid");
   }
-  for (const [key, value] of Object.entries(policy.immutableQualityInvariants ?? {})) {
-    if (value !== true) errors.push(`quality invariant must remain true: ${key}`);
+  for (const key of REQUIRED_QUALITY_INVARIANTS) {
+    if (policy.immutableQualityInvariants?.[key] !== true) {
+      errors.push(`quality invariant must remain true: ${key}`);
+    }
   }
-  if (Object.keys(policy.immutableQualityInvariants ?? {}).length < 8) errors.push("quality invariants are incomplete");
+  if (JSON.stringify(policy.risk?.levels) !== JSON.stringify(["low", "standard", "high", "critical"])) {
+    errors.push("risk levels are invalid");
+  }
   const thresholds = policy.risk?.thresholds ?? {};
-  if (!(thresholds.standard < thresholds.high && thresholds.high < thresholds.critical)) {
+  if (
+    !(Number(thresholds.standard) > 0)
+    || !(thresholds.standard < thresholds.high && thresholds.high < thresholds.critical)
+  ) {
     errors.push("risk thresholds must be strictly increasing");
   }
   for (const key of [
@@ -53,7 +94,24 @@ export function validateEfficiencyPolicy() {
     policy.parallelism?.resourceCapacities?.mps !== 1
     || policy.parallelism?.resourceCapacities?.videoEncode !== 1
     || policy.parallelism?.forbidSharedOutputWrites !== true
+    || policy.parallelism?.requireDeclaredPrerequisites !== true
   ) errors.push("heavy resource or output conflict policy is invalid");
+  for (const resource of REQUIRED_RESOURCES) {
+    const capacity = policy.parallelism?.resourceCapacities?.[resource];
+    if (!Number.isInteger(capacity) || capacity < 1) {
+      errors.push(`resource capacity is invalid: ${resource}`);
+    }
+  }
+  if (
+    policy.parallelism?.executionCommandPolicy?.nodeScriptsOnly !== true
+    || policy.parallelism?.executionCommandPolicy?.requireImplementationSha256 !== true
+    || policy.parallelism?.executionCommandPolicy?.disallowNetworkResource !== true
+  ) errors.push("execution command policy is invalid");
+  const allowedScripts = policy.parallelism?.executionCommandPolicy?.allowedScripts;
+  if (
+    !Array.isArray(allowedScripts)
+    || sha256Value([...allowedScripts].sort()) !== sha256Value([...REQUIRED_EXECUTION_SCRIPTS].sort())
+  ) errors.push("execution command allowlist is invalid");
   for (const kind of ["source_separation", "asr", "mask", "tracking", "beauty", "styleframe", "generated_media"]) {
     if (!policy.cacheEvidence?.highValueKinds?.includes(kind)) errors.push(`high-value cache kind missing: ${kind}`);
   }
@@ -61,10 +119,27 @@ export function validateEfficiencyPolicy() {
     !(policy.cacheEvidence?.warmCoverageTarget > 0)
     || !(policy.cacheEvidence?.warmCoverageTarget <= 1)
   ) errors.push("cache warm coverage target is invalid");
+  for (const field of REQUIRED_CACHE_CONTRACT_FIELDS) {
+    if (!policy.cacheEvidence?.requiredContractFields?.includes(field)) {
+      errors.push(`cache contract field missing: ${field}`);
+    }
+  }
+  for (const field of REQUIRED_CACHE_OUTPUT_FIELDS) {
+    if (!policy.cacheEvidence?.requiredOutputFields?.includes(field)) {
+      errors.push(`cache output field missing: ${field}`);
+    }
+  }
   if (
     !(policy.efficiencyClaim?.minimumPairedProjects >= 8)
-    || (policy.efficiencyClaim?.requiredGuardrails?.length ?? 0) < 6
+    || policy.efficiencyClaim?.requireSameSourceIdentity !== true
+    || policy.efficiencyClaim?.requireHumanReview !== true
+    || policy.efficiencyClaim?.requireCriticalGuardrailsNoRegression !== true
   ) errors.push("efficiency claim evidence policy is incomplete");
+  for (const guardrail of REQUIRED_GUARDRAILS) {
+    if (!policy.efficiencyClaim?.requiredGuardrails?.includes(guardrail)) {
+      errors.push(`efficiency guardrail missing: ${guardrail}`);
+    }
+  }
   return {
     schemaVersion: "1.0",
     status: errors.length === 0 ? "pass" : "blocked",
@@ -91,6 +166,40 @@ function listOption(args, name) {
   return String(value).split(",").map((item) => item.trim()).filter(Boolean);
 }
 
+function normalizeExpectedCacheEntries(entries) {
+  if (!Array.isArray(entries)) throw new Error("expected cache entries must be an array");
+  const normalized = entries.map((entry, index) => {
+    const value = typeof entry === "string"
+      ? (() => {
+          const separator = entry.indexOf(":");
+          return separator > 0
+            ? { kind: entry.slice(0, separator), key: entry.slice(separator + 1) }
+            : null;
+        })()
+      : entry;
+    if (
+      !value
+      || !policy.cacheEvidence.highValueKinds.includes(value.kind)
+      || !isSha(value.key)
+    ) throw new Error(`expected cache entry ${index} is invalid`);
+    return { kind: value.kind, key: value.key.toLowerCase() };
+  }).sort((left, right) => `${left.kind}:${left.key}`.localeCompare(`${right.kind}:${right.key}`));
+  const identities = normalized.map((entry) => `${entry.kind}:${entry.key}`);
+  if (new Set(identities).size !== identities.length) {
+    throw new Error("expected cache entries are duplicated");
+  }
+  return normalized;
+}
+
+function normalizeApplicableCacheKinds(kinds) {
+  if (!Array.isArray(kinds)) throw new Error("applicable cache kinds must be an array");
+  const normalized = [...new Set(kinds)].sort();
+  if (normalized.some((kind) => !policy.cacheEvidence.highValueKinds.includes(kind))) {
+    throw new Error("applicable cache kinds contain an unknown kind");
+  }
+  return normalized;
+}
+
 function sourceDuration(orchestration) {
   const value = Number(
     orchestration.input?.media?.durationSeconds
@@ -114,6 +223,43 @@ function loadOrchestration(projectRoot) {
   const file = path.join(root, ".kacha", "orchestration.json");
   if (!fs.existsSync(file)) throw new Error(`项目未初始化：${file}`);
   return { root, file, value: readJson(file) };
+}
+
+function evidenceRegistryDigest(registry) {
+  const stable = structuredClone(registry);
+  delete stable.generatedAt;
+  delete stable.digest;
+  return sha256Value(stable);
+}
+
+function readEvidenceRegistry(file) {
+  if (!fs.existsSync(file)) return { value: null, error: null };
+  try {
+    const stat = fs.lstatSync(file);
+    if (stat.isSymbolicLink() || !stat.isFile()) {
+      throw new Error("registry must be a regular non-symbolic-link file");
+    }
+    const value = readJson(file);
+    if (
+      value?.schemaVersion !== "1.0"
+      || value?.kind !== "kacha-efficiency-input-registry"
+      || value?.digest !== evidenceRegistryDigest(value)
+    ) throw new Error("registry identity or digest is invalid");
+    for (const name of ["cues", "delta"]) {
+      const state = value[`${name}State`];
+      if (!["bound", "unbound", "explicitly_cleared"].includes(state)) {
+        throw new Error(`registry ${name} state is invalid`);
+      }
+      if ((state === "bound") !== Boolean(value[name]?.path && isSha(value[name]?.sha256))) {
+        throw new Error(`registry ${name} identity does not match its state`);
+      }
+    }
+    normalizeApplicableCacheKinds(value.applicableCacheKinds ?? []);
+    normalizeExpectedCacheEntries(value.expectedCacheEntries ?? []);
+    return { value, error: null };
+  } catch (error) {
+    return { value: null, error: error.message };
+  }
 }
 
 function cueTimes(cue) {
@@ -187,13 +333,16 @@ function structuralFallback(category, duration) {
     complex_visual: duration * 0.64,
     ending: Math.max(defaultDuration / 2, duration - defaultDuration / 2),
   }[category] ?? duration / 2;
-  return rangeAround(
-    { start: Math.max(0, anchor - 0.5), end: Math.min(duration, anchor + 0.5) },
-    duration,
-    category,
-    `structural:${category}`,
-    "structural_fallback_requires_human_confirmation",
-  );
+  return {
+    ...rangeAround(
+      { start: Math.max(0, anchor - 0.5), end: Math.min(duration, anchor + 0.5) },
+      duration,
+      category,
+      `structural:${category}`,
+      "structural_fallback_requires_human_confirmation",
+    ),
+    requiresHumanConfirmation: true,
+  };
 }
 
 function mergeIntervals(intervals, handleSeconds, duration) {
@@ -224,22 +373,63 @@ function mergeIntervals(intervals, handleSeconds, duration) {
 
 function groupIntervals(intervals, maximumGroups) {
   if (intervals.length <= maximumGroups) return intervals;
-  const groups = [];
-  for (let index = 0; index < maximumGroups; index += 1) {
-    const from = Math.floor(index * intervals.length / maximumGroups);
-    const to = Math.floor((index + 1) * intervals.length / maximumGroups);
-    const members = intervals.slice(from, to);
-    groups.push({
+  const count = intervals.length;
+  const groups = Math.min(maximumGroups, count);
+  const costs = Array.from({ length: groups + 1 }, () => Array(count + 1).fill(Infinity));
+  const splits = Array.from({ length: groups + 1 }, () => Array(count + 1).fill(-1));
+  costs[0][0] = 0;
+  for (let group = 1; group <= groups; group += 1) {
+    for (let end = group; end <= count; end += 1) {
+      for (let start = group - 1; start < end; start += 1) {
+        const span = intervals[end - 1].end - intervals[start].start;
+        const candidate = costs[group - 1][start] + span;
+        if (candidate < costs[group][end]) {
+          costs[group][end] = candidate;
+          splits[group][end] = start;
+        }
+      }
+    }
+  }
+  const result = [];
+  let end = count;
+  for (let group = groups; group > 0; group -= 1) {
+    const start = splits[group][end];
+    const members = intervals.slice(start, end);
+    const span = members.at(-1).end - members[0].start;
+    result.push({
       start: members[0].start,
       end: members.at(-1).end,
       refs: members.flatMap((item) => item.refs),
-      durationBudgetException: true,
+      groupedForRangeBudget: members.length > 1,
+      durationBudgetException: members.length > 1
+        && span > policy.representativePreview.maximumDurationSeconds,
     });
+    end = start;
   }
-  return groups;
+  return result.reverse();
 }
 
 export function selectIncrementalRepresentativeRanges(delta, duration) {
+  const policyValidation = validateEfficiencyPolicy();
+  if (policyValidation.status !== "pass") throw new Error(policyValidation.errors.join("; "));
+  if (!(Number(duration) > 0)) throw new Error("incremental representative ranges require a positive duration");
+  const scopeKind = delta?.changeSet?.scope?.kind
+    ?? (delta?.renderPlan?.intervals ? "intervals" : null);
+  if (scopeKind === "no_timeline") return [];
+  if (scopeKind === "full") {
+    return ["opening", "complex_visual", "ending"].map((category, index) => {
+      const range = structuralFallback(category, duration);
+      return {
+        ...range,
+        id: `range-full-scope-${index + 1}`,
+        category: "changed_full_scope",
+        categories: ["changed_full_scope", category],
+        selectionEvidence: "full_scope_structural_sample_requires_human_confirmation",
+        sourceRefs: [`version-delta:full:${category}`],
+        requiresHumanConfirmation: true,
+      };
+    });
+  }
   const intervals = delta?.changeSet?.scope?.intervals ?? delta?.renderPlan?.intervals ?? [];
   if (intervals.length === 0) return [];
   const handle = policy.representativePreview.handleSeconds;
@@ -256,6 +446,7 @@ export function selectIncrementalRepresentativeRanges(delta, duration) {
     handleSeconds: handle,
     selectionEvidence: "version_delta_changed_interval",
     sourceRefs: interval.refs,
+    ...(interval.groupedForRangeBudget ? { groupedForRangeBudget: true } : {}),
     ...(interval.durationBudgetException ? {
       durationBudgetException: "distant changed intervals grouped to preserve complete change coverage",
     } : {}),
@@ -515,6 +706,13 @@ function safeProjectOutput(projectRoot, candidate) {
   if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
     throw new Error(`task output must be a project-local file: ${candidate}`);
   }
+  try {
+    if (fs.lstatSync(resolved).isSymbolicLink()) {
+      throw new Error(`task output cannot be a symbolic link: ${candidate}`);
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
   const realRoot = fs.realpathSync(projectRoot);
   let existingParent = path.dirname(resolved);
   while (!fs.existsSync(existingParent)) {
@@ -536,7 +734,104 @@ function redactExecutionText(value) {
     .slice(0, 500);
 }
 
+function optionValues(argv, name) {
+  const values = [];
+  for (let index = 0; index < argv.length; index += 1) {
+    if (argv[index] === name) values.push(argv[index + 1]);
+  }
+  return values;
+}
+
+function validateRegisteredTaskArguments(task, projectRoot, scriptName) {
+  const errors = [];
+  if (scriptName === "route_references.mjs") {
+    const outputValues = optionValues(task.argv, "--output");
+    if (outputValues.length !== 1 || !outputValues[0]) {
+      errors.push(`task ${task.id} route_references must declare exactly one --output`);
+      return errors;
+    }
+    let routedOutput = null;
+    let declaredOutputs = [];
+    try {
+      routedOutput = safeProjectOutput(projectRoot, outputValues[0]);
+      declaredOutputs = (task.outputs ?? []).map((output) => safeProjectOutput(projectRoot, output));
+    } catch (error) {
+      errors.push(error.message);
+      return errors;
+    }
+    if (declaredOutputs.length !== 1 || declaredOutputs[0] !== routedOutput) {
+      errors.push(`task ${task.id} route_references --output must exactly match its declared output`);
+    }
+  }
+  return errors;
+}
+
+function validateTaskCommand(task, projectRoot) {
+  const errors = [];
+  const argv = task.argv ?? [];
+  if (policy.parallelism.executionCommandPolicy.disallowNetworkResource
+    && task.resources?.includes("network")) {
+    errors.push(`task ${task.id} cannot use the network in the local-only efficiency executor`);
+  }
+  let executable = null;
+  try {
+    executable = fs.realpathSync(argv[0] ?? "");
+  } catch {
+    errors.push(`task ${task.id} executable does not exist`);
+  }
+  if (executable && executable !== fs.realpathSync(process.execPath)) {
+    errors.push(`task ${task.id} must execute through the current Node.js runtime`);
+  }
+  const scriptValue = argv[1];
+  if (!scriptValue || scriptValue.startsWith("-")) {
+    errors.push(`task ${task.id} must name a file-backed Node.js script; inline code is forbidden`);
+    return errors;
+  }
+  const script = path.isAbsolute(scriptValue)
+    ? path.normalize(scriptValue)
+    : path.resolve(projectRoot, scriptValue);
+  let realScript = null;
+  try {
+    if (fs.lstatSync(script).isSymbolicLink()) throw new Error("script is a symlink");
+    realScript = fs.realpathSync(script);
+  } catch (error) {
+    errors.push(`task ${task.id} implementation is invalid: ${error.message}`);
+  }
+  const scriptsRoot = fs.realpathSync(path.join(skillRoot, "scripts"));
+  if (
+    realScript
+    && (realScript === scriptsRoot || !realScript.startsWith(`${scriptsRoot}${path.sep}`))
+  ) errors.push(`task ${task.id} implementation must be a bundled Kacha script`);
+  if (realScript && path.extname(realScript) !== ".mjs") {
+    errors.push(`task ${task.id} implementation must be an .mjs script`);
+  }
+  const scriptName = realScript ? path.basename(realScript) : null;
+  if (
+    scriptName
+    && !policy.parallelism.executionCommandPolicy.allowedScripts.includes(scriptName)
+  ) {
+    errors.push(`task ${task.id} implementation is not registered for deterministic execution`);
+  }
+  if (!isSha(task.commandSha256)) {
+    errors.push(`task ${task.id} commandSha256 is missing`);
+  } else if (realScript && sha256File(realScript) !== task.commandSha256) {
+    errors.push(`task ${task.id} implementation SHA-256 changed`);
+  }
+  if (scriptName) errors.push(...validateRegisteredTaskArguments(task, projectRoot, scriptName));
+  return errors;
+}
+
+function executionOutputIdentity(projectRoot, output) {
+  const validated = safeProjectOutput(projectRoot, output);
+  if (!fs.existsSync(validated) || !fs.lstatSync(validated).isFile()) {
+    return { path: validated, missing: true };
+  }
+  return fileIdentity(validated);
+}
+
 function runTask(task, projectRoot) {
+  const commandErrors = validateTaskCommand(task, projectRoot);
+  if (commandErrors.length > 0) throw new Error(commandErrors.join("; "));
   const resourceNames = task.resources.filter((resource) => (
     ["cpuHeavy", "mps", "videoEncode", "network", "ioHeavy"].includes(resource)
   ));
@@ -587,9 +882,13 @@ function runTask(task, projectRoot) {
     child.stdout.on("data", (chunk) => { stdout += chunk.toString(); });
     child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
     child.once("close", (status) => {
-      const missing = outputs.filter((output) => (
-        !fs.existsSync(output) || !fs.statSync(output).isFile()
-      ));
+      const missing = outputs.filter((output) => {
+        try {
+          return executionOutputIdentity(projectRoot, output).missing === true;
+        } catch {
+          return true;
+        }
+      });
       resolve({
         id: task.id,
         status: status === 0 && missing.length === 0 ? "pass" : "fail",
@@ -605,25 +904,38 @@ function runTask(task, projectRoot) {
 
 export async function executeEfficiencyTasks(contractFile) {
   const resolved = path.resolve(contractFile);
+  const contractIdentity = fileIdentity(resolved);
   const contract = readJson(resolved);
   const errors = [];
-  if (contract.kind !== "kacha-efficiency-execution-plan") errors.push("execution plan kind is invalid");
+  const policyValidation = validateEfficiencyPolicy();
+  errors.push(...policyValidation.errors);
+  if (!fileIdentityMatches(resolved, contractIdentity)) errors.push("execution plan changed while it was being read");
+  if (contract.schemaVersion !== "1.0" || contract.kind !== "kacha-efficiency-execution-plan") {
+    errors.push("execution plan identity is invalid");
+  }
   if (contract.authorization?.localExecution !== true) errors.push("local execution is not authorized");
-  if (
-    contract.authorization?.upload === true
-    || contract.authorization?.paidGeneration === true
-    || contract.authorization?.publish === true
-    || contract.authorization?.overwriteSource === true
-  ) errors.push("execution plan exceeds local-only authority");
+  for (const boundary of ["upload", "paidGeneration", "publish", "overwriteSource"]) {
+    if (contract.authorization?.[boundary] !== false) {
+      errors.push(`execution plan must explicitly forbid ${boundary}`);
+    }
+  }
   const projectRoot = path.resolve(contract.projectRoot ?? path.dirname(resolved));
   if (!fs.existsSync(projectRoot) || !fs.statSync(projectRoot).isDirectory()) errors.push("project root does not exist");
   const tasks = contract.tasks ?? [];
   if (!Array.isArray(tasks) || tasks.length === 0) errors.push("execution plan has no tasks");
   const normalizedOutputOwners = new Map();
+  const reservedOutputs = new Set([
+    resolved,
+    path.join(projectRoot, ".kacha", "efficiency-execution-report.json"),
+  ].map((item) => path.normalize(item)));
   for (const task of tasks) {
+    errors.push(...validateTaskCommand(task, projectRoot));
     try {
       for (const output of task.outputs ?? []) {
         const normalized = safeProjectOutput(projectRoot, output);
+        if (reservedOutputs.has(normalized)) {
+          errors.push(`task ${task.id} output is reserved by the efficiency executor: ${normalized}`);
+        }
         if (normalizedOutputOwners.has(normalized)) {
           errors.push(`tasks ${normalizedOutputOwners.get(normalized)} and ${task.id} share output ${normalized}`);
         } else {
@@ -644,24 +956,29 @@ export async function executeEfficiencyTasks(contractFile) {
     results.push(...completed);
     if (completed.some((result) => result.status !== "pass")) break;
   }
+  const contractCurrent = fileIdentityMatches(resolved, contractIdentity);
   const report = {
     schemaVersion: "1.0",
     kind: "kacha-efficiency-execution-report",
     generatedAt: now(),
     projectRoot,
-    contract: fileIdentity(resolved),
+    contract: contractIdentity,
+    contractCurrent,
     schedule,
-    status: results.length === tasks.length && results.every((result) => result.status === "pass")
+    status: contractCurrent
+      && results.length === tasks.length && results.every((result) => result.status === "pass")
       ? "pass" : "blocked",
     results: results.map((result) => ({
       id: result.id,
       status: result.status,
       exitCode: result.exitCode,
-      outputs: result.outputs.map((output) => (
-        fs.existsSync(output) && fs.statSync(output).isFile()
-          ? fileIdentity(output)
-          : { path: output, missing: true }
-      )),
+      outputs: result.outputs.map((output) => {
+        try {
+          return executionOutputIdentity(projectRoot, output);
+        } catch (error) {
+          return { path: output, missing: true, error: error.message };
+        }
+      }),
       missingOutputs: result.missingOutputs,
       telemetry: (() => {
         try {
@@ -687,24 +1004,189 @@ function planDigest(plan) {
 }
 
 export function validateEfficiencyPlan(plan) {
-  const errors = [];
-  const invariants = plan.qualityInvariants ?? {};
-  for (const [key, required] of Object.entries(policy.immutableQualityInvariants)) {
-    if (required === true && invariants[key] !== true) errors.push(`quality invariant disabled: ${key}`);
+  const policyValidation = validateEfficiencyPolicy();
+  const errors = [...policyValidation.errors];
+  if (plan?.schemaVersion !== "1.0" || plan?.kind !== "kacha-quality-preserving-efficiency-plan") {
+    errors.push("efficiency plan identity is invalid");
   }
-  if (plan.source?.durationSeconds) {
-    const ranges = plan.representativePreview?.ranges ?? [];
-    if (plan.mode === "first_edit") {
-      const categories = new Set(ranges.flatMap(
-        (range) => range.categories ?? [range.category],
-      ));
+  if (!plan || typeof plan !== "object" || Array.isArray(plan)) plan = {};
+  if (plan?.policyVersion !== policy.policyVersion) errors.push("efficiency plan policy version is stale");
+  if (!plan?.projectId || !plan?.projectRoot) errors.push("efficiency plan project identity is missing");
+  if (!["first_edit", "incremental", "content_planning"].includes(plan?.mode)) {
+    errors.push("efficiency plan mode is invalid");
+  }
+  const invariants = plan.qualityInvariants ?? {};
+  for (const key of REQUIRED_QUALITY_INVARIANTS) {
+    if (invariants[key] !== true) errors.push(`quality invariant disabled: ${key}`);
+  }
+  const preview = plan.representativePreview ?? {};
+  if (
+    preview.representativeApprovalRequired !== true
+    || preview.fullPreviewEncodeBudget !== 1
+    || preview.finalVideoEncodeBudget !== 1
+    || preview.fullCandidatePlaybackRequired !== true
+  ) errors.push("efficiency preview quality or encode budget was weakened");
+  if (plan.evidenceBoundary?.speedImprovementClaimed !== false) {
+    errors.push("a single efficiency plan cannot claim measured improvement");
+  }
+  if (plan.evidenceBoundary?.minimumPairedProjects !== policy.efficiencyClaim.minimumPairedProjects) {
+    errors.push("efficiency evidence cohort minimum was weakened");
+  }
+  const requiredInputs = ["orchestration", "evidenceRegistry", "policy", "recipes"];
+  for (const name of requiredInputs) {
+    if (!plan.inputs?.[name]?.path || !isSha(plan.inputs?.[name]?.sha256)) {
+      errors.push(`efficiency plan required input missing: ${name}`);
+    }
+  }
+  for (const [name, identity] of Object.entries(plan.inputs ?? {})) {
+    if (!identity) continue;
+    try {
+      if (!identity.path || !fileIdentityMatches(identity.path, identity)) {
+        errors.push(`efficiency plan input changed: ${name}`);
+      }
+    } catch {
+      errors.push(`efficiency plan input changed: ${name}`);
+    }
+  }
+  if (plan.inputs?.policy?.path && path.resolve(plan.inputs.policy.path) !== policyFile) {
+    errors.push("efficiency plan policy input points to a different file");
+  }
+  if (plan.inputs?.recipes?.path && path.resolve(plan.inputs.recipes.path) !== recipeFile) {
+    errors.push("efficiency plan recipe input points to a different file");
+  }
+  const expectedRegistryFile = plan.projectRoot
+    ? path.join(path.resolve(plan.projectRoot), ".kacha", "efficiency-inputs.json")
+    : null;
+  if (
+    plan.inputs?.evidenceRegistry?.path
+    && path.resolve(plan.inputs.evidenceRegistry.path) !== expectedRegistryFile
+  ) errors.push("efficiency plan evidence registry points to a different file");
+  let orchestration = null;
+  let cues = [];
+  let delta = null;
+  let evidenceRegistry = null;
+  try {
+    if (plan.inputs?.orchestration?.path && fileIdentityMatches(
+      plan.inputs.orchestration.path,
+      plan.inputs.orchestration,
+    )) orchestration = readJson(plan.inputs.orchestration.path);
+  } catch {
+    // The current-input diagnostics above already describe the failure.
+  }
+  try {
+    if (
+      plan.inputs?.evidenceRegistry?.path
+      && fileIdentityMatches(plan.inputs.evidenceRegistry.path, plan.inputs.evidenceRegistry)
+    ) {
+      const loaded = readEvidenceRegistry(plan.inputs.evidenceRegistry.path);
+      if (loaded.error) errors.push(`efficiency evidence registry is invalid: ${loaded.error}`);
+      else evidenceRegistry = loaded.value;
+    }
+  } catch {
+    // The current-input diagnostics above already describe the failure.
+  }
+  if (evidenceRegistry) {
+    if (
+      evidenceRegistry.schemaVersion !== "1.0"
+      || evidenceRegistry.kind !== "kacha-efficiency-input-registry"
+      || evidenceRegistry.digest !== evidenceRegistryDigest(evidenceRegistry)
+    ) errors.push("efficiency evidence registry identity or digest is invalid");
+    if (
+      evidenceRegistry.projectId !== plan.projectId
+      || path.resolve(evidenceRegistry.projectRoot ?? "") !== path.resolve(plan.projectRoot ?? "")
+    ) errors.push("efficiency evidence registry project identity differs from the plan");
+    for (const name of ["cues", "delta"]) {
+      const state = evidenceRegistry[`${name}State`];
+      if (
+        !["bound", "unbound", "explicitly_cleared"].includes(state)
+        || ((state === "bound") !== Boolean(
+          evidenceRegistry[name]?.path && isSha(evidenceRegistry[name]?.sha256)
+        ))
+      ) errors.push(`efficiency evidence registry ${name} state is invalid`);
+    }
+    if (
+      sha256Value(evidenceRegistry.cues ?? null) !== sha256Value(plan.inputs?.cues ?? null)
+      || sha256Value(evidenceRegistry.delta ?? null) !== sha256Value(plan.inputs?.delta ?? null)
+    ) errors.push("efficiency plan inputs differ from the evidence registry");
+    if (
+      sha256Value(evidenceRegistry.applicableCacheKinds ?? [])
+        !== sha256Value(plan.cache?.applicableKinds ?? [])
+      || sha256Value(evidenceRegistry.expectedCacheEntries ?? [])
+        !== sha256Value(plan.cache?.expectedEntries ?? [])
+    ) errors.push("efficiency cache inputs differ from the evidence registry");
+  }
+  try {
+    if (plan.inputs?.cues?.path && fileIdentityMatches(plan.inputs.cues.path, plan.inputs.cues)) {
+      const value = readJson(plan.inputs.cues.path);
+      cues = value.cues ?? value.segments ?? [];
+    }
+  } catch {
+    // The current-input diagnostics above already describe the failure.
+  }
+  try {
+    if (plan.inputs?.delta?.path && fileIdentityMatches(plan.inputs.delta.path, plan.inputs.delta)) {
+      delta = readJson(plan.inputs.delta.path);
+    }
+  } catch {
+    // The current-input diagnostics above already describe the failure.
+  }
+  if (orchestration) {
+    const expectedProjectRoot = path.dirname(path.dirname(path.resolve(plan.inputs.orchestration.path)));
+    const expectedDuration = sourceDuration(orchestration);
+    const expectedMode = delta ? "incremental"
+      : orchestration.task === "content_generation" ? "content_planning" : "first_edit";
+    if (orchestration.projectId !== plan.projectId) errors.push("efficiency plan project id differs from orchestration");
+    if (path.resolve(plan.projectRoot) !== expectedProjectRoot) errors.push("efficiency plan project root differs from orchestration");
+    if (plan.mode !== expectedMode) errors.push(`efficiency plan mode differs from current inputs: ${expectedMode}`);
+    if (plan.source?.type !== orchestration.input?.type) errors.push("efficiency plan source type differs from orchestration");
+    const expectedSourceSha = orchestration.input?.sha256 ?? orchestration.input?.digest ?? null;
+    if (plan.source?.sha256 !== expectedSourceSha) errors.push("efficiency plan source identity differs from orchestration");
+    if (plan.source?.durationSeconds !== expectedDuration) errors.push("efficiency plan source duration differs from orchestration");
+    if (["first_edit", "incremental"].includes(expectedMode)) {
+      if (!isSha(expectedSourceSha)) errors.push("video efficiency plan requires a frozen source SHA-256");
+      if (!(expectedDuration > 0)) errors.push("video efficiency plan requires a positive source duration");
+    }
+    const ranges = preview.ranges ?? [];
+    let expectedRanges = [];
+    if (expectedDuration) {
+      expectedRanges = delta
+        ? selectIncrementalRepresentativeRanges(delta, expectedDuration)
+        : firstEditRanges(cues, expectedDuration);
+    }
+    if (sha256Value(ranges) !== sha256Value(expectedRanges)) {
+      errors.push("representative ranges differ from current cues or delta");
+    }
+    const expectedFallbacks = expectedRanges.filter((range) => (
+      range.requiresHumanConfirmation === true
+      || String(range.selectionEvidence).includes("requires_human_confirmation")
+    )).length;
+    if (preview.structuralFallbacks !== expectedFallbacks) {
+      errors.push("representative fallback count differs from current evidence");
+    }
+    const expectedPreviewStatus = expectedDuration ? "planned" : "awaiting_source_media";
+    if (preview.status !== expectedPreviewStatus) {
+      errors.push("representative preview status differs from current source evidence");
+    }
+    if (expectedMode === "first_edit") {
+      const categories = new Set(ranges.flatMap((range) => range.categories ?? [range.category]));
       for (const category of policy.representativePreview.firstEditRequiredCategories) {
         if (!categories.has(category)) errors.push(`first edit preview missing category: ${category}`);
       }
     }
-    if (plan.mode === "incremental") {
+    if (expectedMode === "incremental") {
+      const scopeKind = delta?.changeSet?.scope?.kind
+        ?? (delta?.renderPlan?.intervals ? "intervals" : null);
       if (ranges.length > policy.representativePreview.incrementalMaximumRanges) {
         errors.push("incremental representative range budget exceeded");
+      }
+      if (scopeKind === "intervals" && (plan.changeCoverage?.intervals?.length ?? 0) === 0) {
+        errors.push("interval-scoped incremental plan has no changed intervals");
+      }
+      if (scopeKind === "full" && ranges.length === 0) {
+        errors.push("full-scope incremental plan has no representative ranges");
+      }
+      if (!scopeKind || !["intervals", "full", "no_timeline"].includes(scopeKind)) {
+        errors.push("incremental change scope is invalid");
       }
       for (const interval of plan.changeCoverage?.intervals ?? []) {
         const start = Number(interval.startSeconds ?? interval.start);
@@ -716,18 +1198,67 @@ export function validateEfficiencyPlan(plan) {
     }
     for (const range of ranges) {
       if (
-        range.startSeconds < 0
-        || range.endSeconds > plan.source.durationSeconds + 0.001
+        !Number.isFinite(Number(range.startSeconds))
+        || !Number.isFinite(Number(range.endSeconds))
+        || range.startSeconds < 0
+        || range.endSeconds > Number(expectedDuration ?? 0) + 0.001
         || range.endSeconds <= range.startSeconds
       ) errors.push(`invalid representative range: ${range.id}`);
     }
-  }
-  if (plan.schedule?.status !== "pass") errors.push(...(plan.schedule?.errors ?? ["schedule blocked"]));
-  for (const [name, identity] of Object.entries(plan.inputs ?? {})) {
-    if (identity?.path && !fileIdentityMatches(identity.path, identity)) {
-      errors.push(`efficiency plan input changed: ${name}`);
+    const expectedRisk = riskAssessment({
+      cues,
+      delta,
+      duration: expectedDuration ?? 0,
+      task: orchestration.task,
+      evidenceKnown: Boolean(plan.inputs?.cues && cues.some((cue) => cueTimes(cue))),
+    });
+    if (sha256Value(plan.risk) !== sha256Value(expectedRisk)) {
+      errors.push("efficiency risk differs from current evidence");
     }
+    const expectedScopeKind = delta?.changeSet?.scope?.kind
+      ?? (delta?.renderPlan?.intervals ? "intervals" : null);
+    const expectedIntervals = delta?.changeSet?.scope?.intervals ?? delta?.renderPlan?.intervals ?? [];
+    if (
+      plan.changeCoverage?.scopeKind !== expectedScopeKind
+      || sha256Value(plan.changeCoverage?.intervals ?? []) !== sha256Value(expectedIntervals)
+      || plan.changeCoverage?.required !== Boolean(
+        delta
+        && expectedScopeKind === "intervals"
+        && policy.representativePreview.incrementalChangeCoverageRequired
+      )
+    ) errors.push("efficiency change coverage differs from current delta");
   }
+  const expectedSchedule = buildSchedule();
+  if (sha256Value(plan.schedule ?? null) !== sha256Value(expectedSchedule)) {
+    errors.push("efficiency schedule differs from current recipes and resource policy");
+  }
+  let applicableKinds = [];
+  try {
+    applicableKinds = normalizeApplicableCacheKinds(plan.cache?.applicableKinds ?? []);
+  } catch (error) {
+    errors.push(error.message);
+  }
+  let expectedCacheEntries = [];
+  try {
+    expectedCacheEntries = normalizeExpectedCacheEntries(plan.cache?.expectedEntries ?? []);
+  } catch (error) {
+    errors.push(error.message);
+  }
+  const expectedCacheKinds = new Set(expectedCacheEntries.map((entry) => entry.kind));
+  const expectedKeyBindingStatus = applicableKinds.length === 0
+    ? "awaiting_stage_plan"
+    : applicableKinds.every((kind) => expectedCacheKinds.has(kind))
+      ? "declared"
+      : "awaiting_expected_keys";
+  if (
+    sha256Value(plan.cache?.applicableKinds ?? []) !== sha256Value(applicableKinds)
+    || plan.cache?.applicabilityStatus !== (applicableKinds.length > 0 ? "declared" : "awaiting_stage_plan")
+    || plan.cache?.strongFingerprintRequired !== true
+    || plan.cache?.warmCoverageTarget !== policy.cacheEvidence.warmCoverageTarget
+    || sha256Value(plan.cache?.expectedEntries ?? []) !== sha256Value(expectedCacheEntries)
+    || expectedCacheEntries.some((entry) => !applicableKinds.includes(entry.kind))
+    || plan.cache?.keyBindingStatus !== expectedKeyBindingStatus
+  ) errors.push("efficiency cache contract is invalid");
   if (plan.digest !== planDigest(plan)) errors.push("efficiency plan digest mismatch");
   return {
     schemaVersion: "1.0",
@@ -741,29 +1272,101 @@ export function buildEfficiencyPlan({
   projectRoot,
   cuesPath = null,
   deltaPath = null,
+  clearCues = false,
+  clearDelta = false,
   applicableCacheKinds = null,
+  expectedCacheEntries = null,
   outputPath = null,
 } = {}) {
   const policyValidation = validateEfficiencyPolicy();
   if (policyValidation.status !== "pass") throw new Error(policyValidation.errors.join("; "));
+  if (clearCues && cuesPath) throw new Error("--cues and --clear-cues are mutually exclusive");
+  if (clearDelta && deltaPath) throw new Error("--delta and --clear-delta are mutually exclusive");
   const orchestration = loadOrchestration(projectRoot);
   const output = path.resolve(outputPath ?? path.join(orchestration.root, ".kacha", "efficiency-plan.json"));
+  const evidenceRegistryFile = path.join(orchestration.root, ".kacha", "efficiency-inputs.json");
+  const loadedRegistry = readEvidenceRegistry(evidenceRegistryFile);
   let previous = null;
+  let previousUnreadable = false;
   if (fs.existsSync(output)) {
     try {
+      const outputStat = fs.lstatSync(output);
+      if (outputStat.isSymbolicLink() || !outputStat.isFile()) {
+        throw new Error("previous plan is not a regular file");
+      }
       previous = readJson(output);
     } catch {
-      // An unreadable prior plan contributes no evidence to the refresh.
+      previousUnreadable = true;
     }
   }
-  const reusablePath = (candidate) => (
-    candidate && fs.existsSync(candidate) && fs.statSync(candidate).isFile() ? candidate : null
+  const explicitRecovery = Boolean(cuesPath || clearCues) && Boolean(deltaPath || clearDelta);
+  if (previousUnreadable && !loadedRegistry.value && !explicitRecovery) {
+    throw new Error(
+      "previous efficiency plan is unreadable and no valid efficiency input registry exists; "
+      + "provide replacement cues/delta or explicitly clear both inputs",
+    );
+  }
+  if (
+    loadedRegistry.value
+    && (
+      loadedRegistry.value.projectId !== orchestration.value.projectId
+      || path.resolve(loadedRegistry.value.projectRoot ?? "") !== orchestration.root
+    )
+  ) throw new Error("efficiency input registry belongs to a different project");
+  const reusablePath = (candidate, label) => {
+    if (!candidate) return null;
+    if (!fs.existsSync(candidate) || !fs.statSync(candidate).isFile()) {
+      throw new Error(
+        `previous ${label} evidence is missing: ${candidate}; provide a replacement or explicitly clear it`,
+      );
+    }
+    return candidate;
+  };
+  const reusableEvidencePath = (name) => (
+    loadedRegistry.value
+      ? loadedRegistry.value[name]?.path
+      : previous?.inputs?.[name]?.path
   );
-  const effectiveCuesPath = cuesPath ?? reusablePath(previous?.inputs?.cues?.path);
-  const effectiveDeltaPath = deltaPath ?? reusablePath(previous?.inputs?.delta?.path);
-  const effectiveCacheKinds = applicableCacheKinds ?? previous?.cache?.applicableKinds ?? [];
+  const effectiveCuesPath = clearCues
+    ? null
+    : cuesPath ?? reusablePath(reusableEvidencePath("cues"), "cues");
+  const effectiveDeltaPath = clearDelta
+    ? null
+    : deltaPath ?? reusablePath(reusableEvidencePath("delta"), "delta");
+  const effectiveCacheKinds = normalizeApplicableCacheKinds(
+    applicableCacheKinds
+      ?? loadedRegistry.value?.applicableCacheKinds
+      ?? previous?.cache?.applicableKinds
+      ?? [],
+  );
+  const effectiveExpectedCacheEntries = normalizeExpectedCacheEntries(
+    expectedCacheEntries
+      ?? loadedRegistry.value?.expectedCacheEntries
+      ?? previous?.cache?.expectedEntries
+      ?? [],
+  );
   const cuesInput = loadOptionalJson(effectiveCuesPath);
   const deltaInput = loadOptionalJson(effectiveDeltaPath);
+  const evidenceRegistry = {
+    schemaVersion: "1.0",
+    kind: "kacha-efficiency-input-registry",
+    generatedAt: now(),
+    projectId: orchestration.value.projectId,
+    projectRoot: orchestration.root,
+    cuesState: clearCues ? "explicitly_cleared" : cuesInput ? "bound" : "unbound",
+    deltaState: clearDelta ? "explicitly_cleared" : deltaInput ? "bound" : "unbound",
+    cues: cuesInput ? fileIdentity(cuesInput.file) : null,
+    delta: deltaInput ? fileIdentity(deltaInput.file) : null,
+    applicableCacheKinds: effectiveCacheKinds,
+    expectedCacheEntries: effectiveExpectedCacheEntries,
+  };
+  evidenceRegistry.digest = evidenceRegistryDigest(evidenceRegistry);
+  if (loadedRegistry.value?.digest === evidenceRegistry.digest) {
+    evidenceRegistry.generatedAt = loadedRegistry.value.generatedAt;
+  } else {
+    writeJsonAtomic(evidenceRegistryFile, evidenceRegistry);
+  }
+  if (!fs.existsSync(evidenceRegistryFile)) writeJsonAtomic(evidenceRegistryFile, evidenceRegistry);
   const cues = cuesInput?.value?.cues ?? cuesInput?.value?.segments ?? [];
   const delta = deltaInput?.value ?? null;
   const duration = sourceDuration(orchestration.value);
@@ -773,6 +1376,9 @@ export function buildEfficiencyPlan({
     ? (delta ? selectIncrementalRepresentativeRanges(delta, duration) : firstEditRanges(cues, duration))
     : [];
   const changeIntervals = delta?.changeSet?.scope?.intervals ?? delta?.renderPlan?.intervals ?? [];
+  const changeScopeKind = delta?.changeSet?.scope?.kind
+    ?? (delta?.renderPlan?.intervals ? "intervals" : null);
+  const currentCueEvidenceKnown = Boolean(cuesInput && cues.some((cue) => cueTimes(cue)));
   const plan = {
     schemaVersion: "1.0",
     kind: "kacha-quality-preserving-efficiency-plan",
@@ -789,6 +1395,7 @@ export function buildEfficiencyPlan({
     },
     inputs: {
       orchestration: fileIdentity(orchestration.file),
+      evidenceRegistry: fileIdentity(evidenceRegistryFile),
       cues: cuesInput ? fileIdentity(cuesInput.file) : null,
       delta: deltaInput ? fileIdentity(deltaInput.file) : null,
       policy: fileIdentity(policyFile),
@@ -799,7 +1406,7 @@ export function buildEfficiencyPlan({
       delta,
       duration: duration ?? 0,
       task: orchestration.value.task,
-      evidenceKnown: Boolean(cuesInput),
+      evidenceKnown: currentCueEvidenceKnown,
     }),
     qualityInvariants: structuredClone(policy.immutableQualityInvariants),
     representativePreview: {
@@ -809,16 +1416,30 @@ export function buildEfficiencyPlan({
       fullPreviewEncodeBudget: 1,
       finalVideoEncodeBudget: 1,
       fullCandidatePlaybackRequired: true,
-      structuralFallbacks: ranges.filter((range) => range.selectionEvidence.includes("fallback")).length,
+      structuralFallbacks: ranges.filter((range) => (
+        range.requiresHumanConfirmation === true
+        || String(range.selectionEvidence).includes("requires_human_confirmation")
+      )).length,
     },
     changeCoverage: {
-      required: Boolean(delta && policy.representativePreview.incrementalChangeCoverageRequired),
+      required: Boolean(
+        delta
+        && changeScopeKind === "intervals"
+        && policy.representativePreview.incrementalChangeCoverageRequired
+      ),
+      scopeKind: changeScopeKind,
       intervals: changeIntervals,
     },
     schedule: buildSchedule(),
     cache: {
-      applicableKinds: [...new Set(effectiveCacheKinds)].sort(),
+      applicableKinds: effectiveCacheKinds,
       applicabilityStatus: effectiveCacheKinds.length > 0 ? "declared" : "awaiting_stage_plan",
+      expectedEntries: effectiveExpectedCacheEntries,
+      keyBindingStatus: effectiveCacheKinds.length === 0
+        ? "awaiting_stage_plan"
+        : effectiveCacheKinds.every((kind) => (
+          effectiveExpectedCacheEntries.some((entry) => entry.kind === kind)
+        )) ? "declared" : "awaiting_expected_keys",
       warmCoverageTarget: policy.cacheEvidence.warmCoverageTarget,
       strongFingerprintRequired: true,
     },
@@ -842,14 +1463,16 @@ function isSha(value) {
 }
 
 function cachedOutputIdentity(candidate, type) {
+  const rootStat = fs.lstatSync(candidate);
+  if (rootStat.isSymbolicLink()) throw new Error("cached output is a symlink");
   if (type === "file") {
-    if (!fs.statSync(candidate).isFile()) throw new Error("cached output is not a file");
+    if (!rootStat.isFile()) throw new Error("cached output is not a file");
     return {
-      sizeBytes: fs.statSync(candidate).size,
+      sizeBytes: rootStat.size,
       sha256: sha256File(candidate),
     };
   }
-  if (type !== "directory" || !fs.statSync(candidate).isDirectory()) {
+  if (type !== "directory" || !rootStat.isDirectory()) {
     throw new Error("cached output type is invalid");
   }
   const files = [];
@@ -875,20 +1498,49 @@ function cachedOutputIdentity(candidate, type) {
   };
 }
 
+function safeCachePayload(entryDirectory, cacheFile) {
+  if (typeof cacheFile !== "string" || !cacheFile.trim() || path.isAbsolute(cacheFile)) {
+    throw new Error("cacheFile must be a non-empty relative path");
+  }
+  const resolved = path.resolve(entryDirectory, cacheFile);
+  const relative = path.relative(entryDirectory, resolved);
+  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error("cacheFile escapes the cache entry");
+  }
+  if (!fs.existsSync(resolved)) return resolved;
+  if (fs.lstatSync(resolved).isSymbolicLink()) throw new Error("cacheFile is a symlink");
+  const realEntry = fs.realpathSync(entryDirectory);
+  const realPayload = fs.realpathSync(resolved);
+  if (realPayload !== realEntry && !realPayload.startsWith(`${realEntry}${path.sep}`)) {
+    throw new Error("cacheFile resolves outside the cache entry");
+  }
+  return resolved;
+}
+
 function inspectCacheEntry(entryDirectory, manifest, kind) {
   const errors = [];
   const contract = manifest?.contract;
+  if (manifest?.schemaVersion !== "1.0") errors.push("manifest schemaVersion is invalid");
   if (manifest?.status !== "ready") errors.push("manifest status is not ready");
   if (!isSha(manifest?.key) || path.basename(entryDirectory) !== manifest.key) errors.push("cache key identity mismatch");
+  if (contract && sha256Value(contract) !== manifest?.key) errors.push("cache key does not match the contract digest");
   if (!isSha(manifest?.configurationDigest)) errors.push("cache configuration digest missing");
   if (manifest?.kind !== kind || contract?.kind !== kind) errors.push("kind mismatch");
   for (const field of policy.cacheEvidence.requiredContractFields) {
     if (!Object.hasOwn(contract ?? {}, field)) errors.push(`contract missing ${field}`);
   }
-  if (!(contract?.inputs?.length > 0) || contract.inputs.some((input) => !isSha(input.sha256))) {
+  if (
+    !Array.isArray(contract?.inputs)
+    || contract.inputs.length === 0
+    || contract.inputs.some((input) => !isSha(input?.sha256))
+  ) {
     errors.push("source/input SHA-256 evidence missing");
   }
-  if (!(contract?.implementation?.length > 0) || contract.implementation.some((item) => !isSha(item.sha256))) {
+  if (
+    !Array.isArray(contract?.implementation)
+    || contract.implementation.length === 0
+    || contract.implementation.some((item) => !isSha(item?.sha256))
+  ) {
     errors.push("implementation SHA-256 evidence missing");
   }
   if (typeof contract?.operationVersion !== "string" || !contract.operationVersion.trim()) {
@@ -899,14 +1551,53 @@ function inspectCacheEntry(entryDirectory, manifest, kind) {
   }
   if (!Array.isArray(contract?.outputs) || contract.outputs.length === 0) errors.push("output schema missing");
   if (!Array.isArray(manifest?.outputs) || manifest.outputs.length === 0) errors.push("manifest outputs missing");
+  if (Array.isArray(contract?.outputs) && contract.outputs.some((output) => (
+    typeof output?.name !== "string"
+    || !output.name.trim()
+    || !["file", "directory"].includes(output.type)
+  ))) errors.push("contract output schema contains an invalid name or type");
+  if (Array.isArray(manifest?.outputs) && manifest.outputs.some((output) => (
+    typeof output?.name !== "string" || !output.name.trim()
+  ))) errors.push("manifest output contains an invalid name");
+  const contractOutputNames = (contract?.outputs ?? []).map((output) => output.name);
+  const manifestOutputNames = (manifest?.outputs ?? []).map((output) => output.name);
+  if (new Set(contractOutputNames).size !== contractOutputNames.length) errors.push("contract output names are duplicated");
+  if (new Set(manifestOutputNames).size !== manifestOutputNames.length) errors.push("manifest output names are duplicated");
+  const cacheFiles = (manifest?.outputs ?? []).map((output) => output.cacheFile);
+  if (new Set(cacheFiles).size !== cacheFiles.length) errors.push("manifest cacheFile paths are duplicated");
   for (const output of manifest?.outputs ?? []) {
     for (const field of policy.cacheEvidence.requiredOutputFields) {
       if (!Object.hasOwn(output, field)) errors.push(`output ${output.name ?? "unknown"} missing ${field}`);
     }
-    const cached = path.join(entryDirectory, output.cacheFile ?? "");
-    if (!fs.existsSync(cached)) errors.push(`cached output missing: ${output.name ?? "unknown"}`);
+    let cached = null;
+    try {
+      cached = safeCachePayload(entryDirectory, output.cacheFile);
+    } catch (error) {
+      errors.push(`cached output path invalid ${output.name ?? "unknown"}: ${error.message}`);
+    }
+    if (!["file", "directory"].includes(output.type)) {
+      errors.push(`cached output type invalid: ${output.name ?? "unknown"}`);
+    }
+    if (
+      !Object.hasOwn(output, "sizeBytes")
+      || typeof output.sizeBytes !== "number"
+      || !Number.isInteger(output.sizeBytes)
+      || output.sizeBytes < 0
+    ) errors.push(`cached output size is invalid: ${output.name ?? "unknown"}`);
+    if (
+      output.type === "directory"
+      && (
+        !Object.hasOwn(output, "fileCount")
+        || typeof output.fileCount !== "number"
+        || !Number.isInteger(output.fileCount)
+        || output.fileCount < 0
+      )
+    ) {
+      errors.push(`cached output file count missing: ${output.name ?? "unknown"}`);
+    }
+    if (!cached || !fs.existsSync(cached)) errors.push(`cached output missing: ${output.name ?? "unknown"}`);
     if (!isSha(output.sha256)) errors.push(`cached output SHA-256 missing: ${output.name ?? "unknown"}`);
-    if (fs.existsSync(cached)) {
+    if (cached && fs.existsSync(cached)) {
       try {
         const identity = cachedOutputIdentity(cached, output.type);
         if (identity.sha256 !== output.sha256) errors.push(`cached output SHA-256 mismatch: ${output.name}`);
@@ -919,25 +1610,68 @@ function inspectCacheEntry(entryDirectory, manifest, kind) {
       }
     }
   }
-  const outputSchema = new Set((contract?.outputs ?? []).map((item) => `${item.name}:${item.type}`));
-  for (const output of manifest?.outputs ?? []) {
-    if (!outputSchema.has(`${output.name}:${output.type}`)) errors.push(`output schema mismatch: ${output.name}`);
+  const contractSchema = [...new Set((contract?.outputs ?? []).map((item) => `${item.name}:${item.type}`))].sort();
+  const manifestSchema = [...new Set((manifest?.outputs ?? []).map((item) => `${item.name}:${item.type}`))].sort();
+  if (sha256Value(contractSchema) !== sha256Value(manifestSchema)) {
+    errors.push("manifest outputs do not exactly match the declared output schema");
   }
   return { status: errors.length === 0 ? "ready" : "invalid", errors };
 }
 
-export function auditHighValueCache({ projectRoot, applicableKinds = [], outputPath = null } = {}) {
+function cacheReportDigest(report) {
+  const stable = structuredClone(report);
+  delete stable.generatedAt;
+  delete stable.digest;
+  return sha256Value(stable);
+}
+
+export function auditHighValueCache({
+  projectRoot,
+  applicableKinds = [],
+  expectedEntries = [],
+  outputPath = null,
+  writeReport = true,
+  includeNonApplicableEntries = true,
+} = {}) {
+  const policyValidation = validateEfficiencyPolicy();
+  if (policyValidation.status !== "pass") throw new Error(policyValidation.errors.join("; "));
   const root = path.resolve(projectRoot);
   const cacheRoot = path.join(root, ".kacha", "cache");
-  const applicable = new Set(applicableKinds);
+  const applicable = new Set(normalizeApplicableCacheKinds(applicableKinds));
+  const expected = normalizeExpectedCacheEntries(expectedEntries);
+  const expectedByKind = new Map(policy.cacheEvidence.highValueKinds.map((kind) => [
+    kind,
+    expected.filter((entry) => entry.kind === kind),
+  ]));
   const unknownApplicableKinds = [...applicable].filter((kind) => (
     !policy.cacheEvidence.highValueKinds.includes(kind)
   ));
+  const unexpectedKeyKinds = [...new Set(expected.map((entry) => entry.kind))]
+    .filter((kind) => !applicable.has(kind));
+  let cacheRootError = null;
+  if (fs.existsSync(cacheRoot)) {
+    const rootStat = fs.lstatSync(cacheRoot);
+    if (rootStat.isSymbolicLink()) cacheRootError = "cache root is a symbolic link";
+    else if (!rootStat.isDirectory()) cacheRootError = "cache root is not a directory";
+  }
   const kinds = policy.cacheEvidence.highValueKinds.map((kind) => {
     const directory = path.join(cacheRoot, kind);
     const entries = [];
-    if (fs.existsSync(directory) && fs.statSync(directory).isDirectory()) {
+    const shouldInspect = includeNonApplicableEntries
+      || applicable.size === 0
+      || applicable.has(kind);
+    let directoryError = cacheRootError;
+    if (!directoryError && fs.existsSync(directory)) {
+      const directoryStat = fs.lstatSync(directory);
+      if (directoryStat.isSymbolicLink()) directoryError = `cache kind directory is a symbolic link: ${kind}`;
+      else if (!directoryStat.isDirectory()) directoryError = `cache kind path is not a directory: ${kind}`;
+    }
+    if (shouldInspect && !directoryError && fs.existsSync(directory)) {
       for (const item of fs.readdirSync(directory, { withFileTypes: true })) {
+        if (item.isSymbolicLink()) {
+          entries.push({ key: item.name, status: "invalid", errors: ["cache entry is a symbolic link"] });
+          continue;
+        }
         if (!item.isDirectory() || item.name.includes(".tmp-")) continue;
         const entryDirectory = path.join(directory, item.name);
         const manifestFile = path.join(entryDirectory, "manifest.json");
@@ -954,24 +1688,47 @@ export function auditHighValueCache({ projectRoot, applicableKinds = [], outputP
     }
     const readyEntries = entries.filter((entry) => entry.status === "ready").length;
     const invalidEntries = entries.length - readyEntries;
+    const expectedForKind = expectedByKind.get(kind) ?? [];
+    const entriesByKey = new Map(entries.map((entry) => [entry.key, entry]));
+    const readyExpectedEntries = expectedForKind.filter((entry) => (
+      entriesByKey.get(entry.key)?.status === "ready"
+    )).length;
+    const missingExpectedKeys = expectedForKind
+      .filter((entry) => !entriesByKey.has(entry.key))
+      .map((entry) => entry.key);
+    const invalidExpectedEntries = expectedForKind
+      .map((entry) => entriesByKey.get(entry.key))
+      .filter((entry) => entry && entry.status !== "ready");
     const applicability = applicable.size === 0 ? "unknown"
       : applicable.has(kind) ? "applicable" : "not_applicable";
     return {
       kind,
       applicability,
       status: applicability === "not_applicable" ? "not_applicable"
-        : readyEntries > 0 && invalidEntries === 0 ? "ready"
-          : invalidEntries > 0 ? "invalid"
-          : applicability === "unknown" ? "unknown_applicability" : "missing",
+        : directoryError ? "invalid"
+        : applicability === "unknown" ? "unknown_applicability"
+          : expectedForKind.length === 0 ? "expected_keys_missing"
+            : invalidExpectedEntries.length > 0 ? "invalid"
+              : missingExpectedKeys.length > 0 ? "missing"
+                : readyExpectedEntries === expectedForKind.length ? "ready" : "missing",
       entries: entries.length,
       readyEntries,
       invalidEntries,
-      diagnostics: entries.flatMap((entry) => entry.errors ?? []),
+      expectedEntries: expectedForKind.length,
+      readyExpectedEntries,
+      diagnostics: [
+        ...(directoryError && applicability !== "not_applicable" ? [directoryError] : []),
+        ...(applicability === "applicable" && expectedForKind.length === 0
+          ? ["no expected content-addressed cache key was declared for this kind"] : []),
+        ...missingExpectedKeys.map((key) => `expected cache key missing: ${key}`),
+        ...invalidExpectedEntries.flatMap((entry) => entry.errors ?? []),
+      ],
     };
   });
   const applicableReports = kinds.filter((item) => item.applicability === "applicable");
-  const readyApplicable = applicableReports.filter((item) => item.status === "ready").length;
-  const coverage = applicableReports.length > 0 ? readyApplicable / applicableReports.length : null;
+  const expectedCount = applicableReports.reduce((sum, item) => sum + item.expectedEntries, 0);
+  const readyExpectedCount = applicableReports.reduce((sum, item) => sum + item.readyExpectedEntries, 0);
+  const coverage = expectedCount > 0 ? readyExpectedCount / expectedCount : null;
   const report = {
     schemaVersion: "1.0",
     kind: "kacha-high-value-cache-audit",
@@ -980,8 +1737,11 @@ export function auditHighValueCache({ projectRoot, applicableKinds = [], outputP
     cacheRoot,
     applicabilityStatus: applicable.size > 0 ? "declared" : "unknown",
     unknownApplicableKinds,
+    unexpectedKeyKinds,
     productionReady: applicableReports.length > 0
       && unknownApplicableKinds.length === 0
+      && unexpectedKeyKinds.length === 0
+      && !cacheRootError
       && applicableReports.every((item) => item.status === "ready"),
     warmCoverage: coverage === null ? null : round(coverage),
     warmCoverageTarget: policy.cacheEvidence.warmCoverageTarget,
@@ -989,8 +1749,9 @@ export function auditHighValueCache({ projectRoot, applicableKinds = [], outputP
     kinds,
   };
   report.status = report.productionReady ? "pass" : "evidence_needed";
+  report.digest = cacheReportDigest(report);
   const output = path.resolve(outputPath ?? path.join(root, ".kacha", "cache-audit.json"));
-  writeJsonAtomic(output, report);
+  if (writeReport) writeJsonAtomic(output, report);
   return { output, report };
 }
 
@@ -1002,17 +1763,108 @@ function pairedProjects(baseline, candidate) {
   });
 }
 
+function loadEfficiencyEvidence(identity, label, expected) {
+  const errors = [];
+  if (!identity?.path || !isSha(identity?.sha256)) {
+    return { value: null, errors: [`${label} current file identity missing`] };
+  }
+  const file = path.resolve(identity.path);
+  try {
+    if (!fileIdentityMatches(file, identity)) {
+      return { value: null, errors: [`${label} current file identity changed`] };
+    }
+  } catch {
+    return { value: null, errors: [`${label} current file identity changed`] };
+  }
+  let value;
+  try {
+    value = readJson(file);
+  } catch (error) {
+    return { value: null, errors: [`${label} is not readable JSON: ${error.message}`] };
+  }
+  for (const [field, required] of Object.entries(expected)) {
+    if (value?.[field] !== required) errors.push(`${label} ${field} does not match the paired project`);
+  }
+  return { value, errors };
+}
+
+function validateEfficiencyMedia(identity, label, { requireAudio = false } = {}) {
+  const errors = [];
+  if (!identity?.path || !isSha(identity?.sha256)) {
+    return [`${label} current media identity missing`];
+  }
+  const file = path.resolve(identity.path);
+  try {
+    if (!fileIdentityMatches(file, identity)) return [`${label} current media identity changed`];
+    const summary = mediaSummary(file);
+    if (!summary.video || !(Number(summary.videoDuration) > 0)) {
+      errors.push(`${label} is not a decodable video`);
+    }
+    if (requireAudio && !summary.audio) errors.push(`${label} has no reviewable audio`);
+  } catch (error) {
+    errors.push(`${label} media validation failed: ${error.message}`);
+  }
+  return errors;
+}
+
 export function compareEfficiencyEvidence(baseline, candidate) {
-  const reasons = [];
+  const policyValidation = validateEfficiencyPolicy();
+  const reasons = [...policyValidation.errors];
+  if (baseline?.schemaVersion !== "1.0"
+    || baseline?.kind !== "kacha-efficiency-evidence-cohort"
+    || baseline?.variant !== "baseline") {
+    reasons.push("baseline cohort identity is invalid");
+  }
+  if (candidate?.schemaVersion !== "1.0"
+    || candidate?.kind !== "kacha-efficiency-evidence-cohort"
+    || candidate?.variant !== "candidate") {
+    reasons.push("candidate cohort identity is invalid");
+  }
+  if (!baseline || typeof baseline !== "object" || Array.isArray(baseline)) baseline = {};
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) candidate = {};
+  baseline = { ...baseline, projects: baseline.projects };
+  candidate = { ...candidate, projects: candidate.projects };
+  for (const [label, cohort] of [["baseline", baseline], ["candidate", candidate]]) {
+    if (!Array.isArray(cohort.projects)) {
+      reasons.push(`${label} cohort projects must be an array`);
+      cohort.projects = [];
+      continue;
+    }
+    if (cohort.projects.some((project) => !project || typeof project !== "object" || Array.isArray(project))) {
+      reasons.push(`${label} cohort contains an invalid project record`);
+      cohort.projects = cohort.projects.filter((project) => (
+        project && typeof project === "object" && !Array.isArray(project)
+      ));
+    }
+  }
   const pairs = pairedProjects(baseline, candidate);
   const guardrails = policy.efficiencyClaim.requiredGuardrails;
   for (const [label, projects] of [["baseline", baseline.projects ?? []], ["candidate", candidate.projects ?? []]]) {
     const ids = projects.map((project) => project.projectId);
+    if (ids.some((id) => typeof id !== "string" || !id.trim())) {
+      reasons.push(`${label} project ids must be non-empty strings`);
+    }
     if (new Set(ids).size !== ids.length) reasons.push(`${label} project ids are not unique`);
+  }
+  const baselineIds = (baseline.projects ?? []).map((project) => project.projectId).sort();
+  const candidateIds = (candidate.projects ?? []).map((project) => project.projectId).sort();
+  if (sha256Value(baselineIds) !== sha256Value(candidateIds)) {
+    reasons.push("baseline and candidate cohort project ids do not match exactly");
   }
   const sourceGroups = pairs.map((pair) => pair.baseline.sourceSha256);
   if (new Set(sourceGroups).size !== sourceGroups.length) {
     reasons.push("paired projects do not contain distinct source groups");
+  }
+  for (const [label, projects] of [["baseline", baseline.projects ?? []], ["candidate", candidate.projects ?? []]]) {
+    const outputs = projects.map((project) => project.outputSha256).filter(isSha);
+    if (new Set(outputs).size !== outputs.length) reasons.push(`${label} output identities are not unique`);
+  }
+  const pairedOutputs = pairs.flatMap((pair) => [
+    pair.baseline.outputSha256,
+    pair.candidate.outputSha256,
+  ]).filter(isSha);
+  if (new Set(pairedOutputs).size !== pairedOutputs.length) {
+    reasons.push("reviewed output identities are reused across paired projects");
   }
   const projects = pairs.map((pair) => {
     const projectReasons = [];
@@ -1020,33 +1872,124 @@ export function compareEfficiencyEvidence(baseline, candidate) {
       !isSha(pair.baseline.sourceSha256)
       || pair.baseline.sourceSha256 !== pair.candidate.sourceSha256
     )) projectReasons.push("source identity differs");
-    if (policy.efficiencyClaim.requireHumanReview && (
-      pair.baseline.humanReview?.status !== "pass"
-      || pair.candidate.humanReview?.status !== "pass"
-      || !String(pair.baseline.humanReview?.reviewer ?? "").trim()
-      || !String(pair.candidate.humanReview?.reviewer ?? "").trim()
-      || !isSha(pair.baseline.humanReview?.evidenceSha256)
-      || !isSha(pair.candidate.humanReview?.evidenceSha256)
-    )) projectReasons.push("human review evidence missing");
-    if (!isSha(pair.baseline.metricsEvidenceSha256) || !isSha(pair.candidate.metricsEvidenceSha256)) {
-      projectReasons.push("metrics evidence identity missing");
+    for (const [variant, project] of [["baseline", pair.baseline], ["candidate", pair.candidate]]) {
+      projectReasons.push(...validateEfficiencyMedia(project.source, `${variant} source`));
+      projectReasons.push(...validateEfficiencyMedia(project.output, `${variant} reviewed output`, {
+        requireAudio: true,
+      }));
+      if (project.source?.sha256 !== project.sourceSha256) {
+        projectReasons.push(`${variant} source SHA-256 differs from its current media identity`);
+      }
+      if (project.output?.sha256 !== project.outputSha256) {
+        projectReasons.push(`${variant} output SHA-256 differs from its current media identity`);
+      }
     }
-    for (const guardrail of guardrails) {
+    if (!isSha(pair.baseline.outputSha256) || !isSha(pair.candidate.outputSha256)) {
+      projectReasons.push("reviewed output identity missing");
+    } else if (pair.baseline.outputSha256 === pair.candidate.outputSha256) {
+      projectReasons.push("baseline and candidate reviewed outputs are identical");
+    }
+    for (const [variant, project] of [["baseline", pair.baseline], ["candidate", pair.candidate]]) {
+      const reviewer = String(project.humanReview?.reviewer ?? "").trim();
+      if (policy.efficiencyClaim.requireHumanReview && (
+        project.humanReview?.status !== "pass" || !reviewer
+      )) projectReasons.push(`${variant} human review declaration missing`);
+      const humanEvidence = loadEfficiencyEvidence(
+        project.humanReview?.evidence,
+        `${variant} human review evidence`,
+        {
+          schemaVersion: "1.0",
+          kind: "kacha-efficiency-human-review-evidence",
+          variant,
+          projectId: pair.projectId,
+          sourceSha256: project.sourceSha256,
+          outputSha256: project.outputSha256,
+          reviewer,
+          status: "pass",
+        },
+      );
+      projectReasons.push(...humanEvidence.errors);
+      if (!String(humanEvidence.value?.reviewedAt ?? "").trim()) {
+        projectReasons.push(`${variant} human review timestamp missing`);
+      } else if (!Number.isFinite(Date.parse(humanEvidence.value.reviewedAt))) {
+        projectReasons.push(`${variant} human review timestamp is invalid`);
+      }
+      const metricsEvidence = loadEfficiencyEvidence(
+        project.metricsEvidence,
+        `${variant} metrics evidence`,
+        {
+          schemaVersion: "1.0",
+          kind: "kacha-efficiency-metrics-evidence",
+          variant,
+          projectId: pair.projectId,
+          sourceSha256: project.sourceSha256,
+          outputSha256: project.outputSha256,
+        },
+      );
+      projectReasons.push(...metricsEvidence.errors);
+      if (!(typeof metricsEvidence.value?.wallSeconds === "number" && metricsEvidence.value.wallSeconds > 0)) {
+        projectReasons.push(`${variant} metrics wall time is invalid`);
+      }
       if (
-        pair.baseline.guardrails?.[guardrail] !== "pass"
-        || pair.candidate.guardrails?.[guardrail] !== "pass"
-      ) projectReasons.push(`guardrail not pass: ${guardrail}`);
-      if (
-        !isSha(pair.baseline.guardrailEvidence?.[guardrail]?.sha256)
-        || !isSha(pair.candidate.guardrailEvidence?.[guardrail]?.sha256)
-      ) projectReasons.push(`guardrail evidence missing: ${guardrail}`);
+        typeof metricsEvidence.value?.videoEncodes !== "number"
+        || !Number.isInteger(metricsEvidence.value.videoEncodes)
+        || metricsEvidence.value.videoEncodes < 0
+      ) projectReasons.push(`${variant} metrics video encode count is invalid`);
+      if (Number(metricsEvidence.value?.wallSeconds) !== Number(project.wallSeconds)) {
+        projectReasons.push(`${variant} wall time differs from current metrics evidence`);
+      }
+      if (Number(metricsEvidence.value?.videoEncodes) !== Number(project.videoEncodes)) {
+        projectReasons.push(`${variant} video encode count differs from current metrics evidence`);
+      }
+      for (const guardrail of guardrails) {
+        if (project.guardrails?.[guardrail] !== "pass") {
+          projectReasons.push(`${variant} guardrail not pass: ${guardrail}`);
+        }
+        const guardrailEvidence = loadEfficiencyEvidence(
+          project.guardrailEvidence?.[guardrail],
+          `${variant} guardrail evidence ${guardrail}`,
+          {
+            schemaVersion: "1.0",
+            kind: "kacha-efficiency-guardrail-evidence",
+            variant,
+            projectId: pair.projectId,
+            sourceSha256: project.sourceSha256,
+            outputSha256: project.outputSha256,
+            guardrail,
+            status: "pass",
+          },
+        );
+        projectReasons.push(...guardrailEvidence.errors);
+      }
     }
     const baselineSeconds = Number(pair.baseline.wallSeconds);
     const candidateSeconds = Number(pair.candidate.wallSeconds);
-    if (!(baselineSeconds > 0) || !(candidateSeconds > 0)) {
+    if (
+      typeof pair.baseline.wallSeconds !== "number"
+      || typeof pair.candidate.wallSeconds !== "number"
+      || !(baselineSeconds > 0)
+      || !(candidateSeconds > 0)
+    ) {
       projectReasons.push("wall time evidence missing");
     }
-    if (Number(pair.candidate.videoEncodes ?? 0) > 1) projectReasons.push("candidate final video encode budget exceeded");
+    const baselineEncodes = Number(pair.baseline.videoEncodes);
+    const candidateEncodes = Number(pair.candidate.videoEncodes);
+    if (
+      typeof pair.baseline.videoEncodes !== "number"
+      || !Number.isInteger(baselineEncodes)
+      || baselineEncodes < 0
+    ) {
+      projectReasons.push("baseline video encode evidence missing");
+    }
+    if (
+      typeof pair.candidate.videoEncodes !== "number"
+      || !Number.isInteger(candidateEncodes)
+      || candidateEncodes < 0
+    ) {
+      projectReasons.push("candidate video encode evidence missing");
+    } else if (candidateEncodes > 1) {
+      projectReasons.push("candidate final video encode budget exceeded");
+    }
     return {
       projectId: pair.projectId,
       baselineSeconds,
@@ -1094,12 +2037,14 @@ export function compareEfficiencyEvidence(baseline, candidate) {
 function usage() {
   console.error(
     "用法：\n"
-      + "  kacha.mjs efficiency plan PROJECT [--cues FILE] [--delta FILE] [--applicable-cache-kinds a,b] [--output FILE]\n"
+      + "  kacha.mjs efficiency plan PROJECT [--cues FILE|--clear-cues] [--delta FILE|--clear-delta] "
+      + "[--applicable-cache-kinds a,b] [--expected-cache-keys kind:sha256,...] [--output FILE]\n"
       + "  kacha.mjs efficiency validate-policy\n"
       + "  kacha.mjs efficiency validate PLAN.json\n"
       + "  kacha.mjs efficiency schedule [--output FILE]\n"
       + "  kacha.mjs efficiency execute EXECUTION-PLAN.json\n"
-      + "  kacha.mjs efficiency cache-audit PROJECT --applicable-cache-kinds a,b [--output FILE]\n"
+      + "  kacha.mjs efficiency cache-audit PROJECT --applicable-cache-kinds a,b "
+      + "--expected-cache-keys kind:sha256,... [--output FILE]\n"
       + "  kacha.mjs efficiency compare BASELINE.json CANDIDATE.json [--output FILE]",
   );
 }
@@ -1119,8 +2064,13 @@ async function main() {
         projectRoot: first,
         cuesPath: option(args, "--cues"),
         deltaPath: option(args, "--delta"),
+        clearCues: args.includes("--clear-cues"),
+        clearDelta: args.includes("--clear-delta"),
         applicableCacheKinds: args.includes("--applicable-cache-kinds")
           ? listOption(args, "--applicable-cache-kinds")
+          : null,
+        expectedCacheEntries: args.includes("--expected-cache-keys")
+          ? listOption(args, "--expected-cache-keys")
           : null,
         outputPath: option(args, "--output"),
       });
@@ -1152,6 +2102,7 @@ async function main() {
       const result = auditHighValueCache({
         projectRoot: first,
         applicableKinds: listOption(args, "--applicable-cache-kinds"),
+        expectedEntries: listOption(args, "--expected-cache-keys"),
         outputPath: option(args, "--output"),
       });
       console.log(JSON.stringify({ status: result.report.status, output: result.output, report: result.report }, null, 2));

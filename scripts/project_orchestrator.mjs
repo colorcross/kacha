@@ -18,6 +18,7 @@ import {
   auditHighValueCache,
   buildEfficiencyPlan,
   buildSchedule,
+  validateEfficiencyPlan,
 } from "./quality_efficiency.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -27,6 +28,19 @@ const orchestrationRelativePath = path.join(".kacha", "orchestration.json");
 
 function now() {
   return new Date().toISOString();
+}
+
+function readOptionalJsonEvidence(file, label) {
+  if (!file || !fs.existsSync(file)) return { value: null, error: null };
+  try {
+    const stat = fs.lstatSync(file);
+    if (stat.isSymbolicLink() || !stat.isFile()) {
+      throw new Error("expected a regular non-symbolic-link file");
+    }
+    return { value: readJson(file), error: null };
+  } catch (error) {
+    return { value: null, error: `${label} cannot be read: ${error.message}` };
+  }
 }
 
 function parseJsonOutput(result, label) {
@@ -450,6 +464,7 @@ export function initializeProject({
       reviewRoot: path.join(baseRoot, ".kacha", "review"),
       metricsRoot: path.join(baseRoot, ".kacha", "metrics"),
       efficiencyPlan: path.join(baseRoot, ".kacha", "efficiency-plan.json"),
+      efficiencyInputs: path.join(baseRoot, ".kacha", "efficiency-inputs.json"),
       cacheAudit: path.join(baseRoot, ".kacha", "cache-audit.json"),
     },
     lifecycle: {
@@ -740,21 +755,55 @@ export function projectStatus(input, { refreshRuntime = true, home = os.homedir(
   };
   const inputCheck = verifyInput(orchestration.input);
   const views = stageViews(projectRoot, orchestration);
-  const nextAction = deriveNextAction(projectRoot, orchestration, runtime, inputCheck);
+  const derivedNextAction = deriveNextAction(projectRoot, orchestration, runtime, inputCheck);
   const assetInbox = orchestration.files?.assetInbox
     && fs.existsSync(orchestration.files.assetInbox)
     ? readJson(orchestration.files.assetInbox)
     : null;
   const efficiencyFile = orchestration.files?.efficiencyPlan
     ?? path.join(projectRoot, ".kacha", "efficiency-plan.json");
-  const cacheAuditFile = orchestration.files?.cacheAudit
-    ?? path.join(projectRoot, ".kacha", "cache-audit.json");
-  const efficiencyPlan = fs.existsSync(efficiencyFile)
-    ? readJson(efficiencyFile)
-    : null;
-  const cacheAudit = fs.existsSync(cacheAuditFile)
-    ? readJson(cacheAuditFile)
-    : null;
+  const efficiencyLoad = fs.existsSync(efficiencyFile)
+    ? readOptionalJsonEvidence(efficiencyFile, "efficiency plan")
+    : { value: null, error: `efficiency plan is missing: ${efficiencyFile}` };
+  const efficiencyPlan = efficiencyLoad.value;
+  let efficiencyValidation = efficiencyLoad.error ? {
+    status: "blocked",
+    errors: [efficiencyLoad.error],
+  } : null;
+  let cacheAudit = null;
+  if (efficiencyPlan) {
+    try {
+      efficiencyValidation = validateEfficiencyPlan(efficiencyPlan);
+      cacheAudit = auditHighValueCache({
+        projectRoot,
+        applicableKinds: efficiencyPlan.cache?.applicableKinds ?? [],
+        expectedEntries: efficiencyPlan.cache?.expectedEntries ?? [],
+        writeReport: false,
+        includeNonApplicableEntries: false,
+      }).report;
+    } catch (error) {
+      efficiencyValidation = {
+        status: "blocked",
+        errors: [error.message],
+      };
+      cacheAudit = {
+        status: "evidence_needed",
+        productionReady: false,
+        applicabilityStatus: efficiencyPlan.cache?.applicabilityStatus ?? "unknown",
+        diagnostics: [error.message],
+      };
+    }
+  }
+  const nextAction = efficiencyValidation?.status === "blocked"
+    ? {
+        id: "refresh_efficiency_evidence",
+        owner: "agent",
+        state: "blocked",
+        safeToAutoExecute: false,
+        summary: "效率计划与当前项目证据不一致，刷新后才能继续执行",
+        diagnostics: efficiencyValidation.errors,
+      }
+    : derivedNextAction;
   return {
     schemaVersion: "1.0",
     status: nextAction?.state === "blocked" ? "blocked" : "pass",
@@ -794,19 +843,20 @@ export function projectStatus(input, { refreshRuntime = true, home = os.homedir(
       },
       nextAction: assetInbox.nextAction,
     } : null,
-    efficiency: efficiencyPlan ? {
-      status: efficiencyPlan.status,
-      policyVersion: efficiencyPlan.policyVersion,
-      mode: efficiencyPlan.mode,
-      risk: efficiencyPlan.risk,
-      representativePreview: efficiencyPlan.representativePreview,
-      schedule: efficiencyPlan.schedule,
+    efficiency: efficiencyPlan || efficiencyLoad.error ? {
+      status: efficiencyValidation?.status ?? efficiencyPlan?.status ?? "blocked",
+      validation: efficiencyValidation,
+      policyVersion: efficiencyPlan?.policyVersion ?? null,
+      mode: efficiencyPlan?.mode ?? null,
+      risk: efficiencyPlan?.risk ?? null,
+      representativePreview: efficiencyPlan?.representativePreview ?? null,
+      schedule: efficiencyPlan?.schedule ?? null,
       cache: cacheAudit ?? {
         status: "evidence_needed",
-        applicabilityStatus: efficiencyPlan.cache?.applicabilityStatus ?? "unknown",
+        applicabilityStatus: efficiencyPlan?.cache?.applicabilityStatus ?? "unknown",
         productionReady: false,
       },
-      evidenceBoundary: efficiencyPlan.evidenceBoundary,
+      evidenceBoundary: efficiencyPlan?.evidenceBoundary ?? null,
     } : null,
     authorityBoundary: orchestration.executionAuthorization,
   };
@@ -1005,6 +1055,14 @@ function instrumentedAction(projectRoot, action, argv) {
 }
 
 function refreshEfficiencyEvidence(projectRoot, orchestration) {
+  const previousPlan = readOptionalJsonEvidence(
+    orchestration.files?.efficiencyPlan,
+    "previous efficiency plan",
+  ).value;
+  const previousCache = readOptionalJsonEvidence(
+    orchestration.files?.cacheAudit,
+    "previous cache audit",
+  ).value;
   const efficiency = buildEfficiencyPlan({
     projectRoot,
     outputPath: orchestration.files?.efficiencyPlan,
@@ -1012,14 +1070,17 @@ function refreshEfficiencyEvidence(projectRoot, orchestration) {
   const cache = auditHighValueCache({
     projectRoot,
     applicableKinds: efficiency.plan.cache?.applicableKinds ?? [],
+    expectedEntries: efficiency.plan.cache?.expectedEntries ?? [],
     outputPath: orchestration.files?.cacheAudit,
   });
-  appendEvent(projectRoot, {
-    type: "efficiency_evidence_refreshed",
-    plan: fileIdentity(efficiency.output),
-    cache: fileIdentity(cache.output),
-    speedImprovementClaimed: false,
-  });
+  if (previousPlan?.digest !== efficiency.plan.digest || previousCache?.digest !== cache.report.digest) {
+    appendEvent(projectRoot, {
+      type: "efficiency_evidence_refreshed",
+      plan: fileIdentity(efficiency.output),
+      cache: fileIdentity(cache.output),
+      speedImprovementClaimed: false,
+    });
+  }
   return { efficiency, cache };
 }
 
@@ -1073,6 +1134,12 @@ export function runProject(input, {
       orchestration = writeOrchestration(loaded.file, orchestration);
     }
     const inputCheck = verifyInput(orchestration.input);
+    const currentEfficiency = refreshEfficiencyEvidence(projectRoot, orchestration);
+    if (currentEfficiency.efficiency.plan.status !== "pass") {
+      throw new Error(
+        `当前效率计划未通过：${currentEfficiency.efficiency.plan.validation?.errors?.join("; ")}`,
+      );
+    }
     if (
       orchestration.files?.manifest
       && contractsReady(orchestration)

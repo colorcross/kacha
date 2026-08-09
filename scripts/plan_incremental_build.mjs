@@ -374,12 +374,30 @@ const fullDuration = Number(context.source.media.durationSeconds);
 const affected = affectedDuration(delta, fullDuration);
 const handleFrames = Number(delta.render.handleFrames);
 const handleSeconds = handleFrames / Number(context.source.media.fps);
+const efficiencyPolicyValidation = validateEfficiencyPolicy();
+if (efficiencyPolicyValidation.status !== "pass") {
+  console.error(`V8 efficiency policy is invalid: ${efficiencyPolicyValidation.errors.join("; ")}`);
+  process.exit(1);
+}
 const representativeRanges = selectIncrementalRepresentativeRanges(delta, fullDuration);
+if (
+  ["intervals", "full"].includes(delta.changeSet.scope.kind)
+  && (
+    representativeRanges.length < renderBudget.representativeRangeMinimum
+    || representativeRanges.length > renderBudget.representativeRangeMaximum
+  )
+) {
+  console.error(
+    `V8 representative range count ${representativeRanges.length} is outside `
+      + `${renderBudget.representativeRangeMinimum}-${renderBudget.representativeRangeMaximum}`,
+  );
+  process.exit(1);
+}
 const inputHashes = {
   projectContext: sha256File(contextFile),
   versionDelta: sha256File(deltaFile),
   artifactIndex: sha256File(indexFile),
-  qualityEfficiencyPolicy: validateEfficiencyPolicy().policy.sha256,
+  qualityEfficiencyPolicy: efficiencyPolicyValidation.policy.sha256,
 };
 let generatedAt = new Date().toISOString();
 if (fs.existsSync(outputFile)) {

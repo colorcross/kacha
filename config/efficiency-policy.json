@@ -65,7 +65,15 @@
       "human": 1
     },
     "forbidSharedOutputWrites": true,
-    "requireDeclaredPrerequisites": true
+    "requireDeclaredPrerequisites": true,
+    "executionCommandPolicy": {
+      "nodeScriptsOnly": true,
+      "requireImplementationSha256": true,
+      "disallowNetworkResource": true,
+      "allowedScripts": [
+        "route_references.mjs"
+      ]
+    }
   },
   "cacheEvidence": {
     "highValueKinds": [

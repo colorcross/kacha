@@ -34,6 +34,7 @@ V8 是 V7 编排器的一层合同，不替代 V2 十三阶段、V3 增量、V6 
 审片。`.kacha/orchestration.json` 仍是可恢复状态源；V8 新增：
 
 - `.kacha/efficiency-plan.json`
+- `.kacha/efficiency-inputs.json`
 - `.kacha/cache-audit.json`
 - `.kacha/efficiency-execution-report.json`
 - `.kacha/metrics/events.jsonl`
@@ -73,9 +74,11 @@ V8 是 V7 编排器的一层合同，不替代 V2 十三阶段、V3 增量、V6 
 ### 4.2 增量返工
 
 V3 `incremental-plan.json` 直接写入 `renderPlan.representativeRanges`。所有 delta
-区间先加 handle、合并相邻点，再压缩到最多三组。每个原始变化区间必须被至少
-一组完整包含。变化过于分散时优先保住覆盖，并写入 `durationBudgetException`；
-系统不得为了满足“短预览”而漏掉变化点。
+区间先加 handle、合并相邻点，再用最小总覆盖跨度分组压缩到最多三组。每个原始
+变化区间必须被至少一组完整包含。变化过于分散、最优分组仍超出时才写入
+`durationBudgetException`；系统不得为了满足“短预览”而漏掉变化点。`full`
+范围变化固定生成开场、复杂视觉和结尾三段待人工确认样本，不能出现“全局变化、
+零段预览”。`no_timeline` 才允许零段。
 
 ### 4.3 不可替代的完整检查
 
@@ -114,15 +117,23 @@ V3 `incremental-plan.json` 直接写入 `renderPlan.representativeRanges`。所�
     "localExecution": true,
     "upload": false,
     "paidGeneration": false,
-    "publish": false
+    "publish": false,
+    "overwriteSource": false
   },
   "tasks": [
     {
-      "id": "prepare-transcript",
-      "argv": ["node", "script.mjs"],
+      "id": "route-inventory-references",
+      "argv": [
+        "/absolute/path/to/node",
+        "/absolute/kacha/scripts/route_references.mjs",
+        "--task", "source_edit",
+        "--stage", "inventory",
+        "--output", "/absolute/project/work/inventory-references.json"
+      ],
+      "commandSha256": "sha256-of-current-route_references.mjs",
       "prerequisites": [],
       "resources": ["cpuHeavy"],
-      "outputs": ["work/transcript.json"],
+      "outputs": ["work/inventory-references.json"],
       "safeToAutoExecute": true,
       "allowParallel": true
     }
@@ -134,14 +145,19 @@ V3 `incremental-plan.json` 直接写入 `renderPlan.representativeRanges`。所�
 node scripts/kacha.mjs efficiency execute execution-plan.json
 ```
 
-执行器不用 shell 拼接命令；它拒绝依赖环、共享输出、项目外输出、未明确安全的
-任务、越权外部动作和覆盖既有输出。每个任务先取得主机级资源租约，再由
-`metrics run` 记录耗时、缓存、编码、产物和脱敏日志。一个波次有任一失败，后续
-波次停止。
+执行器不用 shell 拼接命令。它只运行策略中登记、具有参数级校验器的确定性 Node
+脚本；当前只登记 `route_references.mjs`。脚本 SHA、执行计划 SHA 和声明输出必须
+保持当前，命令中的 `--output` 必须与唯一声明输出完全一致。依赖环、共享输出、
+网络资源、内联代码、未登记脚本、项目外路径、符号链接、越权外部动作和覆盖既有
+输出都会被拒绝；任务结束后还会再次检查输出边界。每个任务先取得主机级资源
+租约，再由 `metrics run` 记录耗时、缓存、编码、产物和脱敏日志。一个波次有任一
+失败，后续波次停止。新增可执行脚本必须同时增加策略登记、参数校验和回归测试，
+不能只因为脚本位于仓库内就获得执行权。
 
 ## 6. 高成本缓存
 
-适用种类不是固定全开。当前阶段计划必须明确声明本项目实际使用哪些类型：
+适用种类不是固定全开。当前阶段计划必须明确声明本项目实际使用哪些类型，以及
+本次任务按源、实现、版本、参数和输出 schema 计算出的预期内容键：
 
 - `source_separation`
 - `asr`
@@ -157,11 +173,14 @@ node scripts/kacha.mjs efficiency execute execution-plan.json
 - 至少一个实现、脚本、模型或服务 SHA-256；
 - 操作版本与参数；
 - 输出名称/类型 schema；
-- 当前缓存产物的 SHA-256 与尺寸。
+- manifest key 与完整 contract 内容摘要一致；
+- 当前缓存产物的 SHA-256、尺寸，目录产物还要有文件数。
 
-目录有文件、键相同或模型名字相同都不够。未声明适用种类时报告
-`unknown_applicability`，不计算虚假的预热覆盖率。80% 是需要真实项目验证的
-目标，不是默认事实。
+目录有文件、同种类存在旧条目或模型名字相同都不够。只声明种类、没有预期 key
+时报告 `expected_keys_missing`；未声明适用种类时报告 `unknown_applicability`，
+两者都不计算虚假的预热覆盖率。覆盖率按“当前预期 key 中 ready 的比例”计算，
+不是按目录或种类计数。80% 是需要真实项目验证的目标，不是默认事实。缓存根、
+种类目录、条目或产物只要经过符号链接就不能成为 ready 证据。
 
 ## 7. 命令
 
@@ -169,11 +188,16 @@ node scripts/kacha.mjs efficiency execute execution-plan.json
 # 首剪：使用当前 cues 生成计划
 node scripts/kacha.mjs efficiency plan /path/to/project \
   --cues /path/to/current-cues.json \
-  --applicable-cache-kinds asr,source_separation,mask
+  --applicable-cache-kinds asr,mask \
+  --expected-cache-keys asr:<sha256>,mask:<sha256>
 
 # 增量：使用当前 version delta 生成最多三段全覆盖计划
 node scripts/kacha.mjs efficiency plan /path/to/project \
   --delta /path/to/version-delta.json
+
+# 只有明确放弃旧证据时才能清除；旧文件丢失会 fail closed
+node scripts/kacha.mjs efficiency plan /path/to/project --clear-cues
+node scripts/kacha.mjs efficiency plan /path/to/project --clear-delta
 
 # 合同与波次
 node scripts/kacha.mjs efficiency validate \
@@ -182,25 +206,32 @@ node scripts/kacha.mjs efficiency schedule
 
 # 强指纹缓存证据
 node scripts/kacha.mjs efficiency cache-audit /path/to/project \
-  --applicable-cache-kinds asr,source_separation,mask
+  --applicable-cache-kinds asr,mask \
+  --expected-cache-keys asr:<sha256>,mask:<sha256>
 
 # 同源成对效率证据
 node scripts/kacha.mjs efficiency compare baseline-cohort.json candidate-cohort.json
 ```
 
-`start/run/resume/status` 自动创建、刷新并展示效率计划。Studio 项目状态页显示风险、
-代表区间、并行波次、缓存证据和“不构成提速证明”的边界；统一审片的运行观察区
-显示同一摘要。
+`start/run/resume/status` 自动创建、刷新并展示效率计划。旧 cues/delta 默认延续；
+独立的 `efficiency-inputs.json` 保存当前 cues/delta 身份和缓存适用种类/预期 key，
+计划损坏时仍可安全恢复；计划与
+登记同时损坏则必须补替代证据或显式清除两类输入，不能静默降级。`status`、Studio 和
+统一审片观察区会重新核对当前计划输入、策略、配方和缓存内容，不信任磁盘上的
+旧 `status` 字段；损坏计划显示为 `refresh_efficiency_evidence` 阻断，`run` 从
+当前输入安全重建。
 
 ## 8. 效率声明门禁
 
-比较文件使用 `projects` 数组，以 `projectId` 成对。每个项目至少记录：
+比较文件必须是 `kacha-efficiency-evidence-cohort`，分别声明 `variant=baseline`
+和 `variant=candidate`，两边 `projectId` 集合必须完全一致且不可重复。每个项目
+至少记录：
 
-- 相同的 `sourceSha256`
-- `wallSeconds`
-- `humanReview.status=pass`、非空 reviewer 和审片证据 SHA-256
-- `videoEncodes`
-- 指标报告 SHA-256 与每个 guardrail 的证据 SHA-256
+- 当前可解码源视频的 `{path, sha256}`，且成对 `sourceSha256` 相同；
+- 当前可解码、含音轨、基线与候选不同且跨项目不复用的审片输出身份；
+- `wallSeconds` 和非负整数 `videoEncodes`；
+- `humanReview.status=pass`、非空 reviewer、时间戳及当前人审 JSON 文件身份；
+- 当前指标 JSON 文件身份与六个 guardrail 的逐项 JSON 文件身份；
 - 六个 guardrail：`semanticIntegrity`、`connectionPlayback`、
   `subtitleAccuracy`、`visualContinuity`、`audioQuality`、
   `fullCandidatePlayback`

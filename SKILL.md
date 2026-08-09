@@ -60,41 +60,53 @@ node scripts/kacha.mjs run /path/to/content-project --confirm-execute
 ## V8 质量不降级效率合同
 
 每个视频项目在 `start` 时自动建立 `.kacha/efficiency-plan.json` 和
-`.kacha/cache-audit.json`。Agent 不得只写“先看几个片段”或“可并行处理”，
+`.kacha/efficiency-inputs.json`、`.kacha/cache-audit.json`。输入登记独立保存当前
+cues/delta 身份和缓存适用种类/预期 key，计划与登记同时损坏时必须补证据或显式
+清除，不能静默降级。
+Agent 不得只写“先看几个片段”或“可并行处理”，
 必须把区间、风险、依赖、资源和证据落成可执行合同：
 
 ```bash
 node scripts/kacha.mjs efficiency plan PROJECT \
   --cues CURRENT_CUES.json \
-  --applicable-cache-kinds asr,source_separation,mask
+  --applicable-cache-kinds asr,mask \
+  --expected-cache-keys asr:<sha256>,mask:<sha256>
 node scripts/kacha.mjs efficiency validate PROJECT/.kacha/efficiency-plan.json
 node scripts/kacha.mjs efficiency schedule
 node scripts/kacha.mjs efficiency cache-audit PROJECT \
-  --applicable-cache-kinds asr,source_separation,mask
+  --applicable-cache-kinds asr,mask \
+  --expected-cache-keys asr:<sha256>,mask:<sha256>
 ```
 
 首剪代表区间至少覆盖开场、典型信息段、复杂视觉段和结尾；当前 cues 中出现
 连接点、密集字幕、事实证据、蒙版/跟踪或音频转折时，必须并入代表区间理由。
 没有 cues 时可以用结构位置生成待确认区间，但不得把该 fallback 写成当前画面
 证据。增量返工从 version delta 自动生成最多三段区间，必须覆盖全部变化点和
-handle；分散变化导致区间过长时显式披露预算例外，不能漏检。
+handle；使用最小总覆盖跨度分组，只有最优结果仍过长时才披露预算例外。全局变化
+固定生成开场、复杂视觉和结尾三段待确认样本；只有 `no_timeline` 可以零段。
+旧 cues/delta 丢失时 fail closed，只有显式 `--clear-cues/--clear-delta` 才能放弃。
 
 十三阶段按 prerequisites、资源和输出组生成波次。真正自动并行只能使用
 `efficiency execute` 读取 `kacha-efficiency-execution-plan`：每个任务必须声明
-`safeToAutoExecute=true`、本地输出、依赖、资源与只在本地执行的授权；执行经过
-主机资源锁和 `metrics run`，共享输出、越界输出、依赖环、未授权任务或已有输出
-直接阻断。MPS 与视频编码仍各为单槽，不为了“并行”抢资源。
+`safeToAutoExecute=true`、脚本 SHA、本地输出、依赖、资源与只在本地执行的授权；
+只运行策略登记且具有参数级校验器的确定性 Node 脚本。当前命令输出必须与声明
+输出完全一致，执行前后都拒绝越界或符号链接。执行经过主机资源锁和
+`metrics run`，共享输出、网络资源、内联命令、未登记脚本、依赖环、未授权任务
+或已有输出直接阻断。MPS 与视频编码仍各为单槽，不为了“并行”抢资源。
 
 高成本缓存只有同时具备源/输入 SHA、实现或模型 SHA、操作版本、参数、输出
-schema 和当前输出 SHA 才算 ready。适用缓存种类必须由当前阶段计划明确声明；
-未声明只能显示“适用性未知”，不得按缓存目录非空宣称已预热。
+schema、contract 内容键和当前输出 SHA 才算 ready；缓存路径中的符号链接不构成
+证据。阶段计划必须同时声明适用种类和本次任务预期的内容键；只声明种类不能用
+任意旧条目计算预热，覆盖率按当前预期 key 计算。`status/observe` 必须按当前输入
+重验计划和缓存，不得信任旧报告中的 pass。
 
 ```bash
 node scripts/kacha.mjs efficiency compare BASELINE-COHORT.json CANDIDATE-COHORT.json
 ```
 
-“效率提升”必须来自至少 8 个同源成对项目，基线和候选都有人审，并且语义、
-连接、字幕、视觉、声音和完整通看护栏全部通过；否则命令返回
+“效率提升”必须来自至少 8 个同源成对项目；两套 cohort ID 必须完全一致，源片、
+审片输出、指标、人审和六项护栏都要绑定当前文件身份，输出不可复用。基线和候选
+都有人审，并且语义、连接、字幕、视觉、声音和完整通看护栏全部通过；否则返回
 `insufficient_evidence`。完整合同见
 `docs/QUALITY_PRESERVING_EFFICIENCY_V8.md`。
 

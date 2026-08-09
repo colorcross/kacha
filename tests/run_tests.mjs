@@ -2772,6 +2772,31 @@ await test("V7 orchestrator starts source and script projects with recoverable m
   ) {
     throw new Error("orchestrator did not create a recoverable planning packet");
   }
+  const efficiencyPlanFile = path.join(sourceRoot, ".kacha", "efficiency-plan.json");
+  fs.writeFileSync(efficiencyPlanFile, "{invalid-json");
+  const blockedStatus = JSON.parse(expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "status", sourceRoot,
+  ]).stdout);
+  if (
+    blockedStatus.status !== "blocked"
+    || blockedStatus.nextAction?.id !== "refresh_efficiency_evidence"
+    || blockedStatus.efficiency?.validation?.status !== "blocked"
+  ) throw new Error("corrupt efficiency evidence was not surfaced as a recoverable blocker");
+  const blockedObservation = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "intelligence", "observe",
+    "--project-root", sourceRoot,
+  ]).stdout);
+  if (blockedObservation.efficiency?.status !== "blocked") {
+    throw new Error("observability trusted or crashed on a corrupt efficiency plan");
+  }
+  const recoveredStatus = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "run", sourceRoot,
+  ]).stdout);
+  if (
+    recoveredStatus.efficiency?.status !== "pass"
+    || !fs.existsSync(efficiencyPlanFile)
+    || readJson(efficiencyPlanFile).status !== "pass"
+  ) throw new Error("orchestrator did not recover a corrupt efficiency plan from current inputs");
 
   const scriptInput = path.join(temporary, "orchestrator-script.md");
   fs.writeFileSync(scriptInput, "# 中心问题\n\n用真实证据解释一个问题。\n");
@@ -2865,6 +2890,17 @@ await test("V8 efficiency plan selects current-evidence representative ranges an
       wave.stages.includes("rough_cut") && wave.stages.includes("dialogue_preprocess")
     ))
   ) throw new Error("V8 first-edit efficiency contract is incomplete");
+  const expectedCacheKey = "c".repeat(64);
+  const cacheBoundPlan = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "plan", root,
+    "--cues", cues,
+    "--applicable-cache-kinds", "asr",
+    "--expected-cache-keys", `asr:${expectedCacheKey}`,
+  ]).stdout).plan;
+  if (
+    cacheBoundPlan.cache?.keyBindingStatus !== "declared"
+    || cacheBoundPlan.cache?.expectedEntries?.[0]?.key !== expectedCacheKey
+  ) throw new Error("efficiency plan did not bind the current expected cache content key");
   const tamperedFile = path.join(root, "tampered-efficiency-plan.json");
   planned.qualityInvariants.fullCandidatePlaybackRequired = false;
   writeJson(tamperedFile, planned);
@@ -2880,6 +2916,51 @@ await test("V8 efficiency plan selects current-evidence representative ranges an
   ]);
   if (!stale.stdout.includes("efficiency plan input changed: cues")) {
     throw new Error("changed cue evidence did not invalidate the efficiency plan");
+  }
+  const refreshed = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "plan", root,
+    "--cues", cues,
+  ]).stdout).plan;
+  if (refreshed.cache?.expectedEntries?.[0]?.key !== expectedCacheKey) {
+    throw new Error("refresh silently discarded the current expected cache key registry");
+  }
+  refreshed.representativePreview.finalVideoEncodeBudget = 9;
+  const stable = structuredClone(refreshed);
+  delete stable.generatedAt;
+  delete stable.digest;
+  delete stable.status;
+  delete stable.validation;
+  refreshed.digest = sha256Value(stable);
+  writeJson(tamperedFile, refreshed);
+  const recomputedTamper = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "validate", tamperedFile,
+  ]);
+  if (!recomputedTamper.stdout.includes("encode budget was weakened")) {
+    throw new Error("a recomputed digest bypassed the immutable encode budget");
+  }
+  const malformedFile = path.join(root, "malformed-efficiency-plan.json");
+  writeJson(malformedFile, []);
+  const malformed = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "validate", malformedFile,
+  ]);
+  if (!malformed.stdout.includes("efficiency plan identity is invalid")) {
+    throw new Error("malformed efficiency plan crashed instead of returning blocked validation");
+  }
+  const evidenceRegistryFile = path.join(root, ".kacha", "efficiency-inputs.json");
+  fs.unlinkSync(evidenceRegistryFile);
+  fs.writeFileSync(currentPlanFile, "{invalid-json");
+  const unrecoverable = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "plan", root,
+  ]);
+  if (!unrecoverable.stderr.includes("no valid efficiency input registry")) {
+    throw new Error("corrupt plan silently discarded cues without an independent input registry");
+  }
+  const explicitlyRecovered = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "plan", root,
+    "--clear-cues", "--clear-delta",
+  ]).stdout).plan;
+  if (explicitlyRecovered.status !== "pass" || explicitlyRecovered.inputs.cues !== null) {
+    throw new Error("explicitly clearing both unavailable evidence inputs did not recover the plan");
   }
 }, "core");
 
@@ -2900,13 +2981,11 @@ await test("V8 incremental representative ranges cover every changed interval wi
     },
   });
   const deltaFile = path.join(root, "version-delta.json");
-  const intervals = [
-    { id: "a", startSeconds: 5, endSeconds: 8 },
-    { id: "b", startSeconds: 38, endSeconds: 41 },
-    { id: "c", startSeconds: 76, endSeconds: 80 },
-    { id: "d", startSeconds: 121, endSeconds: 124 },
-    { id: "e", startSeconds: 166, endSeconds: 170 },
-  ];
+  const intervals = [0, 5, 100, 105, 110].map((start, index) => ({
+    id: String.fromCharCode(97 + index),
+    startSeconds: start,
+    endSeconds: start + 1,
+  }));
   writeJson(deltaFile, {
     schemaVersion: "2.0",
     changeSet: {
@@ -2927,9 +3006,46 @@ await test("V8 incremental representative ranges cover every changed interval wi
       range.startSeconds <= interval.startSeconds && range.endSeconds >= interval.endSeconds
     ))) throw new Error(`changed interval ${interval.id} is not covered`);
   }
-  if (!ranges.some((range) => range.durationBudgetException)) {
-    throw new Error("distant interval grouping did not disclose its duration budget exception");
+  if (Math.max(...ranges.map((range) => range.durationSeconds)) > 15) {
+    throw new Error("range grouping created an avoidable long preview instead of minimizing total span");
   }
+  writeJson(deltaFile, {
+    schemaVersion: "2.0",
+    changeSet: {
+      types: ["visual_interval"],
+      scope: {
+        kind: "intervals",
+        intervals: [0, 50, 100, 150].map((start, index) => ({
+          id: `distant-${index + 1}`,
+          startSeconds: start,
+          endSeconds: start + 1,
+        })),
+      },
+    },
+  });
+  const disclosed = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "plan", root,
+    "--delta", deltaFile,
+  ]).stdout).plan;
+  if (!disclosed.representativePreview.ranges.some((range) => range.durationBudgetException)) {
+    throw new Error("an unavoidable long grouped range did not disclose its budget exception");
+  }
+  writeJson(deltaFile, {
+    schemaVersion: "2.0",
+    changeSet: {
+      types: ["style_change"],
+      scope: { kind: "full", intervals: [] },
+    },
+  });
+  const fullScope = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "plan", root,
+    "--delta", deltaFile,
+  ]).stdout).plan;
+  if (
+    fullScope.status !== "pass"
+    || fullScope.representativePreview.ranges.length !== 3
+    || !fullScope.representativePreview.ranges.every((range) => range.requiresHumanConfirmation)
+  ) throw new Error("full-scope style rework did not receive three explicit representative samples");
 }, "incremental");
 
 await test("V8 high-value cache audit requires source, implementation and output SHA evidence", () => {
@@ -2954,9 +3070,19 @@ await test("V8 high-value cache audit requires source, implementation and output
     "-e", "require('fs').writeFileSync(process.argv[1], JSON.stringify({text:'ok'}))",
     output,
   ]);
+  const kindRoot = path.join(root, ".kacha", "cache", "asr");
+  const cacheKey = fs.readdirSync(kindRoot).find((name) => !name.startsWith("."));
+  const unbound = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "cache-audit", root,
+    "--applicable-cache-kinds", "asr",
+  ]);
+  if (!unbound.stdout.includes("no expected content-addressed cache key")) {
+    throw new Error("cache audit treated an arbitrary ready entry as a current planned cache hit");
+  }
   const audited = JSON.parse(execute(process.execPath, [
     path.join(scripts, "kacha.mjs"), "efficiency", "cache-audit", root,
     "--applicable-cache-kinds", "asr",
+    "--expected-cache-keys", `asr:${cacheKey}`,
   ]).stdout).report;
   const asr = audited.kinds.find((item) => item.kind === "asr");
   if (
@@ -2965,18 +3091,43 @@ await test("V8 high-value cache audit requires source, implementation and output
     || audited.warmCoverage !== 1
     || asr?.readyEntries !== 1
   ) throw new Error("strong-fingerprint cache evidence was not accepted");
-  const kindRoot = path.join(root, ".kacha", "cache", "asr");
-  const cacheKey = fs.readdirSync(kindRoot).find((name) => !name.startsWith("."));
   const manifestFile = path.join(kindRoot, cacheKey, "manifest.json");
   const manifest = readJson(manifestFile);
-  manifest.contract.implementation = [];
+  const originalManifest = structuredClone(manifest);
+  manifest.contract.parameters.language = "tampered";
   writeJson(manifestFile, manifest);
+  const keyMismatch = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "cache-audit", root,
+    "--applicable-cache-kinds", "asr",
+    "--expected-cache-keys", `asr:${cacheKey}`,
+  ]);
+  if (!keyMismatch.stdout.includes("cache key does not match the contract digest")) {
+    throw new Error("cache audit accepted a contract that no longer matched its content key");
+  }
+  writeJson(manifestFile, originalManifest);
+  const missingImplementation = readJson(manifestFile);
+  missingImplementation.contract.implementation = [];
+  writeJson(manifestFile, missingImplementation);
   const failed = expectFailure(process.execPath, [
     path.join(scripts, "kacha.mjs"), "efficiency", "cache-audit", root,
     "--applicable-cache-kinds", "asr",
+    "--expected-cache-keys", `asr:${cacheKey}`,
   ]);
   if (!failed.stdout.includes("implementation SHA-256 evidence missing")) {
     throw new Error("cache audit did not disclose missing implementation evidence");
+  }
+  const linkedRoot = path.join(temporary, "efficiency-cache-symlink-v8");
+  const linkedTarget = path.join(temporary, "efficiency-cache-symlink-target-v8");
+  fs.mkdirSync(path.join(linkedRoot, ".kacha"), { recursive: true });
+  fs.mkdirSync(linkedTarget, { recursive: true });
+  fs.symlinkSync(linkedTarget, path.join(linkedRoot, ".kacha", "cache"));
+  const linkedFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "cache-audit", linkedRoot,
+    "--applicable-cache-kinds", "asr",
+    "--expected-cache-keys", `asr:${"b".repeat(64)}`,
+  ]);
+  if (!linkedFailure.stdout.includes("cache root is a symbolic link")) {
+    throw new Error("cache audit followed a symbolic-link cache root");
   }
 }, "core");
 
@@ -2986,6 +3137,8 @@ await test("V8 dependency executor runs safe parallel tasks through host locks a
   const firstOutput = path.join(root, "first.txt");
   const secondOutput = path.join(root, "second.txt");
   const contractFile = path.join(root, "execution-plan.json");
+  const routeScript = path.join(scripts, "route_references.mjs");
+  const commandSha256 = sha256File(routeScript);
   writeJson(contractFile, {
     schemaVersion: "1.0",
     kind: "kacha-efficiency-execution-plan",
@@ -2995,11 +3148,13 @@ await test("V8 dependency executor runs safe parallel tasks through host locks a
       upload: false,
       paidGeneration: false,
       publish: false,
+      overwriteSource: false,
     },
     tasks: [
       {
         id: "prepare-a",
-        argv: [process.execPath, "-e", "require('fs').writeFileSync(process.argv[1], 'a')", firstOutput],
+        argv: [process.execPath, routeScript, "--task", "proposal_review", "--stage", "inventory", "--output", firstOutput],
+        commandSha256,
         prerequisites: [],
         resources: ["cpuHeavy"],
         outputs: [firstOutput],
@@ -3008,7 +3163,8 @@ await test("V8 dependency executor runs safe parallel tasks through host locks a
       },
       {
         id: "prepare-b",
-        argv: [process.execPath, "-e", "require('fs').writeFileSync(process.argv[1], 'b')", secondOutput],
+        argv: [process.execPath, routeScript, "--task", "source_edit", "--stage", "inventory", "--output", secondOutput],
+        commandSha256,
         prerequisites: [],
         resources: ["cpuHeavy"],
         outputs: [secondOutput],
@@ -3026,8 +3182,8 @@ await test("V8 dependency executor runs safe parallel tasks through host locks a
     || executed.schedule.waves[0]?.parallel !== true
     || executed.results.length !== 2
     || metrics.events !== 2
-    || fs.readFileSync(firstOutput, "utf8") !== "a"
-    || fs.readFileSync(secondOutput, "utf8") !== "b"
+    || readJson(firstOutput).task !== "proposal_review"
+    || readJson(secondOutput).task !== "source_edit"
   ) throw new Error("safe task wave did not preserve execution, resource and telemetry evidence");
   const unsafeFile = path.join(root, "unsafe-execution-plan.json");
   const unsafe = readJson(contractFile);
@@ -3036,6 +3192,74 @@ await test("V8 dependency executor runs safe parallel tasks through host locks a
   expectFailure(process.execPath, [
     path.join(scripts, "kacha.mjs"), "efficiency", "execute", unsafeFile,
   ]);
+  const inlineFile = path.join(root, "inline-execution-plan.json");
+  const inline = readJson(contractFile);
+  inline.tasks = [{
+    ...inline.tasks[0],
+    id: "inline-code",
+    argv: [process.execPath, "-e", "process.exit(0)"],
+    outputs: [path.join(root, "inline.txt")],
+  }];
+  writeJson(inlineFile, inline);
+  const inlineFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "execute", inlineFile,
+  ]);
+  if (!inlineFailure.stderr.includes("inline code is forbidden")) {
+    throw new Error("efficiency executor accepted an inline arbitrary Node.js command");
+  }
+  const mismatchedOutputFile = path.join(root, "mismatched-output-plan.json");
+  const mismatchedOutput = readJson(contractFile);
+  mismatchedOutput.tasks = [{
+    ...mismatchedOutput.tasks[0],
+    id: "mismatched-output",
+    argv: [
+      process.execPath, routeScript, "--task", "proposal_review", "--stage", "inventory",
+      "--output", path.join(root, "undeclared.txt"),
+    ],
+    outputs: [path.join(root, "declared.txt")],
+  }];
+  writeJson(mismatchedOutputFile, mismatchedOutput);
+  const mismatchedFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "execute", mismatchedOutputFile,
+  ]);
+  if (!mismatchedFailure.stderr.includes("must exactly match its declared output")) {
+    throw new Error("efficiency executor accepted an undeclared command output path");
+  }
+  const unregisteredFile = path.join(root, "unregistered-execution-plan.json");
+  const unregistered = readJson(contractFile);
+  const unregisteredScript = path.join(scripts, "plan_incremental_build.mjs");
+  unregistered.tasks = [{
+    ...unregistered.tasks[0],
+    id: "unregistered-script",
+    argv: [process.execPath, unregisteredScript, "--help"],
+    commandSha256: sha256File(unregisteredScript),
+    outputs: [path.join(root, "unregistered.txt")],
+  }];
+  writeJson(unregisteredFile, unregistered);
+  const unregisteredFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "execute", unregisteredFile,
+  ]);
+  if (!unregisteredFailure.stderr.includes("not registered for deterministic execution")) {
+    throw new Error("efficiency executor accepted an unregistered bundled script");
+  }
+  const outside = path.join(temporary, "efficiency-symlink-outside.txt");
+  const linkedOutput = path.join(root, "linked-output.txt");
+  fs.symlinkSync(outside, linkedOutput);
+  const symlinkFile = path.join(root, "symlink-execution-plan.json");
+  const symlink = readJson(contractFile);
+  symlink.tasks = [{
+    ...symlink.tasks[0],
+    id: "symlink-output",
+    argv: [process.execPath, routeScript, "--task", "proposal_review", "--stage", "inventory", "--output", linkedOutput],
+    outputs: [linkedOutput],
+  }];
+  writeJson(symlinkFile, symlink);
+  const symlinkFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "execute", symlinkFile,
+  ]);
+  if (!symlinkFailure.stderr.includes("symbolic link")) {
+    throw new Error("efficiency executor accepted a broken output symlink");
+  }
 }, "core");
 
 await test("V8 efficiency comparison refuses claims before eight paired human-reviewed projects", () => {
@@ -3045,35 +3269,110 @@ await test("V8 efficiency comparison refuses claims before eight paired human-re
     "semanticIntegrity", "connectionPlayback", "subtitleAccuracy",
     "visualContinuity", "audioQuality", "fullCandidatePlayback",
   ];
-  const projects = (count, seconds, candidate = false) => Array.from({ length: count }, (_, index) => ({
-    projectId: `paired-${index + 1}`,
-    sourceSha256: sha256Value(`source-${index + 1}`),
-    wallSeconds: seconds + index,
-    videoEncodes: candidate ? 1 : 2,
-    humanReview: {
+  const mediaFixtures = Array.from({ length: 8 }, (_, index) => {
+    const source = path.join(root, `source-${index + 1}.mp4`);
+    const candidateOutput = path.join(root, `candidate-${index + 1}.mp4`);
+    execute("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-y",
+      "-f", "lavfi", "-i", "testsrc2=size=160x90:rate=10:duration=0.4",
+      "-f", "lavfi", "-i", `sine=frequency=${300 + index * 20}:sample_rate=48000:duration=0.4`,
+      "-shortest", "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+      "-c:a", "aac", source,
+    ]);
+    execute("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-y", "-i", source,
+      "-vf", "eq=brightness=0.02", "-c:v", "libx264", "-preset", "ultrafast",
+      "-pix_fmt", "yuv420p", "-c:a", "aac", candidateOutput,
+    ]);
+    return { source, candidateOutput };
+  });
+  const buildProject = (index, variant, seconds) => {
+    const projectId = `paired-${index + 1}`;
+    const source = fileIdentity(mediaFixtures[index].source);
+    const output = fileIdentity(
+      variant === "baseline" ? mediaFixtures[index].source : mediaFixtures[index].candidateOutput,
+    );
+    const reviewer = "contract-test-reviewer";
+    const evidenceRoot = path.join(root, "evidence", projectId, variant);
+    fs.mkdirSync(evidenceRoot, { recursive: true });
+    const humanFile = path.join(evidenceRoot, "human-review.json");
+    writeJson(humanFile, {
+      schemaVersion: "1.0",
+      kind: "kacha-efficiency-human-review-evidence",
+      variant,
+      projectId,
+      sourceSha256: source.sha256,
+      outputSha256: output.sha256,
+      reviewer,
+      reviewedAt: "2026-08-09T00:00:00.000Z",
       status: "pass",
-      reviewer: "real-human-slot",
-      evidenceSha256: sha256Value(`human-review-${candidate}-${index + 1}`),
-    },
-    metricsEvidenceSha256: sha256Value(`metrics-${candidate}-${index + 1}`),
-    guardrails: Object.fromEntries(requiredGuardrails.map((guardrail) => [guardrail, "pass"])),
-    guardrailEvidence: Object.fromEntries(requiredGuardrails.map((guardrail) => [
-      guardrail,
-      { sha256: sha256Value(`${guardrail}-${candidate}-${index + 1}`) },
-    ])),
-  }));
+    });
+    const wallSeconds = seconds + index;
+    const videoEncodes = variant === "candidate" ? 1 : 2;
+    const metricsFile = path.join(evidenceRoot, "metrics.json");
+    writeJson(metricsFile, {
+      schemaVersion: "1.0",
+      kind: "kacha-efficiency-metrics-evidence",
+      variant,
+      projectId,
+      sourceSha256: source.sha256,
+      outputSha256: output.sha256,
+      wallSeconds,
+      videoEncodes,
+    });
+    const guardrailEvidence = {};
+    for (const guardrail of requiredGuardrails) {
+      const file = path.join(evidenceRoot, `${guardrail}.json`);
+      writeJson(file, {
+        schemaVersion: "1.0",
+        kind: "kacha-efficiency-guardrail-evidence",
+        variant,
+        projectId,
+        sourceSha256: source.sha256,
+        outputSha256: output.sha256,
+        guardrail,
+        status: "pass",
+      });
+      guardrailEvidence[guardrail] = fileIdentity(file);
+    }
+    return {
+      projectId,
+      sourceSha256: source.sha256,
+      source,
+      outputSha256: output.sha256,
+      output,
+      wallSeconds,
+      videoEncodes,
+      humanReview: {
+        status: "pass",
+        reviewer,
+        evidence: fileIdentity(humanFile),
+      },
+      metricsEvidence: fileIdentity(metricsFile),
+      guardrails: Object.fromEntries(requiredGuardrails.map((guardrail) => [guardrail, "pass"])),
+      guardrailEvidence,
+    };
+  };
+  const baselineProjects = Array.from({ length: 8 }, (_, index) => buildProject(index, "baseline", 100));
+  const candidateProjects = Array.from({ length: 8 }, (_, index) => buildProject(index, "candidate", 80));
+  const cohort = (variant, projects) => ({
+    schemaVersion: "1.0",
+    kind: "kacha-efficiency-evidence-cohort",
+    variant,
+    projects,
+  });
   const baselineFile = path.join(root, "baseline.json");
   const candidateFile = path.join(root, "candidate.json");
-  writeJson(baselineFile, { projects: projects(7, 100) });
-  writeJson(candidateFile, { projects: projects(7, 80, true) });
+  writeJson(baselineFile, cohort("baseline", baselineProjects.slice(0, 7)));
+  writeJson(candidateFile, cohort("candidate", candidateProjects.slice(0, 7)));
   const insufficient = expectFailure(process.execPath, [
     path.join(scripts, "kacha.mjs"), "efficiency", "compare", baselineFile, candidateFile,
   ]);
   if (!insufficient.stdout.includes("paired projects 7 < 8")) {
     throw new Error("efficiency claim gate did not explain its minimum cohort requirement");
   }
-  writeJson(baselineFile, { projects: projects(8, 100) });
-  writeJson(candidateFile, { projects: projects(8, 80, true) });
+  writeJson(baselineFile, cohort("baseline", baselineProjects));
+  writeJson(candidateFile, cohort("candidate", candidateProjects));
   const supported = JSON.parse(execute(process.execPath, [
     path.join(scripts, "kacha.mjs"), "efficiency", "compare", baselineFile, candidateFile,
   ]).stdout);
@@ -3094,14 +3393,27 @@ await test("V8 efficiency comparison refuses claims before eight paired human-re
   if (!duplicated.stdout.includes("distinct source groups")) {
     throw new Error("duplicate source groups were counted as separate paired projects");
   }
-  writeJson(baselineFile, { projects: projects(8, 100) });
-  writeJson(candidateFile, { projects: projects(8, 80, true) });
+  writeJson(baselineFile, cohort("baseline", baselineProjects));
+  writeJson(candidateFile, cohort("candidate", candidateProjects));
   const regressed = readJson(candidateFile);
   regressed.projects[0].guardrails.semanticIntegrity = "fail";
   writeJson(candidateFile, regressed);
   expectFailure(process.execPath, [
     path.join(scripts, "kacha.mjs"), "efficiency", "compare", baselineFile, candidateFile,
   ]);
+  writeJson(candidateFile, cohort("candidate", candidateProjects));
+  const fabricated = readJson(candidateFile);
+  fabricated.projects[0].metricsEvidence = {
+    path: path.join(root, "missing-metrics.json"),
+    sha256: "a".repeat(64),
+  };
+  writeJson(candidateFile, fabricated);
+  const fabricatedFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "efficiency", "compare", baselineFile, candidateFile,
+  ]);
+  if (!fabricatedFailure.stdout.includes("current file identity changed")) {
+    throw new Error("formatted but non-file-backed metrics evidence supported an efficiency claim");
+  }
 }, "core");
 
 await test("V7 release review binds eleven human checks to the current final video", () => {
