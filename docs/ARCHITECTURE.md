@@ -21,6 +21,11 @@ V6 开关、项目文件和唯一下一步。`config/workflow-recipes.json` 把�
 映射为“方案确认、首剪确认、成片审阅、交付与返工”四个用户里程碑。
 `start/run/resume/status` 是同一状态机入口；对话中断不能靠模型记忆重建进度。
 
+V8 在项目状态旁维护 `.kacha/efficiency-plan.json` 与
+`.kacha/cache-audit.json`。它从当前 cues/version delta 生成实际代表区间，
+把十三阶段编译为带资源容量的 DAG 波次，并将自动任务包在主机资源锁和遥测内。
+效率计划不是质量豁免：完整候选通看、一次最高质量终编和发布门禁保持强制。
+
 ### `contentProject + content package`
 
 没有视频时先建立 `content-spine`、`fact-check-tasks`、`recording-plan`、
@@ -225,6 +230,19 @@ stage packet + transcript window + semantic cues
 模型只负责意图、内容结构、候选选择和短预览比较；文件身份、状态、依赖、编码、
 缓存和技术 QC 由代码负责。实现和运维命令见
 `docs/PERFORMANCE_TOKEN_STABILITY_V5.md`。
+
+## V8 质量不降级效率层
+
+`quality_efficiency.mjs` 提供六类动作：
+
+- `plan/validate`：风险、首剪/增量代表区间和不可关闭质量不变量；
+- `schedule/execute`：依赖、资源、输出冲突和本地执行授权；
+- `cache-audit`：输入、实现、参数、输出 schema 与产物 SHA 的强指纹证据；
+- `compare`：至少八个同源成对真人项目的效率声明门禁。
+
+V3 增量计划复用同一选择器，因此 CLI 独立计划和生产增量计划不会出现两套区间
+逻辑。项目页与统一审片观察区读取同一摘要。完整合同见
+[V8 质量不降级效率](QUALITY_PRESERVING_EFFICIENCY_V8.md)。
 
 要求 BGM 的最终 QC 不止检查独立 stem：它先用 dialogue/BGM/SFX 重建 mix，
 再比较最终视频解码音频与 mix stem 的残差信噪比。因此“组件文件正确但最终

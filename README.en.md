@@ -105,6 +105,11 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Records wall time, measured/estimated token provenance, cache hits, render
   range, video encode count, artifacts, and redacted logs. Heavy GPU/encode
   leases are host-scoped across projects.
+- Builds a V8 quality-preserving efficiency plan from current evidence: exact
+  representative ranges, dependency/resource waves, strong-fingerprint cache
+  readiness, and mandatory full-candidate playback. It refuses efficiency
+  claims before eight same-source, human-reviewed pairs pass every critical
+  quality guardrail.
 - Proves required BGM reached the final file by measuring audibility,
   reconstructing component stems, and comparing decoded final audio with the
   declared mix stem.

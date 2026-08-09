@@ -150,7 +150,7 @@ export const zhContent: SiteContent = {
     titleLead: "从脚本或素材，",
     titleAccent: "到可以发布的成片。",
     summary:
-      "咔嚓把内容策划、结构精剪、人声处理、视觉包装和增量返工组织成可恢复的本地项目；四个里程碑、统一审片与真实编辑评测，让每个关键判断都有下一步和证据。",
+      "咔嚓把内容策划、结构精剪、人声处理、视觉包装和增量返工组织成可恢复的本地项目；代表区间减少试错，安全并行缩短等待，完整审片和真实编辑评测守住质量。",
     primaryCta: "看看能解决什么",
     secondaryCta: "快速安装",
     contracts: ["素材优先留在本地", "不剪断完整语义", "每次修改可追踪"],
@@ -162,7 +162,7 @@ export const zhContent: SiteContent = {
     { value: "LOCAL", label: "默认本地处理素材" },
     { value: "FULL", label: "覆盖完整后期流程" },
     { value: "DELTA", label: "返工只改受影响层" },
-    { value: "131", label: "自动回归检查" },
+    { value: "136", label: "自动回归检查" },
   ],
   problems: {
     title: "真正耗时间的，不只是拖动时间线。",
@@ -220,8 +220,8 @@ export const zhContent: SiteContent = {
       {
         kicker: "INCREMENTAL REWORK",
         title: "反馈来了，不必推倒重来",
-        body: "把“字幕上移”“BGM 再低一点”这类反馈编译成差异，只重建真正受影响的层。",
-        proof: "冻结无关音视频流，并用摘要证明它们没有变化。",
+        body: "把“字幕上移”“BGM 再低一点”这类反馈编译成差异，最多三段预览覆盖全部变化，只重建真正受影响的层。",
+        proof: "冻结无关音视频流，强指纹复用高成本产物，并用摘要证明它们没有变化。",
       },
     ],
   },
@@ -321,12 +321,17 @@ export const zhContent: SiteContent = {
         title: "素材缺口收件箱",
         body: "逐条区分真实证据、用户素材和说明性生成候选；许可、来源、文件身份和重新索引缺一不可。",
       },
+      {
+        kicker: "QUALITY-PRESERVING EFFICIENCY",
+        title: "快在试错和等待，不省最终判断",
+        body: "当前证据选择开场、典型信息、复杂视觉与结尾；依赖独立的工作按资源波次执行，完整候选仍须正常速度通看。",
+      },
     ],
   },
   workflow: {
     title: "从脚本或素材开始，四个可确认节点。",
     intro:
-      "十三个专业阶段被收束成四个用户里程碑。每次停下都保存输入、版本、证据和下一步；没有真实证据就不会跳到“已完成”。",
+      "十三个专业阶段被收束成四个用户里程碑，并编译成十个依赖波次。每次停下都保存输入、版本、证据和下一步；没有真实证据就不会跳到“已完成”。",
     steps: [
       { title: "方案确认", body: "冻结运行版本、输入身份、栏目与授权；完成内容主线、转写、全片导演和素材缺口。", stages: "库存盘点 · 转写与结构", state: "CONFIRM" },
       { title: "首剪确认", body: "完成粗剪、人声预处理、所有连接点检查和精剪；语义、口型、动作与节奏一起看。", stages: "粗剪 · 人声 · 连接 · 精剪", state: "CONFIRM" },
@@ -450,7 +455,7 @@ export const enContent: SiteContent = {
     titleLead: "From script or footage",
     titleAccent: "to a publishable cut.",
     summary:
-      "Kacha turns content planning, editing, mixing, packaging, and revision into a recoverable local project. Four milestones, one review center, and human editorial evidence keep every high-impact decision inspectable.",
+      "Kacha turns content planning, editing, mixing, packaging, and revision into a recoverable local project. Representative ranges reduce iteration, safe waves reduce waiting, and full review preserves quality.",
     primaryCta: "See what it solves",
     secondaryCta: "Install Kacha",
     contracts: ["Media stays local by default", "Complete meaning stays intact", "Every change is traceable"],
@@ -462,7 +467,7 @@ export const enContent: SiteContent = {
     { value: "LOCAL", label: "local-first media handling" },
     { value: "FULL", label: "end-to-end post workflow" },
     { value: "DELTA", label: "affected layers only" },
-    { value: "131", label: "regression checks" },
+    { value: "136", label: "regression checks" },
   ],
   problems: {
     title: "The timeline is not the only expensive part.",
@@ -520,8 +525,8 @@ export const enContent: SiteContent = {
       {
         kicker: "INCREMENTAL REWORK",
         title: "Feedback without a full rebuild",
-        body: "Compile notes such as “raise the captions” or “lower the music” into a delta and rebuild only the affected layer.",
-        proof: "Freeze unrelated streams and prove they did not change.",
+        body: "Compile notes into a delta, cover every change in at most three preview groups, and rebuild only the affected layer.",
+        proof: "Freeze unrelated streams, strongly fingerprint expensive artifacts, and prove unchanged layers stayed unchanged.",
       },
     ],
   },
@@ -621,12 +626,17 @@ export const enContent: SiteContent = {
         title: "Asset gap inbox",
         body: "Separate factual evidence, user-provided media, and illustrative generation candidates. License, provenance, file identity, and reindexing remain mandatory.",
       },
+      {
+        kicker: "QUALITY-PRESERVING EFFICIENCY",
+        title: "Faster iteration and waiting—not weaker judgment",
+        body: "Current evidence selects opening, typical, complex, and ending ranges. Independent work runs in resource-safe waves while the full candidate still requires a normal-speed watch-through.",
+      },
     ],
   },
   workflow: {
     title: "Start with a script or footage. Confirm four milestones.",
     intro:
-      "Thirteen professional stages collapse into four user checkpoints. Every pause preserves inputs, runtime, evidence, and the next action; missing evidence never becomes a completion claim.",
+      "Thirteen professional stages collapse into four user checkpoints and ten dependency waves. Every pause preserves inputs, runtime, evidence, and the next action; missing evidence never becomes a completion claim.",
     steps: [
       { title: "Proposal confirmed", body: "Freeze runtime, source identity, show, and authority; complete the content spine, transcript, director plan, and asset gaps.", stages: "inventory · transcript · structure", state: "CONFIRM" },
       { title: "First cut confirmed", body: "Complete rough cut, dialogue preprocessing, every connection check, and fine cut across meaning, lip sync, action, and rhythm.", stages: "rough cut · dialogue · connections · fine cut", state: "CONFIRM" },

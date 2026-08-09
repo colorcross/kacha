@@ -14,6 +14,11 @@ import {
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
 import { buildAssetInbox } from "./asset_inbox.mjs";
+import {
+  auditHighValueCache,
+  buildEfficiencyPlan,
+  buildSchedule,
+} from "./quality_efficiency.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(scriptDirectory, "..");
@@ -240,6 +245,7 @@ function buildManifest({ projectId, projectRoot, input, runtimeLock }) {
       assetGapPlan: rel(path.join(contracts, "asset-gap-plan.json")),
       temporalPerceptionAudit: rel(path.join(contracts, "temporal-perception-audit.json")),
       semanticReviewSession: rel(path.join(projectRoot, ".kacha", "review", "review-session.json")),
+      qualityEfficiency: rel(path.join(projectRoot, ".kacha", "efficiency-plan.json")),
       netstyleTimelines: [],
       visualBreathingTimelines: [],
       captionTimelines: [],
@@ -443,6 +449,8 @@ export function initializeProject({
       assetInbox: path.join(baseRoot, ".kacha", "asset-inbox.json"),
       reviewRoot: path.join(baseRoot, ".kacha", "review"),
       metricsRoot: path.join(baseRoot, ".kacha", "metrics"),
+      efficiencyPlan: path.join(baseRoot, ".kacha", "efficiency-plan.json"),
+      cacheAudit: path.join(baseRoot, ".kacha", "cache-audit.json"),
     },
     lifecycle: {
       status: !runtimeAllowed
@@ -455,6 +463,14 @@ export function initializeProject({
   };
   state.digest = sha256Value({ ...state, digest: undefined, updatedAt: undefined });
   writeJsonAtomic(orchestrationFile, state);
+  buildEfficiencyPlan({
+    projectRoot: baseRoot,
+    outputPath: state.files.efficiencyPlan,
+  });
+  auditHighValueCache({
+    projectRoot: baseRoot,
+    outputPath: state.files.cacheAudit,
+  });
   appendEvent(baseRoot, {
     type: "project_initialized",
     projectId: resolvedProjectId,
@@ -729,6 +745,16 @@ export function projectStatus(input, { refreshRuntime = true, home = os.homedir(
     && fs.existsSync(orchestration.files.assetInbox)
     ? readJson(orchestration.files.assetInbox)
     : null;
+  const efficiencyFile = orchestration.files?.efficiencyPlan
+    ?? path.join(projectRoot, ".kacha", "efficiency-plan.json");
+  const cacheAuditFile = orchestration.files?.cacheAudit
+    ?? path.join(projectRoot, ".kacha", "cache-audit.json");
+  const efficiencyPlan = fs.existsSync(efficiencyFile)
+    ? readJson(efficiencyFile)
+    : null;
+  const cacheAudit = fs.existsSync(cacheAuditFile)
+    ? readJson(cacheAuditFile)
+    : null;
   return {
     schemaVersion: "1.0",
     status: nextAction?.state === "blocked" ? "blocked" : "pass",
@@ -767,6 +793,20 @@ export function projectStatus(input, { refreshRuntime = true, home = os.homedir(
         ].includes(item.status)),
       },
       nextAction: assetInbox.nextAction,
+    } : null,
+    efficiency: efficiencyPlan ? {
+      status: efficiencyPlan.status,
+      policyVersion: efficiencyPlan.policyVersion,
+      mode: efficiencyPlan.mode,
+      risk: efficiencyPlan.risk,
+      representativePreview: efficiencyPlan.representativePreview,
+      schedule: efficiencyPlan.schedule,
+      cache: cacheAudit ?? {
+        status: "evidence_needed",
+        applicabilityStatus: efficiencyPlan.cache?.applicabilityStatus ?? "unknown",
+        productionReady: false,
+      },
+      evidenceBoundary: efficiencyPlan.evidenceBoundary,
     } : null,
     authorityBoundary: orchestration.executionAuthorization,
   };
@@ -931,6 +971,58 @@ function commandArgv(action) {
     : null;
 }
 
+function instrumentedAction(projectRoot, action, argv) {
+  const recipe = (readJson(recipeFile).stages ?? []).find((stage) => stage.id === action.id);
+  const hostResources = (recipe?.resources ?? []).filter((resource) => (
+    ["cpuHeavy", "mps", "videoEncode", "network", "ioHeavy"].includes(resource)
+  ));
+  const guardedCommand = hostResources.length > 0
+    ? [
+        process.execPath,
+        path.join(scriptDirectory, "resource_scheduler.mjs"),
+        "run",
+        "--project-root", projectRoot,
+        ...hostResources.flatMap((resource) => ["--resource", resource]),
+        "--purpose", `orchestrator:${action.id}`,
+        "--",
+        ...argv,
+      ]
+    : argv;
+  return [
+    process.execPath,
+    [
+      path.join(scriptDirectory, "run_telemetry.mjs"),
+      "run",
+      "--stage", action.id,
+      "--project-root", projectRoot,
+      "--workflow", "first_edit",
+      "--render-scope", action.owner === "render_engine" ? "range" : "none",
+      "--qc-scope", action.id === "final_qc" ? "full" : "none",
+      "--",
+      ...guardedCommand,
+    ],
+  ];
+}
+
+function refreshEfficiencyEvidence(projectRoot, orchestration) {
+  const efficiency = buildEfficiencyPlan({
+    projectRoot,
+    outputPath: orchestration.files?.efficiencyPlan,
+  });
+  const cache = auditHighValueCache({
+    projectRoot,
+    applicableKinds: efficiency.plan.cache?.applicableKinds ?? [],
+    outputPath: orchestration.files?.cacheAudit,
+  });
+  appendEvent(projectRoot, {
+    type: "efficiency_evidence_refreshed",
+    plan: fileIdentity(efficiency.output),
+    cache: fileIdentity(cache.output),
+    speedImprovementClaimed: false,
+  });
+  return { efficiency, cache };
+}
+
 export function runProject(input, {
   confirmExecute = false,
   acceptRuntimeUpdate = false,
@@ -996,6 +1088,7 @@ export function runProject(input, {
       orchestration.lifecycle = { ...orchestration.lifecycle, status: "planning" };
       writeOrchestration(loaded.file, orchestration);
       appendEvent(projectRoot, { type: "planning_packet_ready", packet });
+      refreshEfficiencyEvidence(projectRoot, readOrchestration(projectRoot).value);
       action = { ...action, packet: packet.path, packetSha256: packet.sha256 };
       return { ...projectStatus(projectRoot, { home }), nextAction: action };
     }
@@ -1005,6 +1098,7 @@ export function runProject(input, {
       orchestration.lifecycle = { ...orchestration.lifecycle, status: "awaiting_content_review" };
       writeOrchestration(loaded.file, orchestration);
       appendEvent(projectRoot, { type: "content_package_ready", contentPackage });
+      refreshEfficiencyEvidence(projectRoot, readOrchestration(projectRoot).value);
       return {
         ...projectStatus(projectRoot, { home }),
         contentPackage,
@@ -1017,7 +1111,8 @@ export function runProject(input, {
       const automaticOwner = action?.owner === "agent"
         || (includeRender && action?.owner === "render_engine");
       if (!action?.safeToAutoExecute || !automaticOwner || !argv) break;
-      const result = run(argv[0], argv.slice(1), { cwd: projectRoot });
+      const [command, commandArguments] = instrumentedAction(projectRoot, action, argv);
+      const result = run(command, commandArguments, { cwd: projectRoot });
       const record = {
         id: action.id,
         owner: action.owner,
@@ -1048,6 +1143,7 @@ export function runProject(input, {
       completionBoundary: action?.completionBoundary ?? null,
     };
     writeOrchestration(loaded.file, orchestration);
+    refreshEfficiencyEvidence(projectRoot, readOrchestration(projectRoot).value);
     return { ...projectStatus(projectRoot, { home }), executed, nextAction: action };
   } finally {
     release();
@@ -1079,13 +1175,28 @@ export function validateRecipeRegistry() {
     if (!Array.isArray(stage.evidence) || stage.evidence.length === 0) {
       errors.push(`阶段 ${stage.id} 缺少 evidence`);
     }
+    if (!Array.isArray(stage.prerequisites)) {
+      errors.push(`阶段 ${stage.id} 缺少 prerequisites`);
+    }
+    if (!Array.isArray(stage.resources) || stage.resources.length === 0) {
+      errors.push(`阶段 ${stage.id} 缺少 resources`);
+    }
+    if (typeof stage.parallelSafe !== "boolean") {
+      errors.push(`阶段 ${stage.id} 缺少 parallelSafe`);
+    }
+    if (!Array.isArray(stage.outputGroups) || stage.outputGroups.length === 0) {
+      errors.push(`阶段 ${stage.id} 缺少 outputGroups`);
+    }
   }
+  const schedule = buildSchedule(registry);
+  errors.push(...schedule.errors);
   return {
     schemaVersion: "1.0",
     status: errors.length === 0 ? "pass" : "blocked",
     registry: fileIdentity(recipeFile),
     stages: stageIds.length,
     milestones: registry.milestones?.length ?? 0,
+    schedule,
     errors,
   };
 }

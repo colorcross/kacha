@@ -52,6 +52,8 @@
 | 完整工作流 | 从方案、精剪、声音、视觉、字幕一直走到候选版与发布门禁 |
 | 增量返工 | 通过依赖图、产物指纹和冻结流哈希减少重复渲染 |
 | 返工渲染预算 | 参数探索只跑代表区间；每版本最多一次整片代理、一次正式编码、一次完整 QC |
+| 质量不降级效率 | 当前证据选择首剪/增量代表区间，按依赖和资源生成安全波次；完整候选通看保持强制 |
+| 效率证据门禁 | 至少 8 个同源成对真人审片项目且六项关键护栏无退化，才允许宣称效率提升 |
 | 一次正式编码 | EDL、动效、字幕和混音编译成统一 Render Graph，并冻结所有输入内容身份 |
 | 高成本复用 | ASR、人声分离、蒙版、Beauty、样式帧和生成素材按模型/实现强指纹缓存 |
 | 弱模型稳定生产 | 五种紧凑 packet + 十三阶段文件证据状态机，减少上下文与临场猜测 |
@@ -81,7 +83,7 @@
 核心资源、10 种转场、5 种开场、5 种画面呼吸运动、7 种口播字幕布局，以及
 从 6 条参考视频中验证出的 33 种语义网感机制。机制可从最终带时间文稿生成
 帧级计划、进入完整视频渲染，并通过摘要、资源、时序与媒体保真门禁。
-当前仓库完整回归为 131 项；四套图库另有跨风格重复、同风格未声明近似构图、
+当前仓库完整回归为 136 项；四套图库另有跨风格重复、同风格未声明近似构图、
 人物头部碰撞、黑块、字体和动效合同专项 QC。当前提交的四库报告中上述问题均为 0。
 
 <p align="center">
@@ -100,6 +102,7 @@
 [行者风 2.0](docs/XINGZHE_STYLE_V2.md)和
 [四风格剪辑语法](docs/FOUR_STYLE_EDITING_GRAMMARS.md)、
 [V7 实施状态与证据边界](docs/V7_IMPLEMENTATION_STATUS_2026-08-09.md)、
+[V8 质量不降级效率](docs/QUALITY_PRESERVING_EFFICIENCY_V8.md)、
 [效果参考图库](design/reference-gallery/xingzhe-v2/index.html)。
 
 ## 最快安装
@@ -286,6 +289,7 @@ node scripts/kacha.mjs doctor --profile core
 | [配置说明](docs/CONFIGURATION.md) | 用户、项目、本机和密钥配置 |
 | [架构说明](docs/ARCHITECTURE.md) | 工作流、证据链与模块边界 |
 | [性能与弱模型稳定生产](docs/PERFORMANCE_TOKEN_STABILITY_V5.md) | 一次编码、局部预览、缓存、Token 和审计 |
+| [质量不降级效率 V8](docs/QUALITY_PRESERVING_EFFICIENCY_V8.md) | 风险、代表区间、依赖波次、强指纹缓存与成对效率证据 |
 | [V6 智能剪辑证据闭环](docs/INTELLIGENT_EDITING_V6.md) | 全片导演、素材缺口、语义审片、偏好学习、编辑评测、NLE 交换与可观测性 |
 | [V6 全面优化实施状态](docs/V6_IMPLEMENTATION_STATUS_2026-08-08.md) | 已实施范围、生产门禁、验证证据、依赖安全例外与真实项目待办 |
 | [视频设计系统](docs/VIDEO_DESIGN_SYSTEM_V1.md) | 视觉 token、组件、场景和 QC |

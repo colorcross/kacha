@@ -9,6 +9,10 @@ import {
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
 import { loadKachaConfig } from "./kacha_config.mjs";
+import {
+  selectIncrementalRepresentativeRanges,
+  validateEfficiencyPolicy,
+} from "./quality_efficiency.mjs";
 
 const ALL_LAYERS = [
   "visual",
@@ -370,10 +374,12 @@ const fullDuration = Number(context.source.media.durationSeconds);
 const affected = affectedDuration(delta, fullDuration);
 const handleFrames = Number(delta.render.handleFrames);
 const handleSeconds = handleFrames / Number(context.source.media.fps);
+const representativeRanges = selectIncrementalRepresentativeRanges(delta, fullDuration);
 const inputHashes = {
   projectContext: sha256File(contextFile),
   versionDelta: sha256File(deltaFile),
   artifactIndex: sha256File(indexFile),
+  qualityEfficiencyPolicy: validateEfficiencyPolicy().policy.sha256,
 };
 let generatedAt = new Date().toISOString();
 if (fs.existsSync(outputFile)) {
@@ -384,6 +390,7 @@ if (fs.existsSync(outputFile)) {
       && previous.inputHashes?.projectContext === inputHashes.projectContext
       && previous.inputHashes?.versionDelta === inputHashes.versionDelta
       && previous.inputHashes?.artifactIndex === inputHashes.artifactIndex
+      && previous.inputHashes?.qualityEfficiencyPolicy === inputHashes.qualityEfficiencyPolicy
     ) {
       generatedAt = previous.generatedAt;
     }
@@ -416,6 +423,7 @@ const plan = {
       audio: hasVideoOutput && !audioChanged,
     },
     intervals: delta.changeSet.scope.intervals ?? [],
+    representativeRanges,
     handleFrames,
     handleSeconds: Number(handleSeconds.toFixed(6)),
     finalAssemblyRequired: ["segment_rebuild", "full_rebuild"].includes(
@@ -426,6 +434,7 @@ const plan = {
       representativeRangeCount: {
         minimum: renderBudget.representativeRangeMinimum,
         maximum: renderBudget.representativeRangeMaximum,
+        planned: representativeRanges.length,
       },
       representativeApprovalRequired:
         renderBudget.requireRepresentativeApprovalBeforeFullPreview,
@@ -440,6 +449,15 @@ const plan = {
         "正式版本最多一次视频编码；同 Render Graph 必须零编码复用",
         "candidate 只做 delta QC；完整 QC 只在 release_candidate 执行一次",
       ],
+      changeCoverage: {
+        required: delta.changeSet.scope.kind === "intervals",
+        covered: (delta.changeSet.scope.intervals ?? []).every((interval) => (
+          representativeRanges.some((range) => (
+            range.startSeconds <= Number(interval.startSeconds)
+            && range.endSeconds >= Number(interval.endSeconds)
+          ))
+        )),
+      },
     },
   },
   artifactPlan: {

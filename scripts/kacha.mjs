@@ -60,6 +60,7 @@ function usage() {
       + "  kacha.mjs nle-app detect|session|record|validate [options]\n"
       + "  kacha.mjs install status|sync [options]\n"
       + "  kacha.mjs cache key|run|inspect [options]\n"
+      + "  kacha.mjs efficiency validate-policy|plan|validate|schedule|execute|cache-audit|compare [options]\n"
       + "  kacha.mjs transcribe INPUT --output TRANSCRIPT.json [options]\n"
       + "  kacha.mjs transcript index|slice TRANSCRIPT.json [options]\n"
       + "  kacha.mjs masks INPUT --output-dir DIR [options]\n"
@@ -170,6 +171,7 @@ const delegatedCommands = {
   "nle-app": "nle_application_validation.mjs",
   install: "kacha_install.mjs",
   cache: "artifact_cache.mjs",
+  efficiency: "quality_efficiency.mjs",
   transcribe: "transcribe_local.mjs",
   transcript: "transcript_window.mjs",
   masks: "generate_masks_cached.mjs",
@@ -248,6 +250,14 @@ function gatePlanV2() {
   );
   invoke("validate_edit_proposal.mjs", [proposal]);
   invoke("validate_edit_plan.mjs", [editPlan]);
+  if (project.plans.qualityEfficiency) {
+    const qualityEfficiency = requireProjectPath(
+      projectFile,
+      project.plans.qualityEfficiency,
+      "plans.qualityEfficiency",
+    );
+    invoke("quality_efficiency.mjs", ["validate", qualityEfficiency]);
+  }
   const proposalPlan = readJson(proposal);
   if (
     proposalPlan.authorization?.canExecute === true

@@ -263,7 +263,7 @@ $("learnPreferences").addEventListener("click", async () => {
 $("loadObserve").addEventListener("click", async () => {
   try {
     const result = await api("/api/observe", { projectRoot: $("projectRoot").value.trim() });
-    $("observeResult").textContent = JSON.stringify({ jobs: result.jobs, metrics: result.metrics, eta: result.eta, cost: result.cost, disk: result.disk }, null, 2);
+    $("observeResult").textContent = JSON.stringify({ jobs: result.jobs, metrics: result.metrics, efficiency: result.efficiency, eta: result.eta, cost: result.cost, disk: result.disk }, null, 2);
   } catch (error) { toast(error.message, true); }
 });
 $("reviewVideo").addEventListener("ratechange", () => {

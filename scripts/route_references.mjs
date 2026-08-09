@@ -129,6 +129,12 @@ const MODULE_REFERENCES = {
     "references/incremental-workflow.md",
     "references/capability-coverage-and-rework-budget.md",
     "docs/PERFORMANCE_TOKEN_STABILITY_V5.md",
+    "docs/QUALITY_PRESERVING_EFFICIENCY_V8.md",
+  ],
+  efficiency: [
+    "docs/QUALITY_PRESERVING_EFFICIENCY_V8.md",
+    "docs/PERFORMANCE_TOKEN_STABILITY_V5.md",
+    "references/incremental-workflow.md",
   ],
   low_model: [
     "references/agent-execution.md",

@@ -1052,6 +1052,28 @@ export function observeProject(projectRoot) {
       : { status: "unavailable", reason: "当前任务没有可靠的阶段进度分母" },
     cost: { status: "unavailable", reason: "没有实测 provider 费用时不按 Token 猜价格" },
     disk,
+    efficiency: (() => {
+      const planFile = path.join(root, ".kacha", "efficiency-plan.json");
+      const cacheFile = path.join(root, ".kacha", "cache-audit.json");
+      const plan = fs.existsSync(planFile) ? readJson(planFile) : null;
+      const cache = fs.existsSync(cacheFile) ? readJson(cacheFile) : null;
+      return plan ? {
+        policyVersion: plan.policyVersion,
+        status: plan.status,
+        risk: plan.risk,
+        representativeRanges: plan.representativePreview?.ranges?.length ?? 0,
+        fullCandidatePlaybackRequired: plan.representativePreview?.fullCandidatePlaybackRequired === true,
+        finalVideoEncodeBudget: plan.representativePreview?.finalVideoEncodeBudget ?? null,
+        parallelWaves: plan.schedule?.parallelWaves ?? 0,
+        cache: cache ? {
+          status: cache.status,
+          productionReady: cache.productionReady,
+          warmCoverage: cache.warmCoverage,
+          applicabilityStatus: cache.applicabilityStatus,
+        } : null,
+        speedImprovementClaimed: plan.evidenceBoundary?.speedImprovementClaimed === true,
+      } : { status: "unavailable" };
+    })(),
     integrity: {
       status: warnings.length === 0 ? "pass" : "degraded",
       warnings,

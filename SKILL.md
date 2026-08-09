@@ -57,6 +57,47 @@ node scripts/kacha.mjs run /path/to/content-project --confirm-execute
 事实或素材未解决、内容未人工批准时，`handoff` 不得建立正式视频项目。完整
 合同见 `docs/PRODUCTION_ORCHESTRATION_V7.md`。
 
+## V8 质量不降级效率合同
+
+每个视频项目在 `start` 时自动建立 `.kacha/efficiency-plan.json` 和
+`.kacha/cache-audit.json`。Agent 不得只写“先看几个片段”或“可并行处理”，
+必须把区间、风险、依赖、资源和证据落成可执行合同：
+
+```bash
+node scripts/kacha.mjs efficiency plan PROJECT \
+  --cues CURRENT_CUES.json \
+  --applicable-cache-kinds asr,source_separation,mask
+node scripts/kacha.mjs efficiency validate PROJECT/.kacha/efficiency-plan.json
+node scripts/kacha.mjs efficiency schedule
+node scripts/kacha.mjs efficiency cache-audit PROJECT \
+  --applicable-cache-kinds asr,source_separation,mask
+```
+
+首剪代表区间至少覆盖开场、典型信息段、复杂视觉段和结尾；当前 cues 中出现
+连接点、密集字幕、事实证据、蒙版/跟踪或音频转折时，必须并入代表区间理由。
+没有 cues 时可以用结构位置生成待确认区间，但不得把该 fallback 写成当前画面
+证据。增量返工从 version delta 自动生成最多三段区间，必须覆盖全部变化点和
+handle；分散变化导致区间过长时显式披露预算例外，不能漏检。
+
+十三阶段按 prerequisites、资源和输出组生成波次。真正自动并行只能使用
+`efficiency execute` 读取 `kacha-efficiency-execution-plan`：每个任务必须声明
+`safeToAutoExecute=true`、本地输出、依赖、资源与只在本地执行的授权；执行经过
+主机资源锁和 `metrics run`，共享输出、越界输出、依赖环、未授权任务或已有输出
+直接阻断。MPS 与视频编码仍各为单槽，不为了“并行”抢资源。
+
+高成本缓存只有同时具备源/输入 SHA、实现或模型 SHA、操作版本、参数、输出
+schema 和当前输出 SHA 才算 ready。适用缓存种类必须由当前阶段计划明确声明；
+未声明只能显示“适用性未知”，不得按缓存目录非空宣称已预热。
+
+```bash
+node scripts/kacha.mjs efficiency compare BASELINE-COHORT.json CANDIDATE-COHORT.json
+```
+
+“效率提升”必须来自至少 8 个同源成对项目，基线和候选都有人审，并且语义、
+连接、字幕、视觉、声音和完整通看护栏全部通过；否则命令返回
+`insufficient_evidence`。完整合同见
+`docs/QUALITY_PRESERVING_EFFICIENCY_V8.md`。
+
 ## 先选路径
 
 只选一条主路径：
@@ -106,6 +147,8 @@ node scripts/kacha.mjs run /path/to/content-project --confirm-execute
   `docs/INTELLIGENT_EDITING_V6.md`
 - 可恢复项目、四里程碑、内容优先、素材收件箱与统一审片：
   `docs/PRODUCTION_ORCHESTRATION_V7.md`
+- 风险预算、代表区间、依赖波次、强指纹缓存和效率证据：
+  `docs/QUALITY_PRESERVING_EFFICIENCY_V8.md`
 - Claude Code 视觉补偿/关键帧证据：`references/visual-evidence.md`
 - 缓存与清理：`references/cleanup-retention.md`
 - 复盘生产缺陷或改门禁：`docs/PRODUCTION_HARDENING.md`
@@ -475,6 +518,11 @@ picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共�
   命中时编码数为 0，禁止用低清代理放大成正式版本。graph 必须冻结 source、
   合同、overlay、字幕、dialogue、BGM、SFX 和字体目录的真实内容身份；同一路径
   文件原地替换后必须失效，不能按路径误复用。
+- 首剪试错只看当前证据选择的开场、典型信息、复杂视觉和结尾代表区间；增量
+  最多三段且覆盖全部变化。代表区间批准后才允许一次整片代理，最终候选仍须
+  完整正常速度通看；不得用局部通过替代完整验收。
+- 只有依赖、资源、输出组和本地执行授权都明确的任务可以进入 V8 并行波次；
+  自动执行必须同时经过主机资源锁和遥测，不直接并发调用重型工具。
 - Demucs、ASR、蒙版、跟踪、Beauty、样式帧和生成素材必须使用源 SHA、实现
   SHA、参数和输出 schema 构成的内容指纹缓存；缓存命中仍校验产物 SHA。
   Demucs 和 ASR 还必须冻结真实模型权重/目录内容 SHA、运行时版本与服务实现
@@ -625,6 +673,7 @@ node scripts/cleanup_project.mjs PROJECT_DIR/cleanup-plan.json
 node tests/run_tests.mjs --suite incremental
 node tests/run_tests.mjs --suite audio
 node tests/run_tests.mjs --suite visual
+node tests/run_tests.mjs --match "V8 "
 node tests/run_tests.mjs
 ```
 

@@ -63,6 +63,7 @@ const requiredFiles = [
   "scripts/next_action.mjs",
   "scripts/kacha_orchestrator.mjs",
   "scripts/project_orchestrator.mjs",
+  "scripts/quality_efficiency.mjs",
   "scripts/release_review.mjs",
   "scripts/asset_inbox.mjs",
   "scripts/content_project.mjs",
@@ -83,8 +84,10 @@ const requiredFiles = [
   "references/facefusion.md",
   "references/sfx-library.md",
   "references/qc-release.md",
+  "docs/QUALITY_PRESERVING_EFFICIENCY_V8.md",
   "config/effects/templates.json",
   "config/workflow-recipes.json",
+  "config/efficiency-policy.json",
   "config/facefusion/profiles.json",
   "config/resources/core-catalog.json",
 ];
@@ -98,6 +101,18 @@ const fileChecks = requiredFiles.map((relativePath) => {
     evidence: available ? `${absolutePath} (${fs.statSync(absolutePath).size} bytes)` : absolutePath,
   };
 });
+const efficiencyPolicyResult = run(process.execPath, [
+  path.join(skillRoot, "scripts", "quality_efficiency.mjs"),
+  "validate-policy",
+]);
+const efficiencyPolicyCheck = {
+  id: "policy:quality-preserving-efficiency-v8",
+  required: true,
+  available: efficiencyPolicyResult.status === 0,
+  evidence: efficiencyPolicyResult.status === 0
+    ? "V8 quality invariants, risk, preview, resource, cache and claim policy validated"
+    : (efficiencyPolicyResult.stderr.trim() || "V8 efficiency policy validation failed"),
+};
 
 const commandIds = ["node", "ffmpeg", "ffprobe"];
 if (profile === "full") commandIds.push("jq");
@@ -316,6 +331,7 @@ if (profile === "full") {
 }
 const checks = [
   configCheck,
+  efficiencyPolicyCheck,
   ...fileChecks,
   ...commandChecks,
   ...filterChecks,

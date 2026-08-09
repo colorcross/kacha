@@ -45,7 +45,8 @@ node scripts/kacha.mjs gate-release incremental-project.json
 ## 低成本返工顺序
 
 1. 用反馈分类器确定配方、变化层和同类扫描签名；
-2. 先生成 1–3 个最小代表性样例，只带必要 handle；
+2. 在 `renderPlan.representativeRanges` 写入 1–3 个真实代表区间与必要 handle，
+   覆盖 version delta 的全部变化区间；
 3. 参数批准后冻结 style/effect digest；
 4. 只渲染失效层或区间，复用哈希一致的高成本产物；
 5. 自动执行同类全片扫描；

@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "kacha-quality-preserving-efficiency-policy",
+  "policyVersion": "8.0",
+  "immutableQualityInvariants": {
+    "sourceReadOnly": true,
+    "semanticIntegrityRequired": true,
+    "representativeApprovalBeforeFullPreview": true,
+    "fullCandidatePlaybackRequired": true,
+    "singleFinalVideoEncode": true,
+    "proxyUpscaleForbidden": true,
+    "currentArtifactEvidenceRequired": true,
+    "assetLicenseAndProvenanceRequired": true
+  },
+  "risk": {
+    "levels": ["low", "standard", "high", "critical"],
+    "thresholds": {
+      "standard": 2,
+      "high": 5,
+      "critical": 8
+    },
+    "weights": {
+      "firstEdit": 2,
+      "durationOverTwentyMinutes": 1,
+      "durationOverFortyFiveMinutes": 2,
+      "structuralChange": 4,
+      "styleChange": 3,
+      "connection": 2,
+      "denseSubtitle": 1,
+      "factualEvidence": 2,
+      "maskOrTracking": 2,
+      "audioTransition": 1,
+      "unknownEvidence": 2
+    }
+  },
+  "representativePreview": {
+    "minimumDurationSeconds": 4,
+    "maximumDurationSeconds": 12,
+    "defaultDurationSeconds": 8,
+    "handleSeconds": 0.6,
+    "firstEditRequiredCategories": [
+      "opening",
+      "typical_information",
+      "complex_visual",
+      "ending"
+    ],
+    "riskCategories": [
+      "connection",
+      "subtitle_density",
+      "factual_evidence",
+      "mask_tracking",
+      "audio_transition"
+    ],
+    "incrementalMaximumRanges": 3,
+    "incrementalChangeCoverageRequired": true
+  },
+  "parallelism": {
+    "resourceCapacities": {
+      "agent": 2,
+      "cpuHeavy": 2,
+      "ioHeavy": 2,
+      "network": 2,
+      "mps": 1,
+      "videoEncode": 1,
+      "human": 1
+    },
+    "forbidSharedOutputWrites": true,
+    "requireDeclaredPrerequisites": true
+  },
+  "cacheEvidence": {
+    "highValueKinds": [
+      "source_separation",
+      "asr",
+      "mask",
+      "tracking",
+      "beauty",
+      "styleframe",
+      "generated_media"
+    ],
+    "requiredContractFields": [
+      "inputs",
+      "implementation",
+      "parameters",
+      "operationVersion",
+      "outputs"
+    ],
+    "requiredOutputFields": ["name", "type", "sha256", "sizeBytes"],
+    "warmCoverageTarget": 0.8
+  },
+  "efficiencyClaim": {
+    "minimumPairedProjects": 8,
+    "requireSameSourceIdentity": true,
+    "requireHumanReview": true,
+    "requireCriticalGuardrailsNoRegression": true,
+    "requiredGuardrails": [
+      "semanticIntegrity",
+      "connectionPlayback",
+      "subtitleAccuracy",
+      "visualContinuity",
+      "audioQuality",
+      "fullCandidatePlayback"
+    ]
+  }
+}

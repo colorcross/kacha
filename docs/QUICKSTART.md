@@ -41,6 +41,21 @@ node scripts/kacha.mjs run /path/to/project --confirm-execute
 node scripts/kacha.mjs resume /path/to/project --confirm-execute
 ```
 
+项目创建后会同时生成 V8 效率合同。完成当前转写/cues 后刷新代表区间和高成本
+缓存适用项：
+
+```bash
+node scripts/kacha.mjs efficiency plan /path/to/project \
+  --cues /path/to/current-cues.json \
+  --applicable-cache-kinds asr,source_separation,mask
+node scripts/kacha.mjs efficiency validate \
+  /path/to/project/.kacha/efficiency-plan.json
+```
+
+首剪先审开场、典型信息、复杂视觉和结尾；这些区间只用于减少试错，最终候选
+仍需完整正常速度通看。详见
+[V8 质量不降级效率](QUALITY_PRESERVING_EFFICIENCY_V8.md)。
+
 只有脚本或选题：
 
 ```bash
@@ -319,6 +334,8 @@ node scripts/kacha.mjs next /path/to/compiled/incremental-project.json
 
 性能、Token、缓存和弱模型完整说明见
 [V5 性能与稳定生产](PERFORMANCE_TOKEN_STABILITY_V5.md)。
+风险预算、代表区间、并行波次、强指纹缓存和成对效率证据见
+[V8 质量不降级效率](QUALITY_PRESERVING_EFFICIENCY_V8.md)。
 
 ## V6 全片导演与语义审片
 

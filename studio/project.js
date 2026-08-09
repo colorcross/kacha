@@ -32,6 +32,50 @@ function flag(node, label, pass) {
   node.className = pass ? "pass" : "blocked";
 }
 
+function clock(seconds) {
+  const value = Math.max(0, Number(seconds || 0));
+  const minutes = Math.floor(value / 60);
+  const remainder = Math.floor(value % 60);
+  return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+}
+
+function renderEfficiency(efficiency) {
+  const card = $("efficiencyCard");
+  card.hidden = !efficiency;
+  if (!efficiency) return;
+  const ranges = efficiency.representativePreview?.ranges ?? [];
+  const waves = efficiency.schedule?.waves ?? [];
+  const parallel = waves.filter((wave) => wave.parallel);
+  const risk = efficiency.risk ?? { level: "unknown", score: 0, factors: [] };
+  $("efficiencyRisk").textContent = `${String(risk.level).toUpperCase()} · ${risk.score}`;
+  $("efficiencyRiskDetail").textContent = risk.factors?.length
+    ? risk.factors.map((factor) => factor.id).join(" · ")
+    : "当前没有额外风险信号";
+  $("efficiencyRangeCount").textContent = String(ranges.length);
+  $("efficiencyRanges").textContent = ranges.length
+    ? ranges.map((range) => (
+      `${clock(range.startSeconds)}–${clock(range.endSeconds)} ${(range.categories ?? [range.category]).join("/")}`
+    )).join(" · ")
+    : "等待源媒体或当前区间证据";
+  $("efficiencyWaveCount").textContent = `${parallel.length} / ${waves.length}`;
+  $("efficiencyWaves").textContent = parallel.length
+    ? parallel.map((wave) => wave.stages.join(" + ")).join(" · ")
+    : "当前阶段没有可并行工作";
+  const cache = efficiency.cache ?? {};
+  $("efficiencyCache").textContent = cache.productionReady
+    ? "强指纹就绪"
+    : cache.applicabilityStatus === "unknown"
+      ? "待声明适用项"
+      : "证据待补";
+  const cacheKinds = cache.kinds ?? [];
+  $("efficiencyCacheDetail").textContent = cacheKinds.length
+    ? cacheKinds.filter((item) => item.applicability === "applicable")
+      .map((item) => `${item.kind}:${item.status}`).join(" · ") || "当前没有已声明适用项"
+    : "执行高成本阶段前声明 ASR、分离、蒙版等适用缓存";
+  $("efficiencyBoundary").textContent = efficiency.evidenceBoundary?.reason
+    || "单项目计划不构成提速证据。";
+}
+
 function render(status) {
   state.status = status;
   $("projectShell").hidden = false;
@@ -47,6 +91,7 @@ function render(status) {
     ? "V6 录制交接时启用"
     : (status.intelligenceV6.required ? "V6 强制启用" : "V6 未启用");
   flag($("v6Flag"), v6Label, contentFirst || status.intelligenceV6.required === true);
+  renderEfficiency(status.efficiency);
 
   const currentMilestone = status.milestones.find((item) => item.status === "in_progress")
     || status.milestones.find((item) => item.status !== "complete");
