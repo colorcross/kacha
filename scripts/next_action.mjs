@@ -65,6 +65,7 @@ function action(id, state, summary, parts = null, extra = {}) {
     state,
     summary,
     command: parts ? shellCommand(parts) : null,
+    argv: parts,
     ...extra,
   };
 }

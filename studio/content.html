@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="从脚本、文稿或选题建立咔嚓内容与录制项目。" />
+    <title>咔嚓 · 从内容开始</title>
+    <link rel="icon" type="image/png" href="/brand/kacha-logo.png" />
+    <link rel="stylesheet" href="/project.css" />
+    <link rel="stylesheet" href="/content.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/"><span><img src="/brand/kacha-logo.png" alt="" /></span><strong>咔嚓</strong><em>CONTENT FIRST</em></a>
+      <nav><a href="/">剪辑视频</a><a href="/project">项目状态</a><a href="/review">统一审片</a></nav>
+    </header>
+    <main>
+      <section class="hero content-hero">
+        <div><p class="eyebrow">SCRIPT TO RECORDING TO VIDEO</p><h1>还没有视频，<br /><span>也可以先把内容做对。</span></h1></div>
+        <p>输入现有脚本或一个选题，先建立内容主线、待核事实、真人录制方案和素材缺口。录制媒体回填后，再进入同一套 V6 剪辑门禁。</p>
+      </section>
+      <section class="content-form">
+        <div class="mode-switch"><button type="button" class="is-active" data-mode="script">已有脚本</button><button type="button" data-mode="topic">只有选题</button></div>
+        <div class="field" id="scriptField"><label for="scriptPath">脚本或文稿路径</label><div><input id="scriptPath" autocomplete="off" placeholder="/absolute/script.md" /><button id="chooseScript" type="button">选择文件</button></div></div>
+        <div class="field" id="topicField" hidden><label for="topic">中心选题</label><textarea id="topic" rows="4" placeholder="写清要回答的核心问题；系统不会把选题自动冒充完成稿。"></textarea></div>
+        <div class="form-grid">
+          <div class="field"><label for="projectRoot">项目目录</label><input id="projectRoot" autocomplete="off" placeholder="/absolute/content-project" /></div>
+          <div class="field"><label for="projectId">项目 ID</label><input id="projectId" autocomplete="off" placeholder="可留空自动生成" /></div>
+          <div class="field"><label for="show">栏目</label><select id="show"><option value="tool-share">工具分享</option><option value="book-talk">解读好书</option><option value="infinite-game">有限的无限游戏</option><option value="very-ai">灰常AI</option></select></div>
+          <div class="field"><label for="style">预期风格</label><select id="style"><option value="light-warm-overlay">浅暖轻浮层</option><option value="spatial-light-path">空间光路</option><option value="humor-comic">幽默漫画</option><option value="pixel-editorial">像素风</option></select></div>
+          <div class="field"><label for="platform">平台</label><select id="platform"><option value="wechat-channels">视频号</option><option value="douyin">抖音</option><option value="bilibili">B 站</option><option value="general">通用</option></select></div>
+        </div>
+        <div class="submit-row"><p>创建项目不等于授权执行、上传、付费生成或发布。</p><button id="startContent" type="button">建立内容项目</button></div>
+        <div class="content-result" id="contentResult" hidden><p class="eyebrow">PROJECT READY</p><h2 id="resultId">—</h2><p id="resultPath">—</p><a id="openProject" href="/project">进入项目状态台</a></div>
+      </section>
+    </main>
+    <div class="toast" id="toast" hidden></div>
+    <script type="module" src="/content.js"></script>
+  </body>
+</html>

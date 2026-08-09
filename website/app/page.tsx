@@ -3,9 +3,9 @@ import { SiteShell } from "./components/SiteShell";
 import { zhContent } from "./site-content";
 
 export const metadata: Metadata = {
-  title: "从原始素材到可发布成片的本地 AI 视频工作流",
+  title: "从脚本或素材到可发布候选的本地 AI 视频工作流",
   description:
-    "咔嚓让 Codex 或 Claude Code 完成结构精剪、人声处理、字幕校准、视觉包装、增量返工与质量检查。素材本地优先，修改可追踪。",
+    "咔嚓让 Codex 或 Claude Code 从内容策划或原始素材建立可恢复项目，完成结构精剪、人声、字幕、视觉、统一审片、增量返工与质量门禁。",
   alternates: { canonical: "https://colorcross.github.io/kacha/" },
 };
 

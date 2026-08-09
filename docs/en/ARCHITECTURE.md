@@ -1,5 +1,19 @@
 # Architecture and design boundaries
 
+## V7 production orchestration
+
+`.kacha/orchestration.json` binds runtime and dual-install status, source
+identity, local execution authority, V6 evidence, project files, and one next
+action. `config/workflow-recipes.json` groups the thirteen professional stages
+into proposal, first-cut, candidate-review, and delivery/revision checkpoints.
+`start`, `run`, `resume`, and `status` use the same recoverable state.
+
+Script-first projects create a content spine, fact-check tasks, a recording
+plan, an asset inbox, and a source-edit handoff. The handoff remains blocked
+until facts, assets, and human content approval have evidence. The release
+review binds eleven checks to the current final-video SHA-256; a changed output
+invalidates the prior approval.
+
 ## Design goal
 
 Kacha separates five states that are often incorrectly treated as one:

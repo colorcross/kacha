@@ -1,0 +1,132 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "kacha-workflow-recipes",
+  "milestones": [
+    {
+      "id": "proposal",
+      "label": "方案确认",
+      "stages": ["inventory", "transcript_structure"]
+    },
+    {
+      "id": "first_cut",
+      "label": "首剪确认",
+      "stages": ["rough_cut", "dialogue_preprocess", "connection_qc", "fine_cut"]
+    },
+    {
+      "id": "review",
+      "label": "成片审阅",
+      "stages": ["visual_packaging", "subtitles", "final_mix", "cover", "preview_render", "final_qc"]
+    },
+    {
+      "id": "delivery",
+      "label": "交付与返工",
+      "stages": ["release_package"]
+    }
+  ],
+  "stages": [
+    {
+      "id": "inventory",
+      "owner": "agent",
+      "execution": "agent_task",
+      "safeToAutoExecute": false,
+      "summary": "冻结只读输入、真实媒体身份、栏目/期号、运行版本、授权和能力证据",
+      "evidence": ["source identity", "runtime lock", "capability manifest", "series identity"]
+    },
+    {
+      "id": "transcript_structure",
+      "owner": "agent",
+      "execution": "agent_task",
+      "safeToAutoExecute": false,
+      "summary": "完成最终音频转写、语义校准、内容结构、V6 全片导演和素材缺口计划",
+      "evidence": ["timed transcript", "content spine", "director plan", "asset gap plan"]
+    },
+    {
+      "id": "rough_cut",
+      "owner": "agent",
+      "execution": "agent_task",
+      "safeToAutoExecute": false,
+      "summary": "从完整语义建立粗剪，不切断数字、否定、条件、因果和结论",
+      "evidence": ["rough cut timeline", "semantic cut decisions"]
+    },
+    {
+      "id": "dialogue_preprocess",
+      "owner": "render_engine",
+      "execution": "render_engine",
+      "safeToAutoExecute": false,
+      "summary": "分离并处理 dialogue stem，保持时长、声道和自然动态",
+      "evidence": ["dialogue stem", "source separation report", "same-loudness A/B"]
+    },
+    {
+      "id": "connection_qc",
+      "owner": "human",
+      "execution": "human",
+      "safeToAutoExecute": false,
+      "summary": "枚举所有真实连接点并正常速度检查音画、口型、动作和头部完整性",
+      "evidence": ["connection audit", "normal-speed handles"]
+    },
+    {
+      "id": "fine_cut",
+      "owner": "agent",
+      "execution": "agent_task",
+      "safeToAutoExecute": false,
+      "summary": "冻结景别、节奏、重构图、切点、转场和 picture lock",
+      "evidence": ["fine cut timeline", "cut sheet", "picture lock"]
+    },
+    {
+      "id": "visual_packaging",
+      "owner": "render_engine",
+      "execution": "render_engine",
+      "safeToAutoExecute": false,
+      "summary": "按四风格语法、能力计划、素材许可和设计预检实施视觉包装",
+      "evidence": ["visual capability plan", "design preflight", "packaged timeline"]
+    },
+    {
+      "id": "subtitles",
+      "owner": "agent",
+      "execution": "agent_task",
+      "safeToAutoExecute": false,
+      "summary": "从最终音频生成并校准字幕，使用授权字体和真实安全区",
+      "evidence": ["subtitle file", "font identity", "layout evidence"]
+    },
+    {
+      "id": "final_mix",
+      "owner": "render_engine",
+      "execution": "render_engine",
+      "safeToAutoExecute": false,
+      "summary": "在视觉时序冻结后完成 dialogue、BGM、SFX、闪避和母带",
+      "evidence": ["component stems", "mix stem", "audio QC"]
+    },
+    {
+      "id": "cover",
+      "owner": "agent",
+      "execution": "agent_task",
+      "safeToAutoExecute": false,
+      "summary": "制作栏目名、期号、标题和大灰身份正确的横竖封面",
+      "evidence": ["cover artifacts", "thumbnail review", "font and identity evidence"]
+    },
+    {
+      "id": "preview_render",
+      "owner": "render_engine",
+      "execution": "render_engine",
+      "safeToAutoExecute": false,
+      "summary": "生成开场、典型信息段、复杂视觉段和结尾的正常速度代表预览",
+      "evidence": ["representative previews", "review bundle"]
+    },
+    {
+      "id": "final_qc",
+      "owner": "agent",
+      "execution": "command",
+      "safeToAutoExecute": true,
+      "summary": "对当前完整候选执行自动技术 QC 和 V6 时序感知审计",
+      "evidence": ["technical QC", "temporal perception audit"]
+    },
+    {
+      "id": "release_package",
+      "owner": "human",
+      "execution": "human",
+      "safeToAutoExecute": false,
+      "summary": "完成十一项当前版本人工审片、release gate 和本地交付包",
+      "evidence": ["release report", "semantic review session", "release gate report"]
+    }
+  ]
+}

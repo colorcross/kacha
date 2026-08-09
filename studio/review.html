@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="咔嚓语义审片台：正常速度查看高影响剪辑决策，接受、调整或拒绝。" />
-    <title>咔嚓 · 语义审片台</title>
+    <meta name="description" content="咔嚓统一审片中心：语义决策、正常速度预览与十一项发布检查。" />
+    <title>咔嚓 · 统一审片中心</title>
     <link rel="icon" type="image/png" href="/brand/kacha-logo.png" />
     <link rel="stylesheet" href="/review.css" />
   </head>
@@ -13,7 +13,7 @@
       <a class="review-brand" href="/">
         <span><img src="/brand/kacha-logo.png" alt="" /></span>
         <strong>咔嚓</strong>
-        <em>语义审片台</em>
+        <em>统一审片中心</em>
       </a>
       <div class="top-actions">
         <a href="/">生产配置</a>
@@ -112,6 +112,40 @@
             <pre id="observeResult">尚未读取</pre>
           </details>
         </aside>
+      </section>
+
+      <section class="release-review">
+        <div class="release-heading">
+          <div>
+            <p class="eyebrow">LOCAL RELEASE REVIEW</p>
+            <h2>十一项当前成片检查</h2>
+          </div>
+          <p>语义决策通过后，还要对当前 SHA-256 的完整成片做一次发布审片。成片变化会自动让旧审片失效。</p>
+        </div>
+        <div class="release-loader">
+          <input id="releaseManifest" autocomplete="off" placeholder="/absolute/project/contracts/project-manifest.json" />
+          <input id="releaseReviewer" autocomplete="off" placeholder="审片人" />
+          <button id="openRelease" type="button">读取发布审片</button>
+          <button id="initializeRelease" type="button" class="quiet">初始化清单</button>
+        </div>
+        <p class="release-status" id="releaseStatus">发布审片不会自动生成“通过”证据，也不会授权上传或发布。</p>
+        <div class="release-shell" id="releaseShell" hidden>
+          <div class="release-list" id="releaseList"></div>
+          <div class="release-editor">
+            <p class="eyebrow" id="releaseCheckId">CHECK</p>
+            <h3 id="releaseCheckTitle">选择检查项</h3>
+            <textarea id="releaseEvidence" rows="5" placeholder="每行一条可核验的证据：文件路径、正常速度审片记录或明确观察。"></textarea>
+            <textarea id="releaseNote" rows="4" placeholder="未通过时写清问题与预期结果；系统会建立待编译的返工请求。"></textarea>
+            <div class="release-actions">
+              <button type="button" id="releaseFail">未通过并返工</button>
+              <button type="button" id="releasePass" class="accept">通过本项</button>
+            </div>
+            <div class="release-approval">
+              <input id="releaseLimitations" value="none" aria-label="已知限制" />
+              <button type="button" id="approveRelease">批准当前本地成片</button>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
 

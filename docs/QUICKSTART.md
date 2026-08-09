@@ -1,6 +1,7 @@
 # 快速开始
 
-下面演示如何从模板建立一个本地 `source_edit` 项目。模板不是已授权的真实项目，必须填写实际信息。
+推荐先用 V7 编排器建立一个本地、可恢复的项目。后文的手工模板路径仍用于
+调试和理解底层合同，模板不是已授权的真实项目。
 
 需要长期复用字幕、声音、美颜或节奏偏好时，先按
 [配置说明](CONFIGURATION.md)创建用户/项目配置。`prepare` 会把适用的结构化
@@ -14,14 +15,47 @@
 node scripts/kacha.mjs studio serve
 ```
 
-按“素材 → 风格 → 声音 → 效果 → 交付”完成配置。效果目录支持搜索，
+从顶部选择“剪辑视频”或“从脚本开始”。视频路径按“素材 → 风格 → 声音 →
+效果 → 交付”完成配置；内容路径先生成主线、待核事实、录制方案和素材清单。
+项目建立后进入 `/project` 查看四个里程碑与唯一下一步，进入 `/review` 完成
+语义决策和十一项发布审片。效果目录支持搜索，
 当前项目的人声、BGM、Beauty v2 与效果密度可以独立覆盖，不会污染可复用
 风格。点击“检查配置”确认源视频、输出目录、授权字体、设计系统和效果均可
 执行后，页面会生成独立项目目录及
-`production-brief.json`、`kacha.config.json`、`AGENT_INSTRUCTIONS.md`。
+`production-brief.json`、`kacha.config.json`、`AGENT_INSTRUCTIONS.md` 和
+`.kacha/orchestration.json`。
 默认“行者风”使用已授权的真正金陵体、`warm-soft` 人声和克制的暖色视觉；
 Beauty v2 默认关闭。页面不上传素材、不覆盖源文件，也不代表已经完成剪辑。
 完整说明见[本地视频生产台](../references/production-studio.md)。
+
+## 最短可恢复入口
+
+已有视频：
+
+```bash
+node scripts/kacha.mjs start --source /path/to/source.mov \
+  --project-root /path/to/project
+node scripts/kacha.mjs status /path/to/project
+node scripts/kacha.mjs run /path/to/project --confirm-execute
+# 退出或中断后
+node scripts/kacha.mjs resume /path/to/project --confirm-execute
+```
+
+只有脚本或选题：
+
+```bash
+node scripts/kacha.mjs start --script /path/to/script.md \
+  --task content_generation --show book-talk \
+  --project-root /path/to/content-project
+node scripts/kacha.mjs run /path/to/content-project --confirm-execute
+node scripts/kacha.mjs content status /path/to/content-project
+```
+
+内容项目会产生 `content-spine`、`fact-check-tasks`、`recording-plan`、
+`asset-inbox` 和 `source-edit-handoff`。只有事实、素材和内容批准全部有证据后，
+才可用 `handoff --source ... --confirm-content-approved` 建立默认启用 V6 的视频
+项目。生产模式同时要求源码工作树干净、Codex/Claude 安装同步；开发态绕过
+只用于测试。
 
 ## 0. 先让代理进入确定性模式
 
@@ -214,7 +248,23 @@ node scripts/kacha.mjs qc my-video-project/contracts/project-manifest.json
 
 ## 8. 人工审片与 release gate
 
-复制 `examples/release-report.template.json`，记录完整通看、字幕、连接点、素材许可、蒙版/美颜/画中画、人声与设备试听、封面、开头结尾和技术线索处置证据。
+可以在本地 `/review` 统一审片中心完成，也可以使用 CLI。十一项检查必须绑定
+当前最终视频哈希；未通过项会产生待编译返工请求：
+
+```bash
+node scripts/kacha.mjs release-review init \
+  my-video-project/contracts/project-manifest.json --reviewer NAME
+node scripts/kacha.mjs release-review record \
+  my-video-project/contracts/project-manifest.json \
+  --check contentIntegrity --outcome pass \
+  --evidence "normal-speed-review:content" --reviewer NAME
+node scripts/kacha.mjs release-review approve \
+  my-video-project/contracts/project-manifest.json \
+  --reviewer NAME --limitations none
+```
+
+也可复制 `examples/release-report.template.json` 手工记录完整通看、字幕、连接点、
+素材许可、蒙版/美颜/画中画、人声与设备试听、封面、开头结尾和技术线索证据。
 
 ```bash
 node scripts/kacha.mjs gate-release my-video-project/contracts/project-manifest.json

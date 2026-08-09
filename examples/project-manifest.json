@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
   "projectId": "replace-with-project-id",
+  "intelligenceV6": {
+    "required": true
+  },
   "plans": {
     "proposal": "./edit-proposal.json",
     "editPlan": "./edit-plan.json",
+    "directorPlan": "./director-plan.json",
+    "assetGapPlan": "./asset-gap-plan.json",
+    "temporalPerceptionAudit": "./temporal-perception-audit.json",
+    "semanticReviewSession": "./.kacha/review/review-session.json",
     "netstyleTimelines": [],
     "visualBreathingTimelines": [],
     "captionTimelines": [],

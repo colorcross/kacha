@@ -7,6 +7,8 @@ type Feature = {
 type WorkflowStep = {
   title: string;
   body: string;
+  stages: string;
+  state: string;
 };
 
 type Challenge = {
@@ -145,22 +147,22 @@ export const zhContent: SiteContent = {
   },
   hero: {
     eyebrow: "面向真人口播与内容视频的本地 AI 剪辑工作流",
-    titleLead: "从原始素材，",
+    titleLead: "从脚本或素材，",
     titleAccent: "到可以发布的成片。",
     summary:
-      "咔嚓让 Codex 或 Claude Code 按专业流程完成结构精剪、人声处理、视觉包装与增量返工，再用全片导演计划、语义审片和真实编辑评测证明每个关键判断。",
+      "咔嚓把内容策划、结构精剪、人声处理、视觉包装和增量返工组织成可恢复的本地项目；四个里程碑、统一审片与真实编辑评测，让每个关键判断都有下一步和证据。",
     primaryCta: "看看能解决什么",
     secondaryCta: "快速安装",
     contracts: ["素材优先留在本地", "不剪断完整语义", "每次修改可追踪"],
-    visualLabel: "咔嚓从原片到发布候选版的工作流示意",
-    caption: "不是一次生成，而是一条可以检查、返工和交付的流程",
+    visualLabel: "咔嚓从脚本或原片到发布候选版的可恢复工作流示意",
+    caption: "不是一次生成，而是四个可以确认、退出和恢复的生产节点",
   },
   proofLabel: "咔嚓的核心工作方式",
   proof: [
     { value: "LOCAL", label: "默认本地处理素材" },
     { value: "FULL", label: "覆盖完整后期流程" },
     { value: "DELTA", label: "返工只改受影响层" },
-    { value: "127", label: "自动回归检查" },
+    { value: "131", label: "自动回归检查" },
   ],
   problems: {
     title: "真正耗时间的，不只是拖动时间线。",
@@ -301,30 +303,38 @@ export const zhContent: SiteContent = {
       },
       {
         kicker: "GLOBAL DIRECTOR",
-        title: "全片导演与留白预算",
-        body: "从主线、唯一开场、强调密度和安静比例约束全片；不用效果也可以是经过解释的正式决定。",
+        title: "项目编排与全片导演",
+        body: "运行版本、唯一开场、内容主线、留白预算和十三阶段被锁进同一项目；中断后可从真实证据继续。",
       },
       {
         kicker: "SEMANTIC REVIEW",
-        title: "逐项审片与偏好学习",
-        body: "用绑定当前项目 scope、可解码且带音轨的 1× 预览审查关键决策；只有解决完整的证据才能学习，偏好并发安全合并并可回滚。",
+        title: "统一审片与发布检查",
+        body: "先用绑定当前项目的 1× 音视频预览审查关键决策，再对当前成片哈希完成十一项发布检查；调整会形成可追踪返工请求。",
+      },
+      {
+        kicker: "CONTENT FIRST",
+        title: "从脚本到录制交接",
+        body: "没有视频也能先建立内容主线、待核事实、录制方案和素材清单；事实与素材未解决时不能交接到正式剪辑。",
+      },
+      {
+        kicker: "ASSET INBOX",
+        title: "素材缺口收件箱",
+        body: "逐条区分真实证据、用户素材和说明性生成候选；许可、来源、文件身份和重新索引缺一不可。",
       },
     ],
   },
   workflow: {
-    title: "一条素材，六个阶段，直到可以交付。",
+    title: "从脚本或素材开始，四个可确认节点。",
     intro:
-      "每一步都记录输入、输出、授权、失败条件和返工范围。做到了什么、为什么这样做、怎样确认，都能被追溯。",
+      "十三个专业阶段被收束成四个用户里程碑。每次停下都保存输入、版本、证据和下一步；没有真实证据就不会跳到“已完成”。",
     steps: [
-      { title: "理解任务", body: "锁定内容目标、受众、平台、尺寸、授权与成功标准。" },
-      { title: "结构精剪", body: "删除无效内容，校验每个切点的句义、节奏与连接。" },
-      { title: "处理声音", body: "分离并优化人声，再安排音乐、音效和最终响度。" },
-      { title: "包装画面", body: "按统一设计系统加入字幕、素材、PIP、蒙版与转场。" },
-      { title: "语义审片与反馈", body: "用真实 1× 视频/音轨预览逐项接受、调整或拒绝关键决定，再把修改编译成差异。" },
-      { title: "评测与交付", body: "技术 QC、时序感知、人工审片和绑定真实源片/输出的编辑指标共同决定是否发布。" },
+      { title: "方案确认", body: "冻结运行版本、输入身份、栏目与授权；完成内容主线、转写、全片导演和素材缺口。", stages: "库存盘点 · 转写与结构", state: "CONFIRM" },
+      { title: "首剪确认", body: "完成粗剪、人声预处理、所有连接点检查和精剪；语义、口型、动作与节奏一起看。", stages: "粗剪 · 人声 · 连接 · 精剪", state: "CONFIRM" },
+      { title: "成片审阅", body: "完成视觉、字幕、混音、封面和代表预览；在统一审片中心处理语义决策与技术问题。", stages: "包装 · 字幕 · 混音 · 封面 · QC", state: "REVIEW" },
+      { title: "交付与返工", body: "十一项检查绑定当前成片哈希；反馈编译成局部差异，未授权时不上传、不付费生成、不发布。", stages: "发布清单 · 增量返工 · 本地交付", state: "APPROVE" },
     ],
-    resultLabel: "DELIVERY STATE",
-    result: "READY FOR HUMAN APPROVAL",
+    resultLabel: "RECOVERABLE STATE",
+    result: "AWAITING EXPLICIT LOCAL RELEASE APPROVAL",
   },
   principles: {
     quoteLead: "AI 负责重复劳动，",
@@ -437,22 +447,22 @@ export const enContent: SiteContent = {
   },
   hero: {
     eyebrow: "A local-first AI editing workflow for talking-head and content videos",
-    titleLead: "From raw footage",
+    titleLead: "From script or footage",
     titleAccent: "to a publishable cut.",
     summary:
-      "Kacha lets Codex or Claude Code edit, mix, package, and revise through one professional workflow, then uses a global director plan, semantic review, and human editorial evaluation to make every high-impact decision inspectable.",
+      "Kacha turns content planning, editing, mixing, packaging, and revision into a recoverable local project. Four milestones, one review center, and human editorial evidence keep every high-impact decision inspectable.",
     primaryCta: "See what it solves",
     secondaryCta: "Install Kacha",
     contracts: ["Media stays local by default", "Complete meaning stays intact", "Every change is traceable"],
-    visualLabel: "Kacha workflow from raw footage to a publishable candidate",
-    caption: "Not a one-shot generation—a workflow you can inspect, revise, and deliver",
+    visualLabel: "Kacha recoverable workflow from script or footage to a publishable candidate",
+    caption: "Not a one-shot generation—four checkpoints you can inspect, leave, and resume",
   },
   proofLabel: "How Kacha works",
   proof: [
     { value: "LOCAL", label: "local-first media handling" },
     { value: "FULL", label: "end-to-end post workflow" },
     { value: "DELTA", label: "affected layers only" },
-    { value: "127", label: "regression checks" },
+    { value: "131", label: "regression checks" },
   ],
   problems: {
     title: "The timeline is not the only expensive part.",
@@ -593,30 +603,38 @@ export const enContent: SiteContent = {
       },
       {
         kicker: "GLOBAL DIRECTOR",
-        title: "Episode-level direction and quiet",
-        body: "Budget emphasis across the whole story, enforce one opening, and preserve deliberate stillness instead of maximizing effects.",
+        title: "Project orchestration and direction",
+        body: "Lock runtime, source identity, one opening, story structure, quiet budget, and thirteen stages into one resumable project.",
       },
       {
         kicker: "SEMANTIC REVIEW",
-        title: "Decision review and preference evidence",
-        body: "Review rationale and fallback in a verified 1x video/audio preview bound to the current project scope. Only resolved evidence can be learned; preference updates are lock-merged and reversible.",
+        title: "Unified decision and release review",
+        body: "Review high-impact decisions in verified 1x video/audio, then complete eleven checks bound to the current final-video hash. Adjustments create traceable revision requests.",
+      },
+      {
+        kicker: "CONTENT FIRST",
+        title: "Script-to-recording handoff",
+        body: "Start without footage: build a content spine, fact-check queue, recording plan, and asset list. Unresolved facts or assets block the editing handoff.",
+      },
+      {
+        kicker: "ASSET INBOX",
+        title: "Asset gap inbox",
+        body: "Separate factual evidence, user-provided media, and illustrative generation candidates. License, provenance, file identity, and reindexing remain mandatory.",
       },
     ],
   },
   workflow: {
-    title: "One source, six stages, until it is deliverable.",
+    title: "Start with a script or footage. Confirm four milestones.",
     intro:
-      "Each stage records inputs, outputs, authorization, failure conditions, and revision scope. What changed, why, and how it was checked remain traceable.",
+      "Thirteen professional stages collapse into four user checkpoints. Every pause preserves inputs, runtime, evidence, and the next action; missing evidence never becomes a completion claim.",
     steps: [
-      { title: "Understand the job", body: "Lock the goal, audience, platform, format, authorization, and success criteria." },
-      { title: "Edit the structure", body: "Remove waste and check every cut for meaning, rhythm, and continuity." },
-      { title: "Process the sound", body: "Separate and polish dialogue, then place music, SFX, and final loudness." },
-      { title: "Package the picture", body: "Use the design system for captions, media, PIP, masks, and transitions." },
-      { title: "Review decisions and feedback", body: "Accept, adjust, or reject high-impact decisions in verified 1x video/audio previews, then compile changes into a delta." },
-      { title: "Evaluate and deliver", body: "Technical QC, temporal perception, human review, and editorial metrics bound to real source/output media decide release status." },
+      { title: "Proposal confirmed", body: "Freeze runtime, source identity, show, and authority; complete the content spine, transcript, director plan, and asset gaps.", stages: "inventory · transcript · structure", state: "CONFIRM" },
+      { title: "First cut confirmed", body: "Complete rough cut, dialogue preprocessing, every connection check, and fine cut across meaning, lip sync, action, and rhythm.", stages: "rough cut · dialogue · connections · fine cut", state: "CONFIRM" },
+      { title: "Candidate reviewed", body: "Finish visuals, captions, mix, cover, representative previews, semantic review, and technical QC in one review center.", stages: "package · captions · mix · cover · QC", state: "REVIEW" },
+      { title: "Delivery and revision", body: "Bind eleven checks to the current final hash. Compile feedback into a delta; never upload, pay, or publish without separate authority.", stages: "release checklist · delta · local delivery", state: "APPROVE" },
     ],
-    resultLabel: "DELIVERY STATE",
-    result: "READY FOR HUMAN APPROVAL",
+    resultLabel: "RECOVERABLE STATE",
+    result: "AWAITING EXPLICIT LOCAL RELEASE APPROVAL",
   },
   principles: {
     quoteLead: "AI handles repetition. ",

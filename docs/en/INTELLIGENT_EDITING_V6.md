@@ -60,6 +60,9 @@ renderer or treat effect count as editing quality.
 
 ## Full V6 gate opt-in
 
+V7-created video projects enable this gate by default. The explicit manifest
+switch below remains necessary for older or manually assembled projects.
+
 ```json
 {
   "intelligenceV6": { "required": true },
@@ -89,3 +92,9 @@ editing improvement. A production claim still requires at least eight paired,
 human-reviewed source projects with no measured guardrail regression, real
 normal-speed mobile/headphone review, and
 application-level round-trip checks in Final Cut Pro, Premiere, or Resolve.
+
+`eval cohort-template` creates eight deliberately incomplete human-review
+slots. `nle-app detect/session/record/validate` binds an installed application
+version, export/import reports, application evidence, and a normal-speed human
+review. If no supported NLE is installed, the result is `unavailable`; code
+fixtures are not application-level evidence.

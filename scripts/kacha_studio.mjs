@@ -10,6 +10,7 @@ import {
   loadKachaConfig,
 } from "./kacha_config.mjs";
 import { resolveDesignSystem } from "./design_system.mjs";
+import { initializeProject } from "./project_orchestrator.mjs";
 import {
   mediaSummary,
   readJson,
@@ -1000,6 +1001,10 @@ function buildProjectConfig(request, media, catalog) {
       },
     },
     execution: {
+      intelligenceV6: {
+        required: true,
+        compatibilityMode: false,
+      },
       netstyle: {
         automaticPlanning: request.automaticProfessionalJudgment,
         maximumPrimaryEffectsPer10Seconds: {
@@ -1035,10 +1040,13 @@ function agentInstructions(briefPath, configPath, request) {
 1. 先完整读取：
    - \`${briefPath}\`
    - \`${configPath}\`
-2. 对源视频做只读盘点、转写、内容结构和剪辑方案；没有批准前不得覆盖源文件。
-3. 用户明确指定的效果按 brief 中的自然语言位置定位到最终校准口播。
-4. 未指定区间启用专业自动判断，但必须遵守每个效果的触发理由、失败条件、最简回退和 QC。
-5. 先通过方案门禁，再渲染；自动 QC 和人工正常速度审片都通过后，才能称为可发布。
+2. 项目已经建立可恢复的四里程碑/十三阶段状态。先运行：
+   - \`node scripts/kacha.mjs status ${path.dirname(briefPath)}\`
+   - 获得用户本地执行确认后运行 \`node scripts/kacha.mjs run ${path.dirname(briefPath)} --confirm-execute\`
+3. 对源视频做只读盘点、转写、内容结构和剪辑方案；没有批准前不得覆盖源文件。
+4. 用户明确指定的效果按 brief 中的自然语言位置定位到最终校准口播。
+5. 未指定区间启用专业自动判断，但必须遵守每个效果的触发理由、失败条件、最简回退和 QC。
+6. 新项目默认启用 V6。先通过方案门禁，再渲染；自动 QC 和人工正常速度审片都通过后，才能称为可发布。
 
 本配置不授权上传、付费生成、发布、覆盖源文件或跳过门禁。
 `;
@@ -1164,6 +1172,12 @@ export function compileProductionRequest(request, {
       decisionBoundary:
         "自动选择只适用于用户未明确指定的区间；不得越过内容、素材、授权和质量门禁。",
     },
+    intelligenceV6: {
+      required: true,
+      compatibilityMode: false,
+      evidenceBoundary:
+        "director、asset gap、Timeline、temporal perception 与 semantic review 必须属于同一当前项目证据集。",
+    },
     configuration: {
       baselineDigest: current.digest,
       productionCatalogDigest: catalog.digest,
@@ -1233,6 +1247,19 @@ export function compileProductionRequest(request, {
     agentInstructions(briefPath, configPath, normalized),
     { encoding: "utf8", flag: "wx", mode: 0o644 },
   );
+  const orchestration = initializeProject({
+    briefPath,
+    projectRoot: projectDirectory,
+    projectId: slugify(normalized.projectName, "video"),
+    task: normalized.task,
+    show: normalized.show,
+    style: normalized.style.id,
+    platform: normalized.platform,
+    language: normalized.language,
+    confirmExecute: false,
+    development: false,
+    enforceRuntime: false,
+  });
   return {
     schemaVersion: "1.0",
     status: "pass",
@@ -1243,6 +1270,15 @@ export function compileProductionRequest(request, {
     effectiveConfigurationDigest: validated.digest,
     designDigest: resolveDesignSystem(validated.config.style).digest,
     source: media.path,
+    orchestration: {
+      status: orchestration.status,
+      projectRoot: orchestration.projectRoot,
+      lifecycle: orchestration.lifecycle,
+      milestones: orchestration.milestones,
+      nextAction: orchestration.nextAction,
+      manifest: orchestration.files.manifest,
+      v6Required: orchestration.intelligenceV6.required,
+    },
     authorityBoundary: catalog.authorityBoundary,
   };
 }

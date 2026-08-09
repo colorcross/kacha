@@ -495,12 +495,57 @@ function templateDataset() {
   };
 }
 
+function cohortTemplateDataset() {
+  const shows = ["tool-share", "book-talk", "infinite-game", "very-ai"];
+  const styles = ["light-warm-overlay", "spatial-light-path", "humor-comic", "pixel-editorial"];
+  return {
+    schemaVersion: "1.0",
+    kind: "kacha_editorial_eval_dataset",
+    id: "kacha-v7-eight-project-cohort",
+    version: "replace-with-version",
+    cases: Array.from({ length: 8 }, (_, index) => ({
+      id: `case-${String(index + 1).padStart(3, "0")}`,
+      sourceGroupId: `source-group-${String(index + 1).padStart(3, "0")}`,
+      showId: shows[index % shows.length],
+      styleId: styles[index % styles.length],
+      platform: index % 2 === 0 ? "wechat-channels" : "douyin",
+      editorialJudgment: {
+        humanReviewed: false,
+        firstDraftUsability: 0,
+        outputDurationSeconds: 0,
+        manualInterventionMinutes: 0,
+        semanticUnits: { total: 0, damaged: 0 },
+        highImpactDecisions: { total: 0, accepted: 0, adjusted: 0, rejected: 0 },
+        connections: { total: 0, rejected: 0 },
+        captions: { total: 0, corrected: 0 },
+        styleGrammar: { total: 0, violations: 0 },
+      },
+      evidence: {
+        reviewer: "replace-with-reviewer",
+        reviewedAt: "replace-with-ISO-8601-time",
+        normalSpeedReview: false,
+        phoneAndHeadphoneReview: false,
+        sourceMedia: { path: `replace-with-source-${index + 1}`, sha256: "replace-with-source-sha256" },
+        reviewedOutput: { path: `replace-with-output-${index + 1}`, sha256: "replace-with-output-sha256" },
+      },
+    })),
+    completionBoundary: "八个槽位只有在绑定八个不重复真实源片、真人正常速度与手机/耳机审片后才是评测数据。",
+  };
+}
+
 export function runEvalCli(args = process.argv.slice(2)) {
   const action = args[0];
   if (action === "template") {
     const value = templateDataset();
     const output = option(args, "--output");
     if (!output) throw new Error("eval template 需要 --output FILE");
+    write(value, output);
+    return;
+  }
+  if (action === "cohort-template") {
+    const value = cohortTemplateDataset();
+    const output = option(args, "--output");
+    if (!output) throw new Error("eval cohort-template 需要 --output FILE");
     write(value, output);
     return;
   }
@@ -523,7 +568,7 @@ export function runEvalCli(args = process.argv.slice(2)) {
     );
     return;
   }
-  throw new Error("用法：kacha.mjs eval template|validate|score|compare [options]");
+  throw new Error("用法：kacha.mjs eval template|cohort-template|validate|score|compare [options]");
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

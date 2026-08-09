@@ -54,6 +54,7 @@ const TOP_LEVEL_KEYS = new Set([
   "providers",
 ]);
 const EXECUTION_KEYS = new Set([
+  "intelligenceV6",
   "modelTier",
   "telemetry",
   "unifiedRender",
@@ -413,6 +414,21 @@ function validateEffectiveConfig(config) {
   resolveDesignSystem(config.style);
   if (!["economy", "balanced", "frontier"].includes(config.execution.modelTier)) {
     throw new Error("execution.modelTier 必须为 economy、balanced 或 frontier");
+  }
+  if (config.execution.intelligenceV6 !== undefined) {
+    rejectUnknownKeys(
+      config.execution.intelligenceV6,
+      new Set(["required", "compatibilityMode"]),
+      "execution.intelligenceV6",
+    );
+    if (
+      config.execution.intelligenceV6.required !== true
+      || config.execution.intelligenceV6.compatibilityMode !== false
+    ) {
+      throw new Error(
+        "execution.intelligenceV6 必须保持 required=true 且 compatibilityMode=false",
+      );
+    }
   }
   const telemetry = config.execution.telemetry;
   rejectUnknownKeys(

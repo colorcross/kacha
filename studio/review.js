@@ -3,6 +3,8 @@ const state = {
   bundle: null,
   session: null,
   activeId: null,
+  release: null,
+  releaseActiveId: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -145,7 +147,90 @@ async function openBundle() {
   $("loadStatus").textContent = `已读取：${result.bundle.project.id}`;
   const guessedRoot = bundlePath.split("/.kacha/")[0];
   if (guessedRoot !== bundlePath) $("projectRoot").value = guessedRoot;
+  if (guessedRoot !== bundlePath) {
+    $("releaseManifest").value = `${guessedRoot}/contracts/project-manifest.json`;
+  }
   render();
+}
+
+function activeReleaseCheck() {
+  return state.release?.checks?.find((item) => item.id === state.releaseActiveId) ?? null;
+}
+
+function renderRelease() {
+  if (!state.release) return;
+  $("releaseShell").hidden = false;
+  $("releaseStatus").textContent = [
+    state.release.project.id,
+    `${state.release.summary.passed}/${state.release.summary.total} 通过`,
+    state.release.summary.approved ? "当前成片已批准" : "尚未批准",
+  ].join(" · ");
+  $("releaseList").innerHTML = state.release.checks.map((item, index) => `
+    <button type="button" class="release-item${item.id === state.releaseActiveId ? " is-active" : ""}" data-release-id="${escapeHtml(item.id)}" data-status="${escapeHtml(item.status)}">
+      <b>${String(index + 1).padStart(2, "0")}</b><span>${escapeHtml(item.label)}</span><em>${escapeHtml(item.status)}</em>
+    </button>
+  `).join("");
+  document.querySelectorAll("[data-release-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.releaseActiveId = button.dataset.releaseId;
+      renderRelease();
+    });
+  });
+  const active = activeReleaseCheck();
+  if (!active) return;
+  $("releaseCheckId").textContent = active.id.toUpperCase();
+  $("releaseCheckTitle").textContent = active.label;
+  $("releaseEvidence").value = (active.evidence ?? []).join("\n");
+  $("releaseNote").value = active.note ?? "";
+  $("approveRelease").disabled = !state.release.summary.readyForApproval
+    || state.release.summary.approved;
+}
+
+async function openRelease() {
+  const projectManifestPath = $("releaseManifest").value.trim();
+  if (!projectManifestPath) throw new Error("请填写项目 manifest 路径");
+  state.release = await api("/api/release/open", { projectManifestPath });
+  state.releaseActiveId = state.release.checks[0]?.id ?? null;
+  renderRelease();
+}
+
+async function initializeRelease() {
+  const projectManifestPath = $("releaseManifest").value.trim();
+  const reviewer = $("releaseReviewer").value.trim();
+  if (!reviewer) throw new Error("请填写审片人");
+  state.release = await api("/api/release/initialize", { projectManifestPath, reviewer });
+  state.releaseActiveId = state.release.checks[0]?.id ?? null;
+  renderRelease();
+  toast("发布审片清单已绑定当前最终视频");
+}
+
+async function recordRelease(outcome) {
+  const active = activeReleaseCheck();
+  if (!active) throw new Error("请先选择检查项");
+  const reviewer = $("releaseReviewer").value.trim();
+  if (!reviewer) throw new Error("请填写审片人");
+  state.release = await api("/api/release/record", {
+    projectManifestPath: $("releaseManifest").value.trim(),
+    reviewer,
+    checkId: active.id,
+    outcome,
+    evidence: $("releaseEvidence").value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean),
+    note: $("releaseNote").value.trim(),
+  });
+  renderRelease();
+  toast(outcome === "pass" ? "本项检查已通过" : "已建立待编译的返工请求");
+}
+
+async function approveRelease() {
+  const reviewer = $("releaseReviewer").value.trim();
+  if (!reviewer) throw new Error("请填写审片人");
+  state.release = await api("/api/release/approve", {
+    projectManifestPath: $("releaseManifest").value.trim(),
+    reviewer,
+    limitations: $("releaseLimitations").value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean),
+  });
+  renderRelease();
+  toast("当前 SHA-256 的本地成片已批准；上传和发布仍需单独授权");
 }
 
 async function recordOutcome(outcome) {
@@ -187,6 +272,11 @@ $("reviewVideo").addEventListener("ratechange", () => {
     toast("语义审片固定使用正常速度 1×", true);
   }
 });
+$("openRelease").addEventListener("click", () => openRelease().catch((error) => toast(error.message, true)));
+$("initializeRelease").addEventListener("click", () => initializeRelease().catch((error) => toast(error.message, true)));
+$("releasePass").addEventListener("click", () => recordRelease("pass").catch((error) => toast(error.message, true)));
+$("releaseFail").addEventListener("click", () => recordRelease("fail").catch((error) => toast(error.message, true)));
+$("approveRelease").addEventListener("click", () => approveRelease().catch((error) => toast(error.message, true)));
 
 const query = new URLSearchParams(window.location.search);
 if (query.get("bundle")) {

@@ -27,6 +27,36 @@ Placeholder 的 ready 状态与产物 SHA；重复对象 ID 必须使用确定�
 源码开发态先用 `install status` 检查 Codex/Claude 安装，但通过测试前不得
 同步。完整规则见 `references/agent-chat-control-plane.md`。
 
+## V7 默认生产入口
+
+新项目必须先进入可恢复编排器，不再只生成 brief 后把十三阶段留给对话记忆：
+
+```bash
+node scripts/kacha.mjs start --source /path/to/source.mov \
+  --project-root /path/to/project
+node scripts/kacha.mjs status /path/to/project
+node scripts/kacha.mjs run /path/to/project --confirm-execute
+node scripts/kacha.mjs resume /path/to/project --confirm-execute
+```
+
+编排器把十三个专业阶段收束为“方案确认、首剪确认、成片审阅、交付与返工”
+四个用户里程碑，冻结源码版本、双端安装摘要、输入身份、V6 证据和唯一下一步。
+新建视频项目默认 `intelligenceV6.required=true`；运行时 dirty、Codex/Claude
+安装不同步、输入内容变化或版本锁变化时必须停止。`--development` 只用于仓库
+测试，不得作为真实生产放行。
+
+没有源视频时可以从脚本或选题开始：
+
+```bash
+node scripts/kacha.mjs start --script /path/to/script.md \
+  --task content_generation --project-root /path/to/content-project
+node scripts/kacha.mjs run /path/to/content-project --confirm-execute
+```
+
+它会建立内容主线、待核事实、录制方案、内容素材清单和 source-edit 交接；
+事实或素材未解决、内容未人工批准时，`handoff` 不得建立正式视频项目。完整
+合同见 `docs/PRODUCTION_ORCHESTRATION_V7.md`。
+
 ## 先选路径
 
 只选一条主路径：
@@ -74,6 +104,8 @@ Placeholder 的 ready 状态与产物 SHA；重复对象 ID 必须使用确定�
   `docs/PERFORMANCE_TOKEN_STABILITY_V5.md`
 - 全片导演、素材缺口、语义审片、偏好学习、编辑评测与 NLE 交换：
   `docs/INTELLIGENT_EDITING_V6.md`
+- 可恢复项目、四里程碑、内容优先、素材收件箱与统一审片：
+  `docs/PRODUCTION_ORCHESTRATION_V7.md`
 - Claude Code 视觉补偿/关键帧证据：`references/visual-evidence.md`
 - 缓存与清理：`references/cleanup-retention.md`
 - 复盘生产缺陷或改门禁：`docs/PRODUCTION_HARDENING.md`
@@ -166,6 +198,8 @@ node scripts/kacha.mjs review build \
 node scripts/kacha.mjs studio serve
 node scripts/kacha.mjs review validate \
   --session .kacha/review/review-session.json --for-candidate
+node scripts/kacha.mjs release-review init contracts/project-manifest.json \
+  --reviewer REVIEWER
 ```
 
 每个决策的正常速度预览必须是可解码、有动态视频、有可试听音轨且达到最小代表
@@ -173,6 +207,11 @@ node scripts/kacha.mjs review validate \
 `accept`，`readyForCandidate` 仍为 false。项目、栏目、风格和平台 scope 必须由
 当前 Timeline 与 director 确定，CLI 不能把审片结果改挂到其他 scope；调整/拒绝的
 解决证据也必须通过同一真实媒体门禁。
+
+同一 `/review` 页面还包含十一项发布审片。发布报告绑定当前最终视频 SHA-256；
+成片变化会使旧批准失效，未通过项会生成 `pending_agent_compilation` 返工请求。
+素材缺口使用 `asset-inbox build/attach/refresh`；提交素材只记录许可、来源与当前
+文件身份，必须重新建立 media index 和 asset gap plan 后才能解除 blocker。
 
 长期偏好只从明确审片结果生成候选，同一规则至少两条证据；不保存自由文本备注，
 不自动激活，激活和回滚都要求 `--confirm`。激活时必须从当前 source session
@@ -185,7 +224,10 @@ node scripts/kacha.mjs review validate \
 与基线完全相同都不得支持“版本提升”。偏好激活/回滚使用同一 profile 文件锁，
 且只有候选就绪的完整 session 才能学习。
 
-专业 NLE 交换使用 `nle export/import`。OTIO/FCPXML 保留语义 ID，CMX3600
+专业 NLE 交换使用 `nle export/import`。真实应用往返另用 `nle-app
+detect/session/record/validate` 绑定应用版本、导入/导出报告、应用证据和人工正常
+速度复核；本机没有 Final Cut Pro、Premiere 或 Resolve 时必须报告 unavailable，
+不能用纯代码 round-trip 冒充真实应用验证。OTIO/FCPXML 保留语义 ID，CMX3600
 只做兼容导出；交换文件必须绑定当前基线 Timeline 与源片 SHA，FCPXML 的小数
 帧率使用标准有理数时间。任何导入都只生成 preview candidate，不能跨项目套用、
 覆盖既有输出或基线；导入 clip ID 必须来自基线，decision/semantic ID 必须保持

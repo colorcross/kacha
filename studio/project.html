@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="咔嚓项目状态台：查看四个里程碑、证据与下一步。" />
+    <title>咔嚓 · 项目状态</title>
+    <link rel="icon" type="image/png" href="/brand/kacha-logo.png" />
+    <link rel="stylesheet" href="/project.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span><img src="/brand/kacha-logo.png" alt="" /></span>
+        <strong>咔嚓</strong><em>PROJECT CONTROL</em>
+      </a>
+      <nav><a href="/">新建项目</a><a href="/review">审片中心</a></nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">RECOVERABLE PRODUCTION</p>
+          <h1>每次停下，<br /><span>都有清楚的下一步。</span></h1>
+        </div>
+        <div class="loader">
+          <label for="projectRoot">项目目录</label>
+          <div><input id="projectRoot" autocomplete="off" placeholder="/absolute/project" /><button id="loadProject">读取</button></div>
+          <p id="loadStatus">只读取本机项目状态；素材不会上传。</p>
+        </div>
+      </section>
+
+      <section id="projectShell" hidden>
+        <div class="project-head">
+          <div><p class="eyebrow" id="taskLabel">SOURCE EDIT</p><h2 id="projectId">—</h2><p id="projectPath">—</p></div>
+          <div class="project-flags">
+            <span id="runtimeFlag">运行时检查中</span>
+            <span id="inputFlag">素材身份检查中</span>
+            <span id="v6Flag">V6 检查中</span>
+          </div>
+        </div>
+
+        <section class="milestone-grid" id="milestoneGrid" aria-label="四个生产里程碑"></section>
+
+        <section class="next-card">
+          <div><p class="eyebrow">NEXT ACTION</p><h3 id="nextTitle">—</h3><p id="nextSummary">—</p></div>
+          <div class="next-actions">
+            <label><input id="includeRender" type="checkbox" /> 允许执行渲染引擎步骤</label>
+            <button id="runProject">确认并继续</button>
+            <button class="secondary" id="refreshProject">刷新状态</button>
+          </div>
+        </section>
+
+        <section class="asset-card" id="assetCard" hidden>
+          <div><p class="eyebrow">ASSET INBOX</p><h3>素材缺口收件箱</h3><p id="assetSummary">—</p></div>
+          <p id="assetNext">—</p>
+        </section>
+
+        <section class="evidence-section">
+          <div class="section-title"><p class="eyebrow">EVIDENCE LEDGER</p><h3>十三阶段证据</h3></div>
+          <div class="stage-list" id="stageList"></div>
+        </section>
+      </section>
+    </main>
+    <div class="toast" id="toast" hidden></div>
+    <script type="module" src="/project.js"></script>
+  </body>
+</html>

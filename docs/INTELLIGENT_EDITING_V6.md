@@ -260,8 +260,8 @@ ETA；没有 provider 真实费用时不按 Token 猜价格。
 
 ## 二、与现有项目门禁的连接
 
-旧项目保持兼容。需要启用完整 V6 门禁时，在项目 manifest 增加；v2 首剪和 v3
-增量项目使用同一开关：
+旧项目保持兼容。V7 新建视频项目默认启用完整 V6；手工建立的旧项目仍需在
+manifest 明确增加开关。v2 首剪和 v3 增量项目使用同一开关：
 
 ```json
 {
@@ -317,3 +317,8 @@ node tests/run_tests.mjs
 5. 只有同源评测报告满足最小样本政策后，才对外宣称首稿可用率或节省时间。
 
 这些是生产证据任务，不是代码缺口；仓库不得用合成 fixture 冒充真实效果。
+
+V7 增加 `eval cohort-template` 生成八个未完成槽位，并用 `nle-app
+detect/session/record/validate` 记录真实应用版本、交换报告、应用证据和人工
+正常速度复核。本机没有受支持 NLE 时结果必须为 `unavailable`，不能把现有
+OTIO/FCPXML 代码回归写成 Final Cut Pro、Premiere 或 Resolve 真实验证。

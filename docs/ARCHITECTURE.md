@@ -14,6 +14,25 @@
 
 ## 主要数据对象
 
+### `.kacha/orchestration.json + workflow-recipes`
+
+V7 顶层编排状态冻结运行版本、Codex/Claude 双安装摘要、输入身份、执行授权、
+V6 开关、项目文件和唯一下一步。`config/workflow-recipes.json` 把十三个专业阶段
+映射为“方案确认、首剪确认、成片审阅、交付与返工”四个用户里程碑。
+`start/run/resume/status` 是同一状态机入口；对话中断不能靠模型记忆重建进度。
+
+### `contentProject + content package`
+
+没有视频时先建立 `content-spine`、`fact-check-tasks`、`recording-plan`、
+`asset-inbox` 和 `source-edit-handoff`。事实与素材未逐项解决、内容未人工批准时，
+不能把录制或生成媒体交接为正式 `source_edit` 项目。
+
+### `assetInbox`
+
+从当前 `assetGapPlan` 生成的人机协作清单。提交项必须绑定当前文件身份、许可与
+来源；提交后状态只是 `pending_reindex`，必须重建 media index 和 asset gap
+plan 才能解除生产 blocker。说明性生成候选不能冒充事实证据。
+
 ### `editProposal`
 
 定义目标、输入、内容结构、模块、授权、回退和 13 阶段。它回答“为什么做、允许做什么、成功是什么”。
@@ -77,6 +96,8 @@ edit plan、overlay、字幕、dialogue、BGM、SFX 与字体目录的真实内�
 ### `releaseReport`
 
 记录最终文件哈希、限制和人工审片证据。自动报告不能自行生成“人工通过”。
+统一审片中心按当前最终视频 SHA-256 初始化十一项检查；任一检查失败只创建
+待 Agent 编译的返工请求，十一项都通过后才能显式批准本地成片。
 
 ### `deltaQc + incrementalReview`
 
@@ -105,6 +126,15 @@ editProposal + editPlan + inputs
                 │
                 ▼
           gate-release
+```
+
+顶层用户路径为：
+
+```text
+start ──► 方案确认 ──► 首剪确认 ──► 成片审阅 ──► 交付与返工
+           │              │             │              │
+        内容/V6证据     连接与精剪    统一审片/QC    当前哈希发布清单
+           └──────────── status / resume ──────────────┘
 ```
 
 ### `gate-plan`

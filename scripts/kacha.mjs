@@ -32,6 +32,11 @@ function usage() {
       + "  kacha.mjs captions plan|validate|render [options]\n"
       + "  kacha.mjs breathing plan|validate|render [options]\n"
       + "  kacha.mjs studio catalog|validate|probe|save-style|compile|serve [options]\n"
+      + "  kacha.mjs start --brief BRIEF|--source VIDEO|--script FILE [options]\n"
+      + "  kacha.mjs run|resume|status PROJECT [options]\n"
+      + "  kacha.mjs handoff PROJECT --source VIDEO --confirm-content-approved [options]\n"
+      + "  kacha.mjs content status|record-fact|record-asset|approve PROJECT [options]\n"
+      + "  kacha.mjs workflow validate\n"
       + "  kacha.mjs netstyle list|validate|preview|showcase [options]\n"
       + "  kacha.mjs netstyle plan|validate-plan|render-plan [options]\n"
       + "  kacha.mjs connections VIDEO --output connection-candidates.json\n"
@@ -44,12 +49,15 @@ function usage() {
       + "  kacha.mjs resources status|run [options]\n"
       + "  kacha.mjs delta diff|apply [options]\n"
       + "  kacha.mjs media index|search [options]\n"
+      + "  kacha.mjs asset-inbox build|refresh|attach|validate [options]\n"
       + "  kacha.mjs jobs submit|status|list|cancel|resume [options]\n"
       + "  kacha.mjs refs index|resolve|parse [options]\n"
       + "  kacha.mjs intelligence validate|director|assets|perception|observe|validate-plan [options]\n"
-      + "  kacha.mjs eval template|validate|score|compare [options]\n"
+      + "  kacha.mjs eval template|cohort-template|validate|score|compare [options]\n"
       + "  kacha.mjs review build|show|validate|record|learn|activate|rollback [options]\n"
+      + "  kacha.mjs release-review open|init|record|approve <project-manifest.json> [options]\n"
       + "  kacha.mjs nle export|import --format otio|fcpxml|cmx3600 [options]\n"
+      + "  kacha.mjs nle-app detect|session|record|validate [options]\n"
       + "  kacha.mjs install status|sync [options]\n"
       + "  kacha.mjs cache key|run|inspect [options]\n"
       + "  kacha.mjs transcribe INPUT --output TRANSCRIPT.json [options]\n"
@@ -133,6 +141,13 @@ const delegatedCommands = {
   captions: "caption_layout.mjs",
   breathing: "visual_breathing.mjs",
   studio: "kacha_studio.mjs",
+  start: "kacha_orchestrator.mjs",
+  run: "kacha_orchestrator.mjs",
+  resume: "kacha_orchestrator.mjs",
+  status: "kacha_orchestrator.mjs",
+  handoff: "kacha_orchestrator.mjs",
+  workflow: "kacha_orchestrator.mjs",
+  content: "content_project.mjs",
   netstyle: "kacha_netstyle.mjs",
   connections: "scan_connections.mjs",
   prepare: "prepare_agent_packet.mjs",
@@ -144,12 +159,15 @@ const delegatedCommands = {
   resources: "resource_scheduler.mjs",
   delta: "kacha_delta.mjs",
   media: "kacha_media.mjs",
+  "asset-inbox": "asset_inbox.mjs",
   jobs: "kacha_jobs.mjs",
   refs: "kacha_refs.mjs",
   intelligence: "kacha_intelligence.mjs",
   eval: "kacha_eval.mjs",
   review: "kacha_review.mjs",
+  "release-review": "release_review.mjs",
   nle: "kacha_nle.mjs",
+  "nle-app": "nle_application_validation.mjs",
   install: "kacha_install.mjs",
   cache: "artifact_cache.mjs",
   transcribe: "transcribe_local.mjs",
@@ -172,9 +190,15 @@ if (Object.hasOwn(delegatedCommands, command)) {
     );
     process.exit(0);
   }
+  const delegatedArguments = ["start", "run", "resume", "status", "handoff", "workflow"]
+    .includes(command)
+    ? [command === "workflow" ? projectInput : command, ...(command === "workflow"
+      ? remainingArguments
+      : [projectInput, ...remainingArguments])]
+    : [projectInput, ...remainingArguments];
   invoke(
     delegatedCommands[command],
-    [projectInput, ...remainingArguments].filter((item) => item !== undefined),
+    delegatedArguments.filter((item) => item !== undefined),
   );
   process.exit(0);
 }

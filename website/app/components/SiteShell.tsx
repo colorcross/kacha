@@ -309,7 +309,7 @@ export function SiteShell({
           </div>
           <p className="hero-caption">
             {content.hero.caption}
-            <span>01 / 06</span>
+            <span>01 / 04</span>
           </p>
         </div>
       </section>
@@ -439,8 +439,9 @@ export function SiteShell({
               <div>
                 <h3>{step.title}</h3>
                 <p>{step.body}</p>
+                <small>{step.stages}</small>
               </div>
-              <b aria-hidden="true">{index < 5 ? "↘" : "✓"}</b>
+              <b>{step.state}</b>
             </li>
           ))}
         </ol>

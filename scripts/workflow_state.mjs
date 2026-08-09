@@ -104,6 +104,8 @@ export function v2Contract(projectFile, project = readJson(projectFile)) {
     requiredCoverAspectRatios: stableManifestShape(
       project.requiredCoverAspectRatios ?? [],
     ),
+    runtimeLock: stableManifestShape(project.runtimeLock ?? null),
+    intelligenceV6: stableManifestShape(project.intelligenceV6 ?? null),
     outputs: stableManifestShape(project.outputs ?? {}),
   };
   return {

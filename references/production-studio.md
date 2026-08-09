@@ -1,8 +1,8 @@
 # 本地视频生产台
 
-`studio/` 是咔嚓的本地生产入口。它不接收上传文件，只读取用户明确选择的
-本机视频绝对路径，并把风格、开场、指定效果、平台和输出要求编译为可审计的
-项目配置。页面不是通用时间线编辑器，也不会跳过方案、能力、渲染和发布门禁。
+`studio/` 是咔嚓的本地生产入口。它不接收上传文件，可以从本机视频、脚本、
+文稿或选题开始，并把内容、风格、开场、指定效果、平台和输出要求编译为可
+恢复项目。页面不是通用时间线编辑器，也不会跳过方案、能力、渲染和发布门禁。
 
 ## 启动与停止
 
@@ -43,7 +43,7 @@ node scripts/kacha.mjs studio serve --port 4187 --no-open
 文件、SHA-256 与授权状态校验；缺失或变化会停止，不会静默退回旧替代字体。
 字体文件和授权记录不得进入公开仓库。
 
-## 页面能力
+## 页面能力与三个工作台
 
 页面按五个连续步骤组织：
 
@@ -61,12 +61,21 @@ node scripts/kacha.mjs studio serve --port 4187 --no-open
 右侧“当前剪辑合同”实时显示所选风格、字幕字体、声音、BGM、美颜、开场、
 效果数量和输出目标。步骤状态表示当前合同是否已有可执行配置；不是渲染进度。
 
-生产配置完成后，可从顶部进入 `/review` 语义审片台。它不是第六个配置表单，
-而是候选片阶段的正常速度决策界面：按高影响语义拍显示视频、剪辑理由、置信度、
-最简回退和接受/调整/拒绝结果。审片台只读取 `review build` 生成的审片包，
+顶部还提供三个独立入口：
+
+- `/content`：从脚本或选题建立内容主线、待核事实、录制方案、内容素材清单和
+  source-edit 交接，不要求先有视频；
+- `/project`：显示方案确认、首剪确认、成片审阅、交付与返工四个里程碑，
+  十三阶段证据、运行版本、输入身份、素材收件箱和唯一下一步；
+- `/review`：统一展示语义决策和十一项发布检查。
+
+`/review` 不是第六个配置表单，而是候选片阶段的正常速度决策界面：按高影响
+语义拍显示视频、剪辑理由、置信度、最简回退和接受/调整/拒绝结果。审片台只
+读取 `review build` 生成的审片包，
 每项预览必须通过真实媒体解码、视频帧、音轨和最小代表时长检查，播放器固定为
 正常速度 1×。缺预览，或调整/拒绝缺少当前解决证据时，不会显示候选就绪。
-偏好学习只生成候选，不会从页面自动激活长期配置。
+偏好学习只生成候选，不会从页面自动激活长期配置。发布检查绑定当前最终视频
+SHA-256；成片变化使旧报告失效，未通过项只建立待编译返工请求，不直接改成片。
 
 自定义风格保存到 `~/.config/kacha/studio/styles/`，只保存偏好，不得包含上传、
 付费、发布、覆盖源文件、跳过 QC 等授权字段。同名自定义风格不会被静默
@@ -127,13 +136,17 @@ node scripts/kacha.mjs beauty parameters \
 PROJECT-kacha-TIMESTAMP/
 ├── production-brief.json
 ├── kacha.config.json
-└── AGENT_INSTRUCTIONS.md
+├── AGENT_INSTRUCTIONS.md
+├── contracts/project-manifest.json
+└── .kacha/orchestration.json
 ```
 
 - `production-brief.json`：源素材只读身份、SHA-256、风格、字体证据、开场、
   指定效果、自动导演规则和配置摘要；
 - `kacha.config.json`：当前项目的可执行风格与运行参数；
 - `AGENT_INSTRUCTIONS.md`：交给 Codex 或 Claude Code 的最短执行入口。
+- `.kacha/orchestration.json`：运行版本、输入身份、授权、四里程碑、项目文件和
+  可恢复状态；视频项目默认 `intelligenceV6.required=true`。
 
 生成配置不等于已经剪辑，更不等于可发布。代理必须继续按 `source_edit` 或
 `local_optimization` 工作流完成方案、能力探测、真实渲染、自动 QC 和人工
@@ -148,6 +161,11 @@ node scripts/kacha.mjs studio probe --video /absolute/path/source.mov
 node scripts/kacha.mjs studio preview --request production-request.json
 node scripts/kacha.mjs studio save-style --input custom-style.json
 node scripts/kacha.mjs studio compile --request production-request.json
+node scripts/kacha.mjs start --script /absolute/path/script.md \
+  --task content_generation --project-root /absolute/path/content-project
+node scripts/kacha.mjs status /absolute/path/project
+node scripts/kacha.mjs run /absolute/path/project --confirm-execute
+node scripts/kacha.mjs resume /absolute/path/project --confirm-execute
 
 node scripts/kacha.mjs review build \
   --timeline TIMELINE.json --director DIRECTOR_PLAN.json \

@@ -802,6 +802,7 @@ async function generateProject() {
     });
     state.generatedProjectPath = result.projectDirectory;
     $("resultPath").textContent = result.projectDirectory;
+    $("openGeneratedProject").href = `/project?path=${encodeURIComponent(result.projectDirectory)}`;
     $("resultPanel").hidden = false;
     toast("剪辑项目配置已生成，可以交给咔嚓执行");
   } catch (error) {

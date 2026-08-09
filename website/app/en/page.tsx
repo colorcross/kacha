@@ -3,9 +3,9 @@ import { SiteShell } from "../components/SiteShell";
 import { enContent } from "../site-content";
 
 export const metadata: Metadata = {
-  title: "A local AI workflow from raw footage to a publishable cut",
+  title: "A local AI workflow from script or footage to a publishable candidate",
   description:
-    "Kacha lets Codex or Claude Code run structure edits, dialogue cleanup, caption calibration, visual packaging, incremental revisions, and QC in one local-first workflow.",
+    "Kacha turns a script or source media into a recoverable local project with editing, audio, captions, visual packaging, unified review, incremental revisions, and evidence-bound QC.",
   alternates: { canonical: "https://colorcross.github.io/kacha/en/" },
 };
 

@@ -16,6 +16,17 @@ import {
   sha256Value,
 } from "../scripts/kacha_utils.mjs";
 import { resolveResourceDirectory } from "../scripts/resource_pool.mjs";
+import {
+  approveReleaseReview,
+  initializeReleaseReview,
+  openReleaseReview,
+  recordReleaseCheck,
+} from "../scripts/release_review.mjs";
+import {
+  attachAsset,
+  buildAssetInbox,
+  validateAssetInbox,
+} from "../scripts/asset_inbox.mjs";
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillDirectory = path.dirname(testDirectory);
@@ -2690,6 +2701,12 @@ await test("local production studio compiles an auditable project with verified 
       .openingContract.promiseBySeconds !== 3
     || brief.opening.required !== true
     || brief.opening.primaryEffectCount !== 1
+    || brief.intelligenceV6?.required !== true
+    || projectConfig.execution.intelligenceV6?.required !== true
+    || compiled.orchestration?.v6Required !== true
+    || compiled.orchestration?.milestones?.length !== 4
+    || !fs.existsSync(compiled.orchestration?.manifest)
+    || readJson(compiled.orchestration.manifest).intelligenceV6?.required !== true
   ) {
     throw new Error("production studio project contract is incomplete");
   }
@@ -2700,6 +2717,219 @@ await test("local production studio compiles an auditable project with verified 
     "--no-secrets",
   ]);
 }, "visual");
+
+await test("V7 orchestrator starts source and script projects with recoverable milestones", () => {
+  const registry = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "workflow", "validate",
+  ]).stdout);
+  if (registry.status !== "pass" || registry.stages !== 13 || registry.milestones !== 4) {
+    throw new Error("V7 workflow registry is incomplete");
+  }
+
+  const source = path.join(temporary, "orchestrator-source.mp4");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "testsrc2=s=160x90:r=12:d=0.8",
+    "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=0.8",
+    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+    "-c:a", "aac", "-shortest", source,
+  ]);
+  const sourceRoot = path.join(temporary, "orchestrated-source-project");
+  const started = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "start",
+    "--source", source,
+    "--project-root", sourceRoot,
+    "--project-id", "orchestrated-source",
+    "--show", "tool-share",
+    "--development",
+    "--confirm-execute",
+  ]).stdout);
+  const sourceManifest = readJson(started.files.manifest);
+  if (
+    started.status !== "pass"
+    || started.milestones.length !== 4
+    || started.stages.length !== 13
+    || sourceManifest.intelligenceV6?.required !== true
+    || sourceManifest.runtimeLock?.mode !== "development"
+    || sourceManifest.source?.sha256 !== sha256File(source)
+  ) {
+    throw new Error("source project did not freeze V6, runtime and media identity");
+  }
+  const advanced = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "run", sourceRoot,
+  ]).stdout);
+  if (
+    advanced.nextAction?.id !== "author_project_contracts"
+    || !fs.existsSync(advanced.nextAction.packet)
+    || !advanced.nextAction.packetSha256
+  ) {
+    throw new Error("orchestrator did not create a recoverable planning packet");
+  }
+
+  const scriptInput = path.join(temporary, "orchestrator-script.md");
+  fs.writeFileSync(scriptInput, "# 中心问题\n\n用真实证据解释一个问题。\n");
+  const contentRoot = path.join(temporary, "orchestrated-content-project");
+  const content = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "start",
+    "--script", scriptInput,
+    "--task", "content_generation",
+    "--project-root", contentRoot,
+    "--project-id", "orchestrated-content",
+    "--show", "book-talk",
+    "--development",
+    "--confirm-execute",
+  ]).stdout);
+  const contentContract = readJson(content.files.contentContract);
+  if (
+    content.files.manifest !== null
+    || content.nextAction?.id !== "develop_content_package"
+    || contentContract.kind !== "kacha-content-project"
+    || contentContract.intelligenceV6?.requiredOnSourceEditHandoff !== true
+    || contentContract.input.sha256 !== sha256File(scriptInput)
+  ) {
+    throw new Error("script-first content project still depends on a source video");
+  }
+  const plannedContent = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "run", contentRoot,
+  ]).stdout);
+  if (
+    plannedContent.nextAction?.id !== "review_content_package"
+    || plannedContent.lifecycle?.status !== "awaiting_content_review"
+    || !fs.existsSync(path.join(contentRoot, "contracts", "content-spine.json"))
+    || !fs.existsSync(path.join(contentRoot, "contracts", "fact-check-tasks.json"))
+    || !fs.existsSync(path.join(contentRoot, "contracts", "recording-plan.json"))
+    || !fs.existsSync(path.join(contentRoot, "contracts", "source-edit-handoff.json"))
+    || readJson(path.join(contentRoot, "contracts", "source-edit-handoff.json")).status !== "awaiting_source_media"
+  ) {
+    throw new Error("script-first flow did not create a gated content and recording package");
+  }
+}, "core");
+
+await test("V7 release review binds eleven human checks to the current final video", () => {
+  const root = path.join(temporary, "release-review-v7");
+  const contracts = path.join(root, "contracts");
+  const output = path.join(root, "output");
+  fs.mkdirSync(contracts, { recursive: true });
+  fs.mkdirSync(output, { recursive: true });
+  const finalVideo = path.join(output, "final.mp4");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "color=c=0x28231e:s=160x90:r=12:d=0.6",
+    "-f", "lavfi", "-i", "sine=frequency=330:sample_rate=48000:duration=0.6",
+    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", finalVideo,
+  ]);
+  const manifest = path.join(contracts, "project-manifest.json");
+  writeJson(manifest, {
+    schemaVersion: "2.0",
+    kind: "kacha-project-manifest",
+    projectId: "release-review-v7",
+    outputs: {
+      finalVideo: { path: "../output/final.mp4" },
+      releaseReport: { path: "../output/release-report.json" },
+    },
+  });
+  const initialized = initializeReleaseReview(manifest, { reviewer: "test-reviewer" });
+  if (initialized.checks.length !== 11 || initialized.summary.passed !== 0) {
+    throw new Error("release review did not initialize the eleven current-video checks");
+  }
+  const failed = recordReleaseCheck(manifest, {
+    reviewer: "test-reviewer", checkId: initialized.checks[0].id, outcome: "fail",
+    evidence: [], note: "开头承诺和正文不一致，需要返工。",
+  });
+  const changeRequest = failed.checks[0].changeRequest?.path;
+  if (!changeRequest || readJson(changeRequest).status !== "pending_agent_compilation") {
+    throw new Error("failed release check did not create a bounded change request");
+  }
+  for (const check of initialized.checks) {
+    recordReleaseCheck(manifest, {
+      reviewer: "test-reviewer", checkId: check.id, outcome: "pass",
+      evidence: [`normal-speed-review:${check.id}`], note: "",
+    });
+  }
+  const approved = approveReleaseReview(manifest, { reviewer: "test-reviewer", limitations: ["none"] });
+  if (!approved.summary.approved || approved.report.finalVideoSha256 !== sha256File(finalVideo)) {
+    throw new Error("release review approval was not bound to the current final video");
+  }
+  fs.appendFileSync(finalVideo, "changed");
+  if (openReleaseReview(manifest).status !== "blocked") {
+    throw new Error("changed final video did not invalidate the release review");
+  }
+}, "qc");
+
+await test("V7 asset inbox records licensed submissions without bypassing media reindex", () => {
+  const root = path.join(temporary, "asset-inbox-v7");
+  const contracts = path.join(root, "contracts");
+  fs.mkdirSync(contracts, { recursive: true });
+  const gapPlan = path.join(contracts, "asset-gap-plan.json");
+  writeJson(gapPlan, {
+    schemaVersion: "1.0",
+    kind: "kacha_asset_gap_plan",
+    gaps: [
+      {
+        id: "gap-evidence", beatId: "beat-1", range: { start: 0, end: 2 },
+        query: "官方截图", evidenceType: "factual", resolution: "user_or_source_evidence_required",
+        candidates: [], generationSpec: null, blocker: true, blockerReason: "source_evidence_required",
+      },
+      {
+        id: "gap-illustration", beatId: "beat-2", range: { start: 2, end: 4 },
+        query: "抽象流程", evidenceType: "illustrative", resolution: "generated_visual_candidate",
+        candidates: [], generationSpec: { promptBrief: "抽象流程", externalOrPaidActionAuthorized: false },
+        blocker: true, blockerReason: "generated_asset_not_materialized",
+      },
+    ],
+  });
+  const manifest = path.join(contracts, "project-manifest.json");
+  writeJson(manifest, {
+    schemaVersion: "2.0", kind: "kacha-project-manifest", projectId: "asset-inbox-v7",
+    plans: { assetGapPlan: "./asset-gap-plan.json" }, outputs: {},
+  });
+  const built = buildAssetInbox(manifest);
+  if (built.inbox.summary.total !== 2 || built.inbox.summary.productionReady !== false) {
+    throw new Error("asset inbox did not preserve unresolved factual and generated gaps");
+  }
+  const asset = path.join(root, "official-evidence.png");
+  fs.writeFileSync(asset, "licensed evidence fixture");
+  const attached = attachAsset(manifest, {
+    gapId: "gap-evidence", assetPath: asset, license: "project-owned",
+    provenanceKind: "user-provided", provenanceEvidence: "source capture record",
+  });
+  if (attached.inbox.items[0].status !== "pending_reindex" || attached.inbox.summary.productionReady !== false) {
+    throw new Error("asset submission bypassed the media index and rebuilt gap plan requirement");
+  }
+  if (validateAssetInbox(built.path).status !== "pass") throw new Error("asset inbox validation failed");
+  fs.appendFileSync(asset, "changed");
+  if (validateAssetInbox(built.path).status !== "blocked") throw new Error("asset identity drift was not detected");
+}, "core");
+
+await test("V7 evaluation cohort and NLE application protocol refuse synthetic production claims", () => {
+  const cohortFile = path.join(temporary, "editorial-cohort-v7.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "eval", "cohort-template", "--output", cohortFile,
+  ]);
+  const cohort = readJson(cohortFile);
+  if (
+    cohort.cases.length !== 8
+    || new Set(cohort.cases.map((item) => item.showId)).size !== 4
+    || new Set(cohort.cases.map((item) => item.styleId)).size !== 4
+    || cohort.cases.some((item) => item.editorialJudgment.humanReviewed !== false)
+  ) throw new Error("V7 cohort template does not preserve eight real human-review slots");
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "eval", "validate", "--dataset", cohortFile,
+  ]);
+  const nle = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "nle-app", "detect",
+  ]).stdout);
+  if (
+    !["pass", "unavailable"].includes(nle.status)
+    || nle.applications.length !== 3
+    || nle.applications.some((item) => item.installed && !item.version)
+  ) throw new Error("NLE application evidence protocol did not report real installation state");
+}, "core");
 
 await test("caption layout plan renders relationship layouts and guarded depth text", () => {
   ensureMediaFixtures();
@@ -8105,14 +8335,24 @@ await test("V6 review workbench is local-only and exposes the new review assets"
   const server = fs.readFileSync(path.join(scripts, "kacha_studio_server.mjs"), "utf8");
   const html = fs.readFileSync(path.join(skillDirectory, "studio", "review.html"), "utf8");
   const css = fs.readFileSync(path.join(skillDirectory, "studio", "review.css"), "utf8");
+  const projectHtml = fs.readFileSync(path.join(skillDirectory, "studio", "project.html"), "utf8");
+  const projectJs = fs.readFileSync(path.join(skillDirectory, "studio", "project.js"), "utf8");
+  const contentHtml = fs.readFileSync(path.join(skillDirectory, "studio", "content.html"), "utf8");
   if (
     !server.includes("/api/review/media")
+    || !server.includes("/api/project/status")
+    || !server.includes("/api/release/approve")
+    || !server.includes("/api/content/start")
     || !server.includes("127.0.0.1")
     || !server.includes("media-src 'self'")
     || !html.includes("正常速度")
     || !html.includes("接受不等于发布")
+    || !html.includes("十一项当前成片检查")
+    || !projectHtml.includes("四个生产里程碑")
+    || !projectJs.includes("/api/project/run")
+    || !contentHtml.includes("还没有视频")
     || !css.includes("--signal: #ff6b1a")
-  ) throw new Error("V6 local semantic review workbench contract is incomplete");
+  ) throw new Error("V7 local project and unified review workbench contract is incomplete");
   const root = path.join(temporary, "v6-review-workbench");
   const reviewDirectory = path.join(root, "review");
   const previewDirectory = path.join(root, "preview");

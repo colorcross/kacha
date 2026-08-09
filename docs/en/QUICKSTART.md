@@ -1,5 +1,30 @@
 # Quick start
 
+## V7 recoverable entry
+
+Start from source media:
+
+```bash
+node scripts/kacha.mjs start --source /path/to/source.mov \
+  --project-root /path/to/project
+node scripts/kacha.mjs status /path/to/project
+node scripts/kacha.mjs run /path/to/project --confirm-execute
+node scripts/kacha.mjs resume /path/to/project --confirm-execute
+```
+
+Or start before footage exists:
+
+```bash
+node scripts/kacha.mjs start --script /path/to/script.md \
+  --task content_generation --project-root /path/to/content-project
+node scripts/kacha.mjs run /path/to/content-project --confirm-execute
+```
+
+V7 maps thirteen professional stages to four user checkpoints: proposal,
+first cut, candidate review, and delivery/revision. New video projects require
+V6 by default. Runtime drift, installation drift, source identity changes,
+unresolved facts, or unresolved assets fail closed.
+
 This walkthrough creates a local `source_edit` project from the fictional templates. The templates are not authorization for a real project; replace every placeholder with verified project data.
 
 To reuse subtitle, audio, beauty, or pacing preferences, create a user or

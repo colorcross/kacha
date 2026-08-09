@@ -1,6 +1,6 @@
 # Kacha
 
-**Kacha** (`kacha`) is a local-first professional video workflow skill for **Codex** and **Claude Code**. It turns planning, editing, packaging, technical QC, and human review into explicit, auditable, fail-closed gates.
+**Kacha** (`kacha`) is a local-first professional video workflow skill for **Codex** and **Claude Code**. It turns script-first planning or source editing, packaging, unified review, technical QC, and revision into explicit, recoverable, fail-closed gates.
 
 [中文说明](README.md) · [Production Studio in Figma](https://www.figma.com/design/uXfiviOI5rgi56awnD3Iut?node-id=1-2) · [One-prompt install](docs/en/AGENT_INSTALL.md) · [Quick start](docs/en/QUICKSTART.md) · [Performance and weak-model production](docs/en/PERFORMANCE_TOKEN_STABILITY_V5.md) · [Privacy and security](docs/en/PRIVACY_SECURITY.md)
 
@@ -80,7 +80,7 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Compiles an episode-level director plan with a narrative spine, exactly one
   opening, content priority, high-impact budget, deliberate quiet, four style
   grammars, fallbacks, and explicit evidence gaps.
-- Provides a localhost semantic review workbench for normal-speed preview,
+- Provides a localhost unified review workbench for normal-speed semantic decisions and eleven release checks bound to the current final-video SHA-256,
   rationale, confidence, fallback, and explicit accept/adjust/reject decisions.
   An accepted decision is not publishing approval.
 - Learns only transparent, evidence-counted preference candidates from explicit
@@ -112,7 +112,7 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
   credentials through one validated configuration system. Editing defaults
   accept structured parameters and natural language without leaking keys into
   project artifacts.
-- Provides a localhost-only production studio for selecting source media,
+- Provides a localhost-only production studio for starting from a script, topic, or source media, then tracking four recoverable milestones,
   reusable styles, openings, and natural-language-positioned effects, then
   compiling an auditable brief and project config without uploading media.
 - Resolves a full video design system with show, aspect-ratio, language,
@@ -225,7 +225,7 @@ generation is blocked until source media, the output directory, licensed font,
 design system, and selected effects pass preflight. It does not upload,
 overwrite, render, or publish by itself.
 
-After a candidate is built, open `http://127.0.0.1:4179/review` to review
+Track the project at `http://127.0.0.1:4179/project`. After a candidate is built, open `http://127.0.0.1:4179/review` to review
 high-impact editing decisions at normal speed. The workbench records explicit
 decisions and resolution evidence without granting upload, paid generation,
 publishing, overwrite, or gate-bypass authority.

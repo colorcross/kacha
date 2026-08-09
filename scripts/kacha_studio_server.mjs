@@ -20,6 +20,13 @@ import {
   resolveReviewMedia,
 } from "./kacha_review.mjs";
 import { observeProject } from "./kacha_intelligence.mjs";
+import { initializeProject, projectStatus, runProject } from "./project_orchestrator.mjs";
+import {
+  approveReleaseReview,
+  initializeReleaseReview,
+  openReleaseReview,
+  recordReleaseCheck,
+} from "./release_review.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(scriptDirectory, "..");
@@ -129,7 +136,9 @@ function nativePick(kind) {
   }
   const script = kind === "directory"
     ? 'POSIX path of (choose folder with prompt "选择咔嚓项目输出目录")'
-    : 'POSIX path of (choose file with prompt "选择要剪辑的视频")';
+    : kind === "document"
+      ? 'POSIX path of (choose file with prompt "选择脚本或内容文档")'
+      : 'POSIX path of (choose file with prompt "选择要剪辑的视频")';
   const result = spawnSync("osascript", ["-e", script], {
     encoding: "utf8",
     timeout: 10 * 60 * 1000,
@@ -252,6 +261,14 @@ function safeStaticFile(urlPath) {
     "/review.html": path.join(studioRoot, "review.html"),
     "/review.css": path.join(studioRoot, "review.css"),
     "/review.js": path.join(studioRoot, "review.js"),
+    "/project": path.join(studioRoot, "project.html"),
+    "/project.html": path.join(studioRoot, "project.html"),
+    "/project.css": path.join(studioRoot, "project.css"),
+    "/project.js": path.join(studioRoot, "project.js"),
+    "/content": path.join(studioRoot, "content.html"),
+    "/content.html": path.join(studioRoot, "content.html"),
+    "/content.css": path.join(studioRoot, "content.css"),
+    "/content.js": path.join(studioRoot, "content.js"),
     "/brand/kacha-logo.png": brandLogo,
   };
   return routes[urlPath] ?? null;
@@ -307,6 +324,10 @@ async function handleApi(request, response, url, port) {
     json(response, 200, { status: "pass", ...nativePick("directory") });
     return;
   }
+  if (pathname === "/api/pick-document") {
+    json(response, 200, { status: "pass", ...nativePick("document") });
+    return;
+  }
   if (pathname === "/api/probe-video") {
     json(response, 200, inspectProductionVideo(body.videoPath));
     return;
@@ -326,6 +347,44 @@ async function handleApi(request, response, url, port) {
   }
   if (pathname === "/api/compile") {
     json(response, 201, compileProductionRequest(body));
+    return;
+  }
+  if (pathname === "/api/project/status") {
+    json(response, 200, projectStatus(body.projectRoot));
+    return;
+  }
+  if (pathname === "/api/content/start") {
+    if (!body.projectRoot || !path.isAbsolute(body.projectRoot)) {
+      throw new Error("内容项目目录必须是非空绝对路径");
+    }
+    if (!body.scriptPath && !body.topic) {
+      throw new Error("请提供脚本路径或中心选题");
+    }
+    json(response, 201, initializeProject({
+      script: body.scriptPath || null,
+      topic: body.topic || null,
+      projectRoot: body.projectRoot,
+      projectId: body.projectId,
+      task: "content_generation",
+      show: body.show,
+      style: body.style,
+      platform: body.platform,
+      language: "zh",
+      confirmExecute: false,
+      development: false,
+    }));
+    return;
+  }
+  if (pathname === "/api/project/run" || pathname === "/api/project/resume") {
+    if (body.confirmExecute !== true) {
+      throw new Error("执行或恢复项目必须显式设置 confirmExecute=true");
+    }
+    json(response, 200, runProject(body.projectRoot, {
+      confirmExecute: true,
+      resume: pathname.endsWith("/resume"),
+      includeRender: body.includeRender === true,
+      acceptRuntimeUpdate: body.acceptRuntimeUpdate === true,
+    }));
     return;
   }
   if (pathname === "/api/review/open") {
@@ -355,6 +414,22 @@ async function handleApi(request, response, url, port) {
       status: "pass",
       ...buildPreferenceCandidate(body.sessionPath, body.outputPath),
     });
+    return;
+  }
+  if (pathname === "/api/release/open") {
+    json(response, 200, openReleaseReview(body.projectManifestPath));
+    return;
+  }
+  if (pathname === "/api/release/initialize") {
+    json(response, 201, initializeReleaseReview(body.projectManifestPath, body));
+    return;
+  }
+  if (pathname === "/api/release/record") {
+    json(response, 200, recordReleaseCheck(body.projectManifestPath, body));
+    return;
+  }
+  if (pathname === "/api/release/approve") {
+    json(response, 200, approveReleaseReview(body.projectManifestPath, body));
     return;
   }
   if (pathname === "/api/observe") {
