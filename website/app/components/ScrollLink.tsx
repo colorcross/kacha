@@ -32,7 +32,14 @@ export function ScrollLink({
     event.preventDefault();
     event.stopPropagation();
 
-    const targetTop = target.getBoundingClientRect().top + window.scrollY;
+    const header = document.querySelector<HTMLElement>(".site-header");
+    const navigation = header?.querySelector<HTMLElement>("nav");
+    const fixedBottom = Math.max(
+      header?.getBoundingClientRect().bottom ?? 0,
+      navigation?.getBoundingClientRect().bottom ?? 0,
+    );
+    const targetTop =
+      target.getBoundingClientRect().top + window.scrollY - fixedBottom - 16;
 
     window.history.pushState(null, "", `#${targetId}`);
     window.scrollTo({

@@ -171,7 +171,10 @@ export function SiteShell({
   locale: "zh" | "en";
 }) {
   return (
-    <main lang={locale === "zh" ? "zh-CN" : "en"}>
+    <div className="site-root" lang={locale === "zh" ? "zh-CN" : "en"}>
+      <a className="skip-link" href="#main-content">
+        {content.skipToContent}
+      </a>
       <header className="site-header">
         <ScrollLink
           ariaLabel={content.brandHome}
@@ -209,6 +212,7 @@ export function SiteShell({
         </div>
       </header>
 
+      <main id="main-content" tabIndex={-1}>
       <section className="hero" id="top">
         <div className="hero-cut-line" aria-hidden="true" />
         <div className="hero-copy">
@@ -245,7 +249,11 @@ export function SiteShell({
           </div>
         </div>
 
-        <div className="hero-visual" aria-label={content.hero.visualLabel}>
+        <div
+          aria-label={content.hero.visualLabel}
+          className="hero-visual"
+          role="img"
+        >
           <div className="hero-logo-plane">
             <LogoMark />
             <p>
@@ -291,6 +299,11 @@ export function SiteShell({
                 <b />
                 <b />
               </i>
+            </div>
+            <div className="console-status" aria-hidden="true">
+              <span><i />SOURCE / RAW</span>
+              <b>→</b>
+              <span><i />OUTPUT / CANDIDATE</span>
             </div>
             <div className="playhead" aria-hidden="true" />
           </div>
@@ -554,6 +567,7 @@ export function SiteShell({
           </div>
         </div>
       </section>
+      </main>
 
       <footer>
         <div className="footer-brand">
@@ -585,6 +599,6 @@ export function SiteShell({
           <span>© 2026</span>
         </p>
       </footer>
-    </main>
+    </div>
   );
 }

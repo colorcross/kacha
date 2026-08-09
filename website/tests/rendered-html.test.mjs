@@ -30,6 +30,7 @@ test("server-renders the Chinese Kacha product page", async () => {
 
   const html = await response.text();
   assert.match(html, /咔嚓 Kacha/);
+  assert.match(html, /跳到主要内容/);
   assert.match(html, /从原始素材/);
   assert.match(html, /真正耗时间的/);
   assert.match(html, /先看变化，再看功能/);
@@ -53,6 +54,7 @@ test("server-renders the English product page", async () => {
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /From raw footage/);
+  assert.match(html, /Skip to main content/);
   assert.match(html, /See the change before the feature list/);
   assert.match(html, /Four styles, four editing grammars/);
   assert.match(html, /1,920 peak frames/);
@@ -93,4 +95,6 @@ test("internal anchors bypass the static host router and keep scrolling", async 
   assert.match(scrollLink, /event\.stopPropagation\(\)/);
   assert.match(scrollLink, /window\.history\.pushState/);
   assert.match(scrollLink, /window\.scrollTo/);
+  assert.match(scrollLink, /getBoundingClientRect\(\)\.bottom/);
+  assert.match(scrollLink, /fixedBottom/);
 });

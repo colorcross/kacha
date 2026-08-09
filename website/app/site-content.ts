@@ -38,6 +38,7 @@ type StyleGrammar = {
 
 export type SiteContent = {
   brandHome: string;
+  skipToContent: string;
   navLabel: string;
   nav: {
     problems: string;
@@ -132,6 +133,7 @@ export type SiteContent = {
 
 export const zhContent: SiteContent = {
   brandHome: "返回咔嚓首页",
+  skipToContent: "跳到主要内容",
   navLabel: "主导航",
   nav: {
     problems: "痛点",
@@ -423,6 +425,7 @@ export const zhContent: SiteContent = {
 
 export const enContent: SiteContent = {
   brandHome: "Back to Kacha home",
+  skipToContent: "Skip to main content",
   navLabel: "Primary navigation",
   nav: {
     problems: "Problems",

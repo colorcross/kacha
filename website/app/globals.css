@@ -83,20 +83,45 @@ main {
 }
 
 section[id] {
-  scroll-margin-top: 0;
+  scroll-margin-top: 104px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 14px;
+  left: 18px;
+  z-index: 40;
+  padding: 11px 15px;
+  color: white;
+  background: var(--ink);
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 760;
+  transform: translateY(-160%);
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
 }
 
 .site-header {
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 10;
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  z-index: 30;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  width: min(1520px, calc(100% - 64px));
-  min-height: 92px;
-  margin: 0 auto;
-  border-bottom: 1px solid rgb(36 39 47 / 16%);
+  width: min(1460px, calc(100% - 32px));
+  min-height: 72px;
+  padding: 0 12px 0 14px;
+  background: rgb(252 251 248 / 88%);
+  border: 1px solid rgb(36 39 47 / 13%);
+  border-radius: 4px;
+  box-shadow: 0 14px 44px rgb(36 39 47 / 10%);
+  backdrop-filter: blur(18px) saturate(1.12);
+  transform: translateX(-50%);
 }
 
 .brand-lockup {
@@ -158,14 +183,24 @@ section[id] {
 .site-header nav {
   display: flex;
   gap: clamp(24px, 3vw, 54px);
+  align-items: center;
   color: var(--graphite);
   font-size: 13px;
   font-weight: 650;
   letter-spacing: 0.08em;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.site-header nav::-webkit-scrollbar {
+  display: none;
 }
 
 .site-header nav a {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
 }
 
 .site-header nav a::after {
@@ -232,7 +267,7 @@ section[id] {
   display: grid;
   grid-template-columns: minmax(0, 0.96fr) minmax(520px, 1.04fr);
   min-height: 890px;
-  padding: 166px max(32px, calc((100vw - 1520px) / 2)) 88px;
+  padding: 146px max(32px, calc((100vw - 1520px) / 2)) 88px;
   background:
     radial-gradient(circle at 9% 9%, rgb(254 174 95 / 18%), transparent 28%),
     var(--paper-bright);
@@ -641,6 +676,52 @@ section[id] {
   clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
+.console-status {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 18px;
+  align-items: center;
+  padding: 17px 20px;
+  color: #9ea4af;
+  background: rgb(255 255 255 / 2%);
+  border-top: 1px solid rgb(255 255 255 / 7%);
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 760;
+  letter-spacing: 0.12em;
+}
+
+.console-status span {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.console-status span:last-child {
+  justify-self: end;
+  color: #d6dae1;
+}
+
+.console-status i {
+  width: 6px;
+  height: 6px;
+  background: var(--steel);
+  border-radius: 50%;
+}
+
+.console-status span:last-child i {
+  background: var(--positive);
+  box-shadow: 0 0 10px rgb(121 209 138 / 65%);
+}
+
+.console-status b {
+  color: var(--signal);
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .hero-caption {
   position: absolute;
   right: 0;
@@ -697,7 +778,7 @@ section[id] {
 }
 
 .section {
-  padding: 140px max(32px, calc((100vw - 1420px) / 2));
+  padding: 120px max(32px, calc((100vw - 1420px) / 2));
 }
 
 .section-heading {
@@ -1633,6 +1714,11 @@ section[id] {
   display: none;
 }
 
+.faq-list summary:focus-visible {
+  outline: 3px solid var(--signal);
+  outline-offset: 4px;
+}
+
 .faq-list summary span {
   color: var(--signal);
   font-family: var(--mono);
@@ -1661,7 +1747,7 @@ section[id] {
 
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   border-top: 1px solid var(--line);
   border-left: 1px solid var(--line);
 }
@@ -1689,9 +1775,34 @@ section[id] {
 }
 
 .feature-card--lead {
+  grid-column: span 2;
   background:
     linear-gradient(145deg, rgb(251 107 20 / 12%), transparent 55%),
     var(--paper-bright);
+}
+
+.feature-card:last-child {
+  grid-column: 1 / -1;
+  min-height: 270px;
+  background:
+    linear-gradient(105deg, rgb(251 107 20 / 13%), transparent 42%),
+    var(--paper-bright);
+}
+
+.feature-card:last-child h3,
+.feature-card:last-child > p:not(.card-kicker) {
+  max-width: 680px;
+}
+
+.feature-card:last-child .card-diagram {
+  top: 50%;
+  right: 8%;
+  height: 52px;
+  transform: translateY(-50%);
+}
+
+.feature-card:last-child .card-diagram span {
+  width: 8px;
 }
 
 .card-kicker {
@@ -2272,15 +2383,30 @@ footer {
 @media (max-width: 1100px) {
   .site-header {
     grid-template-columns: 1fr auto;
+    min-height: 64px;
   }
 
   .site-header nav {
-    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    left: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    min-height: 42px;
+    padding: 0 16px;
+    overflow-x: auto;
+    background: rgb(252 251 248 / 92%);
+    border: 1px solid rgb(36 39 47 / 13%);
+    border-radius: 4px;
+    box-shadow: 0 12px 32px rgb(36 39 47 / 8%);
+    backdrop-filter: blur(18px) saturate(1.12);
   }
 
   .hero {
     grid-template-columns: 1fr;
-    padding-top: 145px;
+    padding-top: 172px;
   }
 
   .hero-copy {
@@ -2302,6 +2428,11 @@ footer {
 
   .feature-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .feature-card--lead,
+  .feature-card:last-child {
+    grid-column: span 2;
   }
 
   .problem-grid,
@@ -2338,7 +2469,24 @@ footer {
 @media (max-width: 760px) {
   .site-header {
     width: calc(100% - 32px);
-    min-height: 76px;
+    top: 8px;
+    min-height: 60px;
+  }
+
+  .site-header nav {
+    top: calc(100% + 6px);
+    gap: 16px;
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 11px;
+  }
+
+  .site-header nav a::after {
+    bottom: -6px;
+  }
+
+  section[id] {
+    scroll-margin-top: 118px;
   }
 
   .brand-cn,
@@ -2348,7 +2496,7 @@ footer {
 
   .hero {
     min-height: auto;
-    padding: 124px 20px 60px;
+    padding: 152px 20px 60px;
   }
 
   .hero h1 {
@@ -2413,7 +2561,7 @@ footer {
   }
 
   .section {
-    padding: 90px 20px;
+    padding: 78px 20px;
   }
 
   .section-heading {
@@ -2483,7 +2631,23 @@ footer {
   }
 
   .feature-card {
-    min-height: 320px;
+    min-height: 260px;
+  }
+
+  .feature-card--lead,
+  .feature-card:last-child {
+    grid-column: span 1;
+  }
+
+  .feature-card:last-child {
+    min-height: 260px;
+  }
+
+  .feature-card:last-child .card-diagram {
+    top: 50px;
+    right: 40px;
+    height: 32px;
+    transform: none;
   }
 
   .workflow-list li {
