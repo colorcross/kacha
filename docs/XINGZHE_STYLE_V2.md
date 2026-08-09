@@ -164,16 +164,17 @@ SHA-256。策划、设计预检、正式渲染和返工必须引用同一设计�
 - `audioContract`：每类声音的功能、视觉峰值、增益起点、次数上限和禁用条件；
 - `qualityGates`：正常速度预览、关键帧顺序、碰撞、对比度和完整退场。
 
-高保真样板目前提供四套并列风格：
+高保真样板目前提供五套并列风格：
 
 1. `xingzhe-spatial-lightpath`：空间光路，适合 AI、工具、技术流程和空间关系；
 2. `xingzhe-light-overlay`：浅暖轻浮层，适合知识、方法、清单与亲和叙述；
 3. `xingzhe-humor-comic`：幽默漫画，适合真实反差、预期落差、误会、尺度错位、反应和回扣；
 4. `xingzhe-pixel-editorial`：像素风，适合 AI、工具、规则、计数、状态变化和可量化流程。
+5. `xingzhe-dark-tech`：暗黑科技风，适合异常、风险、冲突证据、隐性机制、真伪核验和系统边界。
 
 选择由内容气质、负空间和人物位置决定，不把任何一套设为全局硬编码默认。
 
-四套风格的共同字体与布局合同由
+五套风格的共同字体与布局合同由
 `config/design-system/visual-languages.json` 与 `config/font-routing.json` 统一约束：
 
 - 常规字幕使用真实金陵体，不加底色和描边，阴影不透明度固定为 60%；
@@ -184,7 +185,7 @@ SHA-256。策划、设计预检、正式渲染和返工必须引用同一设计�
   局部亮度图和真实文字度量，候选位置评分后再决定字号、颜色、行数和卡片尺寸；
 - 常驻品牌模块必须可读，但不得高于主标题 32% 的视觉显著度。
 
-四套风格共用一条声画时间轴合同：口播是主时钟，视觉峰值和功能性音效必须落在
+五套风格共用一条声画时间轴合同：口播是主时钟，视觉峰值和功能性音效必须落在
 同一语义锚点前后 2 帧内；常规字幕禁止配音效，每个语义拍最多一个主音效，并从
 项目 `kacha-profile.json` 按已命名叙事触发解析。发生冲突时依次保护人声清晰度、
 人物与证据、字幕可读性、主运动、常驻品牌，装饰层最先降级或删除。参考图、动画、
@@ -209,14 +210,19 @@ SHA-256。策划、设计预检、正式渲染和返工必须引用同一设计�
 8 个强调色、整数硬边和每步 2–4 帧的量化运动。稳定状态必须静止，通常 2–3 步
 完成一次变化；禁止持续扫描线、故障闪烁、复古音乐循环和无状态意义的金币/报错音。
 
-上述四套风格已扩展到全部 240 个注册效果，不只覆盖流程图。每套均有横版和
-竖版独立峰值帧，合计 1920 张；每个“效果 × 风格”组合都有一份 seek-safe
-可执行合同，合计 960 份。合同包含叙事触发、帧级时序、可调参数范围、人物和
+`xingzhe-dark-tech` 是取证式揭示，不是黑底赛博 HUD。先保留正常曝光，再局部隔离
+一个异常、锁定至多两层证据并落一次裁决；暗场覆盖不超过 42%，人物亮度至少保留
+82%，证据至少保留 90%。禁止整屏黑化、霓虹网格、数据雨、连续扫描、随机 glitch
+和科幻环境声床。
+
+上述五套风格已扩展到全部 240 个注册效果，不只覆盖流程图。每套均有横版和
+竖版独立峰值帧，合计 2400 张；每个“效果 × 风格”组合都有一份 seek-safe
+可执行合同，合计 1200 份。合同包含叙事触发、帧级时序、可调参数范围、人物和
 字幕适配、音效层级、低能力回退与质量门禁。使用前运行
 `kacha contracts validate`，选定效果后再运行 `contracts resolve`，不得只看图
 手工猜动画。
 
-四套全量高保真图库交付前还必须执行：
+五套全量高保真图库交付前还必须执行：
 
 ```bash
 node scripts/kacha.mjs design library-qc \
@@ -224,14 +230,15 @@ node scripts/kacha.mjs design library-qc \
   --spatial /path/to/全量效果库_v3_空间光路 \
   --comic /path/to/全量效果库_v4_幽默漫画 \
   --pixel /path/to/全量效果库_v4_像素风 \
+  --dark /path/to/全量效果库_v5_暗黑科技风 \
   --contracts config/effects/motion-contracts/design-effect-library-v3.json \
-  --output /path/to/four-style-qc-report.json
+  --output /path/to/five-style-qc-report.json
 ```
 
-该门禁验证 240 个效果、1920 张横竖参考图、真实金陵体文件哈希、60% 字幕阴影、
+该门禁验证 240 个效果、2400 张横竖参考图、真实金陵体文件哈希、60% 字幕阴影、
 人物头部碰撞、文字对比度、空间光路近黑区域、漫画/像素材质边界、素材重复、
-同风格未声明近似构图和 960 份独立动效核心。同风格近似构图必须为 0，否则直接
-失败；当前通过证据见 `docs/generated/four-style-library-qc.json`。参考图使用显式字体 SVG，经 Chrome 或 `rsvg-convert` 生成；
+同风格未声明近似构图和 1200 份独立动效核心。同风格近似构图必须为 0，否则直接
+失败；当前通过证据见 `docs/generated/five-style-library-qc.json`。参考图使用显式字体 SVG，经 Chrome 或 `rsvg-convert` 生成；
 合同必须如实记录实际渲染路径，不能宣称未使用的 Pillow 渲染器。图库与合同清单
 不得写入构建时间戳，同一输入重复构建的 digest 必须一致。
 
@@ -242,8 +249,8 @@ node scripts/kacha.mjs design library-qc \
 
 - 设计系统、生产台、效果模板和栏目能力策略均通过验证；
 - 全部注册项都有参考图，数量与注册表完全一致；
-- `design library-qc` 对四套全量图库和动效合同返回 `pass`；
-- 四套库的 `nearDuplicatePairCount`、`headCollisionAssetCount`、
+- `design library-qc` 对五套全量图库和动效合同返回 `pass`；
+- 五套库的 `nearDuplicatePairCount`、`headCollisionAssetCount`、
   `spatialBlackAssetCount` 和 `exactDuplicateAssets` 均为 0；
 - `design qc --matrix` 覆盖所有模式、组件状态和场景状态；
 - 封面人物占比在合同范围，标题和人物不碰撞；

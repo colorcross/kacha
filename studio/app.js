@@ -146,7 +146,7 @@ function renderVisualLanguages() {
     >
       <small>RECOMMENDED</small>
       <h3>自动按语义</h3>
-      <strong>四套语言并列路由</strong>
+      <strong>五套语言并列路由</strong>
       <p>逐个语义拍匹配真实触发；没有合适信号时保持干净画面或普通字幕。</p>
       <span>内容 → 匹配 → 合同 → 回退</span>
     </button>

@@ -2535,7 +2535,7 @@ await test("local production studio compiles an auditable project with verified 
   if (
     catalog.defaultStyleId !== "xingzhe"
     || catalog.builtInStyleCount < 4
-    || catalog.visualLanguageCount !== 4
+    || catalog.visualLanguageCount !== 5
     || catalog.defaultVisualLanguageSelectionMode !== "automatic"
     || catalog.visualLanguageParentProfile !== "xingzhe"
     || catalog.openingCount < 10
@@ -2759,7 +2759,7 @@ await test("local production studio compiles an auditable project with verified 
   ]);
 }, "visual");
 
-await test("production studio exposes four visual-language choices and live contract state", () => {
+await test("production studio exposes five visual-language choices and live contract state", () => {
   const html = fs.readFileSync(path.join(skillDirectory, "studio", "index.html"), "utf8");
   const client = fs.readFileSync(path.join(skillDirectory, "studio", "app.js"), "utf8");
   const visualLanguages = readJson(path.join(
@@ -2776,8 +2776,8 @@ await test("production studio exposes four visual-language choices and live cont
     || !client.includes("visualLanguageSelection")
     || visualLanguages.defaultSelectionMode !== "automatic"
     || visualLanguages.parentProfile !== "xingzhe"
-    || Object.keys(visualLanguages.languages).length !== 4
-    || new Set(Object.keys(visualLanguages.languages)).size !== 4
+    || Object.keys(visualLanguages.languages).length !== 5
+    || new Set(Object.keys(visualLanguages.languages)).size !== 5
   ) {
     throw new Error("production studio visual-language controls are incomplete");
   }
@@ -6986,7 +6986,7 @@ await test("effect templates and resource catalog resolve deterministic executio
   if (
     validation.templates !== 62
     || validation.catalogs.length !== 1
-    || validation.catalogs[0].assets !== 22
+    || validation.catalogs[0].assets !== 23
     || validation.byCategory.opening !== 10
     || validation.byCategory.transition !== 10
   ) {
@@ -7047,7 +7047,7 @@ await test("effect templates and resource catalog resolve deterministic executio
   }
 });
 
-await test("full design effect library resolves four executable visual styles", () => {
+await test("full design effect library resolves five executable visual styles", () => {
   const fontRouting = readJson(path.join(skillDirectory, "config", "font-routing.json"));
   const visualLanguages = readJson(path.join(skillDirectory, "config", "design-system", "visual-languages.json"));
   for (const styleId of [
@@ -7055,6 +7055,7 @@ await test("full design effect library resolves four executable visual styles", 
     "xingzhe-spatial-lightpath",
     "xingzhe-humor-comic",
     "xingzhe-pixel-editorial",
+    "xingzhe-dark-tech",
   ]) {
     if (!fontRouting.scope.includes(styleId)) {
       throw new Error(`font routing does not cover ${styleId}`);
@@ -7075,8 +7076,8 @@ await test("full design effect library resolves four executable visual styles", 
   ]).stdout);
   if (
     validation.counts.effects !== 240
-    || validation.counts.styles !== 4
-    || validation.counts.contracts !== 960
+    || validation.counts.styles !== 5
+    || validation.counts.contracts !== 1200
   ) {
     throw new Error(`unexpected design contract coverage: ${JSON.stringify(validation)}`);
   }
@@ -7116,6 +7117,15 @@ await test("full design effect library resolves four executable visual styles", 
     "--style",
     "xingzhe-pixel-editorial",
   ]).stdout);
+  const dark = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "contracts",
+    "resolve",
+    "--id",
+    "process_progressive",
+    "--style",
+    "xingzhe-dark-tech",
+  ]).stdout);
   const cleanCut = JSON.parse(execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
     "contracts",
@@ -7147,6 +7157,12 @@ await test("full design effect library resolves four executable visual styles", 
     || pixel.execution.audio.styleProfile.id !== "pixel-editorial-quantized-ui"
     || pixel.execution.easing.entry !== "steps(3,end)"
     || pixel.execution.parameters.defaults.pixelateFaceAndEvidence !== false
+    || dark.styleMaterialContract.maximumDarkIsolationAreaRatio > 0.42
+    || dark.styleMaterialContract.subjectLumaRetentionMinimum < 0.82
+    || dark.styleMaterialContract.evidenceLumaRetentionMinimum < 0.90
+    || dark.execution.audio.styleProfile.id !== "dark-tech-forensic-diagnostic"
+    || dark.applicabilityContract.requiredSignals.length < 7
+    || !dark.styleMaterialContract.forbid.includes("generic-cyberpunk-hud")
     || !light.execution.renderer.startsWith("chrome-or-rsvg-explicit-font-svg-reference")
     || !light.execution.sync.visibleLanding
     || comic.applicabilityContract.requiredSignals.length < 5
@@ -8072,20 +8088,20 @@ await test("design reference gallery covers every registered design item", () =>
   }
 }, "visual");
 
-await test("committed four-style library QC has zero unresolved composition collisions", () => {
+await test("committed five-style library QC has zero unresolved composition collisions", () => {
   const report = readJson(path.join(
     skillDirectory,
     "docs",
     "generated",
-    "four-style-library-qc.json",
+    "five-style-library-qc.json",
   ));
   if (
     report.status !== "pass"
-    || report.distinctEditingGrammarCount !== 4
+    || report.distinctEditingGrammarCount !== 5
     || report.crossStyleExactDuplicateGroupCount !== 0
-    || report.libraries?.length !== 4
+    || report.libraries?.length !== 5
   ) {
-    throw new Error("four-style library QC summary is missing or did not pass");
+    throw new Error("five-style library QC summary is missing or did not pass");
   }
   for (const library of report.libraries) {
     for (const key of [

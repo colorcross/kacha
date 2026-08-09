@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <radialGradient id="isolation" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#3f527f" stop-opacity=".06"/>
+      <stop offset=".68" stop-color="#161b27" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#0b0e15" stop-opacity=".34"/>
+    </radialGradient>
+    <linearGradient id="signal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6787ea"/>
+      <stop offset=".68" stop-color="#f05a47"/>
+      <stop offset="1" stop-color="#ff8a3d"/>
+    </linearGradient>
+  </defs>
+  <path d="M0 0h1920v1080H0z" fill="url(#isolation)"/>
+  <g fill="none" stroke="#8fa2df" stroke-width="2" opacity=".56">
+    <path d="M230 270v-76h76M1040 194h76v76M1116 750v76h-76M306 826h-76v-76"/>
+    <rect x="230" y="194" width="886" height="632" rx="42" stroke-opacity=".24"/>
+  </g>
+  <path d="M318 684h170l46-108 62 66 92-210 78 196 62-86 56 142h142" fill="none" stroke="url(#signal)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="688" cy="432" r="12" fill="#ff8a3d"/>
+  <g font-family="sans-serif" fill="#eef2ff">
+    <text x="276" y="248" font-size="26" letter-spacing="5" opacity=".78">EVIDENCE WINDOW</text>
+    <text x="878" y="780" font-size="22" letter-spacing="3" opacity=".64">LOCK 01</text>
+  </g>
+</svg>

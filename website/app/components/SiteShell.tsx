@@ -113,7 +113,7 @@ function StyleGrammarVisual({
   id,
   label,
 }: {
-  id: "light" | "spatial" | "comic" | "pixel";
+  id: "light" | "spatial" | "comic" | "pixel" | "dark";
   label: string;
 }) {
   return (
@@ -157,6 +157,16 @@ function StyleGrammarVisual({
           <span className="grammar-register grammar-register--process"><i />RULE</span>
           <span className="grammar-register grammar-register--result"><i />PASS</span>
           <span className="grammar-cursor" />
+        </>
+      ) : null}
+      {id === "dark" ? (
+        <>
+          <span className="grammar-dark-aperture" />
+          <span className="grammar-dark-bracket grammar-dark-bracket--one" />
+          <span className="grammar-dark-bracket grammar-dark-bracket--two" />
+          <span className="grammar-dark-trace" />
+          <span className="grammar-dark-evidence">EVIDENCE 01</span>
+          <span className="grammar-dark-verdict"><i />VERIFIED</span>
         </>
       ) : null}
     </div>

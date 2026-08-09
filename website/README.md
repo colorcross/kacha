@@ -50,10 +50,10 @@ npm run audit:dependencies
 开发链只允许 `scripts/audit-dependencies.mjs` 中登记的 vinext/image-size 精确
 例外；包版本、依赖路径、GHSA 或修复状态发生任何变化都会重新阻断。
 
-首页的“四种剪辑语法”区块直接对应
-[`docs/FOUR_STYLE_EDITING_GRAMMARS.md`](../docs/FOUR_STYLE_EDITING_GRAMMARS.md)：
-四张卡必须分别表现连续旁注、纵深导航、喜剧节拍和状态机，不能退化为同一组件
-只换颜色或材质。中英文内容、136 项回归口径、1920 张峰值帧和 960 份合同数量
+首页的“五种剪辑语法”区块直接对应
+[`docs/FIVE_STYLE_EDITING_GRAMMARS.md`](../docs/FIVE_STYLE_EDITING_GRAMMARS.md)：
+五张卡必须分别表现连续旁注、纵深导航、喜剧节拍、状态机和取证揭示，不能退化为同一组件
+只换颜色或材质。中英文内容、当前回归口径、2400 张峰值帧和 1200 份合同数量
 需要同步更新并由页面测试锁定。
 
 V7 流程区必须显示方案确认、首剪确认、成片审阅、交付与返工四个可恢复节点；

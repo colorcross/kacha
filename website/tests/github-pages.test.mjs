@@ -24,9 +24,9 @@ test("packages Chinese and English GitHub Pages routes", async () => {
   assert.match(chinese, /从脚本或素材/);
   assert.match(english, /From script or footage/);
   assert.match(chinese, /四个可确认节点/);
-  assert.match(chinese, /四种风格，不是同一套卡片换颜色/);
+  assert.match(chinese, /五种风格，不是同一套卡片换颜色/);
   assert.match(chinese, /未声明近似构图 0 组/);
-  assert.match(english, /Four styles, four editing grammars/);
+  assert.match(english, /Five styles, five editing grammars/);
   assert.match(chinese, /dodofun@126\.com/);
   assert.match(chinese, /href="\/kacha\/en\/"/);
   assert.match(english, /href="\/kacha\/"/);

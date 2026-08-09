@@ -310,12 +310,13 @@ export function validateDesignSystem(bundle) {
     "xingzhe-spatial-lightpath",
     "xingzhe-humor-comic",
     "xingzhe-pixel-editorial",
+    "xingzhe-dark-tech",
   ];
   if (
     !Array.isArray(fontRouting?.scope)
     || requiredVisualLanguageIds.some((styleId) => !fontRouting.scope.includes(styleId))
   ) {
-    errors.push("fontRouting.scope 必须覆盖浅暖轻浮层、空间光路、幽默漫画和像素风四套风格");
+    errors.push("fontRouting.scope 必须覆盖浅暖轻浮层、空间光路、幽默漫画、像素风和暗黑科技风五套风格");
   }
   const visualLanguages = capabilityRegistries?.visualLanguages;
   if (
@@ -330,8 +331,9 @@ export function validateDesignSystem(bundle) {
     || !visualLanguages.languages["xingzhe-spatial-lightpath"]
     || !visualLanguages.languages["xingzhe-humor-comic"]
     || !visualLanguages.languages["xingzhe-pixel-editorial"]
+    || !visualLanguages.languages["xingzhe-dark-tech"]
   ) {
-    errors.push("visualLanguages 必须绑定行者风、默认按语义选择且注册四套可执行视觉语言；不得声明全局默认风格");
+    errors.push("visualLanguages 必须绑定行者风、默认按语义选择且注册五套可执行视觉语言；不得声明全局默认风格");
   }
   for (const styleId of requiredVisualLanguageIds) {
     const language = visualLanguages?.languages?.[styleId];
@@ -377,7 +379,7 @@ export function validateDesignSystem(bundle) {
     .map((styleId) => visualLanguages?.languages?.[styleId]?.grammarSignature)
     .filter(Boolean);
   if (new Set(grammarSignatures.map((signature) => signature.id)).size !== requiredVisualLanguageIds.length) {
-    errors.push("四套视觉语言的 grammarSignature.id 必须互不相同");
+    errors.push("五套视觉语言的 grammarSignature.id 必须互不相同");
   }
   const differentiatingAxes = [
     "temporalModel",
@@ -394,7 +396,7 @@ export function validateDesignSystem(bundle) {
         (axis) => grammarSignatures[leftIndex]?.[axis] === grammarSignatures[rightIndex]?.[axis],
       );
       if (sharedAxes.length > 1) {
-        errors.push(`四套视觉语言不能只做材质换皮；剪辑语法重复轴：${sharedAxes.join("、")}`);
+        errors.push(`五套视觉语言不能只做材质换皮；剪辑语法重复轴：${sharedAxes.join("、")}`);
       }
     }
   }

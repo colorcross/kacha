@@ -93,24 +93,24 @@ handoff 和 QC。
 覆盖 52 个组件、69 个场景、8 个 renderer、36 个 layout 和 75 个 motion，
 用于统一策划、实现与返工的视觉预期，不替代真实视频动效验收。
 
-项目高保真层为每个注册效果提供浅暖轻浮层、空间光路、幽默漫画与像素风四种
-视觉语言的 16:9 / 9:16 独立峰值帧，共 1920 张，并在
-`config/effects/motion-contracts/design-effect-library-v3.json` 登记 960 份
+项目高保真层为每个注册效果提供浅暖轻浮层、空间光路、幽默漫画、像素风与暗黑科技风五种
+视觉语言的 16:9 / 9:16 独立峰值帧，共 2400 张，并在
+`config/effects/motion-contracts/design-effect-library-v3.json` 登记 1200 份
 seek-safe 动效合同。幽默漫画必须由真实反差、误会、尺度错位、反应或回扣触发；
 像素风必须由系统、规则、计数、状态或量化流程触发。两者都不得把材质偏好变成
 全片滤镜，也不得降低人物、事实证据和文字清晰度。声音只声明功能和触发，文件
-继续由项目私有 `kacha-profile.json` 精确解析。四套风格的每次正式选择都至少
+继续由项目私有 `kacha-profile.json` 精确解析。五套风格的每次正式选择都至少
 命中一个注册信号，并记录 `matchedSignal`、`semanticBeatId`、`sourceRange`；
 没有命中时记录 `fallbackReasonWhenNotApplied` 并执行合同回退。
 
-四套风格不再共享同一镜头套路。它们分别执行“连续编辑旁注”“单次空间导航”
-“铺垫—反应—包袱—回扣”和“输入—处理—状态—结果”四种时间与空间语法；
+五套风格不再共享同一镜头套路。它们分别执行“连续编辑旁注”“单次空间导航”
+“铺垫—反应—包袱—回扣”“输入—处理—状态—结果”和“异常—证据—裁决—恢复”五种时间与空间语法；
 完整决策表、禁用模式、原创母件和生产门禁见
-`docs/FOUR_STYLE_EDITING_GRAMMARS.md`。`config/design-system/visual-languages.json`
+`docs/FIVE_STYLE_EDITING_GRAMMARS.md`。`config/design-system/visual-languages.json`
 中的 `grammarSignature` 是机器权威值，效果合同中的 `editingGrammarContract` 必须
 与之同源。只更换卡片材质、颜色、网点、像素边或玻璃光效将被判为换皮失败。
 生产库还必须通过同风格近似构图零容忍门禁；当前
-`docs/generated/four-style-library-qc.json` 记录四套 `nearDuplicatePairCount` 均为 0。
+`docs/generated/five-style-library-qc.json` 记录五套 `nearDuplicatePairCount` 均为 0。
 
 ## 转场库
 

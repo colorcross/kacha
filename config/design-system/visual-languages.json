@@ -308,6 +308,73 @@
         "errorCueRequiresRealFailure": true,
         "forbid": ["retro_music_loop", "coin_for_non_reward", "error_buzzer_for_opinion", "sound_before_state_change"]
       }
+    },
+    "xingzhe-dark-tech": {
+      "label": "暗黑科技风",
+      "intent": "用局部暗场、观察孔、证据切片和一次明确裁决揭示异常、风险与隐性机制；暗部负责隔离干扰，不把真人、证据或整帧压成廉价赛博朋克。",
+      "sourceReference": "设计参考/行者风高保真样板/全量效果库_v5_暗黑科技风/index.html",
+      "grammarSignature": {
+        "id": "signal-isolate-evidence-verdict",
+        "temporalModel": "forensic_reveal_with_bounded_uncertainty",
+        "shotUnit": "anomaly_hypothesis_evidence_verdict_recovery",
+        "spatialModel": "bounded_observation_aperture_and_occluded_evidence_layers",
+        "primaryTransition": "aperture_isolate_luma_reveal_occlusion_cut_or_verdict_snap",
+        "textBehavior": "evidence_labels_then_single_verdict_with_red_blue_hierarchy",
+        "audioCadence": "one_low_diagnostic_cue_at_evidence_lock_or_verdict_only",
+        "stillnessPolicy": "long_silent_evidence_hold_after_lock_with_no_ambient_pulse"
+      },
+      "editingGrammar": {
+        "sequence": ["establish_clean_baseline", "isolate_one_anomaly", "reveal_verifiable_evidence", "land_one_verdict", "restore_clean_context"],
+        "camera": "locked_observation_or_one_motivated_probe_in; camera_must_stop_before_the_evidence_becomes_readable",
+        "topology": "one_bounded_observation_aperture_plus_at_most_two_evidence_layers_and_one_verdict_zone",
+        "cutPolicy": "cut_when_evidence_source_or_claim_status_changes; preserve_a_long_readable_hold_after_lock",
+        "transitionPolicy": "local_aperture_luma_key_occlusion_cut_or_verdict_snap; never_use_continuous_route_tile_swap_or_random_glitch",
+        "soundPolicy": "silence_under_dialogue; one_dry_low_diagnostic_lock_or_resolve_cue_only_after_visible_evidence_lands",
+        "forbidSharedPatterns": ["centered_three_card_stack", "flat_margin_annotation_sequence", "continuous_depth_route", "setup_reaction_punchline_panels", "input_process_output_hud"]
+      },
+      "applicability": {
+        "selectionRule": "存在可核验的异常、风险、冲突证据、隐性机制、真伪判断或系统边界，需要从不确定走向裁决",
+        "requiredSignals": ["anomaly", "risk", "conflicting_evidence", "hidden_mechanism", "authenticity_check", "system_boundary", "security_issue", "verdict"],
+        "minimumMatchedSignals": 1,
+        "runtimeEvidenceRequired": ["matchedSignal", "semanticBeatId", "sourceRange", "fallbackReasonWhenNotApplied"],
+        "quietBeatPolicy": "没有异常或证据裁决的说明拍保持正常曝光真人画面与普通字幕，不添加暗场、扫描、故障或 HUD",
+        "fallback": "真实关系改用空间光路，真实状态变化改用像素风；否则回退浅暖轻浮层、普通字幕或干净切"
+      },
+      "footage": {
+        "preserveOriginal": true,
+        "subjectLumaRetentionMinimum": 0.82,
+        "evidenceLumaRetentionMinimum": 0.9,
+        "localizedTreatmentOnly": true,
+        "forbid": ["full_frame_black_wash", "crushed_face_shadows", "neon_color_cast_on_skin", "obscured_source_or_evidence"]
+      },
+      "surface": {
+        "material": "localized_graphite_isolation_with_optical_glass_evidence",
+        "maximumDarkIsolationAreaRatio": 0.42,
+        "darkOpacityRange": [0.12, 0.34],
+        "apertureStrokePxAt1080p": [2, 5],
+        "maximumConcurrentEvidenceLayers": 2,
+        "accentColors": ["rational_blue", "controlled_orange_red", "diagnostic_amber"],
+        "forbid": ["full_frame_near_black_fill", "generic_cyberpunk_hud", "dense_neon_grid", "visible_scanline_bed"]
+      },
+      "composition": {
+        "motifs": ["observation_aperture", "evidence_slice", "luma_isolation", "forensic_bracket", "single_verdict_line", "localized_spectrum_trace"],
+        "informationPriority": ["verifiable_evidence", "claim_status", "subject_face", "context", "decoration"],
+        "maximumPrimaryVerdictsPerBeat": 1,
+        "realEvidenceMustRemainReadable": true
+      },
+      "motion": {
+        "entry": "8-14_frames_local_isolation_then_evidence_lock",
+        "hold": "0.9-1.8_seconds_static_evidence_reading",
+        "exit": "6-10_frames_restore_clean_context_before_next_claim",
+        "forbid": ["continuous_scan", "random_glitch", "ambient_pulse", "full_frame_flicker", "perpetual_data_stream"]
+      },
+      "audio": {
+        "paletteTriggers": ["emphasis", "turn", "info", "knowledge", "ui", "error", "motion"],
+        "preferredTexture": "dry_low_diagnostic_lock_and_short_resolve",
+        "ordinarySubtitleSfx": "forbidden",
+        "cueRequiresVisibleEvidenceOrVerdict": true,
+        "forbid": ["sci_fi_ambience_bed", "continuous_sonar", "alarm_without_risk", "glitch_barrage", "sound_before_evidence_lock"]
+      }
     }
   }
 }

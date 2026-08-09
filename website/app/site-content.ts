@@ -30,7 +30,7 @@ type FaqItem = {
 };
 
 type StyleGrammar = {
-  id: "light" | "spatial" | "comic" | "pixel";
+  id: "light" | "spatial" | "comic" | "pixel" | "dark";
   kicker: string;
   title: string;
   body: string;
@@ -140,7 +140,7 @@ export const zhContent: SiteContent = {
   nav: {
     problems: "痛点",
     outcomes: "效果",
-    styles: "四种语法",
+    styles: "五种语法",
     workflow: "流程",
     install: "安装",
     contact: "联系",
@@ -226,11 +226,11 @@ export const zhContent: SiteContent = {
     ],
   },
   styles: {
-    title: "四种风格，不是同一套卡片换颜色。",
+    title: "五种风格，不是同一套卡片换颜色。",
     intro:
       "它们共享人物保护、字幕可读性和品牌规范，但使用不同的时间单位、空间拓扑、转场与声音逻辑。操作工作台默认按每个语义拍自动路由，也可指定某套语法优先；没有真实触发时回退干净画面。系统会逐对比较七个语法轴，发现换皮就停止。",
     auditLabel: "PRODUCTION EVIDENCE",
-    auditValue: "4 套语法 · 240 个效果 · 1920 张峰值帧 · 960 份合同 · 未声明近似构图 0 组",
+    auditValue: "5 套语法 · 240 个效果 · 2400 张峰值帧 · 1200 份合同 · 未声明近似构图 0 组",
     items: [
       {
         id: "light",
@@ -263,6 +263,14 @@ export const zhContent: SiteContent = {
         body: "像素只组织图形状态，人物、证据和正文保持高清；每次只提交一个可验证的真实变化。",
         sequence: "输入 → 处理规则 → 状态提交 → 结果验证",
         sound: "只有真实状态改变时，才触发对应 UI 声。",
+      },
+      {
+        id: "dark",
+        kicker: "FORENSIC REVEAL",
+        title: "暗黑科技风",
+        body: "只在异常、风险、冲突证据、隐性机制或真伪判断中局部收暗；观察孔锁定证据后只落一次裁决，不把人物压成赛博背景。",
+        sequence: "正常基准 → 隔离异常 → 证据锁定 → 一次裁决 → 恢复上下文",
+        sound: "口播下保持安静；证据锁定或裁决后最多一枚低频诊断音。",
       },
     ],
   },
@@ -445,7 +453,7 @@ export const enContent: SiteContent = {
   nav: {
     problems: "Problems",
     outcomes: "Results",
-    styles: "Four grammars",
+    styles: "Five grammars",
     workflow: "Workflow",
     install: "Install",
     contact: "Contact",
@@ -531,11 +539,11 @@ export const enContent: SiteContent = {
     ],
   },
   styles: {
-    title: "Four styles, four editing grammars—not one card system reskinned.",
+    title: "Five styles, five editing grammars—not one card system reskinned.",
     intro:
       "They share subject safety, caption legibility, and brand rules, but differ in time unit, spatial topology, transitions, and sound. The production console routes each semantic beat automatically or lets an editor prefer one grammar; without a real trigger, it falls back to a clean frame. Kacha compares seven grammar axes pairwise and fails a cosmetic reskin.",
     auditLabel: "PRODUCTION EVIDENCE",
-    auditValue: "4 grammars · 240 effects · 1,920 peak frames · 960 contracts · 0 undeclared near-duplicate compositions",
+    auditValue: "5 grammars · 240 effects · 2,400 peak frames · 1,200 contracts · 0 undeclared near-duplicate compositions",
     items: [
       {
         id: "light",
@@ -568,6 +576,14 @@ export const enContent: SiteContent = {
         body: "Pixels organize graphic state while people, evidence, and readable copy stay sharp. Each beat commits one verifiable state change.",
         sequence: "input → rule → state commit → verified result",
         sound: "A UI cue fires only when the underlying state actually changes.",
+      },
+      {
+        id: "dark",
+        kicker: "FORENSIC REVEAL",
+        title: "Dark Tech",
+        body: "Localized darkness appears only for anomalies, risk, conflicting evidence, hidden mechanisms, or authenticity checks. One evidence lock leads to one verdict while the subject stays properly exposed.",
+        sequence: "clean baseline → isolate anomaly → lock evidence → verdict → restore context",
+        sound: "Silence under dialogue; one low diagnostic lock or resolve cue after visible evidence lands.",
       },
     ],
   },

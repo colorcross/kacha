@@ -33,20 +33,20 @@ Style Profile
     +
 33 个语义网感机制
     +
-62 个预制效果模板 / 22 个公共核心资源
+62 个预制效果模板 / 23 个公共核心资源
     ↓
 8 个生产 Renderer / 36 个 Layout / 75 个 Motion
     ↓
 240 张带摘要的参考效果图
 
-项目内高保真层另外提供 `浅暖轻浮层`、`空间光路`、`幽默漫画` 与 `像素风`
-四套风格。每套为全部 240 个效果分别设计 16:9 与 9:16 峰值帧，共 1920 张；同时由
-`design-effect-library-v3.json` 提供 960 份可执行动效合同。基础 SVG 图库用于
+项目内高保真层另外提供 `浅暖轻浮层`、`空间光路`、`幽默漫画`、`像素风` 与 `暗黑科技风`
+五套风格。每套为全部 240 个效果分别设计 16:9 与 9:16 峰值帧，共 2400 张；同时由
+`design-effect-library-v3.json` 提供 1200 份可执行动效合同。基础 SVG 图库用于
 快速检索，项目内高保真图库用于构图对齐，合同用于正式时间行为，三者不能互相
 替代。两套新增视觉语言的完整叙事边界、材质、动态、声音与 QC 规则见
 `docs/HUMOR_COMIC_VISUAL_LANGUAGE.md` 和 `docs/PIXEL_EDITORIAL_VISUAL_LANGUAGE.md`。
-四套风格的镜头组织、时间单位、空间拓扑、转场和声音必须按
-`docs/FOUR_STYLE_EDITING_GRAMMARS.md` 分离；不得只更换表面材质。
+五套风格的镜头组织、时间单位、空间拓扑、转场和声音必须按
+`docs/FIVE_STYLE_EDITING_GRAMMARS.md` 分离；不得只更换表面材质。
     ↓
 Design Preflight
     ↓
@@ -174,7 +174,7 @@ showcase 的家族标签、效果名称和固定示例文字。项目在
 - `config/effects/spoken-caption-layouts.json`：普通单行、逻辑重音、左右、
   侧边、上下和前后景布局；
 - `config/font-routing.json`：金陵体字幕、华光标题黑展示字、封神榜书封面标题和细体辅助文字的限定角色。
-- `config/design-system/visual-languages.json`：四套高保真视觉语言的材质、布局、碰撞、对比度、品牌、动态和声音母合同。
+- `config/design-system/visual-languages.json`：五套高保真视觉语言的材质、布局、碰撞、对比度、品牌、动态和声音母合同。
 
 它们进入 design digest，但不把本地字体文件写进系统。正式应用分别走
 `breathing plan → validate → render` 和
@@ -184,9 +184,9 @@ showcase 的家族标签、效果名称和固定示例文字。项目在
 V1.5 把注册表进一步编译为 62 个预制效果模板。模板覆盖开场、转场、语义
 画面、贴纸/视线、空间纵深、关键帧、并列句、字幕布局和画面呼吸；每个模板
 统一声明场景、组件、进入/停稳/退出、字体角色、音效触发、人物/字幕/品牌
-安全区、资源槽位、失败条件和回退。22 个公共核心资源包括原创 SVG、品牌、
-原创音效入口和字体路由；其中四个剪辑语法母件分别对应边缘旁注、空间路径、
-漫画节拍和像素状态。项目私有目录只扩展授权字体、私有音效和按镜头取得的
+安全区、资源槽位、失败条件和回退。23 个公共核心资源包括原创 SVG、品牌、
+原创音效入口和字体路由；其中五个剪辑语法母件分别对应边缘旁注、空间路径、
+漫画节拍、像素状态和暗黑取证观察孔。项目私有目录只扩展授权字体、私有音效和按镜头取得的
 素材，不能覆盖核心许可。
 
 ## 6. 解析与检查
@@ -222,13 +222,14 @@ node scripts/kacha.mjs design library-qc \
   --spatial /path/to/全量效果库_v3_空间光路 \
   --comic /path/to/全量效果库_v4_幽默漫画 \
   --pixel /path/to/全量效果库_v4_像素风 \
+  --dark /path/to/全量效果库_v5_暗黑科技风 \
   --contracts config/effects/motion-contracts/design-effect-library-v3.json \
-  --output /path/to/four-style-qc-report.json
+  --output /path/to/five-style-qc-report.json
 ```
 
 `library-qc` 是阻断式生产门禁：同一风格内任何未声明家族关系的近似构图、人物
-头脸覆盖、空间近黑块或未允许的精确重复都会失败。当前四库通过报告固化在
-`docs/generated/four-style-library-qc.json`，四项计数均为 0。
+头脸覆盖、空间近黑块或未允许的精确重复都会失败。当前五库通过报告固化在
+`docs/generated/five-style-library-qc.json`，四项问题计数均为 0。
 
 效果与资源解析：
 

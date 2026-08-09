@@ -105,7 +105,7 @@
       "resources": ["mps", "cpuHeavy"],
       "parallelSafe": true,
       "outputGroups": ["visual_master"],
-      "summary": "按四风格语法、能力计划、素材许可和设计预检实施视觉包装",
+      "summary": "按五风格语法、能力计划、素材许可和设计预检实施视觉包装",
       "evidence": ["visual capability plan", "design preflight", "packaged timeline"]
     },
     {

@@ -53,6 +53,7 @@ function validateRegistry(registry) {
     "xingzhe-spatial-lightpath",
     "xingzhe-humor-comic",
     "xingzhe-pixel-editorial",
+    "xingzhe-dark-tech",
   ]);
   for (const styleId of requiredStyleIds) {
     if (!registry.styles?.[styleId]) errors.push(`styles 缺少 ${styleId}`);
@@ -281,6 +282,26 @@ function validateRegistry(registry) {
         errors.push(`${prefix}.applicabilityContract 像素风缺少系统或状态触发`);
       }
     }
+    if (contract.style?.id === "xingzhe-dark-tech") {
+      const forbidden = new Set(material.forbid ?? []);
+      if (
+        material.footage !== "preserve-original-photographic-face-evidence-and-source"
+        || material.maximumDarkIsolationAreaRatio > 0.42
+        || material.subjectLumaRetentionMinimum < 0.82
+        || material.evidenceLumaRetentionMinimum < 0.90
+        || !forbidden.has("full-frame-black-wash")
+        || !forbidden.has("generic-cyberpunk-hud")
+        || !forbidden.has("continuous-scanline")
+      ) {
+        errors.push(`${prefix}.styleMaterialContract 暗黑科技风未限制暗部、保护人物证据或禁止通用赛博噪声`);
+      }
+      if (execution.audio?.styleProfile?.id !== "dark-tech-forensic-diagnostic") {
+        errors.push(`${prefix}.execution.audio 暗黑科技风声音母版不正确`);
+      }
+      if ((contract.applicabilityContract?.requiredSignals ?? []).length < 7) {
+        errors.push(`${prefix}.applicabilityContract 暗黑科技风缺少异常、风险或证据裁决触发`);
+      }
+    }
     const styleId = contract.style?.id ?? "missing-style";
     const priorGrammar = grammarSignaturesByStyle.get(styleId);
     const currentGrammar = JSON.stringify(grammar.signature ?? null);
@@ -316,7 +337,7 @@ function validateRegistry(registry) {
     }
   }
   if (new Set(grammarSignaturesByStyle.values()).size !== requiredStyleIds.size) {
-    errors.push("四套风格必须具有互不相同的剪辑语法签名，不能只更换颜色、材质或贴纸");
+    errors.push("五套风格必须具有互不相同的剪辑语法签名，不能只更换颜色、材质或贴纸");
   }
   return errors;
 }

@@ -64,6 +64,11 @@
         "grammar": "state_machine",
         "defaultMechanism": "state_commit",
         "quietMechanism": "stable_high_definition_live_action"
+      },
+      "dark-tech": {
+        "grammar": "forensic_reveal",
+        "defaultMechanism": "evidence_lock_and_verdict",
+        "quietMechanism": "clean_normally_exposed_live_action"
       }
     }
   },

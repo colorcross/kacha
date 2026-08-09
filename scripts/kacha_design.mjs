@@ -55,7 +55,7 @@ if (![
     "用法：kacha.mjs design validate|list|show|resolve|preview|render|qc|gallery|library-qc "
       + "[--kind component|scene|mode|renderer|layout|motion|system] "
       + "[--id ID] [--scene ID]\n"
-      + "  kacha.mjs design library-qc --light DIR --spatial DIR --comic DIR --pixel DIR --contracts FILE [--output REPORT.json]",
+      + "  kacha.mjs design library-qc --light DIR --spatial DIR --comic DIR --pixel DIR --dark DIR --contracts FILE [--output REPORT.json]",
     2,
   );
 }
@@ -65,14 +65,15 @@ if (action === "library-qc") {
   const spatial = option("--spatial");
   const comic = option("--comic");
   const pixel = option("--pixel");
+  const dark = option("--dark");
   const contracts = option("--contracts");
   const semantics = option(
     "--semantics",
     path.join(path.resolve(scriptDirectory, ".."), "config", "effects", "reference-semantics", "light-overlay.json"),
   );
   const output = option("--output");
-  if (!light || !spatial || !comic || !pixel || !contracts) {
-    fail("library-qc 必须提供 --light、--spatial、--comic、--pixel 和 --contracts", 2);
+  if (!light || !spatial || !comic || !pixel || !dark || !contracts) {
+    fail("library-qc 必须提供 --light、--spatial、--comic、--pixel、--dark 和 --contracts", 2);
   }
   const qcArguments = [
     path.join(scriptDirectory, "reference_library_qc.py"),
@@ -80,6 +81,7 @@ if (action === "library-qc") {
     "--spatial", path.resolve(spatial),
     "--comic", path.resolve(comic),
     "--pixel", path.resolve(pixel),
+    "--dark", path.resolve(dark),
     "--contracts", path.resolve(contracts),
     "--semantics", path.resolve(semantics),
   ];

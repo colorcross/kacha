@@ -1137,8 +1137,8 @@ function validateConfig() {
   if (config.schemaVersion !== "1.0" || config.version !== "6.0.0") {
     errors.push("intelligence-v6 配置版本无效");
   }
-  if (Object.keys(config.director?.styles ?? {}).length !== 4) {
-    errors.push("V6 必须定义四套互斥风格语法");
+  if (Object.keys(config.director?.styles ?? {}).length !== 5) {
+    errors.push("V6 必须定义五套互斥风格语法");
   }
   if (config.review?.preferenceActivationRequiresConfirmation !== true) {
     errors.push("长期偏好激活必须显式确认");

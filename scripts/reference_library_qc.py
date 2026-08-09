@@ -227,9 +227,9 @@ def validate_library(directory: Path, style: str, semantics: dict, contracts: di
     if assurance.get("normalSubtitleHasNoBackgroundOrOutline") is not True:
         failures.append("render-evidence 未声明常规字幕无背景和描边")
     if assurance.get("componentIdentityPreservedAcrossStyles") is not True:
-        failures.append("render-evidence 未声明四风格均保留组件 ID 的独立形状与信息关系")
+        failures.append("render-evidence 未声明五风格均保留组件 ID 的独立形状与信息关系")
     if assurance.get("editingGrammarDiffersAcrossStyles") is not True:
-        failures.append("render-evidence 未声明四风格使用不同剪辑语法")
+        failures.append("render-evidence 未声明五风格使用不同剪辑语法")
     evidence_grammar = evidence.get("editingGrammar", {})
     manifest_grammar = manifest.get("style", {}).get("grammar", {})
     grammar_id = evidence_grammar.get("grammarSignature", {}).get("id")
@@ -256,6 +256,17 @@ def validate_library(directory: Path, style: str, semantics: dict, contracts: di
         failures.append("幽默漫画网点覆盖率超过 18%")
     if style == "pixel" and material_metrics.get("maximumPixelGridAreaRatio", 1) > 0.24:
         failures.append("像素风网格覆盖率超过 24%")
+    if style == "dark":
+        if material_metrics.get("maximumDarkIsolationAreaRatio", 1) > 0.42:
+            failures.append("暗黑科技风局部暗场面积超过 42%")
+        if material_metrics.get("minimumSubjectLumaRetention", 0) < 0.82:
+            failures.append("暗黑科技风人物亮度保留低于 82%")
+        if material_metrics.get("minimumEvidenceLumaRetention", 0) < 0.90:
+            failures.append("暗黑科技风证据亮度保留低于 90%")
+        if material_metrics.get("fullFrameBlackWash") is not False:
+            failures.append("暗黑科技风未明确禁止整屏黑色覆盖")
+        if material_metrics.get("continuousScanOrGlitch") is not False:
+            failures.append("暗黑科技风未明确禁止连续扫描或故障噪声")
     brand_metrics = evidence.get("persistentBrandMetrics", {})
     if brand_metrics.get("minimumPrimaryFontPxAt1080p", 0) < 22:
         failures.append("常驻品牌模块手机端字号基线不足")
@@ -516,6 +527,7 @@ def main() -> None:
     parser.add_argument("--spatial", required=True)
     parser.add_argument("--comic", required=True)
     parser.add_argument("--pixel", required=True)
+    parser.add_argument("--dark", required=True)
     parser.add_argument("--contracts", required=True)
     parser.add_argument("--semantics", required=True)
     parser.add_argument("--output")
@@ -527,6 +539,7 @@ def main() -> None:
         ("spatial", Path(args.spatial), "xingzhe-spatial-lightpath"),
         ("comic", Path(args.comic), "xingzhe-humor-comic"),
         ("pixel", Path(args.pixel), "xingzhe-pixel-editorial"),
+        ("dark", Path(args.dark), "xingzhe-dark-tech"),
     ]
     report = {
         "schemaVersion": "2.0",
@@ -560,13 +573,13 @@ def main() -> None:
     if cross_style_duplicates:
         for library in report["libraries"]:
             library["failures"].append(
-                f"存在 {len(cross_style_duplicates)} 组跨风格完全重复参考图，四套视觉语言未真正分离"
+                f"存在 {len(cross_style_duplicates)} 组跨风格完全重复参考图，五套视觉语言未真正分离"
             )
     grammar_ids = [library.get("editingGrammarId") for library in report["libraries"]]
     report["distinctEditingGrammarCount"] = len(set(grammar_ids))
     if None in grammar_ids or len(set(grammar_ids)) != len(style_specs):
         for library in report["libraries"]:
-            library["failures"].append("四套效果库没有四个互不相同的剪辑语法签名")
+            library["failures"].append("五套效果库没有五个互不相同的剪辑语法签名")
     failures = [failure for library in report["libraries"] for failure in library["failures"]]
     report["status"] = "pass" if not failures else "fail"
     report["failures"] = failures

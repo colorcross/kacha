@@ -234,13 +234,14 @@ function loadVisualLanguageRegistry() {
     || Object.hasOwn(registry, "default")
     || !isPlainObject(registry.languages)
   ) {
-    throw new Error("四视觉语言注册表缺少行者风父级、自动选择或干净回退合同");
+    throw new Error("五视觉语言注册表缺少行者风父级、自动选择或干净回退合同");
   }
   const requiredIds = [
     "xingzhe-light-overlay",
     "xingzhe-spatial-lightpath",
     "xingzhe-humor-comic",
     "xingzhe-pixel-editorial",
+    "xingzhe-dark-tech",
   ];
   const languages = requiredIds.map((id) => {
     const language = registry.languages[id];
@@ -504,7 +505,7 @@ function normalizeVisualLanguageSelection(value, catalog, style) {
   const policy = catalog.visualLanguagePolicy;
   if (style.design.profile !== policy.parentProfile) {
     throw new Error(
-      `四套剪辑视觉语言只适用于 ${policy.parentProfile}，当前基础风格为 ${style.design.profile}`,
+      `五套剪辑视觉语言只适用于 ${policy.parentProfile}，当前基础风格为 ${style.design.profile}`,
     );
   }
   const input = value === undefined || value === null
@@ -962,7 +963,7 @@ function productionInstructions(request, catalog) {
     {
       id: "studio-visual-language-contract",
       text: request.visualLanguageSelection.mode === "automatic"
-        ? "四套行者风剪辑视觉语言按每个真实语义拍自动选择：浅暖轻浮层用于知识与方法，空间光路用于关系与流程，幽默漫画只用于真实喜剧反差，像素风只用于可核验状态变化。每次选择必须记录 matchedSignal、semanticBeatId、sourceRange；没有匹配信号时保持干净画面或普通字幕，不强套风格。"
+        ? "五套行者风剪辑视觉语言按每个真实语义拍自动选择：浅暖轻浮层用于知识与方法，空间光路用于关系与流程，幽默漫画只用于真实喜剧反差，像素风只用于可核验状态变化，暗黑科技风只用于异常、风险、冲突证据、隐性机制或真伪裁决。每次选择必须记录 matchedSignal、semanticBeatId、sourceRange；没有匹配信号时保持干净画面或普通字幕，不强套风格。"
         : `优先使用“${request.visualLanguageSelection.preferredLabel}”剪辑语法，但只有当前语义拍满足其注册触发时才能应用；不匹配时执行“${request.visualLanguageSelection.preferredFallback}”，并记录 fallbackReasonWhenNotApplied。不得把优先选择解释为整片滤镜。`,
       appliesTo: [request.task],
       modules: ["visual", "subtitles", "audio", "sfx"],

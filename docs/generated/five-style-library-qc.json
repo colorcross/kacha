@@ -3082,11 +3082,103 @@
       },
       "failures": [],
       "warnings": []
+    },
+    {
+      "style": "dark",
+      "editingGrammarId": "signal-isolate-evidence-verdict",
+      "effects": 240,
+      "images": 480,
+      "semanticTriads": 240,
+      "exactDuplicateAssets": 0,
+      "allowedExactDuplicateAssets": 10,
+      "allowedExactDuplicateGroups": [
+        [
+          "component:subtitle_single:horizontal",
+          "scene:subtitle_plain:horizontal"
+        ],
+        [
+          "component:subtitle_single:vertical",
+          "scene:subtitle_plain:vertical"
+        ],
+        [
+          "component:subtitle_bilingual:horizontal",
+          "scene:subtitle_bilingual_scene:horizontal"
+        ],
+        [
+          "component:subtitle_bilingual:vertical",
+          "scene:subtitle_bilingual_scene:vertical"
+        ],
+        [
+          "component:subtitle_emphasis:horizontal",
+          "scene:subtitle_emphasis_only:horizontal"
+        ],
+        [
+          "component:subtitle_emphasis:vertical",
+          "scene:subtitle_emphasis_only:vertical"
+        ],
+        [
+          "component:subtitle_quote:horizontal",
+          "scene:subtitle_quote_scene:horizontal"
+        ],
+        [
+          "component:subtitle_quote:vertical",
+          "scene:subtitle_quote_scene:vertical"
+        ],
+        [
+          "component:subtitle_speaker:horizontal",
+          "scene:subtitle_speaker_only:horizontal"
+        ],
+        [
+          "component:subtitle_speaker:vertical",
+          "scene:subtitle_speaker_only:vertical"
+        ]
+      ],
+      "disallowedExactDuplicateGroups": [],
+      "nearDuplicatePairs": [],
+      "nearDuplicatePairCount": 0,
+      "declaredFamilySimilarityPairs": [],
+      "declaredFamilySimilarityPairCount": 0,
+      "headCollisionAssetCount": 0,
+      "headCollisionAssets": [],
+      "spatialBlackAssetCount": 0,
+      "spatialBlackAssets": [],
+      "fontBindings": {
+        "subtitle": {
+          "family": "方正粗金陵简体",
+          "file": "assets/private/fonts/FZCuJinLJW.ttf",
+          "sha256": "3c15643db0ef339e1faf39b8b0c12ffead661565876e617fd25ca5209eabb1ea",
+          "verifiedBy": "explicit-font-file-glyph-mask",
+          "fallbackUsed": false
+        },
+        "display": {
+          "family": "青鸟华光标题黑体",
+          "file": "华光标题黑.TTF",
+          "sha256": "7446486b30fd433fb56ea7b745549f326218ea9161785deaf1a7df0ec8e124a0",
+          "verified": true,
+          "fallbackUsed": false
+        },
+        "ui": {
+          "family": "思源黑体 CN Light",
+          "file": "细体-思源黑体7号.otf",
+          "sha256": "317e53f4b71c757b9c2317354570f03dacae2321cbd6eb3f256c0b71c45610da",
+          "verified": true,
+          "fallbackUsed": false
+        },
+        "cover": {
+          "family": "Aa封神榜书",
+          "file": "封神榜书.ttf",
+          "sha256": "4a2701607972a3b4804019b656800b7778deb6e1767093fc56a110eac48083ed",
+          "verified": true,
+          "fallbackUsed": false
+        }
+      },
+      "failures": [],
+      "warnings": []
     }
   ],
   "crossStyleExactDuplicateGroupCount": 0,
   "crossStyleExactDuplicateGroups": [],
-  "distinctEditingGrammarCount": 4,
+  "distinctEditingGrammarCount": 5,
   "status": "pass",
   "failures": []
 }

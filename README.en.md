@@ -78,7 +78,7 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
   deterministic object-level `@` references,
   and Codex/Claude installation status.
 - Compiles an episode-level director plan with a narrative spine, exactly one
-  opening, content priority, high-impact budget, deliberate quiet, four style
+  opening, content priority, high-impact budget, deliberate quiet, five style
   grammars, fallbacks, and explicit evidence gaps.
 - Provides a localhost unified review workbench for normal-speed semantic decisions and eleven release checks bound to the current final-video SHA-256,
   rationale, confidence, fallback, and explicit accept/adjust/reject decisions.
@@ -127,10 +127,10 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
   mechanisms into a frame-accurate production plan, render them into the full
   picture-locked video, and verify hashes, resources, timing, geometry, audio,
   and the absence of demo labels.
-- Gives all 240 registered effects four landscape/vertical visual languages and
-  960 executable motion contracts. Light Warm Overlay, Spatial Light Path,
-  Humor Comic, and Pixel Editorial use different time units, spatial topology,
-  transitions, and sound—not one card layout with new surface styling.
+- Gives all 240 registered effects five landscape/vertical visual languages and
+  1,200 executable motion contracts. Light Warm Overlay, Spatial Light Path,
+  Humor Comic, Pixel Editorial, and Dark Tech use different time units, spatial
+  topology, transitions, and sound—not one card layout with new surface styling.
 - Builds semantic visual-breathing timelines with push-in, hold, release,
   lateral drift, and emphasis-punch motion while preserving deliberate stillness.
 - Lays out spoken captions as plain single lines or real left/right, top/bottom,
@@ -171,8 +171,8 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Keeps uploads, publishing, purchases, and paid generation outside the default authorization boundary.
 
 <p align="center">
-  <a href="docs/en/FOUR_STYLE_EDITING_GRAMMARS.md">
-    <img src="assets/screenshots/kacha-four-editing-grammars.png" alt="Four distinct editing grammars: Light Warm Overlay, Spatial Light Path, Humor Comic, and Pixel Editorial" width="100%">
+  <a href="docs/en/FIVE_STYLE_EDITING_GRAMMARS.md">
+    <img src="assets/screenshots/kacha-five-editing-grammars.png" alt="Five distinct editing grammars: Light Warm Overlay, Spatial Light Path, Humor Comic, Pixel Editorial, and Dark Tech" width="100%">
   </a>
 </p>
 
@@ -438,7 +438,7 @@ The scanner reduces risk but cannot prove that a repository contains no sensitiv
 - [Architecture and design boundaries](docs/en/ARCHITECTURE.md)
 - [Performance, token, and weak-model production](docs/en/PERFORMANCE_TOKEN_STABILITY_V5.md)
 - [V6 editorial evaluation and semantic review](docs/en/INTELLIGENT_EDITING_V6.md)
-- [Four-style editing grammar contract](docs/en/FOUR_STYLE_EDITING_GRAMMARS.md)
+- [Five-style editing grammar contract](docs/en/FIVE_STYLE_EDITING_GRAMMARS.md)
 - [Product brand and website system](docs/en/PRODUCT_BRAND_AND_WEBSITE.md)
 - [2026-07-29 completion review](docs/en/COMPLETION_REVIEW_2026-07-29.md)
 - [Privacy and security](docs/en/PRIVACY_SECURITY.md)
