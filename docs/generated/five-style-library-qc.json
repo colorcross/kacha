@@ -10,16 +10,8 @@
       "images": 480,
       "semanticTriads": 240,
       "exactDuplicateAssets": 0,
-      "allowedExactDuplicateAssets": 13,
+      "allowedExactDuplicateAssets": 47,
       "allowedExactDuplicateGroups": [
-        [
-          "component:source_tag:horizontal",
-          "scene:source_tag_scene:horizontal"
-        ],
-        [
-          "component:source_tag:vertical",
-          "scene:source_tag_scene:vertical"
-        ],
         [
           "component:subtitle_single:horizontal",
           "scene:subtitle_plain:horizontal"
@@ -61,8 +53,152 @@
           "scene:subtitle_speaker_only:vertical"
         ],
         [
+          "component:chapter_title:horizontal",
+          "scene:narrative_chapter:horizontal"
+        ],
+        [
+          "component:chapter_title:vertical",
+          "scene:narrative_chapter:vertical"
+        ],
+        [
+          "component:statement_title:horizontal",
+          "scene:narrative_statement:horizontal"
+        ],
+        [
+          "component:statement_title:vertical",
+          "scene:narrative_statement:vertical"
+        ],
+        [
           "component:text_behind_subject:horizontal",
           "scene:text_behind_subject_scene:horizontal"
+        ],
+        [
+          "component:numeric_punch:horizontal",
+          "scene:numeric_result:horizontal"
+        ],
+        [
+          "component:numeric_punch:vertical",
+          "scene:numeric_result:vertical"
+        ],
+        [
+          "component:definition_term:horizontal",
+          "scene:narrative_definition:horizontal"
+        ],
+        [
+          "component:definition_term:vertical",
+          "scene:narrative_definition:vertical"
+        ],
+        [
+          "component:quote_pull:horizontal",
+          "scene:narrative_quote:horizontal"
+        ],
+        [
+          "component:quote_pull:vertical",
+          "scene:narrative_quote:vertical"
+        ],
+        [
+          "component:checklist_card:horizontal",
+          "scene:checklist_progressive:horizontal"
+        ],
+        [
+          "component:checklist_card:vertical",
+          "scene:checklist_progressive:vertical"
+        ],
+        [
+          "component:subject_safe_popup:horizontal",
+          "scene:ai_response_popup:horizontal"
+        ],
+        [
+          "component:subject_safe_popup:vertical",
+          "scene:ai_response_popup:vertical"
+        ],
+        [
+          "component:screen_focus_callout:horizontal",
+          "scene:tool_click_focus:horizontal"
+        ],
+        [
+          "component:screen_focus_callout:vertical",
+          "scene:tool_click_focus:vertical"
+        ],
+        [
+          "component:bar_chart:horizontal",
+          "scene:data_bar:horizontal"
+        ],
+        [
+          "component:bar_chart:vertical",
+          "scene:data_bar:vertical"
+        ],
+        [
+          "scene:compare_two:horizontal",
+          "scene:compare_before_after:horizontal"
+        ],
+        [
+          "scene:compare_two:vertical",
+          "scene:compare_before_after:vertical"
+        ],
+        [
+          "scene:tool_screen_full:horizontal",
+          "layout:full_screen:horizontal"
+        ],
+        [
+          "scene:tool_screen_full:vertical",
+          "layout:full_screen:vertical"
+        ],
+        [
+          "scene:tool_screen_pip:horizontal",
+          "layout:screen_with_corner_pip:horizontal"
+        ],
+        [
+          "scene:tool_screen_pip:vertical",
+          "layout:screen_with_corner_pip:vertical"
+        ],
+        [
+          "scene:pip_shape_demo:horizontal",
+          "layout:moving_pip_safe_zones:horizontal"
+        ],
+        [
+          "scene:pip_shape_demo:vertical",
+          "layout:moving_pip_safe_zones:vertical"
+        ],
+        [
+          "scene:pip_rect_only:horizontal",
+          "layout:corner_safe:horizontal"
+        ],
+        [
+          "scene:pip_rect_only:vertical",
+          "layout:corner_safe:vertical"
+        ],
+        [
+          "scene:split_vertical_demo:horizontal",
+          "layout:two_panes:horizontal"
+        ],
+        [
+          "scene:split_vertical_demo:vertical",
+          "layout:two_panes:vertical"
+        ],
+        [
+          "scene:split_horizontal_demo:horizontal",
+          "layout:two_panes_subject_aware:horizontal"
+        ],
+        [
+          "scene:split_horizontal_demo:vertical",
+          "layout:two_panes_subject_aware:vertical"
+        ],
+        [
+          "scene:bridge_scale_change:horizontal",
+          "layout:wide_to_medium_or_close:horizontal"
+        ],
+        [
+          "scene:bridge_scale_change:vertical",
+          "layout:wide_to_medium_or_close:vertical"
+        ],
+        [
+          "layout:subject_and_ai_symbol:horizontal",
+          "layout:two_role_relationship:horizontal"
+        ],
+        [
+          "layout:subject_and_ai_symbol:vertical",
+          "layout:two_role_relationship:vertical"
         ]
       ],
       "disallowedExactDuplicateGroups": [],
@@ -73,7 +209,7 @@
           "aspect": "horizontal",
           "left": "component:show_label",
           "right": "component:status_tag",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.008
         },
         {
@@ -85,71 +221,50 @@
         },
         {
           "aspect": "horizontal",
-          "left": "motion:a_then_b",
-          "right": "motion:claim_then_verdict",
-          "hashDistance": 2,
-          "featureDistance": 0.007
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:a_then_b",
-          "right": "motion:quote_then_source",
-          "hashDistance": 2,
-          "featureDistance": 0.008
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:a_then_b",
-          "right": "motion:term_then_body",
+          "left": "component:status_tag",
+          "right": "component:disclosure_tag",
           "hashDistance": 1,
           "featureDistance": 0.008
         },
         {
           "aspect": "horizontal",
-          "left": "motion:a_then_b",
-          "right": "motion:term_then_definition",
-          "hashDistance": 1,
-          "featureDistance": 0.008
+          "left": "scene:compare_two",
+          "right": "scene:compare_before_after",
+          "hashDistance": 0,
+          "featureDistance": 0.0
         },
         {
           "aspect": "horizontal",
-          "left": "motion:all_clear_before_a_roll",
-          "right": "motion:before_next_event",
-          "hashDistance": 2,
-          "featureDistance": 0.002
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_bleed_footage",
+          "hashDistance": 0,
+          "featureDistance": 0.0
         },
         {
           "aspect": "horizontal",
-          "left": "motion:all_clear_before_a_roll",
-          "right": "motion:before_subject_reply",
-          "hashDistance": 2,
-          "featureDistance": 0.002
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_screen",
+          "hashDistance": 0,
+          "featureDistance": 0.0
         },
         {
           "aspect": "horizontal",
-          "left": "motion:all_clear_before_a_roll",
-          "right": "motion:clear_before_a_roll",
-          "hashDistance": 1,
-          "featureDistance": 0.002
+          "left": "layout:full_bleed_footage",
+          "right": "layout:full_screen",
+          "hashDistance": 0,
+          "featureDistance": 0.0
         },
         {
           "aspect": "horizontal",
-          "left": "motion:audio_end",
-          "right": "motion:cut_on_audio_end",
-          "hashDistance": 1,
-          "featureDistance": 0.001
+          "left": "layout:subject_and_ai_symbol",
+          "right": "layout:two_role_relationship",
+          "hashDistance": 0,
+          "featureDistance": 0.0
         },
         {
           "aspect": "horizontal",
           "left": "motion:audio_end",
           "right": "motion:speech_end",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:audio_end",
-          "right": "motion:visuals_clear_early",
           "hashDistance": 1,
           "featureDistance": 0.001
         },
@@ -157,14 +272,14 @@
           "aspect": "horizontal",
           "left": "motion:before_next_event",
           "right": "motion:before_subject_reply",
-          "hashDistance": 0,
+          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:before_next_event",
           "right": "motion:clear_before_a_roll",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
@@ -176,17 +291,31 @@
         },
         {
           "aspect": "horizontal",
+          "left": "motion:center_split",
+          "right": "motion:split_reveal",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:center_split",
+          "right": "motion:wipe_compare",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
           "left": "motion:claim_then_verdict",
           "right": "motion:quote_then_source",
-          "hashDistance": 2,
-          "featureDistance": 0.003
+          "hashDistance": 0,
+          "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:claim_then_verdict",
           "right": "motion:strike_then_replace",
           "hashDistance": 2,
-          "featureDistance": 0.004
+          "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
@@ -199,28 +328,35 @@
           "aspect": "horizontal",
           "left": "motion:clean_cut",
           "right": "motion:cut",
-          "hashDistance": 1,
+          "hashDistance": 2,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:clean_cut",
-          "right": "motion:cut_on_speech",
+          "right": "motion:cut_on_phrase",
           "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 0,
           "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:clean_cut_or_push",
           "right": "motion:cut",
-          "hashDistance": 2,
-          "featureDistance": 0.001
+          "hashDistance": 1,
+          "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:clean_cut_or_push",
           "right": "motion:cut_on_phrase",
-          "hashDistance": 2,
+          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
@@ -241,14 +377,14 @@
           "aspect": "horizontal",
           "left": "motion:collapse",
           "right": "motion:count_or_scale",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:collapse",
           "right": "motion:grow_from_zero",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
@@ -262,7 +398,7 @@
           "aspect": "horizontal",
           "left": "motion:collapse",
           "right": "motion:soft_pop",
-          "hashDistance": 0,
+          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
@@ -275,7 +411,28 @@
         {
           "aspect": "horizontal",
           "left": "motion:complete_then_fade",
+          "right": "motion:fade",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:complete_then_fade",
           "right": "motion:short_fade",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:count_or_scale",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:grow_from_zero",
           "hashDistance": 2,
           "featureDistance": 0.001
         },
@@ -283,15 +440,15 @@
           "aspect": "horizontal",
           "left": "motion:converge",
           "right": "motion:scale_fade",
-          "hashDistance": 2,
-          "featureDistance": 0.001
+          "hashDistance": 0,
+          "featureDistance": 0.0
         },
         {
           "aspect": "horizontal",
           "left": "motion:converge",
           "right": "motion:soft_pop",
-          "hashDistance": 2,
-          "featureDistance": 0.001
+          "hashDistance": 1,
+          "featureDistance": 0.0
         },
         {
           "aspect": "horizontal",
@@ -304,7 +461,7 @@
           "aspect": "horizontal",
           "left": "motion:count_or_scale",
           "right": "motion:grow_from_zero",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.002
         },
         {
@@ -318,49 +475,70 @@
           "aspect": "horizontal",
           "left": "motion:count_or_scale",
           "right": "motion:soft_pop",
-          "hashDistance": 2,
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:task_card",
+          "hashDistance": 1,
           "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:cursor_release",
           "right": "motion:per_character",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:cursor_release",
           "right": "motion:typing_or_soft_pop",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:cut",
           "right": "motion:cut_on_phrase",
-          "hashDistance": 2,
-          "featureDistance": 0.001
+          "hashDistance": 0,
+          "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:cut",
           "right": "motion:cut_on_speech",
-          "hashDistance": 1,
+          "hashDistance": 2,
           "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:cut_on_audio_end",
           "right": "motion:visuals_clear_early",
-          "hashDistance": 2,
+          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:cut_on_phrase",
           "right": "motion:cut_on_speech",
-          "hashDistance": 1,
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:directional_reveal",
+          "right": "motion:mask_reveal",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:directional_reveal",
+          "right": "motion:target_reveal",
+          "hashDistance": 2,
           "featureDistance": 0.001
         },
         {
@@ -372,9 +550,16 @@
         },
         {
           "aspect": "horizontal",
+          "left": "motion:fade",
+          "right": "motion:short_fade",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
           "left": "motion:grow_from_zero",
           "right": "motion:scale_fade",
-          "hashDistance": 1,
+          "hashDistance": 2,
           "featureDistance": 0.001
         },
         {
@@ -388,28 +573,35 @@
           "aspect": "horizontal",
           "left": "motion:grow_from_zero",
           "right": "motion:task_card",
-          "hashDistance": 2,
+          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_segment",
           "right": "motion:highlight_turning_point",
-          "hashDistance": 1,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:highlight_segment",
-          "right": "motion:local_highlight",
           "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_segment",
+          "right": "motion:local_highlight",
+          "hashDistance": 1,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
           "right": "motion:mark_current_level",
-          "hashDistance": 2,
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:weight_color",
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
@@ -424,75 +616,89 @@
           "left": "motion:highlight_turning_point",
           "right": "motion:mark_current_level",
           "hashDistance": 1,
-          "featureDistance": 0.002
+          "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_turning_point",
           "right": "motion:weight_color",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:label_then_title",
           "right": "motion:phrase_groups",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:label_then_title",
           "right": "motion:pip_then_focus",
-          "hashDistance": 1,
-          "featureDistance": 0.001
+          "hashDistance": 0,
+          "featureDistance": 0.0
         },
         {
           "aspect": "horizontal",
           "left": "motion:label_then_title",
           "right": "motion:progressive",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:label_then_title",
           "right": "motion:progressive_local",
-          "hashDistance": 2,
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:stagger",
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:label_then_title",
           "right": "motion:step_up",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 2,
+          "featureDistance": 0.006
         },
         {
           "aspect": "horizontal",
           "left": "motion:local_highlight",
           "right": "motion:mark_current_level",
-          "hashDistance": 2,
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:local_highlight",
+          "right": "motion:weight_color",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:mark_current_level",
+          "right": "motion:weight_color",
+          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:mask_reveal",
           "right": "motion:target_reveal",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:natural_action",
-          "right": "motion:static",
-          "hashDistance": 0,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:none",
-          "right": "motion:response_sync",
           "hashDistance": 2,
           "featureDistance": 0.001
         },
@@ -506,43 +712,92 @@
         {
           "aspect": "horizontal",
           "left": "motion:phrase_groups",
+          "right": "motion:pip_then_focus",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
           "right": "motion:progressive",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:phrase_groups",
           "right": "motion:progressive_local",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:phrase_groups",
           "right": "motion:stagger",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:phrase_groups",
           "right": "motion:step_up",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:strike_then_replace",
           "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:progressive",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:progressive_local",
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:pip_then_focus",
           "right": "motion:stagger",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:step_up",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 2,
+          "featureDistance": 0.007
         },
         {
           "aspect": "horizontal",
           "left": "motion:progressive",
           "right": "motion:progressive_local",
-          "hashDistance": 2,
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:stagger",
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
@@ -554,52 +809,59 @@
         },
         {
           "aspect": "horizontal",
-          "left": "motion:progressive_local",
-          "right": "motion:step_up",
+          "left": "motion:progressive",
+          "right": "motion:strike_then_replace",
           "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:stagger",
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
-          "left": "motion:quote_then_source",
-          "right": "motion:term_then_body",
-          "hashDistance": 1,
-          "featureDistance": 0.003
+          "left": "motion:progressive_local",
+          "right": "motion:step_up",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 2,
+          "featureDistance": 0.007
         },
         {
           "aspect": "horizontal",
           "left": "motion:quote_then_source",
-          "right": "motion:term_then_definition",
-          "hashDistance": 1,
+          "right": "motion:strike_then_replace",
+          "hashDistance": 2,
           "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:response_sync",
           "right": "motion:speech_sync",
-          "hashDistance": 1,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:result_tag",
-          "right": "motion:time_marker",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:return_to_dialogue",
-          "right": "motion:return_to_subject",
-          "hashDistance": 2,
+          "right": "motion:return_to_original",
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:scale_fade",
           "right": "motion:soft_pop",
-          "hashDistance": 2,
-          "featureDistance": 0.001
+          "hashDistance": 1,
+          "featureDistance": 0.0
         },
         {
           "aspect": "horizontal",
@@ -612,165 +874,39 @@
           "aspect": "horizontal",
           "left": "motion:soft_pop",
           "right": "motion:task_card",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
-          "left": "motion:term_then_body",
-          "right": "motion:term_then_definition",
-          "hashDistance": 0,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "component:comparison_card",
-          "right": "component:before_after_card",
-          "hashDistance": 1,
-          "featureDistance": 0.006
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:a_then_b",
-          "right": "motion:claim_then_verdict",
-          "hashDistance": 1,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:a_then_b",
-          "right": "motion:strike_then_replace",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:all_clear_before_a_roll",
-          "right": "motion:clear_before_a_roll",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:audio_end",
-          "right": "motion:cut_on_audio_end",
-          "hashDistance": 1,
-          "featureDistance": 0.0
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:audio_end",
-          "right": "motion:speech_end",
-          "hashDistance": 2,
-          "featureDistance": 0.0
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:audio_end",
-          "right": "motion:visuals_clear_early",
-          "hashDistance": 0,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:before_next_event",
-          "right": "motion:before_subject_reply",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:before_next_event",
-          "right": "motion:clear_before_a_roll",
-          "hashDistance": 1,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:center_split",
-          "right": "motion:split_reveal",
-          "hashDistance": 0,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:center_split",
+          "left": "motion:split_reveal",
           "right": "motion:wipe_compare",
           "hashDistance": 0,
           "featureDistance": 0.002
         },
         {
-          "aspect": "vertical",
-          "left": "motion:claim_then_verdict",
-          "right": "motion:quote_then_source",
-          "hashDistance": 2,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:claim_then_verdict",
-          "right": "motion:strike_then_replace",
-          "hashDistance": 1,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:claim_then_verdict",
-          "right": "motion:term_then_body",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:claim_then_verdict",
-          "right": "motion:term_then_definition",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut",
-          "right": "motion:clean_cut_or_push",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut",
-          "right": "motion:cut",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut",
-          "right": "motion:cut_on_phrase",
-          "hashDistance": 2,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut",
-          "right": "motion:cut_on_speech",
-          "hashDistance": 2,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut",
-          "right": "motion:j_or_l_cut",
-          "hashDistance": 2,
-          "featureDistance": 0.006
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut_or_push",
-          "right": "motion:cut",
+          "aspect": "horizontal",
+          "left": "motion:stagger",
+          "right": "motion:step_up",
           "hashDistance": 0,
           "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:stagger",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:step_up",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 2,
+          "featureDistance": 0.006
         }
       ],
-      "declaredFamilySimilarityPairCount": 188,
+      "declaredFamilySimilarityPairCount": 201,
       "headCollisionAssetCount": 0,
       "headCollisionAssets": [],
       "spatialBlackAssetCount": 0,
@@ -815,11 +951,195 @@
       "images": 480,
       "semanticTriads": 240,
       "exactDuplicateAssets": 0,
-      "allowedExactDuplicateAssets": 1,
+      "allowedExactDuplicateAssets": 47,
       "allowedExactDuplicateGroups": [
+        [
+          "component:subtitle_single:horizontal",
+          "scene:subtitle_plain:horizontal"
+        ],
+        [
+          "component:subtitle_single:vertical",
+          "scene:subtitle_plain:vertical"
+        ],
+        [
+          "component:subtitle_bilingual:horizontal",
+          "scene:subtitle_bilingual_scene:horizontal"
+        ],
+        [
+          "component:subtitle_bilingual:vertical",
+          "scene:subtitle_bilingual_scene:vertical"
+        ],
+        [
+          "component:subtitle_emphasis:horizontal",
+          "scene:subtitle_emphasis_only:horizontal"
+        ],
+        [
+          "component:subtitle_emphasis:vertical",
+          "scene:subtitle_emphasis_only:vertical"
+        ],
+        [
+          "component:subtitle_quote:horizontal",
+          "scene:subtitle_quote_scene:horizontal"
+        ],
+        [
+          "component:subtitle_quote:vertical",
+          "scene:subtitle_quote_scene:vertical"
+        ],
+        [
+          "component:subtitle_speaker:horizontal",
+          "scene:subtitle_speaker_only:horizontal"
+        ],
+        [
+          "component:subtitle_speaker:vertical",
+          "scene:subtitle_speaker_only:vertical"
+        ],
+        [
+          "component:chapter_title:horizontal",
+          "scene:narrative_chapter:horizontal"
+        ],
+        [
+          "component:chapter_title:vertical",
+          "scene:narrative_chapter:vertical"
+        ],
+        [
+          "component:statement_title:horizontal",
+          "scene:narrative_statement:horizontal"
+        ],
+        [
+          "component:statement_title:vertical",
+          "scene:narrative_statement:vertical"
+        ],
         [
           "component:text_behind_subject:horizontal",
           "scene:text_behind_subject_scene:horizontal"
+        ],
+        [
+          "component:numeric_punch:horizontal",
+          "scene:numeric_result:horizontal"
+        ],
+        [
+          "component:numeric_punch:vertical",
+          "scene:numeric_result:vertical"
+        ],
+        [
+          "component:definition_term:horizontal",
+          "scene:narrative_definition:horizontal"
+        ],
+        [
+          "component:definition_term:vertical",
+          "scene:narrative_definition:vertical"
+        ],
+        [
+          "component:quote_pull:horizontal",
+          "scene:narrative_quote:horizontal"
+        ],
+        [
+          "component:quote_pull:vertical",
+          "scene:narrative_quote:vertical"
+        ],
+        [
+          "component:checklist_card:horizontal",
+          "scene:checklist_progressive:horizontal"
+        ],
+        [
+          "component:checklist_card:vertical",
+          "scene:checklist_progressive:vertical"
+        ],
+        [
+          "component:subject_safe_popup:horizontal",
+          "scene:ai_response_popup:horizontal"
+        ],
+        [
+          "component:subject_safe_popup:vertical",
+          "scene:ai_response_popup:vertical"
+        ],
+        [
+          "component:screen_focus_callout:horizontal",
+          "scene:tool_click_focus:horizontal"
+        ],
+        [
+          "component:screen_focus_callout:vertical",
+          "scene:tool_click_focus:vertical"
+        ],
+        [
+          "component:bar_chart:horizontal",
+          "scene:data_bar:horizontal"
+        ],
+        [
+          "component:bar_chart:vertical",
+          "scene:data_bar:vertical"
+        ],
+        [
+          "scene:compare_two:horizontal",
+          "scene:compare_before_after:horizontal"
+        ],
+        [
+          "scene:compare_two:vertical",
+          "scene:compare_before_after:vertical"
+        ],
+        [
+          "scene:tool_screen_full:horizontal",
+          "layout:full_screen:horizontal"
+        ],
+        [
+          "scene:tool_screen_full:vertical",
+          "layout:full_screen:vertical"
+        ],
+        [
+          "scene:tool_screen_pip:horizontal",
+          "layout:screen_with_corner_pip:horizontal"
+        ],
+        [
+          "scene:tool_screen_pip:vertical",
+          "layout:screen_with_corner_pip:vertical"
+        ],
+        [
+          "scene:pip_shape_demo:horizontal",
+          "layout:moving_pip_safe_zones:horizontal"
+        ],
+        [
+          "scene:pip_shape_demo:vertical",
+          "layout:moving_pip_safe_zones:vertical"
+        ],
+        [
+          "scene:pip_rect_only:horizontal",
+          "layout:corner_safe:horizontal"
+        ],
+        [
+          "scene:pip_rect_only:vertical",
+          "layout:corner_safe:vertical"
+        ],
+        [
+          "scene:split_vertical_demo:horizontal",
+          "layout:two_panes:horizontal"
+        ],
+        [
+          "scene:split_vertical_demo:vertical",
+          "layout:two_panes:vertical"
+        ],
+        [
+          "scene:split_horizontal_demo:horizontal",
+          "layout:two_panes_subject_aware:horizontal"
+        ],
+        [
+          "scene:split_horizontal_demo:vertical",
+          "layout:two_panes_subject_aware:vertical"
+        ],
+        [
+          "scene:bridge_scale_change:horizontal",
+          "layout:wide_to_medium_or_close:horizontal"
+        ],
+        [
+          "scene:bridge_scale_change:vertical",
+          "layout:wide_to_medium_or_close:vertical"
+        ],
+        [
+          "layout:subject_and_ai_symbol:horizontal",
+          "layout:two_role_relationship:horizontal"
+        ],
+        [
+          "layout:subject_and_ai_symbol:vertical",
+          "layout:two_role_relationship:vertical"
         ]
       ],
       "disallowedExactDuplicateGroups": [],
@@ -828,23 +1148,107 @@
       "declaredFamilySimilarityPairs": [
         {
           "aspect": "horizontal",
-          "left": "motion:audio_end",
-          "right": "motion:cut_on_audio_end",
+          "left": "component:show_label",
+          "right": "component:status_tag",
           "hashDistance": 2,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "component:show_label",
+          "right": "component:disclosure_tag",
+          "hashDistance": 1,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "scene:compare_two",
+          "right": "scene:compare_before_after",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_bleed_footage",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_screen",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:full_bleed_footage",
+          "right": "layout:full_screen",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:subject_and_ai_symbol",
+          "right": "layout:two_role_relationship",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:quote_then_source",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_next_event",
+          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
           "left": "motion:audio_end",
-          "right": "motion:speech_end",
+          "right": "motion:cut_on_audio_end",
           "hashDistance": 1,
           "featureDistance": 0.0
         },
         {
           "aspect": "horizontal",
           "left": "motion:audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
           "right": "motion:visuals_clear_early",
-          "hashDistance": 2,
+          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
@@ -856,17 +1260,52 @@
         },
         {
           "aspect": "horizontal",
+          "left": "motion:before_next_event",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:before_subject_reply",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
           "left": "motion:center_split",
           "right": "motion:split_reveal",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:center_split",
+          "right": "motion:wipe_compare",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:quote_then_source",
+          "hashDistance": 2,
+          "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:clean_cut",
           "right": "motion:cut",
           "hashDistance": 1,
-          "featureDistance": 0.002
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 1,
+          "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
@@ -894,27 +1333,20 @@
           "left": "motion:clean_cut_or_push",
           "right": "motion:cut_on_speech",
           "hashDistance": 2,
-          "featureDistance": 0.002
+          "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:collapse",
           "right": "motion:converge",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:collapse",
           "right": "motion:count_or_scale",
-          "hashDistance": 1,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:collapse",
-          "right": "motion:grow_from_zero",
-          "hashDistance": 0,
+          "hashDistance": 2,
           "featureDistance": 0.001
         },
         {
@@ -926,16 +1358,9 @@
         },
         {
           "aspect": "horizontal",
-          "left": "motion:collapse",
-          "right": "motion:soft_pop",
-          "hashDistance": 0,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:collapse",
-          "right": "motion:task_card",
-          "hashDistance": 0,
+          "left": "motion:complete_then_fade",
+          "right": "motion:short_fade",
+          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
@@ -943,41 +1368,27 @@
           "left": "motion:converge",
           "right": "motion:count_or_scale",
           "hashDistance": 2,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:converge",
-          "right": "motion:grow_from_zero",
-          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:converge",
           "right": "motion:scale_fade",
-          "hashDistance": 1,
-          "featureDistance": 0.0
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:converge",
-          "right": "motion:soft_pop",
-          "hashDistance": 1,
-          "featureDistance": 0.0
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:converge",
-          "right": "motion:task_card",
-          "hashDistance": 1,
+          "hashDistance": 2,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:count_or_scale",
           "right": "motion:grow_from_zero",
-          "hashDistance": 1,
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:scale_fade",
+          "hashDistance": 0,
           "featureDistance": 0.002
         },
         {
@@ -985,21 +1396,35 @@
           "left": "motion:count_or_scale",
           "right": "motion:soft_pop",
           "hashDistance": 1,
-          "featureDistance": 0.002
+          "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:count_or_scale",
           "right": "motion:task_card",
           "hashDistance": 1,
-          "featureDistance": 0.002
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cursor_release",
+          "right": "motion:per_character",
+          "hashDistance": 0,
+          "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:cursor_release",
           "right": "motion:typing_or_soft_pop",
           "hashDistance": 0,
-          "featureDistance": 0.0
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 0,
+          "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
@@ -1011,8 +1436,43 @@
         {
           "aspect": "horizontal",
           "left": "motion:cut_on_audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_audio_end",
           "right": "motion:visuals_clear_early",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_phrase",
+          "right": "motion:cut_on_speech",
           "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:directional_reveal",
+          "right": "motion:mask_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:draw_line",
+          "right": "motion:line_grow",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:fade",
+          "right": "motion:short_fade",
+          "hashDistance": 2,
           "featureDistance": 0.001
         },
         {
@@ -1026,27 +1486,48 @@
           "aspect": "horizontal",
           "left": "motion:grow_from_zero",
           "right": "motion:soft_pop",
-          "hashDistance": 0,
-          "featureDistance": 0.001
+          "hashDistance": 1,
+          "featureDistance": 0.0
         },
         {
           "aspect": "horizontal",
           "left": "motion:grow_from_zero",
           "right": "motion:task_card",
-          "hashDistance": 0,
+          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_segment",
           "right": "motion:highlight_turning_point",
-          "hashDistance": 1,
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:local_highlight",
+          "hashDistance": 2,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_segment",
           "right": "motion:mark_current_level",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:weight_color",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:local_highlight",
           "hashDistance": 2,
           "featureDistance": 0.001
         },
@@ -1054,14 +1535,14 @@
           "aspect": "horizontal",
           "left": "motion:highlight_turning_point",
           "right": "motion:mark_current_level",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_turning_point",
           "right": "motion:weight_color",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
@@ -1075,20 +1556,153 @@
           "aspect": "horizontal",
           "left": "motion:label_then_title",
           "right": "motion:pip_then_focus",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:progressive",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:progressive_local",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:stagger",
           "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:step_up",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:local_highlight",
+          "right": "motion:mark_current_level",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:local_highlight",
+          "right": "motion:weight_color",
+          "hashDistance": 2,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:mark_current_level",
           "right": "motion:weight_color",
-          "hashDistance": 1,
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:mask_reveal",
+          "right": "motion:target_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:per_character",
+          "right": "motion:typing_or_soft_pop",
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:phrase_groups",
           "right": "motion:pip_then_focus",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:progressive",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:progressive_local",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:stagger",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:step_up",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:progressive",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:progressive_local",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:stagger",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:step_up",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:progressive_local",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:stagger",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:step_up",
           "hashDistance": 1,
           "featureDistance": 0.001
         },
@@ -1103,28 +1717,70 @@
           "aspect": "horizontal",
           "left": "motion:progressive_local",
           "right": "motion:step_up",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:quote_then_source",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:quote_then_source",
+          "right": "motion:term_then_body",
           "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:quote_then_source",
+          "right": "motion:term_then_definition",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:response_sync",
+          "right": "motion:speech_sync",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:result_reveal",
+          "right": "motion:target_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.009
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:return_to_dialogue",
+          "right": "motion:return_to_original",
+          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:return_to_dialogue",
           "right": "motion:return_to_subject",
-          "hashDistance": 1,
+          "hashDistance": 2,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:scale_fade",
           "right": "motion:soft_pop",
-          "hashDistance": 2,
-          "featureDistance": 0.001
+          "hashDistance": 1,
+          "featureDistance": 0.0
         },
         {
           "aspect": "horizontal",
           "left": "motion:scale_fade",
           "right": "motion:task_card",
-          "hashDistance": 2,
+          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
@@ -1132,402 +1788,66 @@
           "left": "motion:soft_pop",
           "right": "motion:task_card",
           "hashDistance": 0,
-          "featureDistance": 0.001
+          "featureDistance": 0.0
         },
         {
-          "aspect": "vertical",
-          "left": "motion:a_then_b",
-          "right": "motion:claim_then_verdict",
-          "hashDistance": 1,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:a_then_b",
-          "right": "motion:pip_then_focus",
-          "hashDistance": 2,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:a_then_b",
-          "right": "motion:stagger",
-          "hashDistance": 2,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:a_then_b",
-          "right": "motion:term_then_body",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:a_then_b",
-          "right": "motion:term_then_definition",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:all_clear_before_a_roll",
-          "right": "motion:before_next_event",
-          "hashDistance": 1,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:all_clear_before_a_roll",
-          "right": "motion:before_subject_reply",
-          "hashDistance": 1,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:all_clear_before_a_roll",
-          "right": "motion:clear_before_a_roll",
-          "hashDistance": 1,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:audio_end",
-          "right": "motion:cut_on_audio_end",
-          "hashDistance": 0,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:audio_end",
-          "right": "motion:speech_end",
-          "hashDistance": 1,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:audio_end",
+          "aspect": "horizontal",
+          "left": "motion:speech_end",
           "right": "motion:visuals_clear_early",
           "hashDistance": 1,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:before_next_event",
-          "right": "motion:before_subject_reply",
-          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
-          "aspect": "vertical",
-          "left": "motion:before_next_event",
-          "right": "motion:clear_before_a_roll",
-          "hashDistance": 0,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:before_subject_reply",
-          "right": "motion:clear_before_a_roll",
-          "hashDistance": 0,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:center_split",
-          "right": "motion:split_reveal",
-          "hashDistance": 0,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:center_split",
+          "aspect": "horizontal",
+          "left": "motion:split_reveal",
           "right": "motion:wipe_compare",
-          "hashDistance": 0,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:claim_then_verdict",
-          "right": "motion:quote_then_source",
-          "hashDistance": 2,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:claim_then_verdict",
-          "right": "motion:term_then_body",
           "hashDistance": 1,
           "featureDistance": 0.002
         },
         {
-          "aspect": "vertical",
-          "left": "motion:claim_then_verdict",
+          "aspect": "horizontal",
+          "left": "motion:stagger",
+          "right": "motion:step_up",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:term_then_body",
           "right": "motion:term_then_definition",
-          "hashDistance": 1,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut",
-          "right": "motion:clean_cut_or_push",
-          "hashDistance": 2,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut",
-          "right": "motion:cut_on_phrase",
-          "hashDistance": 2,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut",
-          "right": "motion:j_or_l_cut",
-          "hashDistance": 2,
-          "featureDistance": 0.008
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut_or_push",
-          "right": "motion:cut",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "vertical",
-          "left": "motion:clean_cut_or_push",
-          "right": "motion:cut_on_phrase",
-          "hashDistance": 0,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut_or_push",
-          "right": "motion:cut_on_speech",
+          "left": "component:comparison_card",
+          "right": "component:before_after_card",
           "hashDistance": 1,
           "featureDistance": 0.004
         },
         {
           "aspect": "vertical",
-          "left": "motion:clean_cut_or_push",
-          "right": "motion:j_or_l_cut",
-          "hashDistance": 2,
-          "featureDistance": 0.008
+          "left": "scene:info_single",
+          "right": "scene:info_bullets",
+          "hashDistance": 1,
+          "featureDistance": 0.011
         },
         {
           "aspect": "vertical",
-          "left": "motion:collapse",
-          "right": "motion:converge",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:collapse",
-          "right": "motion:grow_from_zero",
+          "left": "scene:compare_two",
+          "right": "scene:compare_before_after",
           "hashDistance": 0,
-          "featureDistance": 0.001
+          "featureDistance": 0.0
         },
         {
           "aspect": "vertical",
-          "left": "motion:collapse",
-          "right": "motion:scale_fade",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:collapse",
-          "right": "motion:soft_pop",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:collapse",
-          "right": "motion:task_card",
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_bleed_footage",
           "hashDistance": 0,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:complete_then_fade",
-          "right": "motion:fade",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:complete_then_fade",
-          "right": "motion:short_fade",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:converge",
-          "right": "motion:grow_from_zero",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:converge",
-          "right": "motion:scale_fade",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:converge",
-          "right": "motion:soft_pop",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:converge",
-          "right": "motion:task_card",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:cursor_release",
-          "right": "motion:per_character",
-          "hashDistance": 0,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:cursor_release",
-          "right": "motion:typing_or_soft_pop",
-          "hashDistance": 1,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:cut",
-          "right": "motion:cut_on_phrase",
-          "hashDistance": 1,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:cut",
-          "right": "motion:cut_on_speech",
-          "hashDistance": 0,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:cut_on_audio_end",
-          "right": "motion:speech_end",
-          "hashDistance": 1,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:cut_on_audio_end",
-          "right": "motion:visuals_clear_early",
-          "hashDistance": 1,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:cut_on_phrase",
-          "right": "motion:cut_on_speech",
-          "hashDistance": 1,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:cut_on_phrase",
-          "right": "motion:j_or_l_cut",
-          "hashDistance": 2,
-          "featureDistance": 0.01
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:directional_reveal",
-          "right": "motion:mask_reveal",
-          "hashDistance": 1,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:directional_reveal",
-          "right": "motion:target_reveal",
-          "hashDistance": 0,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:draw_line",
-          "right": "motion:line_grow",
-          "hashDistance": 1,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:fade",
-          "right": "motion:short_fade",
-          "hashDistance": 0,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:grow_from_zero",
-          "right": "motion:scale_fade",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:grow_from_zero",
-          "right": "motion:soft_pop",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:grow_from_zero",
-          "right": "motion:task_card",
-          "hashDistance": 0,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:highlight_segment",
-          "right": "motion:highlight_turning_point",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:highlight_segment",
-          "right": "motion:local_highlight",
-          "hashDistance": 2,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:highlight_segment",
-          "right": "motion:mark_current_level",
-          "hashDistance": 1,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:highlight_segment",
-          "right": "motion:result_tag",
-          "hashDistance": 2,
-          "featureDistance": 0.003
+          "featureDistance": 0.0
         }
       ],
-      "declaredFamilySimilarityPairCount": 161,
+      "declaredFamilySimilarityPairCount": 233,
       "headCollisionAssetCount": 0,
       "headCollisionAssets": [],
       "spatialBlackAssetCount": 0,
@@ -1585,115 +1905,115 @@
       "declaredFamilySimilarityPairs": [
         {
           "aspect": "horizontal",
+          "left": "scene:compare_two",
+          "right": "scene:compare_before_after",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_bleed_footage",
+          "hashDistance": 1,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_screen",
+          "hashDistance": 1,
+          "featureDistance": 0.009
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:full_bleed_footage",
+          "right": "layout:full_screen",
+          "hashDistance": 0,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
           "left": "motion:a_then_b",
           "right": "motion:claim_then_verdict",
+          "hashDistance": 0,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:phrase_groups",
           "hashDistance": 1,
           "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
           "left": "motion:a_then_b",
-          "right": "motion:label_then_title",
-          "hashDistance": 2,
-          "featureDistance": 0.01
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:a_then_b",
           "right": "motion:pip_then_focus",
-          "hashDistance": 1,
-          "featureDistance": 0.008
+          "hashDistance": 2,
+          "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
           "left": "motion:a_then_b",
           "right": "motion:progressive",
-          "hashDistance": 2,
-          "featureDistance": 0.009
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:a_then_b",
-          "right": "motion:progressive_local",
           "hashDistance": 1,
-          "featureDistance": 0.009
+          "featureDistance": 0.006
         },
         {
           "aspect": "horizontal",
           "left": "motion:a_then_b",
           "right": "motion:quote_then_source",
           "hashDistance": 1,
-          "featureDistance": 0.007
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:a_then_b",
-          "right": "motion:stagger",
-          "hashDistance": 0,
-          "featureDistance": 0.009
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:a_then_b",
-          "right": "motion:step_up",
-          "hashDistance": 2,
-          "featureDistance": 0.009
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:a_then_b",
           "right": "motion:strike_then_replace",
           "hashDistance": 1,
-          "featureDistance": 0.006
+          "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:a_then_b",
           "right": "motion:term_then_body",
-          "hashDistance": 1,
-          "featureDistance": 0.008
+          "hashDistance": 2,
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:a_then_b",
           "right": "motion:term_then_definition",
           "hashDistance": 1,
-          "featureDistance": 0.006
+          "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:all_clear_before_a_roll",
           "right": "motion:before_next_event",
           "hashDistance": 1,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:all_clear_before_a_roll",
-          "right": "motion:before_subject_reply",
-          "hashDistance": 1,
           "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
           "right": "motion:clear_before_a_roll",
-          "hashDistance": 2,
-          "featureDistance": 0.006
+          "hashDistance": 1,
+          "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
           "left": "motion:audio_end",
           "right": "motion:cut_on_audio_end",
           "hashDistance": 1,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:audio_end",
-          "right": "motion:speech_end",
-          "hashDistance": 1,
-          "featureDistance": 0.003
+          "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
@@ -1706,14 +2026,14 @@
           "aspect": "horizontal",
           "left": "motion:before_next_event",
           "right": "motion:before_subject_reply",
-          "hashDistance": 0,
+          "hashDistance": 1,
           "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:before_next_event",
           "right": "motion:clear_before_a_roll",
-          "hashDistance": 1,
+          "hashDistance": 2,
           "featureDistance": 0.003
         },
         {
@@ -1721,19 +2041,26 @@
           "left": "motion:before_subject_reply",
           "right": "motion:clear_before_a_roll",
           "hashDistance": 1,
-          "featureDistance": 0.005
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:center_split",
           "right": "motion:split_reveal",
-          "hashDistance": 2,
-          "featureDistance": 0.003
+          "hashDistance": 0,
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:center_split",
           "right": "motion:wipe_compare",
+          "hashDistance": 0,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:phrase_groups",
           "hashDistance": 1,
           "featureDistance": 0.004
         },
@@ -1742,49 +2069,42 @@
           "left": "motion:claim_then_verdict",
           "right": "motion:pip_then_focus",
           "hashDistance": 2,
-          "featureDistance": 0.008
+          "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
           "left": "motion:claim_then_verdict",
-          "right": "motion:progressive_local",
-          "hashDistance": 2,
-          "featureDistance": 0.009
+          "right": "motion:progressive",
+          "hashDistance": 1,
+          "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
           "left": "motion:claim_then_verdict",
           "right": "motion:quote_then_source",
-          "hashDistance": 2,
+          "hashDistance": 1,
           "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:claim_then_verdict",
-          "right": "motion:stagger",
-          "hashDistance": 1,
-          "featureDistance": 0.009
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:claim_then_verdict",
           "right": "motion:strike_then_replace",
-          "hashDistance": 2,
-          "featureDistance": 0.005
+          "hashDistance": 1,
+          "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:claim_then_verdict",
           "right": "motion:term_then_body",
           "hashDistance": 2,
-          "featureDistance": 0.005
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:claim_then_verdict",
           "right": "motion:term_then_definition",
-          "hashDistance": 2,
-          "featureDistance": 0.004
+          "hashDistance": 1,
+          "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
@@ -1797,7 +2117,7 @@
           "aspect": "horizontal",
           "left": "motion:clean_cut",
           "right": "motion:cut",
-          "hashDistance": 1,
+          "hashDistance": 2,
           "featureDistance": 0.004
         },
         {
@@ -1811,7 +2131,7 @@
           "aspect": "horizontal",
           "left": "motion:clean_cut",
           "right": "motion:cut_on_speech",
-          "hashDistance": 0,
+          "hashDistance": 2,
           "featureDistance": 0.005
         },
         {
@@ -1820,13 +2140,6 @@
           "right": "motion:j_or_l_cut",
           "hashDistance": 0,
           "featureDistance": 0.011
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:clean_cut_or_push",
-          "right": "motion:cut",
-          "hashDistance": 2,
-          "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
@@ -1853,7 +2166,7 @@
           "aspect": "horizontal",
           "left": "motion:collapse",
           "right": "motion:converge",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.002
         },
         {
@@ -1866,99 +2179,134 @@
         {
           "aspect": "horizontal",
           "left": "motion:collapse",
-          "right": "motion:scale_fade",
+          "right": "motion:grow_from_zero",
           "hashDistance": 2,
           "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:collapse",
+          "right": "motion:scale_fade",
+          "hashDistance": 0,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
           "right": "motion:soft_pop",
-          "hashDistance": 2,
+          "hashDistance": 1,
           "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:collapse",
           "right": "motion:task_card",
-          "hashDistance": 2,
+          "hashDistance": 1,
           "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:complete_then_fade",
+          "right": "motion:fade",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:complete_then_fade",
+          "right": "motion:short_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:converge",
           "right": "motion:count_or_scale",
-          "hashDistance": 2,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:converge",
-          "right": "motion:scale_fade",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:converge",
-          "right": "motion:soft_pop",
           "hashDistance": 0,
           "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:converge",
-          "right": "motion:task_card",
+          "right": "motion:grow_from_zero",
           "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:scale_fade",
+          "hashDistance": 0,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:task_card",
+          "hashDistance": 1,
           "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:count_or_scale",
-          "right": "motion:scale_fade",
+          "right": "motion:grow_from_zero",
           "hashDistance": 2,
           "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:count_or_scale",
+          "right": "motion:scale_fade",
+          "hashDistance": 0,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
           "right": "motion:soft_pop",
-          "hashDistance": 2,
-          "featureDistance": 0.003
+          "hashDistance": 1,
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:count_or_scale",
           "right": "motion:task_card",
-          "hashDistance": 2,
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cursor_release",
+          "right": "motion:per_character",
+          "hashDistance": 1,
           "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:cursor_release",
           "right": "motion:typing_or_soft_pop",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:cut",
-          "right": "motion:cut_on_phrase",
-          "hashDistance": 2,
-          "featureDistance": 0.005
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:cut",
           "right": "motion:cut_on_speech",
-          "hashDistance": 1,
+          "hashDistance": 2,
           "featureDistance": 0.007
         },
         {
           "aspect": "horizontal",
           "left": "motion:cut_on_audio_end",
           "right": "motion:speech_end",
-          "hashDistance": 0,
+          "hashDistance": 2,
           "featureDistance": 0.003
         },
         {
@@ -1984,10 +2332,24 @@
         },
         {
           "aspect": "horizontal",
+          "left": "motion:directional_reveal",
+          "right": "motion:mask_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:fade",
+          "right": "motion:short_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
           "left": "motion:grow_from_zero",
           "right": "motion:scale_fade",
-          "hashDistance": 1,
-          "featureDistance": 0.005
+          "hashDistance": 2,
+          "featureDistance": 0.006
         },
         {
           "aspect": "horizontal",
@@ -2000,56 +2362,49 @@
           "aspect": "horizontal",
           "left": "motion:highlight_segment",
           "right": "motion:highlight_turning_point",
-          "hashDistance": 1,
-          "featureDistance": 0.004
+          "hashDistance": 0,
+          "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_segment",
           "right": "motion:local_highlight",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_segment",
           "right": "motion:mark_current_level",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_segment",
           "right": "motion:result_tag",
-          "hashDistance": 0,
-          "featureDistance": 0.007
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:highlight_segment",
-          "right": "motion:time_marker",
-          "hashDistance": 2,
+          "hashDistance": 1,
           "featureDistance": 0.007
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_segment",
           "right": "motion:weight_color",
-          "hashDistance": 2,
-          "featureDistance": 0.002
+          "hashDistance": 0,
+          "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_turning_point",
           "right": "motion:local_highlight",
           "hashDistance": 0,
-          "featureDistance": 0.004
+          "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_turning_point",
           "right": "motion:mark_current_level",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.004
         },
         {
@@ -2057,28 +2412,21 @@
           "left": "motion:highlight_turning_point",
           "right": "motion:result_tag",
           "hashDistance": 1,
-          "featureDistance": 0.009
+          "featureDistance": 0.008
         },
         {
           "aspect": "horizontal",
-          "left": "motion:label_then_title",
-          "right": "motion:phrase_groups",
-          "hashDistance": 1,
+          "left": "motion:highlight_turning_point",
+          "right": "motion:weight_color",
+          "hashDistance": 0,
           "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:label_then_title",
           "right": "motion:progressive_local",
-          "hashDistance": 1,
+          "hashDistance": 2,
           "featureDistance": 0.004
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:label_then_title",
-          "right": "motion:quote_then_source",
-          "hashDistance": 1,
-          "featureDistance": 0.008
         },
         {
           "aspect": "horizontal",
@@ -2089,23 +2437,9 @@
         },
         {
           "aspect": "horizontal",
-          "left": "motion:label_then_title",
-          "right": "motion:strike_then_replace",
-          "hashDistance": 1,
-          "featureDistance": 0.007
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:label_then_title",
-          "right": "motion:term_then_definition",
-          "hashDistance": 1,
-          "featureDistance": 0.008
-        },
-        {
-          "aspect": "horizontal",
           "left": "motion:local_highlight",
           "right": "motion:mark_current_level",
-          "hashDistance": 2,
+          "hashDistance": 0,
           "featureDistance": 0.002
         },
         {
@@ -2113,21 +2447,28 @@
           "left": "motion:local_highlight",
           "right": "motion:result_tag",
           "hashDistance": 1,
-          "featureDistance": 0.007
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:local_highlight",
+          "right": "motion:weight_color",
+          "hashDistance": 0,
+          "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:mark_current_level",
           "right": "motion:result_tag",
           "hashDistance": 1,
-          "featureDistance": 0.007
+          "featureDistance": 0.006
         },
         {
           "aspect": "horizontal",
           "left": "motion:mark_current_level",
-          "right": "motion:time_marker",
-          "hashDistance": 1,
-          "featureDistance": 0.007
+          "right": "motion:weight_color",
+          "hashDistance": 0,
+          "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
@@ -2138,22 +2479,22 @@
         },
         {
           "aspect": "horizontal",
-          "left": "motion:none",
-          "right": "motion:speech_sync",
-          "hashDistance": 2,
-          "featureDistance": 0.003
+          "left": "motion:per_character",
+          "right": "motion:typing_or_soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:phrase_groups",
           "right": "motion:pip_then_focus",
-          "hashDistance": 2,
+          "hashDistance": 1,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
           "left": "motion:phrase_groups",
-          "right": "motion:progressive_local",
+          "right": "motion:progressive",
           "hashDistance": 2,
           "featureDistance": 0.003
         },
@@ -2162,21 +2503,28 @@
           "left": "motion:phrase_groups",
           "right": "motion:quote_then_source",
           "hashDistance": 2,
-          "featureDistance": 0.006
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:step_up",
+          "hashDistance": 2,
+          "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:phrase_groups",
           "right": "motion:strike_then_replace",
           "hashDistance": 2,
-          "featureDistance": 0.006
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:phrase_groups",
           "right": "motion:term_then_definition",
           "hashDistance": 2,
-          "featureDistance": 0.006
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
@@ -2188,103 +2536,75 @@
         {
           "aspect": "horizontal",
           "left": "motion:pip_then_focus",
-          "right": "motion:progressive_local",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:pip_then_focus",
           "right": "motion:quote_then_source",
-          "hashDistance": 2,
-          "featureDistance": 0.006
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:pip_then_focus",
-          "right": "motion:stagger",
           "hashDistance": 1,
-          "featureDistance": 0.003
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:pip_then_focus",
           "right": "motion:step_up",
           "hashDistance": 1,
-          "featureDistance": 0.003
+          "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
           "left": "motion:pip_then_focus",
           "right": "motion:strike_then_replace",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:term_then_body",
           "hashDistance": 2,
           "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
           "left": "motion:pip_then_focus",
-          "right": "motion:term_then_body",
-          "hashDistance": 2,
-          "featureDistance": 0.006
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:pip_then_focus",
           "right": "motion:term_then_definition",
-          "hashDistance": 2,
-          "featureDistance": 0.006
+          "hashDistance": 1,
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:progressive",
-          "right": "motion:stagger",
-          "hashDistance": 2,
-          "featureDistance": 0.003
+          "right": "motion:quote_then_source",
+          "hashDistance": 0,
+          "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
           "left": "motion:progressive",
           "right": "motion:step_up",
-          "hashDistance": 0,
+          "hashDistance": 2,
           "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 0,
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:progressive",
           "right": "motion:term_then_body",
           "hashDistance": 1,
-          "featureDistance": 0.006
+          "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
-          "left": "motion:progressive_local",
-          "right": "motion:quote_then_source",
+          "left": "motion:progressive",
+          "right": "motion:term_then_definition",
           "hashDistance": 0,
-          "featureDistance": 0.006
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:progressive_local",
-          "right": "motion:stagger",
-          "hashDistance": 1,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:progressive_local",
-          "right": "motion:strike_then_replace",
-          "hashDistance": 2,
-          "featureDistance": 0.006
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:progressive_local",
-          "right": "motion:term_then_body",
-          "hashDistance": 2,
-          "featureDistance": 0.006
+          "featureDistance": 0.004
         }
       ],
-      "declaredFamilySimilarityPairCount": 138,
+      "declaredFamilySimilarityPairCount": 141,
       "headCollisionAssetCount": 0,
       "headCollisionAssets": [],
       "spatialBlackAssetCount": 0,
@@ -2329,55 +2649,207 @@
       "images": 480,
       "semanticTriads": 240,
       "exactDuplicateAssets": 0,
-      "allowedExactDuplicateAssets": 2,
-      "allowedExactDuplicateGroups": [
-        [
-          "component:source_tag:horizontal",
-          "scene:source_tag_scene:horizontal"
-        ],
-        [
-          "component:source_tag:vertical",
-          "scene:source_tag_scene:vertical"
-        ]
-      ],
+      "allowedExactDuplicateAssets": 0,
+      "allowedExactDuplicateGroups": [],
       "disallowedExactDuplicateGroups": [],
       "nearDuplicatePairs": [],
       "nearDuplicatePairCount": 0,
       "declaredFamilySimilarityPairs": [
         {
           "aspect": "horizontal",
+          "left": "scene:compare_two",
+          "right": "scene:compare_before_after",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_bleed_footage",
+          "hashDistance": 1,
+          "featureDistance": 0.012
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_screen",
+          "hashDistance": 0,
+          "featureDistance": 0.01
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:full_bleed_footage",
+          "right": "layout:full_screen",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
           "left": "motion:a_then_b",
-          "right": "motion:phrase_groups",
+          "right": "motion:claim_then_verdict",
           "hashDistance": 2,
           "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:progressive",
+          "hashDistance": 2,
+          "featureDistance": 0.01
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:progressive_local",
+          "hashDistance": 0,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:quote_then_source",
+          "hashDistance": 0,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:stagger",
+          "hashDistance": 2,
+          "featureDistance": 0.01
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:step_up",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:a_then_b",
+          "right": "motion:term_then_body",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_next_event",
+          "hashDistance": 1,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 0,
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:audio_end",
           "right": "motion:cut_on_audio_end",
           "hashDistance": 2,
-          "featureDistance": 0.003
+          "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
-          "left": "motion:before_next_event",
-          "right": "motion:before_subject_reply",
+          "left": "motion:audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:visuals_clear_early",
           "hashDistance": 2,
           "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
-          "left": "motion:center_split",
-          "right": "motion:split_reveal",
+          "left": "motion:before_next_event",
+          "right": "motion:before_subject_reply",
           "hashDistance": 1,
           "featureDistance": 0.006
         },
         {
           "aspect": "horizontal",
           "left": "motion:center_split",
+          "right": "motion:split_reveal",
+          "hashDistance": 0,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:center_split",
           "right": "motion:wipe_compare",
-          "hashDistance": 2,
+          "hashDistance": 1,
           "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:label_then_title",
+          "hashDistance": 1,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:progressive",
+          "hashDistance": 0,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:progressive_local",
+          "hashDistance": 2,
+          "featureDistance": 0.009
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:quote_then_source",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:stagger",
+          "hashDistance": 0,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:step_up",
+          "hashDistance": 2,
+          "featureDistance": 0.01
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:term_then_body",
+          "hashDistance": 2,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut",
+          "right": "motion:clean_cut_or_push",
+          "hashDistance": 2,
+          "featureDistance": 0.006
         },
         {
           "aspect": "horizontal",
@@ -2389,14 +2861,14 @@
         {
           "aspect": "horizontal",
           "left": "motion:clean_cut",
-          "right": "motion:cut_on_phrase",
-          "hashDistance": 2,
+          "right": "motion:cut_on_speech",
+          "hashDistance": 1,
           "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
-          "left": "motion:clean_cut",
-          "right": "motion:cut_on_speech",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut",
           "hashDistance": 1,
           "featureDistance": 0.004
         },
@@ -2405,21 +2877,21 @@
           "left": "motion:collapse",
           "right": "motion:converge",
           "hashDistance": 1,
-          "featureDistance": 0.002
+          "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:collapse",
           "right": "motion:count_or_scale",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:collapse",
           "right": "motion:grow_from_zero",
-          "hashDistance": 2,
-          "featureDistance": 0.003
+          "hashDistance": 1,
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
@@ -2433,49 +2905,63 @@
           "left": "motion:collapse",
           "right": "motion:task_card",
           "hashDistance": 2,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:complete_then_fade",
+          "right": "motion:fade",
+          "hashDistance": 0,
           "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:converge",
           "right": "motion:count_or_scale",
+          "hashDistance": 1,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:grow_from_zero",
           "hashDistance": 2,
-          "featureDistance": 0.004
+          "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
           "left": "motion:converge",
           "right": "motion:soft_pop",
           "hashDistance": 1,
-          "featureDistance": 0.003
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
-          "left": "motion:converge",
-          "right": "motion:task_card",
+          "left": "motion:count_or_scale",
+          "right": "motion:grow_from_zero",
           "hashDistance": 1,
-          "featureDistance": 0.003
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:count_or_scale",
           "right": "motion:soft_pop",
-          "hashDistance": 1,
+          "hashDistance": 0,
           "featureDistance": 0.001
         },
         {
           "aspect": "horizontal",
-          "left": "motion:cursor_release",
-          "right": "motion:per_character",
+          "left": "motion:count_or_scale",
+          "right": "motion:task_card",
           "hashDistance": 2,
-          "featureDistance": 0.003
+          "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
           "left": "motion:cursor_release",
           "right": "motion:typing_or_soft_pop",
-          "hashDistance": 2,
-          "featureDistance": 0.003
+          "hashDistance": 1,
+          "featureDistance": 0.002
         },
         {
           "aspect": "horizontal",
@@ -2487,77 +2973,140 @@
         {
           "aspect": "horizontal",
           "left": "motion:cut_on_audio_end",
-          "right": "motion:visuals_clear_early",
-          "hashDistance": 1,
-          "featureDistance": 0.004
+          "right": "motion:speech_end",
+          "hashDistance": 2,
+          "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
-          "left": "motion:cut_on_phrase",
-          "right": "motion:cut_on_speech",
+          "left": "motion:cut_on_audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:directional_reveal",
+          "right": "motion:mask_reveal",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:directional_reveal",
+          "right": "motion:result_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:directional_reveal",
+          "right": "motion:target_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:draw_line",
+          "right": "motion:line_grow",
           "hashDistance": 1,
           "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
           "left": "motion:grow_from_zero",
-          "right": "motion:soft_pop",
+          "right": "motion:scale_fade",
           "hashDistance": 2,
           "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:grow_from_zero",
-          "right": "motion:task_card",
-          "hashDistance": 2,
-          "featureDistance": 0.004
+          "right": "motion:soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
-          "left": "motion:highlight_segment",
-          "right": "motion:local_highlight",
-          "hashDistance": 2,
-          "featureDistance": 0.007
+          "left": "motion:grow_from_zero",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_segment",
           "right": "motion:mark_current_level",
-          "hashDistance": 2,
-          "featureDistance": 0.001
+          "hashDistance": 0,
+          "featureDistance": 0.0
         },
         {
           "aspect": "horizontal",
           "left": "motion:highlight_turning_point",
           "right": "motion:local_highlight",
-          "hashDistance": 1,
+          "hashDistance": 2,
           "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:result_tag",
+          "hashDistance": 1,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:phrase_groups",
+          "hashDistance": 2,
+          "featureDistance": 0.007
         },
         {
           "aspect": "horizontal",
           "left": "motion:label_then_title",
           "right": "motion:progressive",
-          "hashDistance": 2,
-          "featureDistance": 0.006
+          "hashDistance": 1,
+          "featureDistance": 0.005
         },
         {
           "aspect": "horizontal",
           "left": "motion:label_then_title",
           "right": "motion:stagger",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:strike_then_replace",
           "hashDistance": 2,
-          "featureDistance": 0.004
+          "featureDistance": 0.006
         },
         {
           "aspect": "horizontal",
           "left": "motion:local_highlight",
           "right": "motion:result_tag",
-          "hashDistance": 2,
+          "hashDistance": 1,
           "featureDistance": 0.008
         },
         {
           "aspect": "horizontal",
           "left": "motion:local_highlight",
-          "right": "motion:time_marker",
+          "right": "motion:weight_color",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:mask_reveal",
+          "right": "motion:result_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.009
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:mask_reveal",
+          "right": "motion:target_reveal",
           "hashDistance": 2,
           "featureDistance": 0.005
         },
@@ -2565,8 +3114,8 @@
           "aspect": "horizontal",
           "left": "motion:natural_action",
           "right": "motion:static",
-          "hashDistance": 2,
-          "featureDistance": 0.004
+          "hashDistance": 0,
+          "featureDistance": 0.007
         },
         {
           "aspect": "horizontal",
@@ -2577,31 +3126,171 @@
         },
         {
           "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:pip_then_focus",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:step_up",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:term_then_body",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:term_then_definition",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
           "left": "motion:pip_then_focus",
           "right": "motion:step_up",
-          "hashDistance": 2,
-          "featureDistance": 0.004
+          "hashDistance": 1,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:term_then_body",
+          "hashDistance": 1,
+          "featureDistance": 0.006
         },
         {
           "aspect": "horizontal",
           "left": "motion:pip_then_focus",
           "right": "motion:term_then_definition",
           "hashDistance": 2,
-          "featureDistance": 0.008
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:progressive_local",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:quote_then_source",
+          "hashDistance": 2,
+          "featureDistance": 0.007
         },
         {
           "aspect": "horizontal",
           "left": "motion:progressive",
           "right": "motion:stagger",
+          "hashDistance": 0,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:step_up",
           "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 1,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:term_then_body",
+          "hashDistance": 2,
+          "featureDistance": 0.009
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:quote_then_source",
+          "hashDistance": 0,
           "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
-          "left": "motion:result_tag",
-          "right": "motion:time_marker",
+          "left": "motion:progressive_local",
+          "right": "motion:stagger",
           "hashDistance": 2,
-          "featureDistance": 0.004
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:step_up",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:term_then_body",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:quote_then_source",
+          "right": "motion:stagger",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:quote_then_source",
+          "right": "motion:step_up",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:quote_then_source",
+          "right": "motion:term_then_body",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:return_to_dialogue",
+          "right": "motion:return_to_original",
+          "hashDistance": 2,
+          "featureDistance": 0.006
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:return_to_dialogue",
+          "right": "motion:return_to_subject",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:return_to_original",
+          "right": "motion:return_to_subject",
+          "hashDistance": 2,
+          "featureDistance": 0.005
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:scale_fade",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.006
         },
         {
           "aspect": "horizontal",
@@ -2612,6 +3301,13 @@
         },
         {
           "aspect": "horizontal",
+          "left": "motion:speech_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
           "left": "motion:split_reveal",
           "right": "motion:wipe_compare",
           "hashDistance": 1,
@@ -2619,17 +3315,38 @@
         },
         {
           "aspect": "horizontal",
+          "left": "motion:stagger",
+          "right": "motion:step_up",
+          "hashDistance": 2,
+          "featureDistance": 0.007
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:stagger",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:stagger",
+          "right": "motion:term_then_body",
+          "hashDistance": 2,
+          "featureDistance": 0.009
+        },
+        {
+          "aspect": "horizontal",
           "left": "motion:step_up",
           "right": "motion:term_then_body",
-          "hashDistance": 1,
-          "featureDistance": 0.005
+          "hashDistance": 0,
+          "featureDistance": 0.003
         },
         {
           "aspect": "horizontal",
           "left": "motion:step_up",
           "right": "motion:term_then_definition",
-          "hashDistance": 0,
-          "featureDistance": 0.006
+          "hashDistance": 1,
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
@@ -2637,415 +3354,9 @@
           "right": "motion:term_then_definition",
           "hashDistance": 1,
           "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:all_clear_before_a_roll",
-          "right": "motion:before_subject_reply",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:all_clear_before_a_roll",
-          "right": "motion:clear_before_a_roll",
-          "hashDistance": 2,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:audio_end",
-          "right": "motion:before_next_event",
-          "hashDistance": 1,
-          "featureDistance": 0.011
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:audio_end",
-          "right": "motion:cut_on_audio_end",
-          "hashDistance": 0,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:audio_end",
-          "right": "motion:speech_end",
-          "hashDistance": 1,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:audio_end",
-          "right": "motion:visuals_clear_early",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:before_next_event",
-          "right": "motion:clear_before_a_roll",
-          "hashDistance": 2,
-          "featureDistance": 0.005
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:before_next_event",
-          "right": "motion:cut_on_audio_end",
-          "hashDistance": 1,
-          "featureDistance": 0.01
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:before_next_event",
-          "right": "motion:speech_end",
-          "hashDistance": 2,
-          "featureDistance": 0.012
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:before_subject_reply",
-          "right": "motion:clear_before_a_roll",
-          "hashDistance": 2,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:center_split",
-          "right": "motion:split_reveal",
-          "hashDistance": 2,
-          "featureDistance": 0.005
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:center_split",
-          "right": "motion:wipe_compare",
-          "hashDistance": 2,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut",
-          "right": "motion:clean_cut_or_push",
-          "hashDistance": 2,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut",
-          "right": "motion:cut",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut",
-          "right": "motion:cut_on_phrase",
-          "hashDistance": 2,
-          "featureDistance": 0.005
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut",
-          "right": "motion:cut_on_speech",
-          "hashDistance": 2,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clean_cut_or_push",
-          "right": "motion:cut",
-          "hashDistance": 0,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:clear_before_a_roll",
-          "right": "motion:speech_end",
-          "hashDistance": 2,
-          "featureDistance": 0.011
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:collapse",
-          "right": "motion:grow_from_zero",
-          "hashDistance": 1,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:collapse",
-          "right": "motion:soft_pop",
-          "hashDistance": 1,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:collapse",
-          "right": "motion:task_card",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:complete_then_fade",
-          "right": "motion:fade",
-          "hashDistance": 1,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:converge",
-          "right": "motion:task_card",
-          "hashDistance": 1,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:cut_on_audio_end",
-          "right": "motion:speech_end",
-          "hashDistance": 1,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:cut_on_audio_end",
-          "right": "motion:visuals_clear_early",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:cut_on_phrase",
-          "right": "motion:cut_on_speech",
-          "hashDistance": 2,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:directional_reveal",
-          "right": "motion:mask_reveal",
-          "hashDistance": 2,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:directional_reveal",
-          "right": "motion:result_reveal",
-          "hashDistance": 0,
-          "featureDistance": 0.007
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:directional_reveal",
-          "right": "motion:short_wipe",
-          "hashDistance": 2,
-          "featureDistance": 0.011
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:directional_reveal",
-          "right": "motion:target_reveal",
-          "hashDistance": 1,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:grow_from_zero",
-          "right": "motion:soft_pop",
-          "hashDistance": 0,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:highlight_result",
-          "right": "motion:highlight_turning_point",
-          "hashDistance": 1,
-          "featureDistance": 0.008
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:highlight_result",
-          "right": "motion:local_highlight",
-          "hashDistance": 2,
-          "featureDistance": 0.007
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:highlight_segment",
-          "right": "motion:mark_current_level",
-          "hashDistance": 2,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:highlight_turning_point",
-          "right": "motion:local_highlight",
-          "hashDistance": 1,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:highlight_turning_point",
-          "right": "motion:result_tag",
-          "hashDistance": 2,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:highlight_turning_point",
-          "right": "motion:time_marker",
-          "hashDistance": 2,
-          "featureDistance": 0.006
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:label_then_title",
-          "right": "motion:progressive_local",
-          "hashDistance": 1,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:label_then_title",
-          "right": "motion:stagger",
-          "hashDistance": 0,
-          "featureDistance": 0.001
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:label_then_title",
-          "right": "motion:term_then_definition",
-          "hashDistance": 2,
-          "featureDistance": 0.007
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:local_highlight",
-          "right": "motion:time_marker",
-          "hashDistance": 1,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:mark_current_level",
-          "right": "motion:weight_color",
-          "hashDistance": 1,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:mask_reveal",
-          "right": "motion:result_reveal",
-          "hashDistance": 2,
-          "featureDistance": 0.007
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:mask_reveal",
-          "right": "motion:short_wipe",
-          "hashDistance": 2,
-          "featureDistance": 0.012
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:merge",
-          "right": "motion:split_reveal",
-          "hashDistance": 2,
-          "featureDistance": 0.011
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:merge",
-          "right": "motion:wipe_compare",
-          "hashDistance": 2,
-          "featureDistance": 0.01
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:per_character",
-          "right": "motion:typing_or_soft_pop",
-          "hashDistance": 1,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:phrase_groups",
-          "right": "motion:step_up",
-          "hashDistance": 1,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:phrase_groups",
-          "right": "motion:term_then_body",
-          "hashDistance": 1,
-          "featureDistance": 0.006
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:phrase_groups",
-          "right": "motion:term_then_definition",
-          "hashDistance": 2,
-          "featureDistance": 0.007
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:pip_then_focus",
-          "right": "motion:step_up",
-          "hashDistance": 2,
-          "featureDistance": 0.002
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:pip_then_focus",
-          "right": "motion:term_then_body",
-          "hashDistance": 2,
-          "featureDistance": 0.005
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:progressive_local",
-          "right": "motion:stagger",
-          "hashDistance": 1,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:result_reveal",
-          "right": "motion:short_wipe",
-          "hashDistance": 2,
-          "featureDistance": 0.011
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:result_reveal",
-          "right": "motion:target_reveal",
-          "hashDistance": 1,
-          "featureDistance": 0.007
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:split_reveal",
-          "right": "motion:wipe_compare",
-          "hashDistance": 0,
-          "featureDistance": 0.003
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:stagger",
-          "right": "motion:term_then_definition",
-          "hashDistance": 2,
-          "featureDistance": 0.006
-        },
-        {
-          "aspect": "vertical",
-          "left": "motion:step_up",
-          "right": "motion:term_then_body",
-          "hashDistance": 0,
-          "featureDistance": 0.004
         }
       ],
-      "declaredFamilySimilarityPairCount": 102,
+      "declaredFamilySimilarityPairCount": 172,
       "headCollisionAssetCount": 0,
       "headCollisionAssets": [],
       "spatialBlackAssetCount": 0,
@@ -3090,7 +3401,7 @@
       "images": 480,
       "semanticTriads": 240,
       "exactDuplicateAssets": 0,
-      "allowedExactDuplicateAssets": 10,
+      "allowedExactDuplicateAssets": 47,
       "allowedExactDuplicateGroups": [
         [
           "component:subtitle_single:horizontal",
@@ -3131,13 +3442,862 @@
         [
           "component:subtitle_speaker:vertical",
           "scene:subtitle_speaker_only:vertical"
+        ],
+        [
+          "component:chapter_title:horizontal",
+          "scene:narrative_chapter:horizontal"
+        ],
+        [
+          "component:chapter_title:vertical",
+          "scene:narrative_chapter:vertical"
+        ],
+        [
+          "component:statement_title:horizontal",
+          "scene:narrative_statement:horizontal"
+        ],
+        [
+          "component:statement_title:vertical",
+          "scene:narrative_statement:vertical"
+        ],
+        [
+          "component:text_behind_subject:horizontal",
+          "scene:text_behind_subject_scene:horizontal"
+        ],
+        [
+          "component:numeric_punch:horizontal",
+          "scene:numeric_result:horizontal"
+        ],
+        [
+          "component:numeric_punch:vertical",
+          "scene:numeric_result:vertical"
+        ],
+        [
+          "component:definition_term:horizontal",
+          "scene:narrative_definition:horizontal"
+        ],
+        [
+          "component:definition_term:vertical",
+          "scene:narrative_definition:vertical"
+        ],
+        [
+          "component:quote_pull:horizontal",
+          "scene:narrative_quote:horizontal"
+        ],
+        [
+          "component:quote_pull:vertical",
+          "scene:narrative_quote:vertical"
+        ],
+        [
+          "component:checklist_card:horizontal",
+          "scene:checklist_progressive:horizontal"
+        ],
+        [
+          "component:checklist_card:vertical",
+          "scene:checklist_progressive:vertical"
+        ],
+        [
+          "component:subject_safe_popup:horizontal",
+          "scene:ai_response_popup:horizontal"
+        ],
+        [
+          "component:subject_safe_popup:vertical",
+          "scene:ai_response_popup:vertical"
+        ],
+        [
+          "component:screen_focus_callout:horizontal",
+          "scene:tool_click_focus:horizontal"
+        ],
+        [
+          "component:screen_focus_callout:vertical",
+          "scene:tool_click_focus:vertical"
+        ],
+        [
+          "component:bar_chart:horizontal",
+          "scene:data_bar:horizontal"
+        ],
+        [
+          "component:bar_chart:vertical",
+          "scene:data_bar:vertical"
+        ],
+        [
+          "scene:compare_two:horizontal",
+          "scene:compare_before_after:horizontal"
+        ],
+        [
+          "scene:compare_two:vertical",
+          "scene:compare_before_after:vertical"
+        ],
+        [
+          "scene:tool_screen_full:horizontal",
+          "layout:full_screen:horizontal"
+        ],
+        [
+          "scene:tool_screen_full:vertical",
+          "layout:full_screen:vertical"
+        ],
+        [
+          "scene:tool_screen_pip:horizontal",
+          "layout:screen_with_corner_pip:horizontal"
+        ],
+        [
+          "scene:tool_screen_pip:vertical",
+          "layout:screen_with_corner_pip:vertical"
+        ],
+        [
+          "scene:pip_shape_demo:horizontal",
+          "layout:moving_pip_safe_zones:horizontal"
+        ],
+        [
+          "scene:pip_shape_demo:vertical",
+          "layout:moving_pip_safe_zones:vertical"
+        ],
+        [
+          "scene:pip_rect_only:horizontal",
+          "layout:corner_safe:horizontal"
+        ],
+        [
+          "scene:pip_rect_only:vertical",
+          "layout:corner_safe:vertical"
+        ],
+        [
+          "scene:split_vertical_demo:horizontal",
+          "layout:two_panes:horizontal"
+        ],
+        [
+          "scene:split_vertical_demo:vertical",
+          "layout:two_panes:vertical"
+        ],
+        [
+          "scene:split_horizontal_demo:horizontal",
+          "layout:two_panes_subject_aware:horizontal"
+        ],
+        [
+          "scene:split_horizontal_demo:vertical",
+          "layout:two_panes_subject_aware:vertical"
+        ],
+        [
+          "scene:bridge_scale_change:horizontal",
+          "layout:wide_to_medium_or_close:horizontal"
+        ],
+        [
+          "scene:bridge_scale_change:vertical",
+          "layout:wide_to_medium_or_close:vertical"
+        ],
+        [
+          "layout:subject_and_ai_symbol:horizontal",
+          "layout:two_role_relationship:horizontal"
+        ],
+        [
+          "layout:subject_and_ai_symbol:vertical",
+          "layout:two_role_relationship:vertical"
         ]
       ],
       "disallowedExactDuplicateGroups": [],
       "nearDuplicatePairs": [],
       "nearDuplicatePairCount": 0,
-      "declaredFamilySimilarityPairs": [],
-      "declaredFamilySimilarityPairCount": 0,
+      "declaredFamilySimilarityPairs": [
+        {
+          "aspect": "horizontal",
+          "left": "component:brand_bug",
+          "right": "component:show_label",
+          "hashDistance": 2,
+          "featureDistance": 0.008
+        },
+        {
+          "aspect": "horizontal",
+          "left": "scene:compare_two",
+          "right": "scene:compare_before_after",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_bleed_footage",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_screen",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:full_bleed_footage",
+          "right": "layout:full_screen",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "layout:subject_and_ai_symbol",
+          "right": "layout:two_role_relationship",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_next_event",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:all_clear_before_a_roll",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:cut_on_audio_end",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:before_next_event",
+          "right": "motion:before_subject_reply",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:before_next_event",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:before_subject_reply",
+          "right": "motion:clear_before_a_roll",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:center_split",
+          "right": "motion:split_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:center_split",
+          "right": "motion:wipe_compare",
+          "hashDistance": 1,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:claim_then_verdict",
+          "right": "motion:quote_then_source",
+          "hashDistance": 2,
+          "featureDistance": 0.003
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:clean_cut_or_push",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:converge",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:count_or_scale",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:grow_from_zero",
+          "hashDistance": 1,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:scale_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:collapse",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:complete_then_fade",
+          "right": "motion:fade",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:complete_then_fade",
+          "right": "motion:short_fade",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:count_or_scale",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:grow_from_zero",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:scale_fade",
+          "hashDistance": 1,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:converge",
+          "right": "motion:task_card",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:scale_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:soft_pop",
+          "hashDistance": 2,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:count_or_scale",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cursor_release",
+          "right": "motion:per_character",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cursor_release",
+          "right": "motion:typing_or_soft_pop",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut",
+          "right": "motion:cut_on_phrase",
+          "hashDistance": 0,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_audio_end",
+          "right": "motion:speech_end",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_audio_end",
+          "right": "motion:visuals_clear_early",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:cut_on_phrase",
+          "right": "motion:cut_on_speech",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:directional_reveal",
+          "right": "motion:mask_reveal",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:draw_line",
+          "right": "motion:line_grow",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:fade",
+          "right": "motion:short_fade",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:grow_from_zero",
+          "right": "motion:scale_fade",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:grow_from_zero",
+          "right": "motion:soft_pop",
+          "hashDistance": 1,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:grow_from_zero",
+          "right": "motion:task_card",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:highlight_turning_point",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:local_highlight",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:mark_current_level",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_segment",
+          "right": "motion:weight_color",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:local_highlight",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:mark_current_level",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:highlight_turning_point",
+          "right": "motion:weight_color",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:phrase_groups",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:pip_then_focus",
+          "hashDistance": 1,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:progressive",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:progressive_local",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:stagger",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:label_then_title",
+          "right": "motion:step_up",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:local_highlight",
+          "right": "motion:mark_current_level",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:local_highlight",
+          "right": "motion:weight_color",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:mark_current_level",
+          "right": "motion:weight_color",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:per_character",
+          "right": "motion:typing_or_soft_pop",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:pip_then_focus",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:progressive",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:progressive_local",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:stagger",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:phrase_groups",
+          "right": "motion:step_up",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:progressive",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:progressive_local",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:stagger",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:pip_then_focus",
+          "right": "motion:step_up",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:progressive_local",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:stagger",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive",
+          "right": "motion:step_up",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:stagger",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:progressive_local",
+          "right": "motion:step_up",
+          "hashDistance": 0,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:response_sync",
+          "right": "motion:speech_sync",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:return_to_dialogue",
+          "right": "motion:return_to_original",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:return_to_dialogue",
+          "right": "motion:return_to_subject",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:return_to_original",
+          "right": "motion:return_to_subject",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:scale_fade",
+          "right": "motion:soft_pop",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:scale_fade",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:soft_pop",
+          "right": "motion:task_card",
+          "hashDistance": 1,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:split_reveal",
+          "right": "motion:wipe_compare",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:stagger",
+          "right": "motion:step_up",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "horizontal",
+          "left": "motion:term_then_body",
+          "right": "motion:term_then_definition",
+          "hashDistance": 1,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "vertical",
+          "left": "component:comparison_card",
+          "right": "component:before_after_card",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "scene:info_single",
+          "right": "scene:info_bullets",
+          "hashDistance": 1,
+          "featureDistance": 0.012
+        },
+        {
+          "aspect": "vertical",
+          "left": "scene:compare_two",
+          "right": "scene:compare_before_after",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "vertical",
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_bleed_footage",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "vertical",
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_screen",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "vertical",
+          "left": "layout:full_bleed_footage",
+          "right": "layout:full_screen",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "vertical",
+          "left": "layout:subject_and_ai_symbol",
+          "right": "layout:two_role_relationship",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:a_then_b",
+          "right": "motion:claim_then_verdict",
+          "hashDistance": 1,
+          "featureDistance": 0.002
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:a_then_b",
+          "right": "motion:quote_then_source",
+          "hashDistance": 1,
+          "featureDistance": 0.004
+        }
+      ],
+      "declaredFamilySimilarityPairCount": 205,
       "headCollisionAssetCount": 0,
       "headCollisionAssets": [],
       "spatialBlackAssetCount": 0,

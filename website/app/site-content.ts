@@ -162,7 +162,7 @@ export const zhContent: SiteContent = {
     { value: "LOCAL", label: "默认本地处理素材" },
     { value: "FULL", label: "覆盖完整后期流程" },
     { value: "DELTA", label: "返工只改受影响层" },
-    { value: "136", label: "自动回归检查" },
+    { value: "137", label: "自动回归检查" },
   ],
   problems: {
     title: "真正耗时间的，不只是拖动时间线。",
@@ -228,9 +228,9 @@ export const zhContent: SiteContent = {
   styles: {
     title: "五种风格，不是同一套卡片换颜色。",
     intro:
-      "它们共享人物保护、字幕可读性和品牌规范，但使用不同的时间单位、空间拓扑、转场与声音逻辑。操作工作台默认按每个语义拍自动路由，也可指定某套语法优先；没有真实触发时回退干净画面。系统会逐对比较七个语法轴，发现换皮就停止。",
+      "效果身份永远先于风格表达：品牌角标仍是角标，PIP 仍是双源画面，折线图仍保留数据关系。只有命中场景级语义时，系统才允许改变空间结构；五套风格共享人物保护、字幕可读性和品牌规范，却使用不同的时间单位、空间拓扑、转场与声音逻辑。操作工作台可自动路由，也可指定优先语法；没有真实触发时回退干净画面。",
     auditLabel: "PRODUCTION EVIDENCE",
-    auditValue: "5 套语法 · 240 个效果 · 2400 张峰值帧 · 1200 份合同 · 未声明近似构图 0 组",
+    auditValue: "5 套语法 · 1200 组语义三元组 · 2400 张峰值帧 · 1200 份合同 · 近似构图 0 · 跨风格完全重复 0",
     items: [
       {
         id: "light",
@@ -475,7 +475,7 @@ export const enContent: SiteContent = {
     { value: "LOCAL", label: "local-first media handling" },
     { value: "FULL", label: "end-to-end post workflow" },
     { value: "DELTA", label: "affected layers only" },
-    { value: "136", label: "regression checks" },
+    { value: "137", label: "regression checks" },
   ],
   problems: {
     title: "The timeline is not the only expensive part.",
@@ -541,9 +541,9 @@ export const enContent: SiteContent = {
   styles: {
     title: "Five styles, five editing grammars—not one card system reskinned.",
     intro:
-      "They share subject safety, caption legibility, and brand rules, but differ in time unit, spatial topology, transitions, and sound. The production console routes each semantic beat automatically or lets an editor prefer one grammar; without a real trigger, it falls back to a clean frame. Kacha compares seven grammar axes pairwise and fails a cosmetic reskin.",
+      "Effect identity comes first: a brand bug stays a bug, PIP keeps two picture sources, and a line chart keeps its data relationship. Structural grammar activates only for a matching scene-level meaning. The five styles share subject safety, caption legibility, and brand rules, but differ in time unit, spatial topology, transitions, and sound; without a real trigger, Kacha falls back to a clean frame.",
     auditLabel: "PRODUCTION EVIDENCE",
-    auditValue: "5 grammars · 240 effects · 2,400 peak frames · 1,200 contracts · 0 undeclared near-duplicate compositions",
+    auditValue: "5 grammars · 1,200 semantic triads · 2,400 peak frames · 1,200 contracts · 0 near duplicates · 0 cross-style exact duplicates",
     items: [
       {
         id: "light",

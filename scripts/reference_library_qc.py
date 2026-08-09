@@ -52,6 +52,42 @@ INTENTIONAL_SUBJECT_RECOMPOSITION_IDS = {
     "two_panes_subject_aware",
 }
 
+# Keep this allowlist deliberately small. A style may replace a peak-frame
+# topology only for canonical scene-level demonstrations of its editing
+# grammar. Registered components, layouts, renderers and motion diagrams must
+# always preserve their own visual function.
+STYLE_GRAMMAR_SCENE_IDS = {
+    "light": set(),
+    "spatial": {
+        "process_progressive",
+        "decision_progressive",
+        "netstyle_open_spatial_hook",
+        "netstyle_parallel_progressive",
+        "netstyle_spatial_depth",
+    },
+    "comic": {
+        "open_result_first",
+        "narrative_correction",
+        "info_warning",
+        "ai_fact_check",
+    },
+    "pixel": {
+        "process_progressive",
+        "checklist_progressive",
+        "timeline_progressive",
+        "decision_progressive",
+        "netstyle_parallel_progressive",
+        "netstyle_keyframe_parameter",
+    },
+    "dark": {
+        "narrative_uncertainty",
+        "info_warning",
+        "status_disclosure",
+        "source_card_scene",
+        "ai_fact_check",
+    },
+}
+
 
 def motion_diagram_family(archetype: str | None) -> str:
     """Mirror the renderer's intentional peak-diagram families.
@@ -212,6 +248,13 @@ def validate_library(directory: Path, style: str, semantics: dict, contracts: di
         failures.append("渲染证据没有声明逐效果语义分发")
     if evidence.get("semanticRendering", {}).get("randomArchetypeDispatch"):
         failures.append("渲染仍在使用随机构图分发")
+    semantic_rendering = evidence.get("semanticRendering", {})
+    if semantic_rendering.get("effectIdentityPrecedesStyleGrammar") is not True:
+        failures.append("渲染证据未声明效果身份优先于风格语法")
+    if semantic_rendering.get("nonSceneTopologyReplacementForbidden") is not True:
+        failures.append("渲染证据未禁止替换非场景效果的功能拓扑")
+    if set(semantic_rendering.get("styleGrammarSceneAllowlist", [])) != STYLE_GRAMMAR_SCENE_IDS[style]:
+        failures.append("渲染证据中的风格场景白名单与生产规则不一致")
     evidence_fonts = evidence.get("fontBindings", {})
     for role, expected_hash in FONT_HASHES.items():
         evidence_role = "ui" if role == "ui" else role
@@ -324,6 +367,38 @@ def validate_library(directory: Path, style: str, semantics: dict, contracts: di
             failures.append(f"峰值帧清单语义摘要漂移：{key}")
         if effect.get("label") != semantic.get("label"):
             failures.append(f"效果标签与语义目录不一致：{key}")
+        render_plan = effect.get("renderPlan", {})
+        expected_style_grammar = (
+            effect["kind"] == "scene"
+            and effect["id"] in STYLE_GRAMMAR_SCENE_IDS[style]
+        )
+        if render_plan.get("effectIdentityFirst") is not True:
+            failures.append(f"峰值图没有把效果身份设为第一优先级：{key}")
+        if render_plan.get("styleGrammarApplied") is not expected_style_grammar:
+            failures.append(f"风格语法应用范围错误：{key}")
+        expected_mode = f"{style}-scene-grammar" if expected_style_grammar else "effect-specific-base"
+        if render_plan.get("mode") != expected_mode:
+            failures.append(f"峰值图渲染模式错误：{key}")
+        expected_renderer = (
+            f"{style}EffectVisual"
+            if expected_style_grammar
+            else {
+                "component": "componentVisual",
+                "scene": "sceneVisual",
+                "layout": "layoutVisual",
+                "motion": "motionVisual",
+                "renderer": "rendererVisual",
+            }[effect["kind"]]
+        )
+        if render_plan.get("renderer") != expected_renderer:
+            failures.append(f"峰值图没有使用预期的逐类型渲染器：{key}")
+        if render_plan.get("visualArchetype") != semantic.get("visualArchetype"):
+            failures.append(f"峰值图视觉原型与权威语义目录不一致：{key}")
+        if effect["kind"] != "scene" and render_plan.get("nonSceneTopologyReplacementForbidden") is not True:
+            failures.append(f"非场景效果未锁定自身功能拓扑：{key}")
+        required_markers = semantic.get("expected", {}).get("requiredVisualMarkers", [])
+        if render_plan.get("requiredVisualMarkers") != required_markers:
+            failures.append(f"峰值图没有继承权威语义标记：{key}")
         contract = contracts.get(key)
         if not contract:
             failures.append(f"缺少动效合同：{key}")
@@ -335,6 +410,8 @@ def validate_library(directory: Path, style: str, semantics: dict, contracts: di
             for field in ("trigger", "entry", "hold", "exit", "sfx"):
                 if semantic_core.get(field) != semantic["motion"][field]:
                     failures.append(f"合同 semanticMotionCore.{field} 未使用同源语义：{key}")
+            if contract.get("visualExecutionPlan") != render_plan:
+                failures.append(f"效果图与动效合同的视觉执行计划不一致：{key}")
         for aspect, asset in effect.get("assets", {}).items():
             image_path = directory / asset["path"]
             if not image_path.exists():

@@ -103,12 +103,14 @@ seek-safe 动效合同。幽默漫画必须由真实反差、误会、尺度错�
 命中一个注册信号，并记录 `matchedSignal`、`semanticBeatId`、`sourceRange`；
 没有命中时记录 `fallbackReasonWhenNotApplied` 并执行合同回退。
 
-五套风格不再共享同一镜头套路。它们分别执行“连续编辑旁注”“单次空间导航”
+五套风格在场景级分别执行“连续编辑旁注”“单次空间导航”
 “铺垫—反应—包袱—回扣”“输入—处理—状态—结果”和“异常—证据—裁决—恢复”五种时间与空间语法；
 完整决策表、禁用模式、原创母件和生产门禁见
 `docs/FIVE_STYLE_EDITING_GRAMMARS.md`。`config/design-system/visual-languages.json`
 中的 `grammarSignature` 是机器权威值，效果合同中的 `editingGrammarContract` 必须
-与之同源。只更换卡片材质、颜色、网点、像素边或玻璃光效将被判为换皮失败。
+与之同源。组件、布局、renderer 和 motion 必须保留注册效果的功能拓扑；只有列入
+风格场景白名单的效果允许完整替换叙事构图。只更换卡片材质、颜色、网点、像素边或
+玻璃光效不能冒充场景级风格切换，但也不能为了差异化牺牲效果名称与画面的一致性。
 生产库还必须通过同风格近似构图零容忍门禁；当前
 `docs/generated/five-style-library-qc.json` 记录五套 `nearDuplicatePairCount` 均为 0。
 

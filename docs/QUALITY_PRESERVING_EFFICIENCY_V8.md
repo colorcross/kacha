@@ -252,7 +252,7 @@ node scripts/kacha.mjs efficiency compare baseline-cohort.json candidate-cohort.
 | --- | --- | --- |
 | 静态合同 | policy、DAG、schema、CLI 可验证 | 真实任务执行 |
 | 定向回归 | 代表区间、增量覆盖、缓存、并行、声明门禁通过 | 真实视频质量 |
-| 全量回归 | 136 项仓库测试、doctor、lint/typecheck/site 测试通过 | NLE 和人审 |
+| 全量回归 | 137 项仓库测试、doctor、lint/typecheck/site 测试通过 | NLE 和人审 |
 | 真实项目 | 至少 8 个同源成对项目，有完整指标与人工审片 | 未测项目 |
 | 真实 NLE | Final Cut/Premiere/Resolve 实际导入、播放、导出与复核 | 代码 round-trip |
 | 发布 | 当前 4K 候选完整通看、发布检查、CI/Pages/安装一致 | 测试 fixture |
