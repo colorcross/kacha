@@ -228,7 +228,7 @@ export const zhContent: SiteContent = {
   styles: {
     title: "四种风格，不是同一套卡片换颜色。",
     intro:
-      "它们共享人物保护、字幕可读性和品牌规范，但使用不同的时间单位、空间拓扑、转场与声音逻辑。系统会逐对比较七个语法轴，发现换皮就停止。",
+      "它们共享人物保护、字幕可读性和品牌规范，但使用不同的时间单位、空间拓扑、转场与声音逻辑。操作工作台默认按每个语义拍自动路由，也可指定某套语法优先；没有真实触发时回退干净画面。系统会逐对比较七个语法轴，发现换皮就停止。",
     auditLabel: "PRODUCTION EVIDENCE",
     auditValue: "4 套语法 · 240 个效果 · 1920 张峰值帧 · 960 份合同 · 未声明近似构图 0 组",
     items: [
@@ -533,7 +533,7 @@ export const enContent: SiteContent = {
   styles: {
     title: "Four styles, four editing grammars—not one card system reskinned.",
     intro:
-      "They share subject safety, caption legibility, and brand rules, but differ in time unit, spatial topology, transitions, and sound. Kacha compares seven grammar axes pairwise and fails a cosmetic reskin.",
+      "They share subject safety, caption legibility, and brand rules, but differ in time unit, spatial topology, transitions, and sound. The production console routes each semantic beat automatically or lets an editor prefer one grammar; without a real trigger, it falls back to a clean frame. Kacha compares seven grammar axes pairwise and fails a cosmetic reskin.",
     auditLabel: "PRODUCTION EVIDENCE",
     auditValue: "4 grammars · 240 effects · 1,920 peak frames · 960 contracts · 0 undeclared near-duplicate compositions",
     items: [
