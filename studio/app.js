@@ -1,6 +1,8 @@
 const state = {
   catalog: null,
   selectedStyleId: null,
+  selectedVisualLanguageMode: "automatic",
+  selectedVisualLanguageId: null,
   selectedOpeningId: null,
   selectedAudioPresetId: null,
   selectedBgmPresetId: null,
@@ -58,6 +60,18 @@ function formatDuration(seconds) {
 
 function selectedStyle() {
   return state.catalog?.styles.find((style) => style.id === state.selectedStyleId);
+}
+
+function selectedVisualLanguage() {
+  return state.catalog?.visualLanguages.find(
+    (language) => language.id === state.selectedVisualLanguageId,
+  ) ?? null;
+}
+
+function visualLanguageSummary() {
+  return state.selectedVisualLanguageMode === "automatic"
+    ? "自动按语义"
+    : `${selectedVisualLanguage()?.label ?? "未选择"}优先`;
 }
 
 function audioPresetName(id) {
@@ -119,6 +133,55 @@ function renderStyles() {
   document.querySelectorAll("[data-style-id]").forEach((button) => {
     button.addEventListener("click", () => selectStyle(button.dataset.styleId));
   });
+}
+
+function renderVisualLanguages() {
+  const automaticSelected = state.selectedVisualLanguageMode === "automatic";
+  const automatic = `
+    <button
+      type="button"
+      class="visual-language-choice visual-language-choice--automatic${automaticSelected ? " is-selected" : ""}"
+      data-visual-language-mode="automatic"
+      aria-pressed="${automaticSelected}"
+    >
+      <small>RECOMMENDED</small>
+      <h3>自动按语义</h3>
+      <strong>四套语言并列路由</strong>
+      <p>逐个语义拍匹配真实触发；没有合适信号时保持干净画面或普通字幕。</p>
+      <span>内容 → 匹配 → 合同 → 回退</span>
+    </button>
+  `;
+  const languages = state.catalog.visualLanguages.map((language) => {
+    const selected = state.selectedVisualLanguageMode === "preferred"
+      && state.selectedVisualLanguageId === language.id;
+    const modifier = language.id.replace("xingzhe-", "");
+    return `
+      <button
+        type="button"
+        class="visual-language-choice visual-language-choice--${escapeHtml(modifier)}${selected ? " is-selected" : ""}"
+        data-visual-language-mode="preferred"
+        data-visual-language-id="${escapeHtml(language.id)}"
+        aria-pressed="${selected}"
+      >
+        <small>PRIORITY GRAMMAR</small>
+        <h3>${escapeHtml(language.label)}</h3>
+        <strong>${escapeHtml(language.selectionRule)}</strong>
+        <p>${escapeHtml(language.intent)}</p>
+        <span>不适用：${escapeHtml(language.fallback)}</span>
+      </button>
+    `;
+  }).join("");
+  $("visualLanguageList").innerHTML = automatic + languages;
+  $("visualLanguageList").querySelectorAll("[data-visual-language-mode]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        state.selectedVisualLanguageMode = button.dataset.visualLanguageMode;
+        state.selectedVisualLanguageId = button.dataset.visualLanguageId || null;
+        renderVisualLanguages();
+        markContractDirty();
+        updateSummary();
+      });
+    });
 }
 
 function renderOpenings() {
@@ -243,6 +306,10 @@ function applyPreview(style) {
   preview.querySelector(".preview-caption").style.textShadow =
     `0 2px 8px rgb(0 0 0 / ${style.caption.shadowOpacity})`;
   $("previewLabel").textContent = showLabel($("show").value || style.design.modes.show);
+  preview.dataset.visualLanguage = state.selectedVisualLanguageMode === "automatic"
+    ? "automatic"
+    : state.selectedVisualLanguageId.replace("xingzhe-", "");
+  $("previewLanguage").textContent = visualLanguageSummary();
 }
 
 function setRangeValue(inputId, outputId, value) {
@@ -331,7 +398,10 @@ function selectStyle(styleId) {
 function updateReadiness() {
   const ready = {
     source: Boolean(state.media),
-    style: Boolean(selectedStyle()),
+    style: Boolean(
+      selectedStyle()
+      && (state.selectedVisualLanguageMode === "automatic" || selectedVisualLanguage()),
+    ),
     delivery: Boolean(state.preflight?.readiness?.outputWritable),
     contract: Boolean(state.preflight && state.preflightSignature),
   };
@@ -355,6 +425,7 @@ function updateSummary() {
   if (!style) return;
   $("summarySource").textContent = state.media?.fileName || "未选择";
   $("summaryStyle").textContent = style.name;
+  $("summaryVisualLanguage").textContent = visualLanguageSummary();
   $("summaryFont").textContent =
     `${style.caption.preferredFontFamily}${style.id === "xingzhe" ? " · 默认" : ""}`;
   $("summaryAudio").textContent = audioPresetName(state.selectedAudioPresetId);
@@ -604,6 +675,7 @@ async function saveCustomStyle() {
     state.selectedStyleId = result.style.id;
     state.selectedOpeningId = result.style.direction.openingId;
     renderStyles();
+    renderVisualLanguages();
     renderOpenings();
     selectStyle(result.style.id);
     $("styleEditor").hidden = true;
@@ -725,6 +797,12 @@ function requestPayload() {
     backgroundMusicEnabled:
       $("bgmEnabled").checked && state.selectedBgmPresetId !== "none",
     styleId: state.selectedStyleId,
+    visualLanguageSelection: state.selectedVisualLanguageMode === "automatic"
+      ? { mode: "automatic" }
+      : {
+          mode: "preferred",
+          preferredId: state.selectedVisualLanguageId,
+        },
     openingId: state.selectedOpeningId,
     automaticProfessionalJudgment: $("autoDirector").checked,
     projectOverrides: {
@@ -771,6 +849,7 @@ async function validateProject({ announce = true } = {}) {
     state.preflightSignature = payloadSignature(payload);
     $("preflightSummary").textContent =
       `视频、输出目录、${result.brief.style.captionFontEvidence.resolvedFamily}、`
+        + `${visualLanguageSummary()}、`
         + `设计系统和 ${result.readiness.effectsResolved} 组指定效果均已解析。`;
     $("preflightPanel").hidden = false;
     updateReadiness();
@@ -852,6 +931,9 @@ async function bootstrap() {
     const catalog = await api("/api/bootstrap");
     state.catalog = catalog;
     state.selectedStyleId = catalog.defaultStyleId;
+    state.selectedVisualLanguageMode =
+      catalog.visualLanguagePolicy.defaultSelectionMode;
+    state.selectedVisualLanguageId = null;
     const style = selectedStyle();
     state.selectedOpeningId = style.direction.openingId;
     $("runtimeStatus").classList.add("is-ready");
@@ -863,6 +945,7 @@ async function bootstrap() {
     setupProjectTuning();
     setupEffectLibrary();
     renderStyles();
+    renderVisualLanguages();
     renderOpenings();
     setupStyleEditor();
     hydrateStyleEditor(style.id);

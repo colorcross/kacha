@@ -12,6 +12,9 @@
   "preserveSource": true,
   "backgroundMusicEnabled": true,
   "styleId": "xingzhe",
+  "visualLanguageSelection": {
+    "mode": "automatic"
+  },
   "openingId": "editorial_label_reveal",
   "automaticProfessionalJudgment": true,
   "effectAssignments": [

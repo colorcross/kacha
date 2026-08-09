@@ -119,14 +119,36 @@
               <div class="section-heading">
                 <div>
                   <p class="eyebrow">STYLE SYSTEM</p>
-                  <h2>选择视频风格</h2>
+                  <h2>基础风格与剪辑语言</h2>
                 </div>
                 <button type="button" class="text-action" id="openStyleEditor">
                   ＋ 新建风格
                 </button>
               </div>
 
-              <div class="style-list" id="styleList" aria-label="视频风格"></div>
+              <div class="style-tier-heading">
+                <div>
+                  <span>基础风格</span>
+                  <p>决定品牌、色彩、字幕、声音和整体密度。</p>
+                </div>
+                <small>BRAND PROFILE</small>
+              </div>
+              <div class="style-list" id="styleList" aria-label="基础视频风格"></div>
+
+              <div class="visual-language-panel">
+                <div class="style-tier-heading">
+                  <div>
+                    <span>剪辑视觉语言</span>
+                    <p>决定语义拍的时间单位、空间组织、转场和声音结构；选择“优先”不会强制整片套滤镜。</p>
+                  </div>
+                  <small>EDITING GRAMMAR</small>
+                </div>
+                <div
+                  class="visual-language-list"
+                  id="visualLanguageList"
+                  aria-label="行者风剪辑视觉语言"
+                ></div>
+              </div>
 
               <div class="style-editor" id="styleEditor" hidden>
                 <div class="editor-head">
@@ -470,6 +492,7 @@
 
           <div class="video-preview" id="stylePreview">
             <span class="preview-label" id="previewLabel">工具分享</span>
+            <span class="preview-language" id="previewLanguage">自动按语义</span>
             <div class="preview-title">内容先行</div>
             <div class="preview-caption">
               <span>工具降低门槛，</span><em>品味决定上限</em>
@@ -485,6 +508,10 @@
             <div>
               <dt>风格</dt>
               <dd id="summaryStyle">行者风</dd>
+            </div>
+            <div>
+              <dt>剪辑语言</dt>
+              <dd id="summaryVisualLanguage">自动按语义</dd>
             </div>
             <div>
               <dt>字幕字体</dt>

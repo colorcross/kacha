@@ -54,6 +54,12 @@ const scenesFile = path.join(
   "design-system",
   "scenes.json",
 );
+const visualLanguagesFile = path.join(
+  skillRoot,
+  "config",
+  "design-system",
+  "visual-languages.json",
+);
 
 const VIDEO_EXTENSIONS = new Set([
   ".mov",
@@ -78,6 +84,7 @@ const BGM_PRESET_IDS = new Set([
   "ambient-documentary",
 ]);
 const EFFECT_DENSITIES = new Set(["restrained", "balanced", "active"]);
+const VISUAL_LANGUAGE_SELECTION_MODES = new Set(["automatic", "preferred"]);
 const BEAUTY_PROFILES = new Set(["natural", "visible"]);
 const TASKS = new Set(["source_edit", "content_generation", "local_optimization"]);
 const LANGUAGES = new Set(["zh", "en", "bilingual"]);
@@ -171,6 +178,12 @@ function enumValue(value, allowed, label) {
   return entry;
 }
 
+function rejectUnknownFields(value, allowed, label) {
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) throw new Error(`${label} 包含未知字段：${key}`);
+  }
+}
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -207,6 +220,63 @@ function loadBaseRegistry() {
     throw new Error("production-studio 至少需要四套内置风格");
   }
   return registry;
+}
+
+function loadVisualLanguageRegistry() {
+  const registry = readJson(visualLanguagesFile);
+  if (
+    registry.schemaVersion !== "1.0"
+    || registry.kind !== "kacha_visual_language_registry"
+    || registry.id !== "kacha-visual-languages"
+    || registry.parentProfile !== "xingzhe"
+    || registry.defaultSelectionMode !== "automatic"
+    || registry.noMatchFallback !== "clean_frame_or_plain_caption"
+    || Object.hasOwn(registry, "default")
+    || !isPlainObject(registry.languages)
+  ) {
+    throw new Error("四视觉语言注册表缺少行者风父级、自动选择或干净回退合同");
+  }
+  const requiredIds = [
+    "xingzhe-light-overlay",
+    "xingzhe-spatial-lightpath",
+    "xingzhe-humor-comic",
+    "xingzhe-pixel-editorial",
+  ];
+  const languages = requiredIds.map((id) => {
+    const language = registry.languages[id];
+    if (
+      !isPlainObject(language)
+      || !language.label
+      || !language.intent
+      || !language.grammarSignature?.id
+      || !Array.isArray(language.editingGrammar?.sequence)
+      || !language.applicability?.selectionRule
+      || !language.applicability?.fallback
+    ) {
+      throw new Error(`视觉语言 ${id} 缺少名称、语法、选择或回退合同`);
+    }
+    return {
+      id,
+      label: language.label,
+      intent: language.intent,
+      grammarId: language.grammarSignature.id,
+      temporalModel: language.grammarSignature.temporalModel,
+      spatialModel: language.grammarSignature.spatialModel,
+      sequence: clone(language.editingGrammar.sequence),
+      selectionRule: language.applicability.selectionRule,
+      fallback: language.applicability.fallback,
+      runtimeEvidenceRequired: clone(
+        language.applicability.runtimeEvidenceRequired ?? [],
+      ),
+    };
+  });
+  return {
+    parentProfile: registry.parentProfile,
+    defaultSelectionMode: registry.defaultSelectionMode,
+    noMatchFallback: registry.noMatchFallback,
+    languages,
+    digest: sha256Value(registry),
+  };
 }
 
 function effectCatalog() {
@@ -430,6 +500,57 @@ function normalizeProjectOverrides(value, catalog) {
   };
 }
 
+function normalizeVisualLanguageSelection(value, catalog, style) {
+  const policy = catalog.visualLanguagePolicy;
+  if (style.design.profile !== policy.parentProfile) {
+    throw new Error(
+      `四套剪辑视觉语言只适用于 ${policy.parentProfile}，当前基础风格为 ${style.design.profile}`,
+    );
+  }
+  const input = value === undefined || value === null
+    ? { mode: policy.defaultSelectionMode }
+    : value;
+  if (!isPlainObject(input)) throw new Error("visualLanguageSelection 必须是 object");
+  rejectUnknownFields(
+    input,
+    new Set(["mode", "preferredId"]),
+    "visualLanguageSelection",
+  );
+  const mode = enumValue(
+    input.mode ?? policy.defaultSelectionMode,
+    VISUAL_LANGUAGE_SELECTION_MODES,
+    "visualLanguageSelection.mode",
+  );
+  const languageIds = new Set(catalog.visualLanguages.map((entry) => entry.id));
+  let preferred = null;
+  if (mode === "preferred") {
+    const preferredId = enumValue(
+      input.preferredId,
+      languageIds,
+      "visualLanguageSelection.preferredId",
+    );
+    preferred = catalog.visualLanguages.find((entry) => entry.id === preferredId);
+  } else if (input.preferredId !== undefined && input.preferredId !== null) {
+    throw new Error("自动按语义选择时不得同时指定 preferredId");
+  }
+  return {
+    mode,
+    parentProfile: policy.parentProfile,
+    preferredId: preferred?.id ?? null,
+    preferredLabel: preferred?.label ?? null,
+    allowedIds: [...languageIds],
+    noMatchFallback: policy.noMatchFallback,
+    preferredFallback: preferred?.fallback ?? null,
+    runtimeEvidenceRequired: [
+      "matchedSignal",
+      "semanticBeatId",
+      "sourceRange",
+      "fallbackReasonWhenNotApplied",
+    ],
+    registryDigest: policy.registryDigest,
+  };
+}
+
 function applyProjectOverrides(style, overrides, catalog) {
   const resolved = clone(style);
   if (overrides.audioPresetId) {
@@ -507,6 +628,7 @@ export function loadProductionCatalog({
   includeCustom = true,
 } = {}) {
   const registry = loadBaseRegistry();
+  const visualLanguageRegistry = loadVisualLanguageRegistry();
   const effects = effectCatalog();
   const openings = effects.filter((effect) => effect.kind === "opening");
   const openingIds = new Set(openings.map((effect) => effect.id));
@@ -545,6 +667,13 @@ export function loadProductionCatalog({
     defaultStyleId: registry.defaultStyleId,
     authorityBoundary: registry.authorityBoundary,
     styles,
+    visualLanguagePolicy: {
+      parentProfile: visualLanguageRegistry.parentProfile,
+      defaultSelectionMode: visualLanguageRegistry.defaultSelectionMode,
+      noMatchFallback: visualLanguageRegistry.noMatchFallback,
+      registryDigest: visualLanguageRegistry.digest,
+    },
+    visualLanguages: clone(visualLanguageRegistry.languages),
     captionTemplates: clone(registry.captionTemplates),
     audioPresets: clone(registry.audioPresets),
     bgmPresets: clone(registry.bgmPresets),
@@ -557,6 +686,7 @@ export function loadProductionCatalog({
       registry,
       effects,
       productionMotionPolicy,
+      visualLanguageRegistry,
       custom: custom.map(({ source: _source, ...style }) => style),
     }),
   };
@@ -750,6 +880,11 @@ function normalizeProductionRequest(request, catalog, media) {
   if (!baseStyle) throw new Error(`视频风格不存在：${styleId}`);
   const projectOverrides = normalizeProjectOverrides(request.projectOverrides, catalog);
   const style = applyProjectOverrides(baseStyle, projectOverrides, catalog);
+  const visualLanguageSelection = normalizeVisualLanguageSelection(
+    request.visualLanguageSelection,
+    catalog,
+    style,
+  );
   const openingId = request.openingId ?? style.direction.openingId;
   const openingEffect = catalog.openings.find((entry) => entry.id === openingId);
   if (!openingEffect) {
@@ -803,6 +938,7 @@ function normalizeProductionRequest(request, catalog, media) {
       ? path.resolve(nonEmptyString(request.outputDirectory, "outputDirectory"))
       : path.dirname(media.path),
     projectOverrides,
+    visualLanguageSelection,
     style,
   };
 }
@@ -818,10 +954,19 @@ function productionInstructions(request, catalog) {
     },
     {
       id: "studio-style-contract",
-      text: `全片使用“${request.style.name}”作为统一风格合同；字幕、字体、颜色、组件、场景、动效与声音从同一配置解析。`,
+      text: `全片使用“${request.style.name}”作为基础品牌风格；字幕、字体、颜色、组件、场景、动效与声音从同一配置解析。`,
       appliesTo: [request.task],
       modules: ["visual", "subtitles", "audio", "bgm", "sfx"],
       priority: "high",
+    },
+    {
+      id: "studio-visual-language-contract",
+      text: request.visualLanguageSelection.mode === "automatic"
+        ? "四套行者风剪辑视觉语言按每个真实语义拍自动选择：浅暖轻浮层用于知识与方法，空间光路用于关系与流程，幽默漫画只用于真实喜剧反差，像素风只用于可核验状态变化。每次选择必须记录 matchedSignal、semanticBeatId、sourceRange；没有匹配信号时保持干净画面或普通字幕，不强套风格。"
+        : `优先使用“${request.visualLanguageSelection.preferredLabel}”剪辑语法，但只有当前语义拍满足其注册触发时才能应用；不匹配时执行“${request.visualLanguageSelection.preferredFallback}”，并记录 fallbackReasonWhenNotApplied。不得把优先选择解释为整片滤镜。`,
+      appliesTo: [request.task],
+      modules: ["visual", "subtitles", "audio", "sfx"],
+      priority: "required",
     },
     {
       id: "studio-opening",
@@ -940,6 +1085,7 @@ function buildProjectConfig(request, media, catalog) {
         productionStudio: {
           styleId: style.id,
           styleName: style.name,
+          visualLanguageSelection: clone(request.visualLanguageSelection),
           openingId: request.openingId,
           openingContract: {
             required: true,
@@ -997,6 +1143,7 @@ function buildProjectConfig(request, media, catalog) {
         },
         style: {
           presetId: style.id,
+          visualLanguageSelection: clone(request.visualLanguageSelection),
         },
       },
     },
@@ -1151,6 +1298,7 @@ export function compileProductionRequest(request, {
       beauty: clone(normalized.style.beauty),
       direction: clone(normalized.style.direction),
       projectOverrides: clone(normalized.projectOverrides),
+      visualLanguageSelection: clone(normalized.visualLanguageSelection),
     },
     opening: {
       id: normalized.openingId,
@@ -1316,6 +1464,11 @@ async function runCli() {
               defaultStyleId: catalog.defaultStyleId,
               builtInStyleCount: catalog.styles.filter((style) => style.builtIn).length,
               customStyleCount: catalog.styles.filter((style) => !style.builtIn).length,
+              visualLanguageCount: catalog.visualLanguages.length,
+              defaultVisualLanguageSelectionMode:
+                catalog.visualLanguagePolicy.defaultSelectionMode,
+              visualLanguageParentProfile:
+                catalog.visualLanguagePolicy.parentProfile,
               openingCount: catalog.openings.length,
               assignableEffectCount: catalog.assignableEffects.length,
               digest: catalog.digest,

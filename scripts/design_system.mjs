@@ -321,13 +321,17 @@ export function validateDesignSystem(bundle) {
   if (
     visualLanguages?.schemaVersion !== "1.0"
     || visualLanguages?.id !== "kacha-visual-languages"
+    || visualLanguages?.parentProfile !== "xingzhe"
+    || visualLanguages?.defaultSelectionMode !== "automatic"
+    || visualLanguages?.noMatchFallback !== "clean_frame_or_plain_caption"
+    || Object.hasOwn(visualLanguages ?? {}, "default")
     || !isObject(visualLanguages?.languages)
     || !visualLanguages.languages["xingzhe-light-overlay"]
     || !visualLanguages.languages["xingzhe-spatial-lightpath"]
     || !visualLanguages.languages["xingzhe-humor-comic"]
     || !visualLanguages.languages["xingzhe-pixel-editorial"]
   ) {
-    errors.push("visualLanguages 必须注册浅暖轻浮层、空间光路、幽默漫画和像素风四套可执行视觉语言");
+    errors.push("visualLanguages 必须绑定行者风、默认按语义选择且注册四套可执行视觉语言；不得声明全局默认风格");
   }
   for (const styleId of requiredVisualLanguageIds) {
     const language = visualLanguages?.languages?.[styleId];

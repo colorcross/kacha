@@ -2,7 +2,9 @@
   "schemaVersion": "1.0",
   "kind": "kacha_visual_language_registry",
   "id": "kacha-visual-languages",
-  "default": "xingzhe-light-overlay",
+  "parentProfile": "xingzhe",
+  "defaultSelectionMode": "automatic",
+  "noMatchFallback": "clean_frame_or_plain_caption",
   "shared": {
     "fontPolicy": "../font-routing.json",
     "typography": {

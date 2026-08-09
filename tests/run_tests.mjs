@@ -2535,6 +2535,9 @@ await test("local production studio compiles an auditable project with verified 
   if (
     catalog.defaultStyleId !== "xingzhe"
     || catalog.builtInStyleCount < 4
+    || catalog.visualLanguageCount !== 4
+    || catalog.defaultVisualLanguageSelectionMode !== "automatic"
+    || catalog.visualLanguageParentProfile !== "xingzhe"
     || catalog.openingCount < 10
     || catalog.assignableEffectCount < 100
   ) {
@@ -2639,6 +2642,10 @@ await test("local production studio compiles an auditable project with verified 
     }],
   });
   const previewRequest = readJson(request);
+  previewRequest.visualLanguageSelection = {
+    mode: "preferred",
+    preferredId: "xingzhe-pixel-editorial",
+  };
   previewRequest.projectOverrides = {
     audioPresetId: "clear",
     bgmPresetId: "minimal-piano",
@@ -2673,8 +2680,35 @@ await test("local production studio compiles an auditable project with verified 
     || preview.projectConfig.editingDefaults.parameters.beauty.enabled !== true
     || preview.projectConfig.editingDefaults.parameters.beauty.tuning.smoothing !== 58
     || preview.projectConfig.editingDefaults.parameters.delivery.container !== "source"
+    || preview.brief.style.visualLanguageSelection.mode !== "preferred"
+    || preview.brief.style.visualLanguageSelection.preferredId
+      !== "xingzhe-pixel-editorial"
+    || preview.projectConfig.editingDefaults.parameters.productionStudio
+      .visualLanguageSelection.registryDigest.length !== 64
+    || preview.projectConfig.editingDefaults.recipeParameters.style
+      .visualLanguageSelection.preferredLabel !== "像素风"
   ) {
     throw new Error("production studio preview did not resolve project overrides");
+  }
+  const invalidVisualLanguageRequest = {
+    ...previewRequest,
+    visualLanguageSelection: {
+      mode: "preferred",
+      preferredId: "xingzhe-nonexistent",
+    },
+  };
+  const invalidVisualLanguageFile = path.join(
+    temporary,
+    "studio-invalid-visual-language-request.json",
+  );
+  writeJson(invalidVisualLanguageFile, invalidVisualLanguageRequest);
+  const invalidVisualLanguage = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "studio", "preview",
+    "--request", invalidVisualLanguageFile,
+  ]);
+  if (!invalidVisualLanguage.stderr.includes("visualLanguageSelection.preferredId")) {
+    throw new Error("production studio accepted an unknown visual language preference");
   }
   const compiled = JSON.parse(execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
@@ -2699,6 +2733,13 @@ await test("local production studio compiles an auditable project with verified 
       .openingContract.source !== "z-en-netstyle"
     || projectConfig.editingDefaults.parameters.productionStudio
       .openingContract.promiseBySeconds !== 3
+    || brief.style.visualLanguageSelection.mode !== "automatic"
+    || brief.style.visualLanguageSelection.preferredId !== null
+    || projectConfig.editingDefaults.parameters.productionStudio
+      .visualLanguageSelection.mode !== "automatic"
+    || !projectConfig.editingDefaults.instructions.some(
+      (entry) => entry.id === "studio-visual-language-contract",
+    )
     || brief.opening.required !== true
     || brief.opening.primaryEffectCount !== 1
     || brief.intelligenceV6?.required !== true
@@ -2716,6 +2757,30 @@ await test("local production studio compiles an auditable project with verified 
     "--anchor", compiled.projectDirectory,
     "--no-secrets",
   ]);
+}, "visual");
+
+await test("production studio exposes four visual-language choices and live contract state", () => {
+  const html = fs.readFileSync(path.join(skillDirectory, "studio", "index.html"), "utf8");
+  const client = fs.readFileSync(path.join(skillDirectory, "studio", "app.js"), "utf8");
+  const visualLanguages = readJson(path.join(
+    skillDirectory,
+    "config",
+    "design-system",
+    "visual-languages.json",
+  ));
+  if (
+    !html.includes('id="visualLanguageList"')
+    || !html.includes('id="summaryVisualLanguage"')
+    || !html.includes('id="previewLanguage"')
+    || !client.includes("renderVisualLanguages")
+    || !client.includes("visualLanguageSelection")
+    || visualLanguages.defaultSelectionMode !== "automatic"
+    || visualLanguages.parentProfile !== "xingzhe"
+    || Object.keys(visualLanguages.languages).length !== 4
+    || new Set(Object.keys(visualLanguages.languages)).size !== 4
+  ) {
+    throw new Error("production studio visual-language controls are incomplete");
+  }
 }, "visual");
 
 await test("V7 orchestrator starts source and script projects with recoverable milestones", () => {

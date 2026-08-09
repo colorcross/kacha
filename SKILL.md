@@ -146,7 +146,7 @@ node scripts/kacha.mjs efficiency compare BASELINE-COHORT.json CANDIDATE-COHORT.
   `references/z-en-editing-system.md`
 - 画面呼吸、左右/上下/前后口播字幕排版和项目字体路由：
   `references/visual-breathing-caption-typography.md`
-- 本地页面选素材、建风格、指定开场/效果并生成项目配置：
+- 本地页面选素材、建基础风格、选择四套剪辑视觉语言、指定开场/效果并生成项目配置：
   `references/production-studio.md`
 - 字幕/封面/品牌/系列：`references/subtitles-covers-brand.md`
 - MiniMax/Seedance/网络素材：`references/generated-media-assets.md`
