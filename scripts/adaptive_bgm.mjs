@@ -38,7 +38,7 @@ function usage() {
   console.error(
     "用法：\n"
       + "  adaptive_bgm.mjs plan --cues CUES.json --show "
-      + "tool-share|book-talk|infinite-game|very-ai --output PLAN.json "
+      + "tool-share|book-talk|infinite-game|very-ai|casual-chat --output PLAN.json "
       + "[--style STYLE] [--duration SECONDS] [--policy FILE]\n"
       + "  adaptive_bgm.mjs validate --plan PLAN.json [--policy FILE]",
   );

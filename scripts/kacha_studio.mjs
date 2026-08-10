@@ -88,7 +88,7 @@ const VISUAL_LANGUAGE_SELECTION_MODES = new Set(["automatic", "preferred"]);
 const BEAUTY_PROFILES = new Set(["natural", "visible"]);
 const TASKS = new Set(["source_edit", "content_generation", "local_optimization"]);
 const LANGUAGES = new Set(["zh", "en", "bilingual"]);
-const SHOWS = new Set(["tool-share", "book-talk", "infinite-game", "very-ai"]);
+const SHOWS = new Set(["tool-share", "book-talk", "infinite-game", "very-ai", "casual-chat"]);
 const PLATFORMS = new Set([
   "douyin",
   "xiaohongshu",

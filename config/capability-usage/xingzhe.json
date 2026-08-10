@@ -130,6 +130,35 @@
         "minimumPipLayoutKinds": 2,
         "minimumTransitionKinds": 2
       }
+    },
+    "casual-chat": {
+      "profile": "casual-conversational-breathing",
+      "description": "松、真、有判断；保留自然停顿和表情，以少量清楚的结构提示、状态变化和呼吸构图服务闲聊主线。",
+      "families": {
+        "expressive_transition": {"minimumPerVideo": 1, "minimumPerMinute": 0.15, "maximumPerMinute": 0.5},
+        "supporting_media": {"minimumPerVideo": 1, "minimumPerMinute": 0.18, "maximumPerMinute": 0.6},
+        "pip": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
+        "mask_depth": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.18},
+        "semantic_motion": {"minimumPerVideo": 1, "minimumPerMinute": 0.3, "maximumPerMinute": 0.8},
+        "gaze_guidance": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.3},
+        "spatial_depth": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
+        "keyframe_variation": {"minimumPerVideo": 1, "minimumPerMinute": 0.25, "maximumPerMinute": 0.65},
+        "parallel_layout": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
+        "caption_relation": {"minimumPerVideo": 1, "minimumPerMinute": 0.3, "maximumPerMinute": 0.7},
+        "oversize_background_word": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.18},
+        "person_depth_text": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.12},
+        "visual_breathing": {"minimumPerVideo": 1, "minimumPerMinute": 0.35, "maximumPerMinute": 0.8}
+      },
+      "resourceRules": {
+        "minimumSupportingMediaKinds": 1,
+        "personMaskRequiredAfterSeconds": 99999
+      },
+      "diversity": {"minimumDistinctFamilies": 5},
+      "longFormRequirements": {
+        "captionRelationLayouts": ["logic_emphasis_inline"],
+        "minimumPipLayoutKinds": 0,
+        "minimumTransitionKinds": 1
+      }
     }
   }
 }

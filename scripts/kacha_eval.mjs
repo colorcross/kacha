@@ -496,7 +496,7 @@ function templateDataset() {
 }
 
 function cohortTemplateDataset() {
-  const shows = ["tool-share", "book-talk", "infinite-game", "very-ai"];
+  const shows = ["tool-share", "book-talk", "infinite-game", "very-ai", "casual-chat"];
   const styles = ["light-warm-overlay", "spatial-light-path", "humor-comic", "pixel-editorial"];
   return {
     schemaVersion: "1.0",

@@ -3585,7 +3585,7 @@ await test("V7 evaluation cohort and NLE application protocol refuse synthetic p
   const cohort = readJson(cohortFile);
   if (
     cohort.cases.length !== 8
-    || new Set(cohort.cases.map((item) => item.showId)).size !== 4
+    || new Set(cohort.cases.map((item) => item.showId)).size !== 5
     || new Set(cohort.cases.map((item) => item.styleId)).size !== 4
     || cohort.cases.some((item) => item.editorialJudgment.humanReviewed !== false)
   ) throw new Error("V7 cohort template does not preserve eight real human-review slots");
@@ -3897,6 +3897,7 @@ await test("adaptive BGM planner follows narrative, speech density and show-spec
   fs.mkdirSync(directory, { recursive: true });
   const cues = path.join(directory, "cues.json");
   const planFile = path.join(directory, "plan.json");
+  const casualPlanFile = path.join(directory, "casual-plan.json");
   writeJson(cues, {
     cues: [
       { id: "hook", start: 0, end: 12, text: "为什么我们总是高估一个工具？", signals: ["hook"], emotion: "curious" },
@@ -3938,6 +3939,23 @@ await test("adaptive BGM planner follows narrative, speech density and show-spec
     ))
   ) {
     throw new Error("adaptive BGM plan did not preserve sparse book-talk scoring and professional prompt fields");
+  }
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "bgm", "plan",
+    "--cues", cues,
+    "--show", "casual-chat",
+    "--output", casualPlanFile,
+  ]);
+  const casualPlan = readJson(casualPlanFile);
+  const casualFactScene = casualPlan.scenes.find((scene) => scene.cueIds?.includes("evidence"));
+  if (
+    casualPlan.showId !== "casual-chat"
+    || casualPlan.coverage.maximumForShow !== 0.52
+    || casualPlan.coverage.musicRatio > 0.52
+    || casualFactScene?.mode !== "silence"
+  ) {
+    throw new Error("adaptive BGM plan did not preserve casual-chat silence and coverage policy");
   }
   const invalidFile = path.join(directory, "invalid.json");
   const invalid = structuredClone(plan);
@@ -8179,12 +8197,14 @@ await test("every video requires exactly one registered or contracted opening, i
   }
 }, "visual");
 
-await test("xingzhe show profiles keep book-talk calmer than tool-share", () => {
+await test("xingzhe show profiles keep book-talk and casual-chat calmer than tool-share", () => {
   const toolPlan = path.join(temporary, "capability-tool-share.json");
   const bookPlan = path.join(temporary, "capability-book-talk.json");
+  const casualPlan = path.join(temporary, "capability-casual-chat.json");
   for (const [showId, output] of [
     ["tool-share", toolPlan],
     ["book-talk", bookPlan],
+    ["casual-chat", casualPlan],
   ]) {
     execute(process.execPath, [
       path.join(scripts, "kacha.mjs"),
@@ -8207,15 +8227,21 @@ await test("xingzhe show profiles keep book-talk calmer than tool-share", () => 
   }
   const tool = readJson(toolPlan);
   const book = readJson(bookPlan);
-  if (tool.showId !== "tool-share" || book.showId !== "book-talk") {
+  const casual = readJson(casualPlan);
+  if (
+    tool.showId !== "tool-share"
+    || book.showId !== "book-talk"
+    || casual.showId !== "casual-chat"
+  ) {
     throw new Error("visual capability plans did not freeze showId");
   }
-  if (book.events.length >= tool.events.length) {
-    throw new Error("book-talk should have a calmer minimum effect budget");
+  if (book.events.length >= tool.events.length || casual.events.length >= tool.events.length) {
+    throw new Error("book-talk and casual-chat should have calmer minimum effect budgets");
   }
   if (
     tool.policy.capabilityProfile !== "tool-evidence-balanced"
     || book.policy.capabilityProfile !== "book-calm-evidence"
+    || casual.policy.capabilityProfile !== "casual-conversational-breathing"
   ) {
     throw new Error("show-specific capability profiles were not resolved");
   }
@@ -8981,7 +9007,7 @@ await test("V6 editorial evaluation measures paired human-reviewed improvement w
       ...Array.from({ length: 8 }, (_, index) => ({
         id: `case-${index + 1}`,
         sourceGroupId: `source-${index + 1}`,
-        showId: ["tool-share", "book-talk", "infinite-game", "very-ai"][index % 4],
+        showId: ["tool-share", "book-talk", "infinite-game", "very-ai", "casual-chat"][index % 5],
         styleId: ["light-warm-overlay", "spatial-light-path", "humor-comic", "pixel-editorial"][index % 4],
         platform: index % 2 ? "douyin" : "wechat-channels",
         editorialJudgment: {

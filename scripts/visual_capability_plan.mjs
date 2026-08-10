@@ -726,7 +726,7 @@ function writeTemplate(output, profileId, durationSeconds, showId, openingId) {
 if (!["template", "validate"].includes(action)) {
   fail(
     "用法：visual_capability_plan.mjs template --duration SECONDS --output PLAN.json "
-    + "[--style xingzhe] [--show tool-share|book-talk|infinite-game|very-ai] "
+    + "[--style xingzhe] [--show tool-share|book-talk|infinite-game|very-ai|casual-chat] "
     + "[--opening REGISTERED_OPENING_ID]\n"
     + "  visual_capability_plan.mjs validate --plan PLAN.json "
     + "[--for-execution --timeline TIMELINE.json]",

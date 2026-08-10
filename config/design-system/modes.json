@@ -102,6 +102,31 @@
           "soundPolicy": "reaction_and_state_change",
           "musicPolicy": "playful_until_fact_check"
         }
+      },
+      "casual-chat": {
+        "label": "闲聊",
+        "styleOverrides": {
+          "palette": {
+            "canvas": "#F1EEE7",
+            "surface": "#FBF8F1",
+            "ink": "#24282A",
+            "inkSecondary": "#61696B",
+            "accent": "#E98A2B",
+            "accentSecondary": "#6F8795",
+            "accentSignal": "#F05A47",
+            "accentInsight": "#5D8C72"
+          },
+          "brand": {"label": "闲聊"},
+          "cover": {"subjectHeightRatio": 0.41, "subjectWidthRatio": 0.25},
+          "motion": {"fastFrames": 7, "standardFrames": 10, "slowFrames": 17, "maxOvershoot": 0.025}
+        },
+        "sceneTags": ["conversational", "personal", "reflective", "spontaneous"],
+        "direction": {
+          "openingPriority": ["open_cold_marker", "open_question", "open_clean_title"],
+          "coverPriority": ["cover_editorial", "cover_comparison"],
+          "soundPolicy": "semantic_punctuation_only",
+          "musicPolicy": "sectional_conversational_with_silence"
+        }
       }
     },
     "aspectRatio": {

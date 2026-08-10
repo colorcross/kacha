@@ -114,6 +114,20 @@
       "groove": "agile syncopation with deliberate comic stops and fact-check resets",
       "avoid": ["arcade loop", "cyberpunk trailer", "constant glitch", "music under fact-check conclusions"],
       "defaultRolesWithMusic": ["hook", "setup", "process", "example", "humor", "contrast", "result", "transition", "conclusion"]
+    },
+    "casual-chat": {
+      "label": "闲聊",
+      "bpmRange": [72, 96],
+      "meter": "4/4 or loose half-time",
+      "coverageMaximum": 0.52,
+      "maximumContinuousMusicSeconds": 36,
+      "palette": ["muted electric piano fragments", "dry brush and rim percussion", "soft plucked texture", "short warm bass", "subtle room-tone texture"],
+      "style": "light conversational editorial groove with natural pauses and an adult, understated tone",
+      "timbre": "warm-neutral, tactile, close, lightly playful, never cute or glossy",
+      "harmony": "open add9 and suspended colors with slow, incomplete resolutions that leave room for personal judgment",
+      "groove": "a relaxed pulse that can stop cleanly for dense explanation, uncertainty, reflection or punchlines",
+      "avoid": ["chat-show jingle", "cute vlog loop", "constant lo-fi beat", "sentimental lifestyle score"],
+      "defaultRolesWithMusic": ["hook", "setup", "example", "contrast", "humor", "reflection", "transition", "conclusion"]
     }
   },
   "narrativeFunctions": {

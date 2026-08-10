@@ -44,7 +44,7 @@ node scripts/kacha.mjs bgm validate \
   --plan contracts/adaptive-bgm-plan.json
 ```
 
-支持的正式栏目 ID 为 `tool-share`、`book-talk`、`infinite-game` 和 `very-ai`。
+支持的正式栏目 ID 为 `tool-share`、`book-talk`、`infinite-game`、`very-ai` 和 `casual-chat`。
 唯一策略源为 `config/audio/adaptive-bgm-policy.json`。
 
 ## 生成提示词
@@ -106,7 +106,7 @@ levelBelowDialogueDb / fadeInSeconds / fadeOutSeconds / sha256 / provenance`。
 
 ## 当前实施状态
 
-已实现：四栏目策略、确定性段落规划、专业提示词、覆盖率与语义门禁、多段 BGM
+已实现：五栏目策略、确定性段落规划、专业提示词、覆盖率与语义门禁、多段 BGM
 Timeline 渲染、fade、分段增益、统一 sidechain、完整 BGM stem，以及计划区间
 相对响度 QC。自动测试已验证两段音乐之间的真实静音和长视频固定铺底拒绝。
 

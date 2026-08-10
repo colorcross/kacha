@@ -88,6 +88,7 @@ function showLabel(id) {
     "book-talk": "解读好书",
     "infinite-game": "有限的无限游戏",
     "very-ai": "灰常AI",
+    "casual-chat": "闲聊",
   }[id] ?? id;
 }
 
