@@ -103,7 +103,8 @@ node scripts/kacha.mjs captions render \
 ## 3. 字体场景路由
 
 字体不是按文件名随机挑选，而是先解析元数据、字符覆盖、角色和项目授权。
-路由配置在 `config/font-routing.json`。“浅暖轻浮层”“空间光路”“幽默漫画”和“像素风”只允许四类字体：
+路由配置在 `config/font-routing.json`。浅暖轻浮层、空间光路、幽默漫画、像素风
+和暗黑科技风只允许四类字体：
 
 - `subtitle_primary` / `subtitle_emphasis`：真实金陵体，常规字幕无底色、无描边、阴影 60%；
 - `display_title` / `term_definition` / `quote_pull`：华光标题黑，允许受控透明渐变；

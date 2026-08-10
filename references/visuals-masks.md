@@ -177,7 +177,8 @@ scripts/compose_text_behind_person.sh SOURCE.mov MASK_DIR/person.mkv TEXT.mov OU
 ### 设计合同
 
 - `content`：只保留题眼，默认 2–4 个汉字，最长不超过 7 个汉字；完整结论、解释句和两行以上文案必须回退为头顶标题、普通字幕或信息卡；
-- `fontFamily`：继承项目字幕字体家族或选择气质一致、已经授权的展示字体；
+- `fontFamily`：普通字幕使用金陵体；章节题眼、关键数字和核心判断使用华光标题黑。
+  五套正式视觉风格不得改用漫画字、像素字、HUD 字或其他未经合同允许的展示字体；
 - `fontWeight`：使用 600–800 的 SemiBold/Bold，拒绝廉价的超粗黑体和随意卡通字体；
 - `fontSizeRatioToSubtitle`：普通字幕的 1.35–3 倍，在手机尺寸上形成明确层级；
 - `positionRationale`：竖版优先放在人物头顶上方并与发顶保留约 0.4–0.8 个字高的呼吸距离；确需视差时，只让短词边缘与头发轻微重叠。横版优先人物头顶或视线反方向的负空间，不与脸、眼睛、字幕、品牌和平台 UI 争抢；
