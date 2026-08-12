@@ -20,6 +20,7 @@ import {
   loadKachaConfig,
 } from "./kacha_config.mjs";
 import { acquireResourceLeases } from "./resource_pool.mjs";
+import { alignSfxPeak } from "./sfx_peak_alignment.mjs";
 
 const args = process.argv.slice(2);
 const action = firstPositional(args, [
@@ -811,8 +812,36 @@ function validatePlan(planFile) {
     if (file && event.sha256 && event.sha256 !== sha256File(file)) {
       errors.push(`audio.sfx[${index}] SHA-256 已失效`);
     }
-    if (!finite(event.time) || Number(event.time) < 0 || Number(event.time) > duration) {
-      errors.push(`audio.sfx[${index}].time 无效`);
+    const target = event.targetLandingSeconds;
+    const hasTarget = finite(target);
+    if (hasTarget) {
+      if (Number(target) < 0 || Number(target) > duration) {
+        errors.push(`audio.sfx[${index}].targetLandingSeconds 无效`);
+      } else if (file) {
+        try {
+          const fps = finite(plan.output?.fps)
+            ? Number(plan.output.fps)
+            : (summary?.averageFps || summary?.declaredFps || summary?.fps);
+          const measured = alignSfxPeak({ file, targetLandingSeconds: target, fps });
+          if (
+            finite(event.measuredPeakOffsetSeconds)
+            && Math.abs(
+              Number(event.measuredPeakOffsetSeconds)
+                - measured.measuredPeakOffsetSeconds,
+            ) * fps > 1 + 1e-6
+          ) errors.push(`audio.sfx[${index}] 声明的峰值偏移与当前文件实测值不一致`);
+        } catch (error) {
+          errors.push(`audio.sfx[${index}] 峰值测量失败：${error.message}`);
+        }
+      }
+    } else if (
+      !finite(event.time)
+      || Number(event.time) < 0
+      || Number(event.time) > duration
+    ) {
+      errors.push(`audio.sfx[${index}] 必须提供 targetLandingSeconds，或明确提供合法的旧版 time`);
+    } else if (plan.mode === "final" && event.timingReference !== "file_start") {
+      errors.push(`audio.sfx[${index}] 最终时间线使用旧版 time 时必须显式声明 timingReference=file_start`);
     }
   });
   if (plan.mode === "final") {
@@ -930,11 +959,34 @@ function compileGraph(validated, loadedConfig) {
   const fps = finite(plan.output?.fps) ? Number(plan.output.fps) : sourceFps;
   const breathing = sliceTimedEvents(plan.visual?.breathing ?? [], range);
   const overlays = sliceTimedEvents(plan.visual?.overlays ?? [], range);
-  const sfx = (plan.audio?.sfx ?? []).flatMap((entry) => {
+  const resolvedSfx = (plan.audio?.sfx ?? []).map((entry) => {
+    const file = existingFile(validated.planFile, entry);
+    if (finite(entry.targetLandingSeconds)) {
+      const aligned = alignSfxPeak({
+        file,
+        targetLandingSeconds: entry.targetLandingSeconds,
+        fps,
+      });
+      return { ...entry, ...aligned, time: aligned.fileStartSeconds };
+    }
+    return {
+      ...entry,
+      alignmentMode: "legacy_file_start_explicit",
+      fileStartSeconds: Number(entry.time),
+      sourceTrimSeconds: 0,
+    };
+  });
+  const sfx = resolvedSfx.flatMap((entry) => {
     if (!range) return [entry];
-    const time = Number(entry.time);
-    return time >= range.start && time <= range.end
-      ? [{ ...entry, time: time - range.start }]
+    const referenceTime = finite(entry.targetLandingSeconds)
+      ? Number(entry.targetLandingSeconds)
+      : Number(entry.fileStartSeconds);
+    return referenceTime >= range.start && referenceTime <= range.end
+      ? [{
+          ...entry,
+          time: Math.max(0, Number(entry.fileStartSeconds) - range.start),
+          fileStartSeconds: Math.max(0, Number(entry.fileStartSeconds) - range.start),
+        }]
       : [];
   });
   const bgm = plan.audio?.bgm?.segments
@@ -1408,12 +1460,16 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
 
   const sfxLabels = [];
   graph.audio.sfx.forEach((sfx, index) => {
-    const delay = Math.max(0, Math.round(Number(sfx.time) * 1000));
+    const delay = Math.max(0, Math.round(Number(sfx.fileStartSeconds ?? sfx.time) * 1000));
+    const sourceTrim = Math.max(0, Number(sfx.sourceTrimSeconds ?? 0));
     const level = -Math.abs(Number(sfx.levelBelowDialogueDb ?? 10));
     const label = `sfx${index}`;
     filters.push(
       `[${inputIndexes.sfx[index]}:a]aresample=48000,`
         + "aformat=sample_rates=48000:channel_layouts=stereo,"
+        + (sourceTrim > 0
+          ? `atrim=start=${formatNumber(sourceTrim)},asetpts=PTS-STARTPTS,`
+          : "")
         + `adelay=${delay}|${delay},volume=${level}dB[${label}]`,
     );
     sfxLabels.push(`[${label}]`);

@@ -382,6 +382,85 @@ await test("reference router loads only task-relevant context", () => {
   }
 });
 
+await test("cover workflow uses approved 3D turnaround as default generation anchor", () => {
+  const reference = fs.readFileSync(
+    path.join(skillDirectory, "references", "subtitles-covers-brand.md"),
+    "utf8",
+  );
+  for (const required of [
+    "获批 3D 三视图是默认且唯一的生成身份锚点",
+    "生成后身份 QC",
+    "T-pose 或展示站姿只作结构参考",
+  ]) {
+    if (!reference.includes(required)) throw new Error(`cover reference missing ${required}`);
+  }
+  const recipes = readJson(path.join(skillDirectory, "config", "workflow-recipes.json"));
+  const cover = recipes.stages.find((stage) => stage.id === "cover");
+  for (const required of [
+    "approved 3D turnaround generation anchor",
+    "real photo post-generation identity QC",
+    "cover identity contract",
+    "narrative pose adaptation evidence",
+  ]) {
+    if (!cover?.evidence?.includes(required)) throw new Error(`cover stage missing ${required}`);
+  }
+  if (
+    cover.identityPolicy?.defaultGenerationInputMode !== "turnaround_only_real_photo_qc"
+    || cover.identityPolicy?.generationIdentityPriority !== "approved 3D turnaround anchor"
+    || cover.identityPolicy?.realPhotoRole !== "post_generation_identity_qc_only"
+    || cover.identityPolicy?.realPhotoGenerationInputForbiddenByDefault !== true
+    || cover.identityPolicy?.displayPoseForbidden !== true
+    || cover.identityPolicy?.generatedActionFinalRequiresIdentityReview !== true
+  ) throw new Error("cover identity policy is incomplete");
+});
+
+await test("cover identity contract forbids live-photo mixing and produces scene-specific 3D prompt", () => {
+  const root = path.join(temporary, "cover-identity-contract");
+  fs.mkdirSync(root, { recursive: true });
+  const turnaround = path.join(root, "approved-3d-turnaround.png");
+  const realPhoto = path.join(root, "real-photo-qc.jpg");
+  fs.writeFileSync(turnaround, "approved 3d character identity");
+  fs.writeFileSync(realPhoto, "real photo qc only");
+  const contractFile = path.join(root, "contract.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "cover", "template",
+    "--project-id", "cover-contract", "--turnaround", turnaround,
+    "--real-photo", realPhoto, "--output", contractFile,
+  ]);
+  const contract = readJson(contractFile);
+  Object.assign(contract.sceneAdaptation, {
+    sceneSignal: "旅行安排过密",
+    narrativeIntent: "用一个克制叫停动作表达不要把旅行项目化",
+    bodyAction: "左手持手机，右手轻抬叫停",
+    gaze: "从手机转向标题",
+    expression: "成年人的无奈和自嘲",
+    propInteraction: "拇指悬停在密集日程页面",
+    weightShift: "上身微后撤，重心落在后腿",
+    clothingAdaptation: "深藏蓝运动服增加轻量旅行夹克层次",
+    clothingContinuity: "保留深藏蓝主色、黑框眼镜和短刺黑发",
+  });
+  writeJson(contractFile, contract);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "cover", "validate", "--contract", contractFile,
+  ]);
+  const prompt = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "cover", "prompt", "--contract", contractFile,
+  ]).stdout).prompt;
+  if (
+    prompt.generationInputReferences.length !== 1
+    || !prompt.generationPrompt.includes("只以获批的行者大灰 3D 三视图")
+    || !prompt.negativePrompt.includes("不要使用真人照片作为生成输入")
+  ) throw new Error("cover prompt did not preserve the approved 3D-only generation contract");
+  contract.generationInputReferences.push(contract.realPhotoAnchor);
+  writeJson(contractFile, contract);
+  const failure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "cover", "validate", "--contract", contractFile,
+  ]);
+  if (!failure.stderr.includes("真人照片只能用于生成后身份 QC")) {
+    throw new Error("cover contract allowed a real photo to enter generation inputs");
+  }
+});
+
 await test("doctor and low-model packet expose deterministic execution", () => {
   const doctor = execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
@@ -1211,6 +1290,7 @@ await test("video design system validates, resolves every mode and renders produ
     || !/^[a-f0-9]{64}$/.test(validation.designSystem.implementationDigest)
     || !/^[a-f0-9]{64}$/.test(validation.designSystem.rendererCodeSha256)
     || !validation.fontResolution?.digest
+    || validation.designSystem.version !== "1.6.0"
   ) {
     throw new Error("video design system inventory is incomplete");
   }
@@ -1339,6 +1419,16 @@ await test("video design system validates, resolves every mode and renders produ
     `${pathToFileURL(path.join(scripts, "design_system.mjs")).href}?test=${Date.now()}`
   );
   const bundle = designApi.loadDesignSystem();
+  if (
+    bundle.capabilityRegistries?.antiWeb?.id !== "xingzhe-cinematic-editorial"
+    || bundle.capabilityRegistries?.antiWeb?.version !== "3.0.0"
+    || bundle.scenes.scenes.some((scene) => scene.layout === "subject_left_card_right")
+    || bundle.scenes.scenes.some((scene) => (
+      /card|popup/.test(scene.components.join("_")) && scene.entry === "soft_pop"
+    ))
+  ) {
+    throw new Error("行者风 3.0 反网页合同没有进入当前设计系统");
+  }
   const fakeRenderer = JSON.parse(JSON.stringify(bundle));
   fakeRenderer.components.components[0].renderer = "fake-renderer";
   if (
@@ -1393,6 +1483,36 @@ await test("video design system validates, resolves every mode and renders produ
       throw new Error("macOS font fallback did not resolve every design role");
     }
   }
+  });
+}, "visual");
+
+await test("visual design normal-speed preview renders seekable motion evidence", async () => {
+  await withDeterministicDesignFonts(async () => {
+    const motionDirectory = path.join(temporary, "design-motion-preview");
+    const report = JSON.parse(execute(process.execPath, [
+      path.join(scripts, "kacha.mjs"),
+      "design",
+      "motion-preview",
+      "--output",
+      motionDirectory,
+      "--scenes",
+      "info_single",
+      "--overwrite",
+    ]).stdout);
+    const manifest = readJson(path.join(motionDirectory, "manifest.json"));
+    const preview = manifest.previews?.[0];
+    if (
+      report.status !== "pass"
+      || manifest.previewCount !== 1
+      || preview?.sceneId !== "info_single"
+      || preview?.fps !== 25
+      || preview?.durationSeconds < 3
+      || !/^[a-f0-9]{64}$/.test(preview?.sha256 ?? "")
+      || !fs.existsSync(path.join(motionDirectory, preview?.file ?? "missing"))
+      || manifest.reviewContract?.normalSpeedRequired !== true
+    ) {
+      throw new Error("正常速度动态样片没有形成可复核证据");
+    }
   });
 }, "visual");
 
@@ -2534,8 +2654,17 @@ await test("local production studio compiles an auditable project with verified 
   ]).stdout);
   if (
     catalog.defaultStyleId !== "xingzhe"
-    || catalog.builtInStyleCount < 4
+    || catalog.builtInStyleCount !== 5
+    || catalog.masterStyleId !== "xingzhe"
+    || catalog.masterStyleVersion !== "3.0"
+    || catalog.productionPresetRelationship
+      !== "production-presets-inherit-master-effect-library"
     || catalog.visualLanguageCount !== 5
+    || catalog.visualLanguageRelationship
+      !== "five-visual-languages-are-xingzhe-substyles"
+    || catalog.effectCountPerVisualLanguage !== 240
+    || catalog.motionContractCount !== 1200
+    || catalog.highFidelityFrameCount !== 2400
     || catalog.defaultVisualLanguageSelectionMode !== "automatic"
     || catalog.visualLanguageParentProfile !== "xingzhe"
     || catalog.openingCount < 10
@@ -2761,7 +2890,16 @@ await test("local production studio compiles an auditable project with verified 
 
 await test("production studio exposes five visual-language choices and live contract state", () => {
   const html = fs.readFileSync(path.join(skillDirectory, "studio", "index.html"), "utf8");
+  const contentHtml = fs.readFileSync(
+    path.join(skillDirectory, "studio", "content.html"),
+    "utf8",
+  );
   const client = fs.readFileSync(path.join(skillDirectory, "studio", "app.js"), "utf8");
+  const productionStudio = readJson(path.join(
+    skillDirectory,
+    "config",
+    "production-studio.json",
+  ));
   const visualLanguages = readJson(path.join(
     skillDirectory,
     "config",
@@ -2778,10 +2916,341 @@ await test("production studio exposes five visual-language choices and live cont
     || visualLanguages.parentProfile !== "xingzhe"
     || Object.keys(visualLanguages.languages).length !== 5
     || new Set(Object.keys(visualLanguages.languages)).size !== 5
+    || !contentHtml.includes('<option value="xingzhe-dark-tech">暗黑科技风</option>')
+    || productionStudio.styleArchitecture?.masterStyleId !== "xingzhe"
+    || productionStudio.styleArchitecture?.expectedCounts?.motionContracts !== 1200
+    || productionStudio.stylePresets.some((style) => (
+      style.caption.preferredFontFamily !== "方正粗金陵简体"
+      || style.caption.shadowOpacity !== 0.6
+      || style.caption.background !== "none"
+    ))
   ) {
     throw new Error("production studio visual-language controls are incomplete");
   }
 }, "visual");
+
+await test("production quality contract gates recurring editorial defects across all stages", () => {
+  const root = path.join(temporary, "production-quality-contract");
+  fs.mkdirSync(root, { recursive: true });
+  const contractFile = path.join(root, "contract.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "production-quality", "template",
+    "--project-id", "quality-contract",
+    "--output", contractFile,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "production-quality", "validate",
+    "--contract", contractFile,
+    "--stage", "plan",
+  ]);
+
+  const evidence = path.join(root, "evidence.txt");
+  fs.writeFileSync(evidence, "bound production evidence\n");
+  const identity = fileIdentity(evidence);
+  const sfxFile = path.join(root, "late-peak.wav");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i",
+    "aevalsrc=if(between(t\\,0.4\\,0.52)\\,0.8*sin(2*PI*880*t)\\,0):d=0.8:s=48000",
+    "-c:a", "pcm_s16le", sfxFile,
+  ]);
+  const alignments = [1, 5, 9].map((target) => JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "sfx", "align", "--file", sfxFile, "--target", String(target), "--fps", "25",
+  ]).stdout).alignment);
+  const contract = readJson(contractFile);
+  contract.execution = {
+    semanticEdit: {
+      wordTimedSource: identity,
+      reviewedThroughSeconds: 30,
+      unresolvedFragments: 0,
+      cutDecisions: [{
+        id: "cut-001",
+        semanticUnitComplete: true,
+        fragmentPolicy: "remove_complete",
+        reason: "删除无意长停顿，同时保留完整语义单元",
+        sourceStartSeconds: 12.1,
+        sourceEndSeconds: 13.8,
+      }],
+    },
+    connections: {
+      detectedCount: 1,
+      cutSheetCount: 1,
+      auditedCount: 1,
+      unresolvedCount: 0,
+      events: [{
+        id: "join-001",
+        decisionType: "j_cut",
+        motivation: "下一句声音先行，承接同一论证",
+        repairedWrongCut: true,
+      }],
+    },
+    opening: {
+      primaryEffectCount: 1,
+      firstVisibleChangeSeconds: 0.2,
+      promiseSeconds: 2.4,
+      effectId: "pixel-promise-open",
+      dynamicPreview: identity,
+      revealStartsClosed: true,
+      frameZeroCoverage: "full",
+      partialSubjectAperture: false,
+    },
+    effects: {
+      maxConcurrentPrimary: 1,
+      progressiveLists: [{
+        id: "list-001",
+        itemCount: 2,
+        itemCues: [0.15, 0.72],
+        sfxPeaks: [0.18, 0.75],
+      }],
+      behindSubjectText: [{ text: "先做再说", font: "华光标题黑", maskVerified: true }],
+    },
+    captions: {
+      regularStyle: {
+        font: "金陵体",
+        background: "none",
+        outline: "none",
+        shadowOpacity: 0.6,
+      },
+      relationshipGroups: [{
+        relation: "contrast",
+        lines: ["不是等灵感", "而是先行动"],
+        lineCues: [0.1, 0.8],
+      }],
+    },
+    overlays: {
+      events: [{
+        borderPxAt4k: 3,
+        textOutline: "none",
+        collisionStates: { entry: "pass", peak: "pass", exit: "pass" },
+      }],
+    },
+    pip: {
+      events: [{
+        informationDifference: true,
+        selfPip: false,
+        collisionStates: { entry: "pass", peak: "pass", exit: "pass" },
+      }],
+    },
+    externalAssets: {
+      items: [{
+        semantic: {
+          object: "旅行清单",
+          action: "逐项勾选",
+          state: "正在完成",
+          role: "论据",
+          tense: "当前",
+        },
+        provenance: { kind: "local_generated", evidence: "asset-plan:shot-01" },
+        file: identity,
+        illustrative: true,
+        label: "情境示意",
+      }],
+    },
+    audio: {
+      adaptivePlan: identity,
+      timelineFps: 25,
+      promptFields: {
+        instrumentation: "dry electronic drums and soft mallets",
+        style: "restrained pixel editorial",
+        tempo: "92 BPM with speech-aware half-time sections",
+        timbre: "warm rounded transients",
+        harmony: "open fifths with suspended color",
+        lowFrequency: "mono controlled below 120 Hz",
+        highFrequency: "softened above 8 kHz around dense speech",
+      },
+      intentionalSilences: [],
+      sfxEvents: alignments.map((alignment, index) => ({
+        id: `sfx-${index + 1}`,
+        file: alignment.file,
+        fileStartSeconds: alignment.fileStartSeconds,
+        sourceTrimSeconds: alignment.sourceTrimSeconds,
+        measuredPeakOffsetSeconds: alignment.measuredPeakOffsetSeconds,
+        targetLandingSeconds: alignment.targetLandingSeconds,
+        deltaFrames: alignment.deltaFrames,
+        alignmentMode: alignment.alignmentMode,
+        measurementMethod: alignment.measurementMethod,
+      })),
+    },
+    cover: {
+      mode: "cinematic_3d",
+      realFaceAnchor: identity,
+      turnaroundAnchor: identity,
+      poseAsset: identity,
+      generationInputMode: "turnaround_only_real_photo_qc",
+      generationInputReferences: [identity],
+      realFaceAnchorRole: "post_generation_qc_only",
+      displayUsesTurnaroundPose: false,
+      poseAdapted: true,
+      poseContract: {
+        sceneSignal: "旅行计划过密",
+        narrativeIntent: "先停一下，不把旅行继续项目化",
+        bodyAction: "一手持手机，一手做克制叫停手势",
+        gaze: "看向标题与路线关系",
+        expression: "成年人的无奈与自嘲",
+        propInteraction: "查看手机中的密集行程",
+        weightShift: "身体后撤，重心落在后腿",
+        clothingAdaptation: "保留深藏蓝基线，加入轻便旅行外套层次",
+        clothingContinuity: "眼镜、短刺黑发和深藏蓝主色保持连续",
+        reusedApprovedPose: false,
+      },
+    },
+    firstMinute: {
+      motivatedEffects: [
+        { startSeconds: 0.2, trigger: "开场承诺", mechanism: "closed_reveal", primary: true, audioVisualIntentMatched: true },
+        { startSeconds: 4, trigger: "观点落点", mechanism: "semantic_zoom", primary: true, audioVisualIntentMatched: true },
+        { startSeconds: 14, trigger: "事实证据", mechanism: "evidence_pip", primary: true, audioVisualIntentMatched: true },
+        { startSeconds: 28, trigger: "关系转折", mechanism: "caption_relation", primary: true, audioVisualIntentMatched: true },
+        { startSeconds: 44, trigger: "情绪反应", mechanism: "reaction_hold", primary: true, audioVisualIntentMatched: true },
+      ],
+      humanPresenceRatio: 0.7,
+      fullScreenTakeoverRatio: 0.2,
+      breathingRoomRatio: 0.3,
+      peakAlignedSfxEventIds: ["sfx-1", "sfx-2", "sfx-3"],
+      humanReactionWindows: [{ startSeconds: 40, endSeconds: 43, reason: "保留真实表情反应" }],
+      normalSpeedPreview: identity,
+    },
+    cinematicEditorial: {
+      showId: "casual-chat",
+      durationSeconds: 30,
+      events: [
+        {
+          id: "picture-base-001",
+          semanticBeatId: "beat-all",
+          trigger: "真人口播是全片主体",
+          mechanism: "clean_a_roll",
+          sourceType: "a_roll",
+          containerType: "none",
+          compositionSignature: "clean-medium-human",
+          styleId: "xingzhe-pixel-editorial",
+          simplerAlternative: "保留原镜头",
+          startSeconds: 0,
+          endSeconds: 30,
+        },
+        {
+          id: "type-beat-001",
+          semanticBeatId: "beat-promise",
+          trigger: "开场承诺关键词落位",
+          mechanism: "boundaryless_typography",
+          sourceType: "a_roll",
+          containerType: "boundaryless",
+          compositionSignature: "type-behind-left-shoulder",
+          styleId: "xingzhe-pixel-editorial",
+          simplerAlternative: "只保留常规字幕",
+          startSeconds: 2,
+          endSeconds: 5,
+        },
+        {
+          id: "detail-beat-001",
+          semanticBeatId: "beat-detail",
+          trigger: "细节证据需要短暂看清",
+          mechanism: "detail_insert",
+          sourceType: "project_evidence",
+          containerType: "none",
+          compositionSignature: "detail-full-bleed-center",
+          styleId: "xingzhe-pixel-editorial",
+          simplerAlternative: "不插入证据细节",
+          startSeconds: 10,
+          endSeconds: 13,
+        },
+        {
+          id: "relation-beat-001",
+          semanticBeatId: "beat-contrast",
+          trigger: "对比关系需要同时建立",
+          mechanism: "split_relationship",
+          sourceType: "screen_recording",
+          containerType: "none",
+          compositionSignature: "split-evidence-diagonal",
+          styleId: "xingzhe-pixel-editorial",
+          simplerAlternative: "口播串行说明对比",
+          startSeconds: 20,
+          endSeconds: 23,
+        },
+      ],
+      auditMetrics: null,
+      normalSpeedPreview: identity,
+      phoneSizeReview: { status: "pass", evidence: identity },
+      webLikenessReview: { status: "pass", evidence: identity },
+    },
+  };
+  contract.release = {
+    finalTimeline: identity,
+    stems: { dialogue: identity, bgm: identity, sfx: identity, mix: identity },
+    programDurationSeconds: 30,
+    bgmCoverageRatio: 0.98,
+    intentionalSilences: [],
+    representativeNormalSpeed: { status: "pass", evidence: identity },
+    fullPlayback: { status: "pass", evidence: identity },
+    deviceListening: { status: "pass", evidence: identity },
+  };
+  writeJson(contractFile, contract);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "production-quality", "anti-web-audit",
+    "--contract", contractFile,
+    "--write",
+  ]);
+  Object.assign(contract, readJson(contractFile));
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "production-quality", "validate",
+    "--contract", contractFile,
+    "--stage", "release",
+  ]);
+
+  const broken = structuredClone(contract);
+  broken.execution.semanticEdit.unresolvedFragments = 1;
+  broken.execution.connections.cutSheetCount = 0;
+  broken.execution.opening.primaryEffectCount = 0;
+  broken.execution.opening.partialSubjectAperture = true;
+  broken.execution.effects.progressiveLists[0].itemCues = [0.15];
+  broken.execution.effects.behindSubjectText[0].text = "这一整段长文字不应该出现在人物身后";
+  broken.execution.captions.relationshipGroups[0].lineCues = [0.8, 0.1];
+  broken.execution.pip.events[0].selfPip = true;
+  delete broken.execution.externalAssets.items[0].semantic.action;
+  delete broken.execution.audio.promptFields.harmony;
+  broken.execution.audio.sfxEvents[0].fileStartSeconds += 0.5;
+  broken.execution.cover.displayUsesTurnaroundPose = true;
+  delete broken.execution.cover.poseContract.bodyAction;
+  broken.execution.cover.poseContract.reusedApprovedPose = true;
+  broken.execution.firstMinute.motivatedEffects = broken.execution.firstMinute.motivatedEffects.slice(0, 2);
+  broken.execution.cinematicEditorial.events[1].patterns = ["web_hero"];
+  broken.execution.cinematicEditorial.events[2].containerType = "dashboard";
+  broken.release.bgmCoverageRatio = 0.2;
+  broken.release.fullPlayback.status = "pending";
+  const brokenFile = path.join(root, "broken.json");
+  writeJson(brokenFile, broken);
+  const failure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "production-quality", "validate",
+    "--contract", brokenFile,
+    "--stage", "release",
+  ]);
+  for (const phrase of [
+    "半句话残片",
+    "检测数、剪点表数和审计数",
+    "唯一开场",
+    "禁止先露出局部人脸小口",
+    "逐项随口播出现",
+    "7 字以内",
+    "语义关系逐行出现",
+    "信息差或三态避碰",
+    "语义五元组",
+    "promptFields.harmony",
+    "自动反推起播时间",
+    "不得直接使用三视图/T-pose",
+    "人物动作必须绑定当前场景且不得复用固定姿势",
+    "execution.firstMinute",
+    "网页化禁用模式",
+    "禁止通用仪表盘构图",
+    "BGM 覆盖不足",
+    "fullPlayback.status 必须为 pass",
+  ]) {
+    if (!failure.stderr.includes(phrase)) throw new Error(`missing quality gate: ${phrase}`);
+  }
+}, "core");
 
 await test("V7 orchestrator starts source and script projects with recoverable milestones", () => {
   const registry = JSON.parse(execute(process.execPath, [
@@ -2817,15 +3286,24 @@ await test("V7 orchestrator starts source and script projects with recoverable m
     || started.milestones.length !== 4
     || started.stages.length !== 13
     || sourceManifest.intelligenceV6?.required !== true
+    || sourceManifest.productionQualityV1?.required !== true
     || sourceManifest.runtimeLock?.mode !== "development"
     || sourceManifest.source?.sha256 !== sha256File(source)
     || !sourceManifest.plans?.qualityEfficiency
+    || !sourceManifest.plans?.productionQuality
+    || !fs.existsSync(path.join(sourceRoot, "contracts", "production-quality-contract.json"))
     || started.efficiency?.policyVersion !== "8.0"
     || started.efficiency?.representativePreview?.fullCandidatePlaybackRequired !== true
     || started.efficiency?.representativePreview?.finalVideoEncodeBudget !== 1
   ) {
     throw new Error("source project did not freeze V6, runtime and media identity");
   }
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "production-quality", "validate",
+    "--contract", path.join(sourceRoot, "contracts", "production-quality-contract.json"),
+    "--stage", "plan",
+  ]);
   const advanced = JSON.parse(execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
     "run", sourceRoot,
@@ -3586,7 +4064,7 @@ await test("V7 evaluation cohort and NLE application protocol refuse synthetic p
   if (
     cohort.cases.length !== 8
     || new Set(cohort.cases.map((item) => item.showId)).size !== 5
-    || new Set(cohort.cases.map((item) => item.styleId)).size !== 4
+    || new Set(cohort.cases.map((item) => item.styleId)).size !== 5
     || cohort.cases.some((item) => item.editorialJudgment.humanReviewed !== false)
   ) throw new Error("V7 cohort template does not preserve eight real human-review slots");
   expectFailure(process.execPath, [
@@ -3779,6 +4257,158 @@ await test("semantic netstyle registry validates and renders a deterministic sho
   ]);
   if (decode.status !== 0 || decode.stderr.trim()) {
     throw new Error(`netstyle showcase has decode/timestamp errors: ${decode.stderr}`);
+  }
+}, "visual");
+
+await test("semantic netstyle accepts an explicit pixel editorial visual language", () => {
+  ensureMediaFixtures();
+  const payload = path.join(temporary, "netstyle-pixel-payload.json");
+  writeJson(payload, {
+    display: {
+      title: "算法在安排",
+      subtitle: "选择被逐项标准化",
+      items: ["住哪家酒店", "吃哪家美食", "去哪个打卡点"],
+      itemCues: [
+        { text: "住哪家酒店", revealAt: 0.12 },
+        { text: "吃哪家美食", revealAt: 0.46 },
+        { text: "去哪个打卡点", revealAt: 0.76 },
+      ],
+    },
+  });
+  const output = path.join(temporary, "netstyle-pixel.mp4");
+  const rendered = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "netstyle", "preview",
+    "--input", baseVideo,
+    "--effect", "parallel_progressive_row",
+    "--duration", "0.6",
+    "--output", output,
+    "--production",
+    "--payload", payload,
+    "--visual-language", "xingzhe-pixel-editorial",
+    "--video-only",
+    "--overwrite",
+  ]).stdout);
+  const summary = mediaSummary(output);
+  if (
+    rendered.visualLanguageId !== "xingzhe-pixel-editorial"
+    || summary.width !== 320
+    || summary.height !== 180
+    || summary.audio
+  ) {
+    throw new Error("explicit pixel editorial visual language was not executed");
+  }
+  const invalid = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "netstyle", "preview",
+    "--input", baseVideo,
+    "--effect", "parallel_progressive_row",
+    "--duration", "0.6",
+    "--output", path.join(temporary, "netstyle-invalid-language.mp4"),
+    "--production",
+    "--payload", payload,
+    "--visual-language", "missing-visual-language",
+    "--video-only",
+    "--overwrite",
+  ]);
+  if (!invalid.stderr.includes("视觉语言不存在")) {
+    throw new Error("netstyle accepted an unknown visual language");
+  }
+
+  const missingCuePayload = path.join(temporary, "netstyle-pixel-missing-cues.json");
+  writeJson(missingCuePayload, {
+    display: {
+      title: "错误示例",
+      items: ["一起出现", "没有触发"],
+    },
+  });
+  const missingCues = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "netstyle", "preview",
+    "--input", baseVideo,
+    "--effect", "parallel_progressive_row",
+    "--duration", "0.6",
+    "--output", path.join(temporary, "netstyle-missing-cues.mp4"),
+    "--production",
+    "--payload", missingCuePayload,
+    "--visual-language", "xingzhe-pixel-editorial",
+    "--video-only",
+    "--overwrite",
+  ]);
+  if (
+    !missingCues.stderr.includes("itemCues")
+    || missingCues.stderr.includes("TypeError")
+  ) {
+    throw new Error("progressive list accepted production payload without semantic item cues");
+  }
+
+  const invalidCuePayload = path.join(temporary, "netstyle-pixel-invalid-cues.json");
+  writeJson(invalidCuePayload, {
+    display: {
+      title: "越界示例",
+      itemCues: [
+        { text: "第一项", revealAt: 0.2 },
+        { text: "第二项", revealAt: 0.96 },
+      ],
+    },
+  });
+  const invalidCues = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "netstyle", "preview",
+    "--input", baseVideo,
+    "--effect", "parallel_progressive_row",
+    "--duration", "0.6",
+    "--output", path.join(temporary, "netstyle-invalid-cues.mp4"),
+    "--production",
+    "--payload", invalidCuePayload,
+    "--visual-language", "xingzhe-pixel-editorial",
+    "--video-only",
+    "--overwrite",
+  ]);
+  if (!invalidCues.stderr.includes("0–0.92")) {
+    throw new Error("progressive list accepted an out-of-range semantic item cue");
+  }
+}, "visual");
+
+await test("pixel opening starts fully covered without a partial-face aperture", () => {
+  ensureMediaFixtures();
+  const payload = path.join(temporary, "netstyle-pixel-opening-payload.json");
+  writeJson(payload, {
+    display: { title: "暑假出发", items: ["临时出发", "意外不断", "孩子很开心"] },
+    motion: { startFullyCovered: true, fullCoverUntil: 0.26, revealDuration: 0.48 },
+  });
+  const output = path.join(temporary, "netstyle-pixel-opening.mp4");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "netstyle", "preview",
+    "--input", baseVideo,
+    "--effect", "hook_text_first_face_reveal",
+    "--duration", "0.8",
+    "--output", output,
+    "--production",
+    "--payload", payload,
+    "--visual-language", "xingzhe-pixel-editorial",
+    "--video-only",
+    "--overwrite",
+  ]);
+  const center = path.join(temporary, "pixel-opening-center.gray");
+  const corner = path.join(temporary, "pixel-opening-corner.gray");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y", "-i", output,
+    "-vf", "select=eq(n\\,0),crop=40:40:140:70,format=gray",
+    "-frames:v", "1", "-f", "rawvideo", center,
+  ]);
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y", "-i", output,
+    "-vf", "select=eq(n\\,0),crop=40:40:10:10,format=gray",
+    "-frames:v", "1", "-f", "rawvideo", corner,
+  ]);
+  const average = (file) => {
+    const bytes = fs.readFileSync(file);
+    return [...bytes].reduce((sum, value) => sum + value, 0) / Math.max(1, bytes.length);
+  };
+  if (Math.abs(average(center) - average(corner)) > 2) {
+    throw new Error("pixel opening frame zero exposes a partial center aperture");
   }
 }, "visual");
 
@@ -4114,7 +4744,8 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
   ]);
   execute("ffmpeg", [
     "-hide_banner", "-loglevel", "error", "-y",
-    "-f", "lavfi", "-i", "sine=frequency=880:duration=0.12:sample_rate=48000",
+    "-f", "lavfi", "-i",
+    "aevalsrc=if(between(t\\,0.38\\,0.5)\\,0.8*sin(2*PI*880*t)\\,0):d=0.7:s=48000",
     "-c:a", "pcm_s24le", sfx,
   ]);
   execute("ffmpeg", [
@@ -4194,7 +4825,7 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
       },
       sfx: [{
         path: sfx,
-        time: 1,
+        targetLandingSeconds: 1,
         levelBelowDialogueDb: 8,
       }],
     },
@@ -4226,6 +4857,7 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
     graph,
   ]);
   const result = JSON.parse(rendered.stdout);
+  const compiledGraph = readJson(graph);
   const manifest = readJson(`${output}.manifest.json`);
   const summary = mediaSummary(output);
   if (
@@ -4238,7 +4870,13 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
     || !summary.audio
     || readJson(graph).edl[0]?.scale !== 1.08
     || readJson(graph).edl[0]?.anchorY !== 0.42
-    || readJson(graph).audio?.masterTruePeakDb !== -4
+    || compiledGraph.audio?.masterTruePeakDb !== -4
+    || compiledGraph.audio?.sfx?.[0]?.alignmentMode !== "waveform_peak"
+    || Math.abs(
+      compiledGraph.audio.sfx[0].fileStartSeconds
+        + compiledGraph.audio.sfx[0].measuredPeakOffsetSeconds
+        - compiledGraph.audio.sfx[0].targetLandingSeconds,
+    ) > 0.041
     || manifest.execution.masterTruePeakDb !== -4
     || manifest.execution.sourceTimecodeAndUnrequestedMetadataStripped !== true
     || summary.probe.streams.some((stream) => stream.codec_type === "data")
@@ -4249,6 +4887,13 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
     if (!fs.existsSync(stem) || !mediaSummary(stem).audio) {
       throw new Error(`unified renderer did not emit declared stem ${stem}`);
     }
+  }
+  const renderedSfxPeak = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "sfx", "align", "--file", sfxStem, "--target", "1", "--fps", "25",
+  ]).stdout).alignment.measuredPeakOffsetSeconds;
+  if (Math.abs(renderedSfxPeak - 1) > 0.041) {
+    throw new Error(`rendered SFX peak landed at ${renderedSfxPeak}s instead of 1s`);
   }
   const reused = execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
@@ -5063,7 +5708,7 @@ await test("style and timing feedback compile to correct rebuild and regression 
       recipe: "style",
       reason: "unify all visible design tokens",
       parameters: {
-        profile: "warm-editorial",
+        profile: "xingzhe",
       },
     }],
     render: {
@@ -8294,7 +8939,7 @@ await test("design reference gallery covers every registered design item", () =>
     || style.cover.preserveSemanticEditorialCollage !== true
     || style.cover.specificCharacterImitation !== "forbidden"
   ) {
-    throw new Error("Xingzhe 2.0 cover composition, character language or IP boundary regressed");
+    throw new Error("Xingzhe 3.0 cover composition, character language or IP boundary regressed");
   }
 }, "visual");
 
@@ -8310,6 +8955,11 @@ await test("committed five-style library QC has zero unresolved composition coll
     || report.distinctEditingGrammarCount !== 5
     || report.crossStyleExactDuplicateGroupCount !== 0
     || report.libraries?.length !== 5
+    || report.registryConsistency?.actualContracts !== 1200
+    || report.registryConsistency?.uniqueContractIds !== 1200
+    || report.registryConsistency?.failures?.length !== 0
+    || report.legacyArtifactScan?.findingCount !== 0
+    || report.referenceGalleryOrphanScan?.findingCount !== 0
   ) {
     throw new Error("five-style library QC summary is missing or did not pass");
   }
@@ -8319,6 +8969,7 @@ await test("committed five-style library QC has zero unresolved composition coll
       "headCollisionAssetCount",
       "spatialBlackAssetCount",
       "exactDuplicateAssets",
+      "orphanAssetCount",
     ]) {
       if (library[key] !== 0) {
         throw new Error(`${library.style} has unresolved ${key}: ${library[key]}`);
@@ -9008,7 +9659,13 @@ await test("V6 editorial evaluation measures paired human-reviewed improvement w
         id: `case-${index + 1}`,
         sourceGroupId: `source-${index + 1}`,
         showId: ["tool-share", "book-talk", "infinite-game", "very-ai", "casual-chat"][index % 5],
-        styleId: ["light-warm-overlay", "spatial-light-path", "humor-comic", "pixel-editorial"][index % 4],
+        styleId: [
+          "light-warm-overlay",
+          "spatial-light-path",
+          "humor-comic",
+          "pixel-editorial",
+          "dark-tech",
+        ][index % 5],
         platform: index % 2 ? "douyin" : "wechat-channels",
         editorialJudgment: {
           humanReviewed: true,

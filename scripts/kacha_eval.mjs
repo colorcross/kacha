@@ -497,7 +497,13 @@ function templateDataset() {
 
 function cohortTemplateDataset() {
   const shows = ["tool-share", "book-talk", "infinite-game", "very-ai", "casual-chat"];
-  const styles = ["light-warm-overlay", "spatial-light-path", "humor-comic", "pixel-editorial"];
+  const styles = [
+    "light-warm-overlay",
+    "spatial-light-path",
+    "humor-comic",
+    "pixel-editorial",
+    "dark-tech",
+  ];
   return {
     schemaVersion: "1.0",
     kind: "kacha_editorial_eval_dataset",

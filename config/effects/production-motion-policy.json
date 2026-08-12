@@ -35,6 +35,17 @@
       "qc"
     ]
   },
+  "firstMinute": {
+    "windowSeconds": 60,
+    "minimumMotivatedEffects": 5,
+    "minimumDistinctMechanisms": 4,
+    "minimumPeakAlignedSfx": 3,
+    "maximumPrimaryEventsPer10Seconds": 3,
+    "minimumHumanPresenceRatio": 0.55,
+    "maximumFullScreenTakeoverRatio": 0.35,
+    "minimumBreathingRoomRatio": 0.2,
+    "principle": "以真实语义、人物反应和呼吸区间建立吸引力；丰富不等于高密度堆叠"
+  },
   "semanticRouting": [
     {
       "id": "importance_zoom",

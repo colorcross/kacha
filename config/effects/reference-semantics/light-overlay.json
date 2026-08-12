@@ -2,14 +2,37 @@
   "schemaVersion": "1.0",
   "kind": "kacha_light_overlay_reference_semantics",
   "style": "xingzhe-light-overlay",
-  "sourceGalleryDigest": "21b844507f4a338e851c2edf0b86ffa9f6171b960542497ac2cc1f9bb231bf86",
+  "sourceGalleryDigest": "9eebdd6563b9b12de6b8d3921e52c38374f509db476f84084b46083212652bad",
   "policy": {
+    "antiWebId": "xingzhe-cinematic-editorial",
+    "antiWebVersion": "3.0.0",
+    "antiWebDigest": "0c0b50353da6a04988582300e87e731661f001b66cf1184886dbbbebb243161d",
     "triadMustMatch": [
       "expected",
       "peakFrameAsset",
       "motionContract"
     ],
     "duplicatePolicy": "只有 relationships 明确声明继承或场景复用时允许构图近似；否则视为异常。",
+    "cinematicSelectionOrder": [
+      "camera_reframe",
+      "real_evidence_cutaway",
+      "mask_or_foreground_occlusion",
+      "boundaryless_typography",
+      "picture_relationship",
+      "bounded_information_surface"
+    ],
+    "forbiddenPatterns": [
+      "web_hero",
+      "centered_modal",
+      "sidebar_panel",
+      "pill_navigation",
+      "dashboard_grid",
+      "browser_chrome_decoration",
+      "uniform_three_card_row",
+      "full_width_ui_bar",
+      "card_wall",
+      "card_to_card_transition"
+    ],
     "fontPolicy": "四套项目授权字体均可用于最终视频与图片发布；缺字、缺文件或哈希变化必须阻断，禁止静默回退。"
   },
   "counts": {
@@ -1053,11 +1076,11 @@
       "specId": "light-overlay.component.info_card",
       "kind": "component",
       "id": "info_card",
-      "label": "信息卡",
+      "label": "信息旁注",
       "category": "card",
       "visualArchetype": "card:info_card",
       "expected": {
-        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“信息卡”只表达其注册槽位和状态。",
+        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“信息旁注”只表达其注册槽位和状态。",
         "peakFrame": "峰值帧必须可辨识 title、body 槽位，并呈现 entry、peak、exit 中的峰值状态。",
         "requiredVisualMarkers": [
           "card",
@@ -1080,7 +1103,8 @@
         "tokenRefs": [
           "cards",
           "typography"
-        ]
+        ],
+        "presentation": "boundaryless_editorial"
       },
       "motion": {
         "trigger": "语义确实需要“info_card”时",
@@ -1096,17 +1120,17 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "352ca1538a4d680fe5f8ce3d6897833c10fb7c008ddb383b36983ea054ea306d"
+      "semanticDigest": "b935d7d841e449151bdd6857cc0a3bffa872ddcd280ae4bf135ffafdb23454fd"
     },
     {
       "specId": "light-overlay.component.bullet_card",
       "kind": "component",
       "id": "bullet_card",
-      "label": "要点卡",
+      "label": "渐进要点",
       "category": "card",
       "visualArchetype": "card:bullet_card",
       "expected": {
-        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“要点卡”只表达其注册槽位和状态。",
+        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“渐进要点”只表达其注册槽位和状态。",
         "peakFrame": "峰值帧必须可辨识 title、items 槽位，并呈现 entry、progressive、exit 中的峰值状态。",
         "requiredVisualMarkers": [
           "card",
@@ -1129,7 +1153,8 @@
         "tokenRefs": [
           "cards",
           "typography"
-        ]
+        ],
+        "presentation": "boundaryless_progressive"
       },
       "motion": {
         "trigger": "语义确实需要“bullet_card”时",
@@ -1145,17 +1170,17 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "b200f993adee7b99cdad302dcb26b7cf01d4a4eea0900c56ee836abdf25d5ed8"
+      "semanticDigest": "288e24ddd15f9016dd66dfb134e9d3c17725f05d026dad9aaabbeba4a5e9d65c"
     },
     {
       "specId": "light-overlay.component.three_reason_card",
       "kind": "component",
       "id": "three_reason_card",
-      "label": "三项理由卡",
+      "label": "三项理由",
       "category": "card",
       "visualArchetype": "card:three_reason_card",
       "expected": {
-        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“三项理由卡”只表达其注册槽位和状态。",
+        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“三项理由”只表达其注册槽位和状态。",
         "peakFrame": "峰值帧必须可辨识 title、items 槽位，并呈现 entry、item1、item2、item3、exit 中的峰值状态。",
         "requiredVisualMarkers": [
           "card",
@@ -1181,7 +1206,9 @@
           "cards",
           "typography",
           "motion"
-        ]
+        ],
+        "presentation": "boundaryless_progressive",
+        "visualEquivalenceGroup": "three-reasons"
       },
       "motion": {
         "trigger": "语义确实需要“three_reason_card”时",
@@ -1197,17 +1224,17 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "be406f645ea886989ba380e383543885b754333df3116a10adfdae492ca83563"
+      "semanticDigest": "bc9356e25932204d2fc240208b4f1a0a846d44597cf44b947b5fbc577ff68738"
     },
     {
       "specId": "light-overlay.component.quote_card",
       "kind": "component",
       "id": "quote_card",
-      "label": "引用卡",
+      "label": "全画幅引用",
       "category": "card",
       "visualArchetype": "card:quote_card",
       "expected": {
-        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“引用卡”只表达其注册槽位和状态。",
+        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“全画幅引用”只表达其注册槽位和状态。",
         "peakFrame": "峰值帧必须可辨识 quote、source 槽位，并呈现 entry、peak、exit 中的峰值状态。",
         "requiredVisualMarkers": [
           "card",
@@ -1230,7 +1257,8 @@
         "tokenRefs": [
           "cards",
           "typography"
-        ]
+        ],
+        "presentation": "full_bleed_editorial"
       },
       "motion": {
         "trigger": "语义确实需要“quote_card”时",
@@ -1246,17 +1274,17 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "9b250c35f37cc11b41c11922e5f5c2019a74ffa96dcc6d0e017fe6588f544862"
+      "semanticDigest": "f4ca23f91980d0d666755c178034d91fadf9cb88e7222dfb359333dbaf8ea9e2"
     },
     {
       "specId": "light-overlay.component.definition_card",
       "kind": "component",
       "id": "definition_card",
-      "label": "定义卡",
+      "label": "术语与边界",
       "category": "card",
       "visualArchetype": "card:definition_card",
       "expected": {
-        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“定义卡”只表达其注册槽位和状态。",
+        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“术语与边界”只表达其注册槽位和状态。",
         "peakFrame": "峰值帧必须可辨识 term、definition、boundary 槽位，并呈现 entry、term、definition、exit 中的峰值状态。",
         "requiredVisualMarkers": [
           "card",
@@ -1281,7 +1309,8 @@
         "tokenRefs": [
           "cards",
           "typography"
-        ]
+        ],
+        "presentation": "boundaryless_editorial"
       },
       "motion": {
         "trigger": "语义确实需要“definition_card”时",
@@ -1297,17 +1326,17 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "bc1c606a10a9a2f5a187665679015b86688a9a80b99a860f99c1e334b2b1e8e0"
+      "semanticDigest": "8ebed581a4ced5c33b37e017f6bc8b3073d3a9b9c330bfa1ff4f92c1b5b8a2bb"
     },
     {
       "specId": "light-overlay.component.caution_card",
       "kind": "component",
       "id": "caution_card",
-      "label": "风险提示卡",
+      "label": "边缘风险提示",
       "category": "card",
       "visualArchetype": "card:caution_card",
       "expected": {
-        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“风险提示卡”只表达其注册槽位和状态。",
+        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“边缘风险提示”只表达其注册槽位和状态。",
         "peakFrame": "峰值帧必须可辨识 title、body 槽位，并呈现 entry、peak、exit 中的峰值状态。",
         "requiredVisualMarkers": [
           "card",
@@ -1330,7 +1359,9 @@
         "tokenRefs": [
           "cards",
           "palette"
-        ]
+        ],
+        "presentation": "edge_warning",
+        "visualEquivalenceGroup": "caution-warning"
       },
       "motion": {
         "trigger": "语义确实需要“caution_card”时",
@@ -1346,17 +1377,17 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "60659b5b6affece98d05a76b8aef5ccef671eb22a412a1c555714edc539ae7a3"
+      "semanticDigest": "910c8aa024745718db4a81af252a889f0cff2fdac58734ee536d5264caeef244"
     },
     {
       "specId": "light-overlay.component.source_card",
       "kind": "component",
       "id": "source_card",
-      "label": "资料来源卡",
+      "label": "资料来源板",
       "category": "card",
       "visualArchetype": "card:source_card",
       "expected": {
-        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“资料来源卡”只表达其注册槽位和状态。",
+        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“资料来源板”只表达其注册槽位和状态。",
         "peakFrame": "峰值帧必须可辨识 source、date、scope 槽位，并呈现 entry、peak、exit 中的峰值状态。",
         "requiredVisualMarkers": [
           "card",
@@ -1380,7 +1411,8 @@
         "tokenRefs": [
           "cards",
           "typography.label"
-        ]
+        ],
+        "presentation": "bounded_source"
       },
       "motion": {
         "trigger": "语义确实需要“source_card”时",
@@ -1396,17 +1428,17 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "16410d4c0cfa512c4934750262790dd32a328e3209e222b9a89a55acce17b93c"
+      "semanticDigest": "0169c2846b151c9fb8c4d0b0310e0d373a2df9a544362f99432176d7807e6d94"
     },
     {
       "specId": "light-overlay.component.comparison_card",
       "kind": "component",
       "id": "comparison_card",
-      "label": "对比卡",
+      "label": "关系对比",
       "category": "card",
       "visualArchetype": "card:comparison_card",
       "expected": {
-        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“对比卡”只表达其注册槽位和状态。",
+        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“关系对比”只表达其注册槽位和状态。",
         "peakFrame": "峰值帧必须可辨识 left、right、criteria 槽位，并呈现 entry、compare、result、exit 中的峰值状态。",
         "requiredVisualMarkers": [
           "card",
@@ -1431,7 +1463,8 @@
         "tokenRefs": [
           "cards",
           "typography"
-        ]
+        ],
+        "presentation": "split_evidence"
       },
       "motion": {
         "trigger": "语义确实需要“comparison_card”时",
@@ -1447,17 +1480,17 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "721662dc47aa0e8b5a6d94f35f1a097ca9fd932207c8f80c87e6f40770592cc2"
+      "semanticDigest": "e9f4d0bee8f109c7b7b55889856be16e9f3f5038822282a4bbf5ed97f57441a9"
     },
     {
       "specId": "light-overlay.component.before_after_card",
       "kind": "component",
       "id": "before_after_card",
-      "label": "前后对比卡",
+      "label": "前后关系",
       "category": "card",
       "visualArchetype": "card:before_after_card",
       "expected": {
-        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“前后对比卡”只表达其注册槽位和状态。",
+        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“前后关系”只表达其注册槽位和状态。",
         "peakFrame": "峰值帧必须可辨识 before、after、criteria 槽位，并呈现 before、split、after、exit 中的峰值状态。",
         "requiredVisualMarkers": [
           "card",
@@ -1482,7 +1515,8 @@
         "tokenRefs": [
           "cards",
           "typography"
-        ]
+        ],
+        "presentation": "split_evidence"
       },
       "motion": {
         "trigger": "语义确实需要“before_after_card”时",
@@ -1498,17 +1532,17 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "22fbc2a18b69bffed4c6a5f57161761564bcb8b111955aeaafd22a4127607401"
+      "semanticDigest": "1f0b22f1a20383316516fa2b83e96f26edd688a059211f9c9dc9ca8d7bb28656"
     },
     {
       "specId": "light-overlay.component.score_card",
       "kind": "component",
       "id": "score_card",
-      "label": "评分卡",
+      "label": "结果刻度",
       "category": "card",
       "visualArchetype": "card:score_card",
       "expected": {
-        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“评分卡”只表达其注册槽位和状态。",
+        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“结果刻度”只表达其注册槽位和状态。",
         "peakFrame": "峰值帧必须可辨识 subject、dimensions、score 槽位，并呈现 entry、scoring、result、exit 中的峰值状态。",
         "requiredVisualMarkers": [
           "card",
@@ -1533,7 +1567,8 @@
         "tokenRefs": [
           "cards",
           "typography"
-        ]
+        ],
+        "presentation": "boundaryless_metric"
       },
       "motion": {
         "trigger": "语义确实需要“score_card”时",
@@ -1549,17 +1584,17 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "cbfea83bfe5aaed0ae7466dbb915abb034795b54f9dd50c1ef621b0afc7819ab"
+      "semanticDigest": "9b5e1a1b717ccd00a4152565ef8a5ceab7b2e218dc204ce696f0fb88fea60fd5"
     },
     {
       "specId": "light-overlay.component.checklist_card",
       "kind": "component",
       "id": "checklist_card",
-      "label": "检查清单",
+      "label": "逐项核验",
       "category": "card",
       "visualArchetype": "card:checklist_card",
       "expected": {
-        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“检查清单”只表达其注册槽位和状态。",
+        "intendedOutcome": "在不遮挡人物的前提下组织结构化信息；“逐项核验”只表达其注册槽位和状态。",
         "peakFrame": "峰值帧必须可辨识 title、items 槽位，并呈现 entry、progressive、complete、exit 中的峰值状态。",
         "requiredVisualMarkers": [
           "card",
@@ -1584,6 +1619,7 @@
           "cards",
           "typography"
         ],
+        "presentation": "boundaryless_progressive",
         "visualEquivalenceGroup": "checklist"
       },
       "motion": {
@@ -1600,7 +1636,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "3427401e5ba53207f322f84663802fadb31629e970fb58ed7f7e74608a27c29d"
+      "semanticDigest": "2915316c220e66cefba62f45b3f9d9ea62214fcc6cd33447e416a36b3619949b"
     },
     {
       "specId": "light-overlay.component.pip_rect",
@@ -1998,11 +2034,11 @@
       "specId": "light-overlay.component.subject_safe_popup",
       "kind": "component",
       "id": "subject_safe_popup",
-      "label": "人物避让弹窗",
+      "label": "人物关系回应",
       "category": "layout",
       "visualArchetype": "layout:subject_safe_popup",
       "expected": {
-        "intendedOutcome": "重新分配真人、素材与字幕的空间关系；“人物避让弹窗”只表达其注册槽位和状态。",
+        "intendedOutcome": "重新分配真人、素材与字幕的空间关系；“人物关系回应”只表达其注册槽位和状态。",
         "peakFrame": "峰值帧必须可辨识 title、body 槽位，并呈现 entry、peak、exit 中的峰值状态。",
         "requiredVisualMarkers": [
           "layout",
@@ -2026,6 +2062,7 @@
           "popups",
           "motion"
         ],
+        "presentation": "boundaryless_dialogue",
         "visualEquivalenceGroup": "subject-safe-popup"
       },
       "motion": {
@@ -2042,7 +2079,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "4e2490043174aff439a5f9f517c4f752627c71dc9ca65912e7cb43a7cbe2f2b1"
+      "semanticDigest": "b0fdcae07aa051d85dad824726362bb312768deeb166beba60832d299e20b28b"
     },
     {
       "specId": "light-overlay.component.screen_focus_callout",
@@ -3248,14 +3285,13 @@
       "id": "narrative_quote",
       "label": "引用展开",
       "category": "narrative",
-      "visualArchetype": "narrative:full_screen_or_subject_safe",
+      "visualArchetype": "narrative:negative_space",
       "expected": {
         "intendedOutcome": "随论证推进强化当前语义重心；触发条件是：引用直接支撑当前判断。",
-        "peakFrame": "峰值帧必须同时体现 quote_card、source_tag，并采用 full_screen_or_subject_safe 布局；不能退化成与场景无关的通用卡片。",
+        "peakFrame": "峰值帧必须同时体现 quote_card，并采用 negative_space 布局；不能退化成与场景无关的通用卡片。",
         "requiredVisualMarkers": [
-          "full_screen_or_subject_safe",
+          "negative_space",
           "quote_card",
-          "source_tag",
           "引用直接支撑当前判断"
         ],
         "forbiddenVisualMarkers": [
@@ -3267,12 +3303,11 @@
       },
       "relationships": {
         "components": [
-          "quote_card",
-          "source_tag"
+          "quote_card"
         ],
-        "layout": "full_screen_or_subject_safe",
+        "layout": "negative_space",
         "entryMotion": "quote_then_source",
-        "exitMotion": "short_fade",
+        "exitMotion": "before_next_event",
         "fallback": "subtitle_quote_scene",
         "visualEquivalenceGroup": "quote-pull"
       },
@@ -3280,7 +3315,7 @@
         "trigger": "引用直接支撑当前判断",
         "entry": "引用先出现，来源在引用可读后再轻量补充",
         "hold": "峰值只保留“引用展开”所需组件，并让当前信息可读。",
-        "exit": "6–10帧完成退出，切回主画面前不残留",
+        "exit": "当前题眼在下一事件前完整退出并让出视觉重心",
         "sfx": "引文后来源的可见落位使用匹配功能音；退出默认不抢人声。"
       },
       "typography": {
@@ -3290,7 +3325,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "bbbf4331703047196218d3faf7730544d18a89c54b544118e325774b26042326"
+      "semanticDigest": "c1f355741811491e79fe8d6bee11aa72db53add36c070d4b497209fa3e2976f4"
     },
     {
       "specId": "light-overlay.scene.subtitle_quote_scene",
@@ -3346,14 +3381,13 @@
       "id": "narrative_definition",
       "label": "术语定义",
       "category": "narrative",
-      "visualArchetype": "narrative:subject_safe_right",
+      "visualArchetype": "narrative:negative_space_opposite_gaze",
       "expected": {
         "intendedOutcome": "随论证推进强化当前语义重心；触发条件是：术语第一次出现且需要边界。",
-        "peakFrame": "峰值帧必须同时体现 definition_term、definition_card，并采用 subject_safe_right 布局；不能退化成与场景无关的通用卡片。",
+        "peakFrame": "峰值帧必须同时体现 definition_term，并采用 negative_space_opposite_gaze 布局；不能退化成与场景无关的通用卡片。",
         "requiredVisualMarkers": [
-          "subject_safe_right",
+          "negative_space_opposite_gaze",
           "definition_term",
-          "definition_card",
           "术语第一次出现且需要边界"
         ],
         "forbiddenVisualMarkers": [
@@ -3365,12 +3399,11 @@
       },
       "relationships": {
         "components": [
-          "definition_term",
-          "definition_card"
+          "definition_term"
         ],
-        "layout": "subject_safe_right",
+        "layout": "negative_space_opposite_gaze",
         "entryMotion": "term_then_definition",
-        "exitMotion": "collapse",
+        "exitMotion": "before_next_event",
         "fallback": "info_definition",
         "visualEquivalenceGroup": "term-definition"
       },
@@ -3378,7 +3411,7 @@
         "trigger": "术语第一次出现且需要边界",
         "entry": "术语先出现，定义在其下方进入并保持阅读层级",
         "hold": "峰值只保留“术语定义”所需组件，并让当前信息可读。",
-        "exit": "分散信息向语义重心聚拢并缩小淡出",
+        "exit": "当前题眼在下一事件前完整退出并让出视觉重心",
         "sfx": "术语后定义的可见落位使用匹配功能音；退出默认不抢人声。"
       },
       "typography": {
@@ -3388,7 +3421,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "0a791abf8238a58e742eeb2dba1408252f586b28ffe03219cff9984bae3c3944"
+      "semanticDigest": "6d2fe3dd24da04fa571ced839ac1480121e18dcfa2e3314ffeca2d1e13411e26"
     },
     {
       "specId": "light-overlay.scene.narrative_correction",
@@ -3446,12 +3479,12 @@
       "id": "narrative_uncertainty",
       "label": "不确定性声明",
       "category": "narrative",
-      "visualArchetype": "narrative:subject_safe_side",
+      "visualArchetype": "narrative:negative_space",
       "expected": {
         "intendedOutcome": "随论证推进强化当前语义重心；触发条件是：证据不足或结论有边界。",
-        "peakFrame": "峰值帧必须同时体现 caution_card、status_tag，并采用 subject_safe_side 布局；不能退化成与场景无关的通用卡片。",
+        "peakFrame": "峰值帧必须同时体现 caution_card、status_tag，并采用 negative_space 布局；不能退化成与场景无关的通用卡片。",
         "requiredVisualMarkers": [
-          "subject_safe_side",
+          "negative_space",
           "caution_card",
           "status_tag",
           "证据不足或结论有边界"
@@ -3468,17 +3501,17 @@
           "caution_card",
           "status_tag"
         ],
-        "layout": "subject_safe_side",
-        "entryMotion": "soft_pop",
-        "exitMotion": "short_fade",
+        "layout": "negative_space",
+        "entryMotion": "directional_reveal",
+        "exitMotion": "before_next_event",
         "fallback": "source_card_scene"
       },
       "motion": {
         "trigger": "证据不足或结论有边界",
-        "entry": "由96%到100%轻弹入并停稳，不做过冲弹跳",
+        "entry": "沿前镜动作方向揭示新章节，方向不中途反转",
         "hold": "峰值只保留“不确定性声明”所需组件，并让当前信息可读。",
-        "exit": "6–10帧完成退出，切回主画面前不残留",
-        "sfx": "轻弹入的可见落位使用匹配功能音；退出默认不抢人声。"
+        "exit": "当前题眼在下一事件前完整退出并让出视觉重心",
+        "sfx": "定向揭示的可见落位使用匹配功能音；退出默认不抢人声。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -3487,20 +3520,20 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "54ee099a8508841ee07665572ddefd79dc36595b792541ba1d4d4e8531e83ec0"
+      "semanticDigest": "d198dd428847ef1bbace147b224f3345d50321bb9b68ecec5edb10fca52c9c7d"
     },
     {
       "specId": "light-overlay.scene.info_single",
       "kind": "scene",
       "id": "info_single",
-      "label": "单项信息卡",
+      "label": "单项编辑旁注",
       "category": "explainer",
-      "visualArchetype": "explainer:subject_safe_side",
+      "visualArchetype": "explainer:negative_space",
       "expected": {
         "intendedOutcome": "把复杂信息按口播顺序逐步解释清楚；触发条件是：一项定义、条件或结论。",
-        "peakFrame": "峰值帧必须同时体现 info_card，并采用 subject_safe_side 布局；不能退化成与场景无关的通用卡片。",
+        "peakFrame": "峰值帧必须同时体现 info_card，并采用 negative_space 布局；不能退化成与场景无关的通用卡片。",
         "requiredVisualMarkers": [
-          "subject_safe_side",
+          "negative_space",
           "info_card",
           "一项定义、条件或结论"
         ],
@@ -3515,17 +3548,17 @@
         "components": [
           "info_card"
         ],
-        "layout": "subject_safe_side",
-        "entryMotion": "soft_pop",
-        "exitMotion": "short_fade",
+        "layout": "negative_space",
+        "entryMotion": "mask_reveal",
+        "exitMotion": "visuals_clear_early",
         "fallback": "narrative_statement"
       },
       "motion": {
         "trigger": "一项定义、条件或结论",
-        "entry": "由96%到100%轻弹入并停稳，不做过冲弹跳",
-        "hold": "峰值只保留“单项信息卡”所需组件，并让当前信息可读。",
-        "exit": "6–10帧完成退出，切回主画面前不残留",
-        "sfx": "轻弹入的可见落位使用匹配功能音；退出默认不抢人声。"
+        "entry": "遮罩边界沿对象或构图方向移动，峰值帧完整露出主题",
+        "hold": "峰值只保留“单项编辑旁注”所需组件，并让当前信息可读。",
+        "exit": "插镜结束前3–5帧撤掉字幕和装饰，再回真人",
+        "sfx": "遮罩揭示的可见落位使用匹配功能音；退出默认不抢人声。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -3534,20 +3567,20 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "dfb89042f51a64e8314edec15ba304a8c45d6701c2bbc2fe3eabc206905dc925"
+      "semanticDigest": "849e482d9ea17d2a019a10462432cce65bc6c43147fe36deb3ce98a4dc5684de"
     },
     {
       "specId": "light-overlay.scene.info_bullets",
       "kind": "scene",
       "id": "info_bullets",
-      "label": "渐进要点卡",
+      "label": "渐进边缘要点",
       "category": "explainer",
-      "visualArchetype": "explainer:full_screen_or_subject_safe",
+      "visualArchetype": "explainer:subject_negative_space",
       "expected": {
         "intendedOutcome": "把复杂信息按口播顺序逐步解释清楚；触发条件是：二至五项同层级要点。",
-        "peakFrame": "峰值帧必须同时体现 bullet_card，并采用 full_screen_or_subject_safe 布局；不能退化成与场景无关的通用卡片。",
+        "peakFrame": "峰值帧必须同时体现 bullet_card，并采用 subject_negative_space 布局；不能退化成与场景无关的通用卡片。",
         "requiredVisualMarkers": [
-          "full_screen_or_subject_safe",
+          "subject_negative_space",
           "bullet_card",
           "二至五项同层级要点"
         ],
@@ -3562,17 +3595,17 @@
         "components": [
           "bullet_card"
         ],
-        "layout": "full_screen_or_subject_safe",
-        "entryMotion": "progressive",
-        "exitMotion": "collapse",
+        "layout": "subject_negative_space",
+        "entryMotion": "progressive_local",
+        "exitMotion": "visuals_clear_early",
         "fallback": "info_single"
       },
       "motion": {
         "trigger": "二至五项同层级要点",
-        "entry": "同层级项目按口播顺序逐项出现，观众不能提前读完",
-        "hold": "峰值只保留“渐进要点卡”所需组件，并让当前信息可读。",
-        "exit": "分散信息向语义重心聚拢并缩小淡出",
-        "sfx": "逐项建立的可见落位使用匹配功能音；退出默认不抢人声。"
+        "entry": "仅当前局部新增或点亮，禁止整屏随节点闪烁",
+        "hold": "峰值只保留“渐进边缘要点”所需组件，并让当前信息可读。",
+        "exit": "插镜结束前3–5帧撤掉字幕和装饰，再回真人",
+        "sfx": "局部逐项建立的可见落位使用匹配功能音；退出默认不抢人声。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -3581,7 +3614,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "e2d9f9aa60ef14a9f171a5ddb62d0750831d19454ef76b63a20d4c7a5b84e6a3"
+      "semanticDigest": "90b25c08e5f406aebf6d59f82ca89c3415982c2cbd5ad5984fe02e1a60881f89"
     },
     {
       "specId": "light-overlay.scene.info_three_reasons",
@@ -3589,12 +3622,12 @@
       "id": "info_three_reasons",
       "label": "三项理由",
       "category": "explainer",
-      "visualArchetype": "explainer:subject_left_card_right",
+      "visualArchetype": "explainer:editorial_left",
       "expected": {
         "intendedOutcome": "把复杂信息按口播顺序逐步解释清楚；触发条件是：三项理由随口播依次出现。",
-        "peakFrame": "峰值帧必须同时体现 three_reason_card，并采用 subject_left_card_right 布局；不能退化成与场景无关的通用卡片。",
+        "peakFrame": "峰值帧必须同时体现 three_reason_card，并采用 editorial_left 布局；不能退化成与场景无关的通用卡片。",
         "requiredVisualMarkers": [
-          "subject_left_card_right",
+          "editorial_left",
           "three_reason_card",
           "三项理由随口播依次出现"
         ],
@@ -3609,16 +3642,17 @@
         "components": [
           "three_reason_card"
         ],
-        "layout": "subject_left_card_right",
+        "layout": "editorial_left",
         "entryMotion": "progressive_local",
-        "exitMotion": "scale_fade",
-        "fallback": "info_bullets"
+        "exitMotion": "before_next_event",
+        "fallback": "info_bullets",
+        "visualEquivalenceGroup": "three-reasons"
       },
       "motion": {
         "trigger": "三项理由随口播依次出现",
         "entry": "仅当前局部新增或点亮，禁止整屏随节点闪烁",
         "hold": "峰值只保留“三项理由”所需组件，并让当前信息可读。",
-        "exit": "组件轻微缩小同时淡出，锚点保持在信息重心",
+        "exit": "当前题眼在下一事件前完整退出并让出视觉重心",
         "sfx": "局部逐项建立的可见落位使用匹配功能音；退出默认不抢人声。"
       },
       "typography": {
@@ -3628,20 +3662,20 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "50602c6496ab5f291cee5b135e0f60692882aced50f7cf9459753241e5a73f39"
+      "semanticDigest": "47f81805392e0d29a17d3bed71a5ff9f0109348606f7a1481fd1c75040f2f1b4"
     },
     {
       "specId": "light-overlay.scene.info_definition",
       "kind": "scene",
       "id": "info_definition",
-      "label": "定义与边界卡",
+      "label": "定义与边界",
       "category": "explainer",
-      "visualArchetype": "explainer:full_screen",
+      "visualArchetype": "explainer:negative_space_opposite_gaze",
       "expected": {
         "intendedOutcome": "把复杂信息按口播顺序逐步解释清楚；触发条件是：概念、定义和适用边界。",
-        "peakFrame": "峰值帧必须同时体现 definition_card，并采用 full_screen 布局；不能退化成与场景无关的通用卡片。",
+        "peakFrame": "峰值帧必须同时体现 definition_card，并采用 negative_space_opposite_gaze 布局；不能退化成与场景无关的通用卡片。",
         "requiredVisualMarkers": [
-          "full_screen",
+          "negative_space_opposite_gaze",
           "definition_card",
           "概念、定义和适用边界"
         ],
@@ -3656,16 +3690,16 @@
         "components": [
           "definition_card"
         ],
-        "layout": "full_screen",
+        "layout": "negative_space_opposite_gaze",
         "entryMotion": "term_then_body",
-        "exitMotion": "short_fade",
+        "exitMotion": "before_next_event",
         "fallback": "info_single"
       },
       "motion": {
         "trigger": "概念、定义和适用边界",
         "entry": "术语先成为题眼，正文和适用边界随后分层出现",
-        "hold": "峰值只保留“定义与边界卡”所需组件，并让当前信息可读。",
-        "exit": "6–10帧完成退出，切回主画面前不残留",
+        "hold": "峰值只保留“定义与边界”所需组件，并让当前信息可读。",
+        "exit": "当前题眼在下一事件前完整退出并让出视觉重心",
         "sfx": "术语后正文的可见落位使用匹配功能音；退出默认不抢人声。"
       },
       "typography": {
@@ -3675,20 +3709,20 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "993b52646176e8e445f19c7407c76c6fc6b288b298fd79eb19593b39bb9831ad"
+      "semanticDigest": "8e977866c02e3757baf8151dabc10214f8346df5c7e2337c4d52d0b795199349"
     },
     {
       "specId": "light-overlay.scene.info_warning",
       "kind": "scene",
       "id": "info_warning",
-      "label": "风险提示",
+      "label": "边缘风险提示",
       "category": "explainer",
-      "visualArchetype": "explainer:subject_safe_side",
+      "visualArchetype": "explainer:negative_space",
       "expected": {
         "intendedOutcome": "把复杂信息按口播顺序逐步解释清楚；触发条件是：隐私、版权、事实或使用风险。",
-        "peakFrame": "峰值帧必须同时体现 caution_card，并采用 subject_safe_side 布局；不能退化成与场景无关的通用卡片。",
+        "peakFrame": "峰值帧必须同时体现 caution_card，并采用 negative_space 布局；不能退化成与场景无关的通用卡片。",
         "requiredVisualMarkers": [
-          "subject_safe_side",
+          "negative_space",
           "caution_card",
           "隐私、版权、事实或使用风险"
         ],
@@ -3703,17 +3737,18 @@
         "components": [
           "caution_card"
         ],
-        "layout": "subject_safe_side",
-        "entryMotion": "soft_pop",
-        "exitMotion": "short_fade",
-        "fallback": "status_disclosure"
+        "layout": "negative_space",
+        "entryMotion": "directional_reveal",
+        "exitMotion": "visuals_clear_early",
+        "fallback": "status_disclosure",
+        "visualEquivalenceGroup": "caution-warning"
       },
       "motion": {
         "trigger": "隐私、版权、事实或使用风险",
-        "entry": "由96%到100%轻弹入并停稳，不做过冲弹跳",
-        "hold": "峰值只保留“风险提示”所需组件，并让当前信息可读。",
-        "exit": "6–10帧完成退出，切回主画面前不残留",
-        "sfx": "轻弹入的可见落位使用匹配功能音；退出默认不抢人声。"
+        "entry": "沿前镜动作方向揭示新章节，方向不中途反转",
+        "hold": "峰值只保留“边缘风险提示”所需组件，并让当前信息可读。",
+        "exit": "插镜结束前3–5帧撤掉字幕和装饰，再回真人",
+        "sfx": "定向揭示的可见落位使用匹配功能音；退出默认不抢人声。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -3722,7 +3757,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "5b9970456bd3410709a9438d1623df9392d24412498c50a98947c3d51b49dd28"
+      "semanticDigest": "b2c904df21e74542b4be5b7c1ee6127ccd8d20805c43b5121436c2641d7c8db8"
     },
     {
       "specId": "light-overlay.scene.status_disclosure",
@@ -3824,7 +3859,7 @@
       "specId": "light-overlay.scene.source_card_scene",
       "kind": "scene",
       "id": "source_card_scene",
-      "label": "完整来源卡",
+      "label": "完整来源板",
       "category": "explainer",
       "visualArchetype": "explainer:full_screen",
       "expected": {
@@ -3847,16 +3882,16 @@
           "source_card"
         ],
         "layout": "full_screen",
-        "entryMotion": "soft_pop",
-        "exitMotion": "short_fade",
+        "entryMotion": "quote_then_source",
+        "exitMotion": "return_to_subject",
         "fallback": "source_tag_scene"
       },
       "motion": {
         "trigger": "来源本身影响结论可信度",
-        "entry": "由96%到100%轻弹入并停稳，不做过冲弹跳",
-        "hold": "峰值只保留“完整来源卡”所需组件，并让当前信息可读。",
-        "exit": "6–10帧完成退出，切回主画面前不残留",
-        "sfx": "轻弹入的可见落位使用匹配功能音；退出默认不抢人声。"
+        "entry": "引用先出现，来源在引用可读后再轻量补充",
+        "hold": "峰值只保留“完整来源板”所需组件，并让当前信息可读。",
+        "exit": "插镜或全屏信息完成后平滑回到真人主画面",
+        "sfx": "引文后来源的可见落位使用匹配功能音；退出默认不抢人声。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -3865,7 +3900,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "aa41e8a2a70f2efceb27b618ac1783b79c12adaf91e1c8ea82625085515c08ce"
+      "semanticDigest": "7f85937f8d883b8bd0159beb870a3cfa4e5ce755dd620286f938cf5fb4101d10"
     },
     {
       "specId": "light-overlay.scene.process_progressive",
@@ -3920,14 +3955,14 @@
       "specId": "light-overlay.scene.checklist_progressive",
       "kind": "scene",
       "id": "checklist_progressive",
-      "label": "检查清单",
+      "label": "逐项核验",
       "category": "explainer",
-      "visualArchetype": "explainer:subject_safe_side",
+      "visualArchetype": "explainer:editorial_left",
       "expected": {
         "intendedOutcome": "把复杂信息按口播顺序逐步解释清楚；触发条件是：检查项依次完成。",
-        "peakFrame": "峰值帧必须同时体现 checklist_card，并采用 subject_safe_side 布局；不能退化成与场景无关的通用卡片。",
+        "peakFrame": "峰值帧必须同时体现 checklist_card，并采用 editorial_left 布局；不能退化成与场景无关的通用卡片。",
         "requiredVisualMarkers": [
-          "subject_safe_side",
+          "editorial_left",
           "checklist_card",
           "检查项依次完成"
         ],
@@ -3942,7 +3977,7 @@
         "components": [
           "checklist_card"
         ],
-        "layout": "subject_safe_side",
+        "layout": "editorial_left",
         "entryMotion": "progressive_local",
         "exitMotion": "complete_then_fade",
         "fallback": "info_bullets",
@@ -3951,7 +3986,7 @@
       "motion": {
         "trigger": "检查项依次完成",
         "entry": "仅当前局部新增或点亮，禁止整屏随节点闪烁",
-        "hold": "峰值只保留“检查清单”所需组件，并让当前信息可读。",
+        "hold": "峰值只保留“逐项核验”所需组件，并让当前信息可读。",
         "exit": "最后一项完成并停稳后，整体才淡出",
         "sfx": "局部逐项建立的可见落位使用匹配功能音；退出默认不抢人声。"
       },
@@ -3962,7 +3997,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "cbab5f01b361d6f39d25a66a39aecde46099defe236ba212cb2429a2a763a387"
+      "semanticDigest": "45fdc66e6a069ab25da361bc3e57d81597ef99e9f18ad568721fbf8792a3a623"
     },
     {
       "specId": "light-overlay.scene.timeline_progressive",
@@ -4331,7 +4366,7 @@
         ],
         "layout": "subject_negative_space",
         "entryMotion": "count_or_scale",
-        "exitMotion": "short_fade",
+        "exitMotion": "before_next_event",
         "fallback": "narrative_statement",
         "visualEquivalenceGroup": "numeric-punch"
       },
@@ -4339,7 +4374,7 @@
         "trigger": "一个数字构成主要结论",
         "entry": "关键数字计数到目标值或从小到大停在100%",
         "hold": "峰值只保留“单个关键数字”所需组件，并让当前信息可读。",
-        "exit": "6–10帧完成退出，切回主画面前不残留",
+        "exit": "当前题眼在下一事件前完整退出并让出视觉重心",
         "sfx": "数字计数或放大的可见落位使用匹配功能音；退出默认不抢人声。"
       },
       "typography": {
@@ -4349,7 +4384,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "702f7609b5ecb4b985df0633768eb659761c2c7a49275c6df4361e7e3465ff35"
+      "semanticDigest": "68f0534ff5208b7f92bf0abe9c260102c828268d01fe4de36334fc4eee012e2f"
     },
     {
       "specId": "light-overlay.scene.data_bar",
@@ -4781,17 +4816,17 @@
           "pip_rect"
         ],
         "layout": "corner_safe",
-        "entryMotion": "soft_pop",
-        "exitMotion": "short_fade",
+        "entryMotion": "mask_reveal",
+        "exitMotion": "clear_before_a_roll",
         "fallback": "tool_screen_full",
         "visualEquivalenceGroup": "corner-pip"
       },
       "motion": {
         "trigger": "补充素材与人物同时保留",
-        "entry": "由96%到100%轻弹入并停稳，不做过冲弹跳",
+        "entry": "遮罩边界沿对象或构图方向移动，峰值帧完整露出主题",
         "hold": "峰值只保留“标准画中画”所需组件，并让当前信息可读。",
-        "exit": "6–10帧完成退出，切回主画面前不残留",
-        "sfx": "轻弹入的可见落位使用匹配功能音；退出默认不抢人声。"
+        "exit": "附加画面在真人镜头出现前完整消失",
+        "sfx": "遮罩揭示的可见落位使用匹配功能音；退出默认不抢人声。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -4800,7 +4835,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "2244b904f738d1cde5ff5312360ea5f443aba703be9638f4172e54a302c6f3a6"
+      "semanticDigest": "044367239a9e4b32ce8363ed1fe364fce08cd0bffb2d5255784654d4efea07ab"
     },
     {
       "specId": "light-overlay.scene.split_vertical_demo",
@@ -4927,17 +4962,17 @@
           "subtitle_speaker"
         ],
         "layout": "negative_space_opposite_gaze",
-        "entryMotion": "typing_or_soft_pop",
+        "entryMotion": "response_sync",
         "exitMotion": "before_subject_reply",
         "fallback": "subtitle_speaker_only",
         "visualEquivalenceGroup": "subject-safe-popup"
       },
       "motion": {
         "trigger": "AI作为第二角色回应但不抢前台",
-        "entry": "文字型回应逐字出现；短标签型回应使用轻弹入",
+        "entry": "AI回应内容与对应语音或真人停顿精确同步",
         "hold": "峰值只保留“AI幕后回应”所需组件，并让当前信息可读。",
         "exit": "AI幕后回应在真人开口前清场，不把AI推到前台",
-        "sfx": "打字或轻弹回应的可见落位使用匹配功能音；退出默认不抢人声。"
+        "sfx": "回应同步进入的可见落位使用匹配功能音；退出默认不抢人声。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -4946,7 +4981,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "93bb7dc8b5329aaaef9d508ae76f8c2a7787e43ab5c17f74391684612f2bc51f"
+      "semanticDigest": "fe98be556f444670694b6a7337ad0b0dfb873058bd8624c561f5c69a26a72f5e"
     },
     {
       "specId": "light-overlay.scene.subtitle_speaker_only",
@@ -5610,14 +5645,14 @@
         ],
         "layout": "full_screen",
         "entryMotion": "progressive_local",
-        "exitMotion": "short_fade",
+        "exitMotion": "before_next_event",
         "fallback": "compare_two"
       },
       "motion": {
         "trigger": "尺度、位置、颜色或蒙版参数有明确起止状态",
         "entry": "仅当前局部新增或点亮，禁止整屏随节点闪烁",
         "hold": "峰值只保留“关键帧参数变化”所需组件，并让当前信息可读。",
-        "exit": "6–10帧完成退出，切回主画面前不残留",
+        "exit": "当前题眼在下一事件前完整退出并让出视觉重心",
         "sfx": "局部逐项建立的可见落位使用匹配功能音；退出默认不抢人声。"
       },
       "typography": {
@@ -5627,7 +5662,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "20de67f7c232c18cb53ae63482889cca27de4172974180166157a9d49c429c77"
+      "semanticDigest": "35aaf66aa2155dda1afe882a09152174ab41286c6b29498f273795074f599271"
     },
     {
       "specId": "light-overlay.scene.ending_summary",
@@ -5731,12 +5766,12 @@
       "id": "ending_cta",
       "label": "行动导流",
       "category": "ending",
-      "visualArchetype": "ending:subject_safe_side",
+      "visualArchetype": "ending:negative_space",
       "expected": {
         "intendedOutcome": "收束结论并在音频结束帧完成退出；触发条件是：有明确资料、项目或下一步。",
-        "peakFrame": "峰值帧必须同时体现 info_card、show_label，并采用 subject_safe_side 布局；不能退化成与场景无关的通用卡片。",
+        "peakFrame": "峰值帧必须同时体现 info_card、show_label，并采用 negative_space 布局；不能退化成与场景无关的通用卡片。",
         "requiredVisualMarkers": [
-          "subject_safe_side",
+          "negative_space",
           "info_card",
           "show_label",
           "有明确资料、项目或下一步"
@@ -5753,7 +5788,7 @@
           "info_card",
           "show_label"
         ],
-        "layout": "subject_safe_side",
+        "layout": "negative_space",
         "entryMotion": "after_conclusion",
         "exitMotion": "audio_end",
         "fallback": "ending_clean"
@@ -5772,7 +5807,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "a4564c776df340b160956463e95f301ab2f901b9ddd18e2c80828711321aebaf"
+      "semanticDigest": "dfb6aad4b9a7cacfd50f037841a3d9846b7fa4863d00683ba511318638087981"
     },
     {
       "specId": "light-overlay.scene.cover_editorial",
@@ -6401,7 +6436,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6410,7 +6445,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "b718a4a45ef2720e797800ba22c1226d4fd885c881e85b7f3c9b2e3d904677c1"
+      "semanticDigest": "43c48cc4016955aacd707793249487d2e65145128746827108f41a403c2f7606"
     },
     {
       "specId": "light-overlay.layout.corner_safe",
@@ -6442,7 +6477,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6451,7 +6486,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "429b2662f73bb539e004dea7944884d3e45bbd9689bed35ed1ca6c769ffeeaed"
+      "semanticDigest": "0385af96812972fece71be47b114a68733fc683472c2ce874c9cfcbc4112d8f2"
     },
     {
       "specId": "light-overlay.layout.editorial_left",
@@ -6482,7 +6517,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6491,7 +6526,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "a268dd80f02d7649df6201089f04763077988a245bf5d65c38d3e411de8e9898"
+      "semanticDigest": "f75db97dc68711a6112378705baeed9fb9212b20a4d258f08c7f0d9397798784"
     },
     {
       "specId": "light-overlay.layout.footage_with_time_marker",
@@ -6522,7 +6557,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6531,7 +6566,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "6e5d98bb7162e95bf462fce44bce9a5f9f96c42b351aa7b4e6e09181928f4a88"
+      "semanticDigest": "c2ddef9cd7c0af5f867ab2d23460525d9f99761c26111f772eecf6599e198a46"
     },
     {
       "specId": "light-overlay.layout.full_bleed_event_photo",
@@ -6562,7 +6597,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6571,7 +6606,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "0352137e4f9b7354b2a53f1a7e89f878bf841ffcd898d2c38d784eb854354ea3"
+      "semanticDigest": "a0be2570bad7fb6e4be5fd8571751585eaa4741ad6811cbe7365558ca794f4c7"
     },
     {
       "specId": "light-overlay.layout.full_bleed_footage",
@@ -6602,7 +6637,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6611,7 +6646,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "51011d8c61000c74466ecae430802fef0657dcbac4a92413cca2676ac7db7daf"
+      "semanticDigest": "0ce3bd350775c2d48970bedcd790dafa43bb91d6b8e09391d15e5147ccea4c56"
     },
     {
       "specId": "light-overlay.layout.full_screen",
@@ -6643,7 +6678,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6652,7 +6687,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "daaa56f0ccd83559971b7b56adcc9069cd13729be317edec84ae782428f6a1b8"
+      "semanticDigest": "747b6ae589a4475b23bfc06b227253fd2b7b383e87d96e7a488934dcac47e556"
     },
     {
       "specId": "light-overlay.layout.full_screen_or_subject_safe",
@@ -6683,7 +6718,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6692,7 +6727,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "709f54ba36d4d84a22af846ecddaf84b72ab1f7d9a2c05b11b0d64dc55445355"
+      "semanticDigest": "17cda11aec464eb125d724fb0cb90b3a34de944631b6f2ef6d274e0b08731a16"
     },
     {
       "specId": "light-overlay.layout.full_screen_with_pip",
@@ -6723,7 +6758,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6732,7 +6767,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "ead445f8e21d4dbcabc716100f9e4a377605221c3e1c6e235f2a04c62ba1ae34"
+      "semanticDigest": "4973fb5f6d6a7ca3464486456748d4e332eba610181eab1ac6830376cbcd6549"
     },
     {
       "specId": "light-overlay.layout.local_band",
@@ -6763,7 +6798,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6772,7 +6807,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "64fe07f50ccaee8b2405cb85075dcc4a9eb157bdb8e87b87d0fff3527a15165c"
+      "semanticDigest": "99d3beecf161fa9e3e664e7b787d50717a11eea2c50b1b9cbb438ae691d6be60"
     },
     {
       "specId": "light-overlay.layout.lower_corner_safe",
@@ -6803,7 +6838,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6812,7 +6847,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "63f9b92ece95e2fa09e3aa1bc5b78a771d59d2ffbeb3eca59abaf373d197c2db"
+      "semanticDigest": "43faee892b3312a761b14ebbac5a122896bc6b8fadfe35e4dc402df902376876"
     },
     {
       "specId": "light-overlay.layout.moving_pip_safe_zones",
@@ -6844,7 +6879,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6853,7 +6888,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "fdbc52dc3c712ef669c925e3e2f19d613caa0c58fc6b3256944599bee64d9eae"
+      "semanticDigest": "100d12a8167075da3e768f2f2343cc55eaaeb2d59621a12d9e688e741a0d31c3"
     },
     {
       "specId": "light-overlay.layout.negative_space",
@@ -6884,7 +6919,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6893,7 +6928,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "86d96ff5d002a2bd321b72f6d410a88be1793c29090e18414b7f779dc4ac94af"
+      "semanticDigest": "d7d9a2b88fd30fd2795f68ebb1e9cfda8280fec151c8fa28199e39af2f16611f"
     },
     {
       "specId": "light-overlay.layout.negative_space_behind_subject",
@@ -6924,7 +6959,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6933,7 +6968,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "ddaeda0a899cc078e3ed53a9ac5284bcb042b217430b88c39ff01ac311af9fe7"
+      "semanticDigest": "186bef340721b928ad6ada21f87d67b3af73cd34e64f3d0c8b7ac26515ac0aa8"
     },
     {
       "specId": "light-overlay.layout.negative_space_opposite_gaze",
@@ -6964,7 +6999,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -6973,7 +7008,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "912debeb2ef41afea5c495bc2eae8dc8861989f55de4811c5d3ae4f1674da106"
+      "semanticDigest": "bf918a7ad59fc234afe7dc8eb969e379259ad707c69b3a33529968e41b76bad6"
     },
     {
       "specId": "light-overlay.layout.portrait_subject_right_title_left",
@@ -7004,7 +7039,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7013,7 +7048,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "f1fa6cc8726f3145ed95c38c2913030716d38472b66db87b01b3c2de9f71cba1"
+      "semanticDigest": "15d592ca1ba2717264b52e1df20bdb0cfa996449adb390dc8c5ba748d6510c0d"
     },
     {
       "specId": "light-overlay.layout.screen_focus",
@@ -7044,7 +7079,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7053,7 +7088,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "c3f0161bb508b1ea37e0d2268381854d8a359049d492e0b035c4757a87edd9be"
+      "semanticDigest": "97467795a654accb8c5312fcd41828e337f153bb89341812e037223a2cbe235f"
     },
     {
       "specId": "light-overlay.layout.screen_with_corner_pip",
@@ -7085,7 +7120,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7094,7 +7129,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "fff22d4220614ae9036eb407f3ad204ee72cf8989a03ce3a568b964bff852238"
+      "semanticDigest": "c0807ed47a78840cd05ff15c6c358bfb4ead928c358105c9f88eb49ca2b80b4b"
     },
     {
       "specId": "light-overlay.layout.shared_motion_or_sound",
@@ -7125,7 +7160,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7134,7 +7169,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "99eedd7bc382a9902c6379ee6f3236573b064732ec33b2eca4cfc9ac6cf3ff49"
+      "semanticDigest": "5a790b13ad5f97b7001e894da544ef6474ed9ba046ab5a5aec549e6a5093d260"
     },
     {
       "specId": "light-overlay.layout.split_cover",
@@ -7165,7 +7200,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7174,7 +7209,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "f41ba34c0b87c7c849b2238d91af437bd0cd1a5c944b076d5fc554dafea6fd39"
+      "semanticDigest": "9bb81473165255febc3b91d6c39baee908947f5528197c337e5beea652b1978e"
     },
     {
       "specId": "light-overlay.layout.stack_left",
@@ -7205,7 +7240,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7214,7 +7249,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "10d8811e9559a084adfc6421fc73d3e20c3a6c5bdf366c607db954e35d54ac4b"
+      "semanticDigest": "d0019e4213fe1e5128955592c2be28dc83dfed4e66675044f510f846673f0d83"
     },
     {
       "specId": "light-overlay.layout.subject_and_ai_symbol",
@@ -7246,7 +7281,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7255,21 +7290,21 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "72035aa7a762ca9ecdb243d9a719dbd93f7281ce0d0b182c1303382a2df299cf"
+      "semanticDigest": "7f7866833cebb7bddf497ed8f4f2459017ac424313d71074ab84555f1e8c0e9d"
     },
     {
-      "specId": "light-overlay.layout.subject_left_card_right",
+      "specId": "light-overlay.layout.foreground_evidence_occlusion",
       "kind": "layout",
-      "id": "subject_left_card_right",
-      "label": "左人右卡",
-      "visualArchetype": "subject-left-card",
+      "id": "foreground_evidence_occlusion",
+      "label": "前景证据遮挡布局",
+      "visualArchetype": "foreground-evidence",
       "expected": {
-        "intendedOutcome": "人物在左，信息卡在右，字幕占底部独立安全带",
-        "peakFrame": "峰值帧清楚展示“左人右卡”的几何分区、安全区和人物关系。",
+        "intendedOutcome": "让真实证据或前景物件穿过人物边缘建立前中后景；人物头脸、证据主体和字幕保持完整可读",
+        "peakFrame": "峰值帧清楚展示“前景证据遮挡布局”的几何分区、安全区和人物关系。",
         "requiredVisualMarkers": [
-          "subject-left-card",
-          "左人右卡",
-          "subject_left"
+          "foreground-evidence",
+          "前景证据遮挡布局",
+          "foreground_occlusion"
         ],
         "forbiddenVisualMarkers": [
           "与语义无关的通用白色网页弹窗",
@@ -7279,14 +7314,14 @@
         ]
       },
       "relationships": {
-        "template": "subject_left"
+        "template": "foreground_occlusion"
       },
       "motion": {
-        "trigger": "内容关系需要“左人右卡”而非单一A-roll时",
+        "trigger": "内容关系需要“前景证据遮挡布局”而非单一A-roll时",
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7295,7 +7330,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "07c3750301d695bbe60ffdddb430886589b2fe63d47ef33ce08687e060bfbce8"
+      "semanticDigest": "3054aa39a2fe4416c5380ca7c7a8d5393198f54037f4c5c310dfc505bf40c45a"
     },
     {
       "specId": "light-overlay.layout.subject_negative_space",
@@ -7326,7 +7361,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7335,7 +7370,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "97d3711b2110d7467042365ac6451ac10d2d9ccf76eebb35cf82a7d3427e6f00"
+      "semanticDigest": "fe410ef6343255154909b26766b77351835570530b148c45f71705d8e0cd8c3d"
     },
     {
       "specId": "light-overlay.layout.subject_safe_bottom",
@@ -7366,7 +7401,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7375,7 +7410,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "26097bd4b3645c778ba8ac30391eef0b489572c5bab5e469491cff23e189454d"
+      "semanticDigest": "900ba8a3d683b830ae5b76eb605fd4437ca1c143d413dc9dddd48a651790556d"
     },
     {
       "specId": "light-overlay.layout.subject_safe_right",
@@ -7406,7 +7441,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7415,7 +7450,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "07d554535f2926feef8c1af7d3455fc180096b066da90e2371b2988b6ad8967f"
+      "semanticDigest": "4a8ecb9a37c463ec3e5db6edb0d890eee1b05ab5e7304e8450af8fcc2cc62f07"
     },
     {
       "specId": "light-overlay.layout.subject_safe_side",
@@ -7446,7 +7481,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7455,7 +7490,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "f63bac71bf67bfe554385628c0548028fe0f72a5043b96e71837e44cadfd262f"
+      "semanticDigest": "1b3f44a85f61550b59ae8a471f1cd92abf57b434a89388d83a82902b222aa0cc"
     },
     {
       "specId": "light-overlay.layout.subject_with_meter",
@@ -7486,7 +7521,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7495,7 +7530,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "c70872a4a103445896eb20698c8433bcd93404a22ea30ae6f1e5206e2eac2a6e"
+      "semanticDigest": "33cef7ad809ab6f58c7c731c1ca14e7e1f7a3682b7938cae92060a1f0657809d"
     },
     {
       "specId": "light-overlay.layout.subject_with_top_label",
@@ -7526,7 +7561,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7535,7 +7570,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "a2ffe16fb6e76c292706327d0b5ea983345438c77d3bb143311240316c59de5e"
+      "semanticDigest": "48f89a78dd72cf112119cc44602fc1feca6c59c38c34f7515e24879f46d4e1d0"
     },
     {
       "specId": "light-overlay.layout.subtitle_safe",
@@ -7566,7 +7601,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7575,7 +7610,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "78439abfc15f4251071cbb7878915ee31daceef6667d215af819dc1ac81c9b6c"
+      "semanticDigest": "6a51294b274da44d6bfb02b6c76f3dc36e5768d65c400be1ca732de4b10c6476"
     },
     {
       "specId": "light-overlay.layout.subtitle_safe_two_lines",
@@ -7606,7 +7641,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7615,7 +7650,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "23fe1c3ce0bf262db011fbb8813a3a8d02fc6a1aff7110c17b76df5fe0cf0119"
+      "semanticDigest": "d33903cef5b3567cddb25b0285c6d2f2b3a60e80a4b138dfa8361bb1019c238e"
     },
     {
       "specId": "light-overlay.layout.terminal_center",
@@ -7646,7 +7681,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7655,7 +7690,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "2d04c76e170e3182a5804716c102d623472ba9c7494c48416d8cb35a307e4731"
+      "semanticDigest": "aace2d048290daa58b394669df7fa2c0ae4f111843629f75777efa40861f88c1"
     },
     {
       "specId": "light-overlay.layout.two_panes",
@@ -7687,7 +7722,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7696,7 +7731,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "273c6470215338775a0879d8c52d67d19bb50e643dea9c532bd31239231dd8c5"
+      "semanticDigest": "96ff6e9e4a2be229d43d07b6cdb3eb89443d9e8a590a76cdacaa4eeaf63bdf32"
     },
     {
       "specId": "light-overlay.layout.two_panes_subject_aware",
@@ -7728,7 +7763,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7737,7 +7772,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "80694d4f86b9bba72dd67c4296df9e8600aef204602b253ea4725445e2c69a21"
+      "semanticDigest": "0f3bd93ef8ab81b9893d2ca65bd89bdfea826509d71017cb3db134947d37b516"
     },
     {
       "specId": "light-overlay.layout.two_role_relationship",
@@ -7769,7 +7804,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7778,7 +7813,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "668bd74da9cf54b13715167da60bdff85a86246d96da88e90039404c08f68391"
+      "semanticDigest": "451de4925dddfd441d9a766dfe5137450750358bc61f1cb87cc51ebfc6dcf614"
     },
     {
       "specId": "light-overlay.layout.wide_to_medium_or_close",
@@ -7810,7 +7845,7 @@
         "entry": "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
         "hold": "所有内容区都完整可读，横竖版独立排版。",
         "exit": "切回主画面前3–5帧完成附加元素清场。",
-        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。"
+        "sfx": "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。"
       },
       "typography": {
         "subtitle": "方正粗金陵简体",
@@ -7819,7 +7854,7 @@
         "cover": "Aa封神榜书",
         "silentFallback": "forbidden"
       },
-      "semanticDigest": "f7965c7d033e568b14bde556d4a414f804dce53b1a63da8c4db1d1990c418ab1"
+      "semanticDigest": "6bd4389bddfff2639b20a2e0b2654c9c7d70b5f5dfb309b69d6f6a70fc0ca07d"
     },
     {
       "specId": "light-overlay.motion.a_then_b",
@@ -10897,5 +10932,5 @@
       "semanticDigest": "8ba93b41995990dd77d326bc192f9c27791a348a32b49971aaeace11087bc587"
     }
   ],
-  "digest": "932cc5ee160f7cd9deafce436aac62d07ec3fac81cd9db41c278e68b75b5a688"
+  "digest": "fe7087a1ed13123e6d42bc44eac56a5bd9397dbaad8d7f543e49f105a7f0120c"
 }

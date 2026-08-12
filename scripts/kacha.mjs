@@ -23,12 +23,14 @@ function usage() {
       + "  kacha.mjs styleframe render --scene ID --output FILE [options]\n"
       + "  kacha.mjs beauty validate|show|authorize|render|qc [options]\n"
       + "  kacha.mjs effects list|show|validate|preview [options]\n"
-      + "  kacha.mjs sfx validate|import [options]\n"
+      + "  kacha.mjs sfx validate|import|align [options]\n"
       + "  kacha.mjs bgm plan|validate [options]\n"
       + "  kacha.mjs facefusion probe|profiles|template|validate|run [options]\n"
       + "  kacha.mjs templates validate|list|show|resolve [options]\n"
       + "  kacha.mjs contracts validate|list|show|resolve [options]\n"
       + "  kacha.mjs visual-capabilities template|validate [options]\n"
+      + "  kacha.mjs production-quality template|validate|anti-web-audit [options]\n"
+      + "  kacha.mjs cover template|validate|prompt [options]\n"
       + "  kacha.mjs fonts scan|validate|resolve|preview [options]\n"
       + "  kacha.mjs captions plan|validate|render [options]\n"
       + "  kacha.mjs breathing plan|validate|render [options]\n"
@@ -140,6 +142,8 @@ const delegatedCommands = {
   templates: "kacha_templates.mjs",
   contracts: "kacha_motion_contracts.mjs",
   "visual-capabilities": "visual_capability_plan.mjs",
+  "production-quality": "production_quality_contract.mjs",
+  cover: "kacha_cover.mjs",
   fonts: "kacha_fonts.mjs",
   captions: "caption_layout.mjs",
   breathing: "visual_breathing.mjs",
@@ -556,6 +560,28 @@ function gatePlanV3() {
   ]);
 }
 
+function validateProductionQuality(stage) {
+  const required = project.productionQualityV1?.required === true;
+  const entry = project.plans?.productionQuality;
+  if (!entry && required) {
+    console.error(`生产质量${stage}门禁缺少 plans.productionQuality`);
+    process.exit(1);
+  }
+  if (!entry) return;
+  const contract = requireProjectPath(
+    projectFile,
+    entry,
+    "plans.productionQuality",
+  );
+  invoke("production_quality_contract.mjs", [
+    "validate",
+    "--contract",
+    contract,
+    "--stage",
+    stage,
+  ]);
+}
+
 function identityBindsFile(identity, file) {
   return Boolean(
     identity?.path
@@ -654,6 +680,7 @@ function validateV6Evidence(stage) {
 function gatePlan() {
   if (project.schemaVersion === "3.0") gatePlanV3();
   else gatePlanV2();
+  validateProductionQuality("plan");
   validateV6Evidence("plan");
 }
 
@@ -716,6 +743,7 @@ if (command === "gate-plan") {
       invoke("validate_generated_shot_plan.mjs", [plan, "--for-execution"]);
     }
   }
+  validateProductionQuality("execution");
   validateV6Evidence("render");
 } else if (command === "qc") {
   if (project.schemaVersion === "3.0") {
@@ -737,6 +765,7 @@ if (command === "gate-plan") {
   ]);
 } else if (command === "gate-release") {
   gatePlan();
+  validateProductionQuality("release");
   validateV6Evidence("release");
   if (project.schemaVersion === "3.0") {
     const context = requireProjectPath(projectFile, project.context, "context");

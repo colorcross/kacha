@@ -400,6 +400,66 @@ export function validateDesignSystem(bundle) {
       }
     }
   }
+  const antiWeb = capabilityRegistries?.antiWeb;
+  const requiredAntiWebMechanisms = [
+    "clean_a_roll",
+    "camera_reframe",
+    "real_evidence_cutaway",
+    "foreground_occlusion",
+    "boundaryless_typography",
+    "bounded_information_surface",
+  ];
+  const requiredShowIds = [
+    "tool-share",
+    "book-talk",
+    "infinite-game",
+    "very-ai",
+    "casual-chat",
+  ];
+  const forbiddenWebPatterns = [
+    "web_hero",
+    "centered_modal",
+    "dashboard_grid",
+    "card_wall",
+    "card_to_card_transition",
+  ];
+  if (
+    antiWeb?.schemaVersion !== "1.0"
+    || antiWeb?.id !== "xingzhe-cinematic-editorial"
+    || antiWeb?.parentProfile !== "xingzhe"
+    || !Array.isArray(antiWeb?.selectionOrder)
+    || antiWeb.selectionOrder.at(-1) !== "bounded_information_surface"
+    || !requiredAntiWebMechanisms.every((item) => antiWeb?.cinematicMechanisms?.includes(item))
+    || !forbiddenWebPatterns.every((item) => antiWeb?.forbiddenPatterns?.includes(item))
+    || antiWeb?.globalRules?.realPictureBeforeGraphicContainer !== true
+    || antiWeb?.globalRules?.boundarylessBeforeBounded !== true
+    || antiWeb?.globalRules?.noAdjacentBoundedSurfaces !== true
+    || antiWeb?.globalRules?.staticPeakFrameIsNotAcceptance !== true
+    || !requiredShowIds.every((showId) => isObject(antiWeb?.showBudgets?.[showId]))
+    || !requiredVisualLanguageIds.every(
+      (styleId) => Array.isArray(antiWeb?.styleGrammarMechanisms?.[styleId])
+        && antiWeb.styleGrammarMechanisms[styleId].length >= 5,
+    )
+  ) {
+    errors.push("antiWeb 必须注册行者风 3.0 的电影化优先级、栏目预算、五风格机制和反网页禁用模式");
+  }
+  for (const showId of requiredShowIds) {
+    const budget = antiWeb?.showBudgets?.[showId];
+    const realPicture = Number(budget?.minimumRealPictureRatio);
+    const bounded = Number(budget?.maximumBoundedSurfaceRatio);
+    if (
+      !Number.isFinite(realPicture)
+      || realPicture < 0.65
+      || realPicture > 1
+      || !Number.isFinite(bounded)
+      || bounded < 0
+      || bounded > 0.25
+      || Number(budget?.maximumDashboardRatio) !== 0
+      || Number(budget?.minimumDistinctMechanismsPer120Seconds) < 3
+    ) {
+      errors.push(`antiWeb.showBudgets.${showId} 未落实真实画面、容器上限、零仪表盘和机制多样性`);
+    }
+  }
   const effectTemplates = capabilityRegistries?.effectTemplates;
   if (
     effectTemplates?.schemaVersion !== "1.0"
@@ -485,11 +545,13 @@ export function validateDesignSystem(bundle) {
     : [];
   if (componentItems.length === 0) errors.push("components.components 不能为空");
   const componentIds = new Set();
+  const componentById = new Map();
   for (const [index, component] of componentItems.entries()) {
     const label = `components[${index}]`;
     if (!ID.test(String(component?.id ?? ""))) errors.push(`${label}.id 格式无效`);
     if (componentIds.has(component?.id)) errors.push(`${label}.id 重复：${component?.id}`);
     componentIds.add(component?.id);
+    componentById.set(component?.id, component);
     for (const key of ["label", "category", "renderer"]) {
       requireString(component?.[key], `${label}.${key}`, errors);
     }
@@ -503,6 +565,26 @@ export function validateDesignSystem(bundle) {
       if (valueAtPath(baseStyle, tokenRef) === undefined) {
         errors.push(`${label}.tokenRefs 不存在：${tokenRef}`);
       }
+    }
+    if (
+      component?.category === "card"
+      && ![
+        "boundaryless_editorial",
+        "boundaryless_progressive",
+        "full_bleed_editorial",
+        "edge_warning",
+        "bounded_source",
+        "split_evidence",
+        "boundaryless_metric",
+      ].includes(component?.presentation)
+    ) {
+      errors.push(`${label}.presentation 必须声明电影化边界策略，不能使用未分类网页卡片`);
+    }
+    if (
+      component?.id === "subject_safe_popup"
+      && component?.presentation !== "boundaryless_dialogue"
+    ) {
+      errors.push(`${label}.presentation 必须使用无容器人物关系回应`);
     }
   }
   for (const [index, component] of componentItems.entries()) {
@@ -540,6 +622,26 @@ export function validateDesignSystem(bundle) {
       if (!componentIds.has(componentId)) {
         errors.push(`${label}.components 不存在：${componentId}`);
       }
+    }
+    const sceneComponents = (scene?.components ?? [])
+      .map((componentId) => componentById.get(componentId))
+      .filter(Boolean);
+    const hasCardOrPopup = sceneComponents.some(
+      (component) => component.category === "card" || component.id === "subject_safe_popup",
+    );
+    if (hasCardOrPopup && scene?.entry === "soft_pop") {
+      errors.push(`${label} 不能把 soft_pop 作为卡片或回应模块的默认入场`);
+    }
+    if (scene?.layout === "subject_left_card_right") {
+      errors.push(`${label} 禁止把“左人右卡”作为正式场景构图`);
+    }
+    if (
+      ["info_single", "info_bullets", "info_three_reasons", "info_definition", "info_warning"]
+        .includes(scene?.id)
+      && ["full_screen", "full_screen_or_subject_safe", "subject_safe_side", "subject_safe_right"]
+        .includes(scene?.layout)
+    ) {
+      errors.push(`${label} 高频解释场景必须优先使用负空间、编辑边缘或真实画面关系`);
     }
   }
   for (const [index, scene] of sceneItems.entries()) {

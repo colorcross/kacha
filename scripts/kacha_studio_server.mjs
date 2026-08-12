@@ -360,6 +360,13 @@ async function handleApi(request, response, url, port) {
     if (!body.scriptPath && !body.topic) {
       throw new Error("请提供脚本路径或中心选题");
     }
+    const catalog = loadProductionCatalog();
+    const visualLanguageIds = new Set(
+      catalog.visualLanguages.map((language) => language.id),
+    );
+    if (!visualLanguageIds.has(body.style)) {
+      throw new Error(`内容项目视觉语言不存在或不是当前五风格权威：${body.style}`);
+    }
     json(response, 201, initializeProject({
       script: body.scriptPath || null,
       topic: body.topic || null,

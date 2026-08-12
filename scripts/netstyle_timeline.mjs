@@ -14,6 +14,7 @@ import {
 } from "./kacha_utils.mjs";
 import { resolveDesignSystem } from "./design_system.mjs";
 import { loadKachaConfig } from "./kacha_config.mjs";
+import { measureSfxPeak } from "./sfx_peak_alignment.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillDirectory = path.resolve(scriptDirectory, "..");
@@ -303,7 +304,24 @@ function buildPlan({ input, transcript, mask, output }) {
       title: String(cue.display?.title ?? shortTitle(cue)),
       subtitle: String(cue.display?.subtitle ?? cue.text).slice(0, 36),
       items: Array.isArray(cue.display?.items) ? cue.display.items : items,
+      itemCues: Array.isArray(cue.display?.itemCues)
+        ? cue.display.itemCues.map((item) => ({
+            text: String(item?.text ?? item?.label ?? "").trim(),
+            revealAt: Number(item?.revealAt),
+          }))
+        : [],
     };
+    if (effect.id === "parallel_progressive_row" && display.itemCues.length < 2) {
+      if (explicit) {
+        throw new Error(`${cue.id} 的逐项清单必须提供 display.itemCues 语义触发`);
+      }
+      dropped.push({
+        cueId: cue.id,
+        effectId: effect.id,
+        reason: "缺少逐项语义触发，禁止按时长平均弹出",
+      });
+      continue;
+    }
     const eventFrames = endFrame - startFrame;
     const peakFrame = Math.min(
       endFrame - 1,
@@ -467,6 +485,25 @@ function validatePlan(planFile) {
     if (event.startFrame < previousEndFrame) errors.push(`${label} 与上一主效果重叠`);
     previousEndFrame = Math.max(previousEndFrame, event.endFrame ?? -1);
     if (!event.display?.title) errors.push(`${label}.display.title 缺失`);
+    if (event.effectId === "parallel_progressive_row") {
+      const itemCues = event.display?.itemCues;
+      if (!Array.isArray(itemCues) || itemCues.length < 2) {
+        errors.push(`${label}.display.itemCues 至少需要两个逐项语义触发`);
+      } else {
+        let previousRevealAt = -1;
+        for (const [cueIndex, cue] of itemCues.entries()) {
+          if (!cue?.text) errors.push(`${label}.display.itemCues[${cueIndex}].text 缺失`);
+          if (!Number.isFinite(cue?.revealAt) || cue.revealAt < 0 || cue.revealAt > 0.92) {
+            errors.push(`${label}.display.itemCues[${cueIndex}].revealAt 必须为 0–0.92`);
+          }
+          if (cue.revealAt <= previousRevealAt) {
+            errors.push(`${label}.display.itemCues.revealAt 必须严格递增`);
+            break;
+          }
+          previousRevealAt = cue.revealAt;
+        }
+      }
+    }
     if (!Array.isArray(event.qc) || event.qc.length === 0) errors.push(`${label}.qc 缺失`);
     if (maskRequiredEffects.has(event.effectId)) {
       const mask = plan.resources?.mask;
@@ -521,32 +558,8 @@ function resolveSfx(trigger, root) {
   ].find((candidate) => fs.existsSync(candidate)) ?? null;
 }
 
-const sfxPeakCache = new Map();
 function sfxPeakSeconds(file) {
-  if (sfxPeakCache.has(file)) return sfxPeakCache.get(file);
-  const measurement = run("ffmpeg", [
-    "-hide_banner", "-loglevel", "info",
-    "-i", file,
-    "-af",
-    "asetnsamples=n=1024:p=0,astats=metadata=1:reset=1,ametadata=print",
-    "-f", "null", "-",
-  ]);
-  const lines = String(measurement.stderr ?? "").split(/\r?\n/);
-  let time = 0;
-  let bestTime = 0;
-  let bestLevel = -Infinity;
-  for (const line of lines) {
-    const timeMatch = /pts_time:([0-9.]+)/.exec(line);
-    if (timeMatch) time = Number(timeMatch[1]);
-    const peakMatch = /lavfi\.astats\.Overall\.Peak_level=([-+0-9.]+)/.exec(line);
-    if (peakMatch && Number(peakMatch[1]) > bestLevel) {
-      bestLevel = Number(peakMatch[1]);
-      bestTime = time;
-    }
-  }
-  const value = Number.isFinite(bestLevel) ? bestTime : 0;
-  sfxPeakCache.set(file, value);
-  return value;
+  return measureSfxPeak(file).measuredPeakOffsetSeconds;
 }
 
 function renderTimeline(planFile, output) {

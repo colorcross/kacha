@@ -20,11 +20,13 @@ const rest = args.slice(1);
 const scripts = {
   validate: "validate_sfx_library.mjs",
   import: "import_private_sfx.mjs",
+  align: "align_sfx_peak.mjs",
 };
 if (!Object.hasOwn(scripts, action)) {
   console.error(
     "用法：kacha.mjs sfx validate [manifest.json] [options]\n"
-      + "      kacha.mjs sfx import --library DIR --mapping FILE [--dry-run]",
+      + "      kacha.mjs sfx import --library DIR --mapping FILE [--dry-run]\n"
+      + "      kacha.mjs sfx align --file FILE --target SECONDS [--fps 25] [--output FILE]",
   );
   process.exit(2);
 }

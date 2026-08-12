@@ -105,41 +105,21 @@ function componentReference(component, resolved) {
 }
 
 function sceneReference(scene, resolved) {
-  const states = ["entry", "peak", "exit"];
-  const frames = states.map((state) => {
-    const artifact = renderSceneArtifact(scene, resolved, {
-      width: 960,
-      height: 540,
-      state,
-      showGuides: false,
-    });
-    const errors = validateRenderArtifact(
-      artifact,
-      [scene.id, ...scene.components],
-    );
-    if (errors.length > 0) throw new Error(`${scene.id}.${state}: ${errors.join("; ")}`);
-    return artifact.svg;
+  const artifact = renderSceneArtifact(scene, resolved, {
+    width: BOARD_WIDTH,
+    height: BOARD_HEIGHT,
+    state: "peak",
+    showGuides: false,
   });
-  const xPositions = [94, 464, 834];
-  const body = frames.map((svg, index) => `
-    ${embeddedPreview(svg, xPositions[index], 226, 352, 198, 16)}
-    <circle cx="${xPositions[index] + 18}" cy="202" r="5" fill="${[
-      resolved.style.palette.accentSecondary,
-      resolved.style.palette.accent,
-      resolved.style.palette.accentSignal ?? "#F05A47",
-    ][index]}"/>
-    <text x="${xPositions[index] + 32}" y="208" font-family="Avenir Next, sans-serif" font-size="14" font-weight="700" letter-spacing="2" fill="${resolved.style.palette.ink}">${states[index].toUpperCase()}</text>
-  `).join("");
-  const detail = `<text x="94" y="476" font-family="PingFang SC, sans-serif" font-size="18" font-weight="600" fill="${resolved.style.palette.ink}">${escapeXml(scene.trigger)}</text>
-    <text x="94" y="515" font-family="Avenir Next, PingFang SC, sans-serif" font-size="14" fill="${resolved.style.palette.inkSecondary ?? resolved.style.palette.secondaryTextOnLight ?? resolved.style.palette.ink}">布局 ${escapeXml(scene.layout)}　·　进入 ${escapeXml(scene.entry)}　·　退出 ${escapeXml(scene.exit)}</text>
-    <text x="94" y="550" font-family="Avenir Next, PingFang SC, sans-serif" font-size="14" fill="${resolved.style.palette.inkSecondary ?? resolved.style.palette.secondaryTextOnLight ?? resolved.style.palette.ink}">组件 ${escapeXml(scene.components.join("  /  "))}</text>`;
-  return referenceShell(resolved, {
-    eyebrow: `SCENE · ${scene.category.toUpperCase()}`,
-    title: scene.label,
-    subtitle: `${scene.id} · fallback ${scene.fallback}`,
-    body: `${body}${detail}`,
-    note: "场景分镜参考 · 真实执行仍必须由语义、节奏与安全区触发",
-  });
+  const errors = validateRenderArtifact(
+    artifact,
+    [scene.id, ...scene.components],
+  );
+  if (errors.length > 0) throw new Error(`${scene.id}.peak: ${errors.join("; ")}`);
+  return artifact.svg.replace(
+    "<svg ",
+    `<svg data-reference-mode="full_bleed_video_peak" data-trigger="${escapeXml(scene.trigger)}" `,
+  );
 }
 
 function layoutGeometry(template, resolved) {
@@ -315,7 +295,7 @@ function galleryHtml(manifest) {
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>行者风 2.0 · 效果参考图库</title>
+<title>行者风 3.0 · 电影化效果参考图库</title>
 <style>
 :root{--bg:#f2efe8;--surface:#fbf8f1;--ink:#25282b;--muted:#6b7175;--accent:#e98a2b;--signal:#f05a47;--line:#ddd7cd}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Avenir Next","PingFang SC",sans-serif}
@@ -325,7 +305,7 @@ button,input{border:1px solid var(--line);background:var(--surface);color:var(--
 main{max-width:1500px;margin:auto;padding:36px max(5vw,32px) 100px}.count{color:var(--muted);margin-bottom:26px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:22px}.card{background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 12px 30px rgba(28,30,32,.06)}.card img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;background:#ebe7df}.meta{padding:16px 18px 18px}.kind{font-size:11px;letter-spacing:.14em;color:var(--accent);font-weight:800}.meta h2{font-size:18px;margin:8px 0 4px}.meta p{font-size:13px;color:var(--muted);margin:0;word-break:break-all}
 @media(max-width:680px){header{padding-top:46px}.grid{grid-template-columns:1fr}.tools{position:static}input{width:100%}}
 </style></head>
-<body><header><div class="mark"></div><h1>行者风 2.0<br/>效果参考图库</h1><p>不是一套“随便挑效果”的模板墙，而是咔嚓策划、执行和返工共同使用的视觉合同。每张图都来自当前设计注册表，并锁定当前设计摘要。</p></header>
+<body><header><div class="mark"></div><h1>行者风 3.0<br/>电影化效果参考图库</h1><p>场景类图片直接展示全画幅视频峰值，不再把目标画面包进网页式文档卡。参数说明留在图库界面之外；正式验收仍以真实素材、正常速度预览和反网页审计为准。</p></header>
 <div class="tools"><button class="active" data-kind="all">全部</button><button data-kind="component">组件</button><button data-kind="scene">场景</button><button data-kind="renderer">渲染器</button><button data-kind="layout">布局</button><button data-kind="motion">动效</button><input id="search" placeholder="搜索名称、ID、分类"/></div>
 <main><div class="count" id="count"></div><div class="grid" id="grid"></div></main>
 <script>
@@ -343,6 +323,14 @@ export function generateDesignReferenceGallery({
   const destination = path.resolve(outputDirectory);
   if (fs.existsSync(destination) && !overwrite) {
     throw new Error(`参考图库已存在，使用 --overwrite 明确覆盖：${destination}`);
+  }
+  if (fs.existsSync(destination) && overwrite) {
+    for (const category of ["components", "scenes", "renderers", "layouts", "motions"]) {
+      fs.rmSync(path.join(destination, category), { recursive: true, force: true });
+    }
+    for (const generatedFile of ["manifest.json", "index.html", "README.md"]) {
+      fs.rmSync(path.join(destination, generatedFile), { force: true });
+    }
   }
   fs.mkdirSync(destination, { recursive: true });
   const entries = [];
@@ -364,6 +352,7 @@ export function generateDesignReferenceGallery({
         label: item.label ?? item.id,
         category: item.category ?? item.family ?? item.adapter ?? null,
         path: relativePath,
+        referenceMode: kind === "scene" ? "full_bleed_video_peak" : "design_system_reference",
         sha256: sha256File(file),
       });
     }
@@ -395,9 +384,9 @@ export function generateDesignReferenceGallery({
   writeFile(path.join(destination, "index.html"), galleryHtml(manifest));
   writeFile(
     path.join(destination, "README.md"),
-    `# 行者风 2.0 效果参考图库
+    `# 行者风 3.0 电影化效果参考图库
 
-本目录由当前咔嚓设计系统自动生成，用于策划、执行、返工和验收共同对齐，不是可脱离语义随意套用的模板包。
+本目录由当前咔嚓设计系统自动生成，用于策划、执行、返工和验收共同对齐，不是可脱离语义随意套用的模板包。场景图片使用全画幅视频峰值，不再把目标画面嵌入网页式说明卡；进入、停稳、退出与声音仍须通过正常速度短预览验证。
 
 - 组件：${counts.component}
 - 场景：${counts.scene}
@@ -412,7 +401,7 @@ export function generateDesignReferenceGallery({
 
 \`\`\`bash
 node scripts/kacha.mjs design gallery \\
-  --output design/reference-gallery/xingzhe-v2 \\
+  --output design/reference-gallery/xingzhe-v3 \\
   --overwrite
 \`\`\`
 `,

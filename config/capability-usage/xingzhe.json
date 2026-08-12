@@ -4,23 +4,24 @@
   "profile": "expressive-balanced-v3",
   "productionMotionPolicy": "../effects/production-motion-policy.json",
   "defaultShow": "tool-share",
-  "description": "行者风 2.0 的可感知能力使用策略。统一视觉基因，按栏目气质分别控制效果密度，所有能力仍由真实语义触发。",
+  "description": "行者风 3.0 的可感知能力使用策略。以真人、真实空间和证据为主体，按栏目气质控制效果密度，并阻止卡片墙、仪表盘和重复网页构图。",
+  "antiWebPolicy": "../design-system/anti-web.json",
   "minimumDurationSeconds": 45,
   "families": {
     "opening": {"minimumPerVideo": 1, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
-    "expressive_transition": {"minimumPerVideo": 2, "minimumPerMinute": 0.3, "maximumPerMinute": 0.8},
-    "supporting_media": {"minimumPerVideo": 2, "minimumPerMinute": 0.3, "maximumPerMinute": 0.8},
-    "pip": {"minimumPerVideo": 1, "minimumPerMinute": 0.35, "maximumPerMinute": 0.8},
-    "mask_depth": {"minimumPerVideo": 1, "minimumPerMinute": 0.15, "maximumPerMinute": 0.4},
-    "semantic_motion": {"minimumPerVideo": 3, "minimumPerMinute": 0.75, "maximumPerMinute": 1.5},
-    "gaze_guidance": {"minimumPerVideo": 1, "minimumPerMinute": 0.25, "maximumPerMinute": 0.65},
-    "spatial_depth": {"minimumPerVideo": 1, "minimumPerMinute": 0.15, "maximumPerMinute": 0.4},
-    "keyframe_variation": {"minimumPerVideo": 2, "minimumPerMinute": 0.6, "maximumPerMinute": 1.2},
-    "parallel_layout": {"minimumPerVideo": 1, "minimumPerMinute": 0.25, "maximumPerMinute": 0.6},
-    "caption_relation": {"minimumPerVideo": 2, "minimumPerMinute": 0.6, "maximumPerMinute": 1.2},
-    "oversize_background_word": {"minimumPerVideo": 1, "minimumPerMinute": 0.25, "maximumPerMinute": 0.5},
-    "person_depth_text": {"minimumPerVideo": 1, "minimumPerMinute": 0.12, "maximumPerMinute": 0.3},
-    "visual_breathing": {"minimumPerVideo": 2, "minimumPerMinute": 0.6, "maximumPerMinute": 1.2}
+    "expressive_transition": {"minimumPerVideo": 0, "minimumPerMinute": 0.12, "maximumPerMinute": 0.8},
+    "supporting_media": {"minimumPerVideo": 1, "minimumPerMinute": 0.2, "maximumPerMinute": 0.8},
+    "pip": {"minimumPerVideo": 0, "minimumPerMinute": 0.08, "maximumPerMinute": 0.8},
+    "mask_depth": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.4},
+    "semantic_motion": {"minimumPerVideo": 1, "minimumPerMinute": 0.3, "maximumPerMinute": 1.5},
+    "gaze_guidance": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.65},
+    "spatial_depth": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.4},
+    "keyframe_variation": {"minimumPerVideo": 1, "minimumPerMinute": 0.25, "maximumPerMinute": 1.2},
+    "parallel_layout": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.6},
+    "caption_relation": {"minimumPerVideo": 1, "minimumPerMinute": 0.25, "maximumPerMinute": 1.2},
+    "oversize_background_word": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.5},
+    "person_depth_text": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.3},
+    "visual_breathing": {"minimumPerVideo": 1, "minimumPerMinute": 0.3, "maximumPerMinute": 1.2}
   },
   "resourceRules": {
     "supportingMediaAlternatives": ["project_media", "external_media", "ai_generated_media", "hyperframes"],
@@ -29,7 +30,7 @@
     "pipInformationDifferenceRequired": true
   },
   "diversity": {
-    "minimumDistinctFamilies": 10,
+    "minimumDistinctFamilies": 6,
     "maximumSingleImplementationShare": 0.35,
     "sameImplementationMinimumGapSeconds": 12
   },
@@ -50,11 +51,11 @@
     "tool-share": {
       "profile": "tool-evidence-balanced",
       "description": "实、快、可复现；界面、证据和结果优先。",
-      "diversity": {"minimumDistinctFamilies": 8},
+      "diversity": {"minimumDistinctFamilies": 6},
       "longFormRequirements": {
-        "captionRelationLayouts": ["logic_emphasis_inline", "left_right_contrast", "top_bottom_hierarchy"],
-        "minimumPipLayoutKinds": 2,
-        "minimumTransitionKinds": 2
+        "captionRelationLayouts": ["logic_emphasis_inline", "left_right_contrast"],
+        "minimumPipLayoutKinds": 1,
+        "minimumTransitionKinds": 1
       }
     },
     "book-talk": {
@@ -124,7 +125,7 @@
         "caption_relation": {"minimumPerVideo": 2, "minimumPerMinute": 0.7, "maximumPerMinute": 1.4},
         "visual_breathing": {"minimumPerVideo": 2, "minimumPerMinute": 0.55, "maximumPerMinute": 1.1}
       },
-      "diversity": {"minimumDistinctFamilies": 9},
+      "diversity": {"minimumDistinctFamilies": 7},
       "longFormRequirements": {
         "captionRelationLayouts": ["logic_emphasis_inline", "left_right_contrast", "top_bottom_hierarchy"],
         "minimumPipLayoutKinds": 2,
@@ -135,19 +136,19 @@
       "profile": "casual-conversational-breathing",
       "description": "松、真、有判断；保留自然停顿和表情，以少量清楚的结构提示、状态变化和呼吸构图服务闲聊主线。",
       "families": {
-        "expressive_transition": {"minimumPerVideo": 1, "minimumPerMinute": 0.15, "maximumPerMinute": 0.5},
-        "supporting_media": {"minimumPerVideo": 1, "minimumPerMinute": 0.18, "maximumPerMinute": 0.6},
+        "expressive_transition": {"minimumPerVideo": 1, "minimumPerMinute": 0.1, "maximumPerMinute": 0.5},
+        "supporting_media": {"minimumPerVideo": 1, "minimumPerMinute": 0.12, "maximumPerMinute": 0.6},
         "pip": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
         "mask_depth": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.18},
-        "semantic_motion": {"minimumPerVideo": 1, "minimumPerMinute": 0.3, "maximumPerMinute": 0.8},
+        "semantic_motion": {"minimumPerVideo": 1, "minimumPerMinute": 0.2, "maximumPerMinute": 0.8},
         "gaze_guidance": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.3},
         "spatial_depth": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
-        "keyframe_variation": {"minimumPerVideo": 1, "minimumPerMinute": 0.25, "maximumPerMinute": 0.65},
+        "keyframe_variation": {"minimumPerVideo": 1, "minimumPerMinute": 0.15, "maximumPerMinute": 0.65},
         "parallel_layout": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.25},
-        "caption_relation": {"minimumPerVideo": 1, "minimumPerMinute": 0.3, "maximumPerMinute": 0.7},
+        "caption_relation": {"minimumPerVideo": 1, "minimumPerMinute": 0.2, "maximumPerMinute": 0.7},
         "oversize_background_word": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.18},
         "person_depth_text": {"minimumPerVideo": 0, "minimumPerMinute": 0, "maximumPerMinute": 0.12},
-        "visual_breathing": {"minimumPerVideo": 1, "minimumPerMinute": 0.35, "maximumPerMinute": 0.8}
+        "visual_breathing": {"minimumPerVideo": 1, "minimumPerMinute": 0.2, "maximumPerMinute": 0.8}
       },
       "resourceRules": {
         "minimumSupportingMediaKinds": 1,

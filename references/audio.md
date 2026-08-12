@@ -283,9 +283,13 @@ QC 对自适应项目只在计划中的音乐/对白重叠区间计算相对响�
 - 用户点名本地音效时，读取 `references/sfx-library.md`，按 title、asset ID 和 SHA-256 精确命中；
 - 打字效果的每个键音绑定字符实际落位帧，不能把一段连续键盘声铺在整句话下；
 - “相似”“差不多”的音效不是可接受替代；精确素材不可用时宁可不加并报告；
+- 先记录 `targetLandingSeconds`，再运行
+  `kacha sfx align --file FILE --target SECONDS --fps FPS`。工具解码 48 kHz 单声道，
+  以 20 ms RMS 窗实测文件内部峰值并反推 `fileStartSeconds`；禁止把文件起点当成
+  峰值时间。最终 Timeline IR 会再次测量并把结果冻结进 Render Graph；
 
 - 低于人声，但最终成片中必须真实可感知；
-- 与动作/文字误差通常不超过 1–2 帧；
+- 与动作/文字误差不超过 1 帧；
 - 必要时短暂闪避 BGM；
 - 每个语义节拍通常只有一个主要声音事件；
 - 不连续轰炸，不用大音量制造重要感。

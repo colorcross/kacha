@@ -1,0 +1,181 @@
+{
+  "schemaVersion": "1.0",
+  "id": "xingzhe-cinematic-editorial",
+  "parentProfile": "xingzhe",
+  "version": "3.0.0",
+  "intent": "把真人、真实空间和可核验证据作为画面主体；图形只改变观看方式，不把视频组织成网页组件。",
+  "selectionOrder": [
+    "camera_reframe",
+    "real_evidence_cutaway",
+    "mask_or_foreground_occlusion",
+    "boundaryless_typography",
+    "picture_relationship",
+    "bounded_information_surface"
+  ],
+  "cinematicMechanisms": [
+    "clean_a_roll",
+    "camera_reframe",
+    "detail_insert",
+    "real_evidence_cutaway",
+    "screen_evidence_focus",
+    "mask_reveal",
+    "foreground_occlusion",
+    "subject_depth_text",
+    "boundaryless_typography",
+    "picture_in_picture",
+    "split_relationship",
+    "reaction_insert",
+    "match_cut",
+    "sound_bridge",
+    "spatial_annotation",
+    "bounded_information_surface"
+  ],
+  "sourceTypes": [
+    "a_roll",
+    "real_world_footage",
+    "project_evidence",
+    "screen_recording",
+    "licensed_external_media",
+    "disclosed_generated_illustration",
+    "typography_only"
+  ],
+  "containerTypes": [
+    "none",
+    "boundaryless",
+    "source_plate",
+    "comparison_surface",
+    "progressive_list_surface",
+    "card",
+    "popup",
+    "grid",
+    "dashboard"
+  ],
+  "boundedSurfaceReasons": [
+    "source_integrity",
+    "dense_reading",
+    "comparison_structure",
+    "multi_item_progression",
+    "privacy_boundary"
+  ],
+  "forbiddenPatterns": [
+    "web_hero",
+    "centered_modal",
+    "sidebar_panel",
+    "pill_navigation",
+    "dashboard_grid",
+    "browser_chrome_decoration",
+    "uniform_three_card_row",
+    "full_width_ui_bar",
+    "card_wall",
+    "card_to_card_transition"
+  ],
+  "globalRules": {
+    "dialogueOrActionRemainsPrimaryClock": true,
+    "realPictureBeforeGraphicContainer": true,
+    "boundarylessBeforeBounded": true,
+    "noAdjacentBoundedSurfaces": true,
+    "compositionCooldownSeconds": 45,
+    "maximumSingleBoundedSurfaceSeconds": 8,
+    "maximumRoundedContainerAreaRatio": 0.34,
+    "maximumSimultaneousReadingZones": 3,
+    "minimumCleanReturnSecondsAfterBoundedSurface": 1.2,
+    "sameMechanismMaximumShare": 0.35,
+    "requireOneDominantMotionPerBeat": true,
+    "requireNormalSpeedRepresentativePreview": true,
+    "staticPeakFrameIsNotAcceptance": true
+  },
+  "showBudgets": {
+    "tool-share": {
+      "minimumRealPictureRatio": 0.68,
+      "maximumBoundedSurfaceRatio": 0.22,
+      "maximumDashboardRatio": 0,
+      "minimumDistinctMechanismsPer120Seconds": 5
+    },
+    "book-talk": {
+      "minimumRealPictureRatio": 0.72,
+      "maximumBoundedSurfaceRatio": 0.16,
+      "maximumDashboardRatio": 0,
+      "minimumDistinctMechanismsPer120Seconds": 3
+    },
+    "infinite-game": {
+      "minimumRealPictureRatio": 0.85,
+      "maximumBoundedSurfaceRatio": 0.1,
+      "maximumDashboardRatio": 0,
+      "minimumDistinctMechanismsPer120Seconds": 3
+    },
+    "very-ai": {
+      "minimumRealPictureRatio": 0.7,
+      "maximumBoundedSurfaceRatio": 0.2,
+      "maximumDashboardRatio": 0,
+      "minimumDistinctMechanismsPer120Seconds": 5
+    },
+    "casual-chat": {
+      "minimumRealPictureRatio": 0.78,
+      "maximumBoundedSurfaceRatio": 0.12,
+      "maximumDashboardRatio": 0,
+      "minimumDistinctMechanismsPer120Seconds": 3
+    }
+  },
+  "styleGrammarMechanisms": {
+    "xingzhe-light-overlay": [
+      "camera_reframe",
+      "boundaryless_typography",
+      "real_evidence_cutaway",
+      "detail_insert",
+      "match_cut"
+    ],
+    "xingzhe-spatial-lightpath": [
+      "spatial_annotation",
+      "foreground_occlusion",
+      "mask_reveal",
+      "subject_depth_text",
+      "camera_reframe"
+    ],
+    "xingzhe-humor-comic": [
+      "reaction_insert",
+      "detail_insert",
+      "match_cut",
+      "boundaryless_typography",
+      "clean_a_roll"
+    ],
+    "xingzhe-pixel-editorial": [
+      "screen_evidence_focus",
+      "boundaryless_typography",
+      "detail_insert",
+      "split_relationship",
+      "clean_a_roll"
+    ],
+    "xingzhe-dark-tech": [
+      "real_evidence_cutaway",
+      "mask_reveal",
+      "foreground_occlusion",
+      "screen_evidence_focus",
+      "clean_a_roll"
+    ]
+  },
+  "auditEvidence": {
+    "requiredEventFields": [
+      "id",
+      "semanticBeatId",
+      "startSeconds",
+      "endSeconds",
+      "trigger",
+      "mechanism",
+      "sourceType",
+      "containerType",
+      "compositionSignature",
+      "styleId",
+      "simplerAlternative"
+    ],
+    "boundedSurfaceAdditionalFields": [
+      "boundedSurfaceReason",
+      "containerAreaRatio",
+      "cleanReturnSeconds"
+    ],
+    "requiredReviewFields": [
+      "normalSpeedPreview",
+      "phoneSizeReview",
+      "webLikenessReview"
+    ]
+  }
+}

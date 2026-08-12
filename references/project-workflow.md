@@ -111,6 +111,14 @@ node scripts/kacha.mjs gate-release PROJECT.json
 视频编码。`qc` 只完成可自动化的技术检查，不能替代正常速度通看。
 `gate-release` 同时要求真实文件哈希、技术 QC 和人工审片清单。
 
+当前 `kacha start` 还会生成 `production-quality-contract.json`。它把多轮返工中
+最容易反复出现的问题合并为一份跨阶段合同：禁止半句话、枚举全部最终连接点、
+强制唯一开场、清单逐项随口播和独立 SFX、多行字幕按语义逐行出现、人物身后
+仅用短词、PIP 必须有信息差并做进入/停稳/退出三态避碰、外部素材记录语义与
+来源、BGM 随节奏情绪内容变化、电影级 3D 封面使用真人脸与三视图双锚点，发布
+前必须正常速度全片通看。`gate-plan`、`gate-render`、`gate-release` 分别调用
+`plan`、`execution`、`release` 验证，不能用后阶段占位值提前通过。
+
 探索阶段只做独立局部代理：
 
 ```bash

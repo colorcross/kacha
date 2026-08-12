@@ -1,4 +1,4 @@
-# 咔嚓视频设计系统 V1.5
+# 咔嚓视频设计系统 V1.6
 
 > 本文定义“成片内部”的视频设计系统。官网、GitHub、文档和产品界面的品牌
 > 规范另见[产品品牌与官网设计规范](PRODUCT_BRAND_AND_WEBSITE.md)，两者共享
@@ -63,6 +63,7 @@ config/design-system/modes.json
 config/design-system/components.json
 config/design-system/scenes.json
 config/design-system/implementations.json
+config/design-system/anti-web.json
 config/styles/xingzhe.json
 config/effects/z-en-netstyle.json
 config/effects/templates.json
@@ -75,8 +76,8 @@ config/resources/core-catalog.json
 默认 profile 是 `xingzhe`（行者风）。其主字幕与辅字幕使用本地已授权的
 真正金陵体 `方正粗金陵简体 / FZJinLS-B-GB`；正式项目必须冻结字体文件
 SHA-256 与授权证据，不能静默换回替代字体。字体二进制不属于公开设计系统。
-行者风 2.0 的拍摄画面、语义色、渐变、封面人物比例与栏目差异见
-[行者风 2.0 完整实施规范](XINGZHE_STYLE_V2.md)。
+行者风 3.0 的电影化选择顺序、栏目画面预算、反网页门禁与迁移表见
+[行者风 3.0 完整执行合同](XINGZHE_STYLE_V3.md)。V2 仅作历史色彩、拍摄与字体背景说明。
 
 ## 3. 五组模式
 
@@ -182,7 +183,8 @@ showcase 的家族标签、效果名称和固定示例文字。项目在
 `captions plan → validate → render`；排版计划冻结实际字体文件 hash 与项目
 授权记录，前后景布局同时冻结逐帧人物蒙版。
 
-V1.5 把注册表进一步编译为 62 个预制效果模板。模板覆盖开场、转场、语义
+V1.6 把注册表进一步编译为 62 个预制效果模板，并把行者风 3.0 的反网页合同
+纳入解析、预检和生产质量门禁。模板覆盖开场、转场、语义
 画面、贴纸/视线、空间纵深、关键帧、并列句、字幕布局和画面呼吸；每个模板
 统一声明场景、组件、进入/停稳/退出、字体角色、音效触发、人物/字幕/品牌
 安全区、资源槽位、失败条件和回退。23 个公共核心资源包括原创 SVG、品牌、
@@ -216,21 +218,25 @@ node scripts/kacha.mjs design qc \
   --matrix \
   --output /tmp/design-system-qc.json
 node scripts/kacha.mjs design gallery \
-  --output design/reference-gallery/xingzhe-v2 \
+  --output design/reference-gallery/xingzhe-v3 \
+  --overwrite
+node scripts/kacha.mjs design motion-preview \
+  --output design/reference-gallery/xingzhe-v3/normal-speed-previews \
   --overwrite
 node scripts/kacha.mjs design library-qc \
-  --light /path/to/全量效果库_v3_浅暖轻浮层 \
-  --spatial /path/to/全量效果库_v3_空间光路 \
-  --comic /path/to/全量效果库_v4_幽默漫画 \
-  --pixel /path/to/全量效果库_v4_像素风 \
-  --dark /path/to/全量效果库_v5_暗黑科技风 \
+  --light /path/to/全量效果库_行者风3_浅暖轻浮层 \
+  --spatial /path/to/全量效果库_行者风3_空间光路 \
+  --comic /path/to/全量效果库_行者风3_幽默漫画 \
+  --pixel /path/to/全量效果库_行者风3_像素风 \
+  --dark /path/to/全量效果库_行者风3_暗黑科技风 \
   --contracts config/effects/motion-contracts/design-effect-library-v3.json \
   --output /path/to/five-style-qc-report.json
 ```
 
 `library-qc` 是阻断式生产门禁：同一风格内任何未声明家族关系的近似构图、人物
-头脸覆盖、空间近黑块或未允许的精确重复都会失败。当前五库通过报告固化在
-`docs/generated/five-style-library-qc.json`，四项问题计数均为 0。
+头脸覆盖、空间近黑块、未允许的精确重复、旧版产物或清单外孤儿图都会失败；
+manifest 内嵌合同必须与权威注册表逐字段一致。当前五库通过报告固化在
+`docs/generated/five-style-library-qc.json`，全部问题计数均为 0。
 
 效果与资源解析：
 

@@ -21,6 +21,7 @@ import {
   validateRenderArtifact,
 } from "./design_renderers.mjs";
 import { generateDesignReferenceGallery } from "./design_reference_gallery.mjs";
+import { generateDesignMotionPreviews } from "./design_motion_preview.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -49,10 +50,11 @@ if (![
   "render",
   "qc",
   "gallery",
+  "motion-preview",
   "library-qc",
 ].includes(action)) {
   fail(
-    "用法：kacha.mjs design validate|list|show|resolve|preview|render|qc|gallery|library-qc "
+    "用法：kacha.mjs design validate|list|show|resolve|preview|render|qc|gallery|motion-preview|library-qc "
       + "[--kind component|scene|mode|renderer|layout|motion|system] "
       + "[--id ID] [--scene ID]\n"
       + "  kacha.mjs design library-qc --light DIR --spatial DIR --comic DIR --pixel DIR --dark DIR --contracts FILE [--output REPORT.json]",
@@ -71,6 +73,19 @@ if (action === "library-qc") {
     "--semantics",
     path.join(path.resolve(scriptDirectory, ".."), "config", "effects", "reference-semantics", "light-overlay.json"),
   );
+  const gallery = option(
+    "--gallery",
+    path.join(path.resolve(scriptDirectory, ".."), "design", "reference-gallery", "xingzhe-v3", "manifest.json"),
+  );
+  const antiWeb = option(
+    "--anti-web",
+    path.join(path.resolve(scriptDirectory, ".."), "config", "design-system", "anti-web.json"),
+  );
+  const visualLanguages = option(
+    "--visual-languages",
+    path.join(path.resolve(scriptDirectory, ".."), "config", "design-system", "visual-languages.json"),
+  );
+  const artifactRoot = option("--artifact-root");
   const output = option("--output");
   if (!light || !spatial || !comic || !pixel || !dark || !contracts) {
     fail("library-qc 必须提供 --light、--spatial、--comic、--pixel、--dark 和 --contracts", 2);
@@ -84,7 +99,11 @@ if (action === "library-qc") {
     "--dark", path.resolve(dark),
     "--contracts", path.resolve(contracts),
     "--semantics", path.resolve(semantics),
+    "--gallery", path.resolve(gallery),
+    "--anti-web", path.resolve(antiWeb),
+    "--visual-languages", path.resolve(visualLanguages),
   ];
+  if (artifactRoot) qcArguments.push("--artifact-root", path.resolve(artifactRoot));
   if (output) qcArguments.push("--output", path.resolve(output));
   const result = spawnSync("python3", qcArguments, {
     cwd: process.cwd(),
@@ -100,6 +119,8 @@ if (action === "library-qc") {
       output: path.resolve(output),
       distinctEditingGrammarCount: report.distinctEditingGrammarCount,
       crossStyleExactDuplicateGroupCount: report.crossStyleExactDuplicateGroupCount,
+      registryConsistency: report.registryConsistency,
+      legacyArtifactScan: report.legacyArtifactScan,
       libraries: report.libraries.map((library) => ({
         style: library.style,
         editingGrammarId: library.editingGrammarId,
@@ -143,10 +164,26 @@ const styleConfig = {
 const resolved = resolveDesignSystem(styleConfig);
 const baseBundle = loadDesignSystem(resolved.system.id);
 
+if (action === "motion-preview") {
+  const output = option(
+    "--output",
+    path.join("design", "reference-gallery", "xingzhe-v3", "normal-speed-previews"),
+  );
+  const requestedScenes = option("--scenes");
+  const result = generateDesignMotionPreviews({
+    resolved,
+    outputDirectory: output,
+    sceneIds: requestedScenes ? requestedScenes.split(",").map((item) => item.trim()).filter(Boolean) : undefined,
+    overwrite: has("--overwrite"),
+  });
+  console.log(JSON.stringify({ schemaVersion: "1.0", ...result }, null, 2));
+  process.exit(0);
+}
+
 if (action === "gallery") {
   const output = option(
     "--output",
-    path.join("design", "reference-gallery", "xingzhe-v2"),
+    path.join("design", "reference-gallery", "xingzhe-v3"),
   );
   const result = generateDesignReferenceGallery({
     resolved,

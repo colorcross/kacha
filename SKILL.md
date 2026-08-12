@@ -293,6 +293,14 @@ semantic review session；v2 首剪和 v3 增量 manifest 使用同一开关，�
 是否属于同一证据集，单个文件各自有效仍不能跨项目拼装。
 完整合同见 `docs/INTELLIGENT_EDITING_V6.md`。
 
+当前 `kacha start` 创建的源视频项目还必须设置
+`productionQualityV1.required=true` 并登记 `plans.productionQuality`。这份统一
+质量合同吸收真实返工中的高频缺陷：半句话、遗漏连接点、无开场、清单一次全出、
+伪多行字幕、长段人物身后文字、自 PIP/遮头、语义不符的外部素材、固定或断续
+BGM、粗描边、3D 封面身份漂移，以及用静态证据代替正常速度审片。
+`gate-plan / gate-render / gate-release` 分别验证 `plan / execution / release`，
+不得把计划占位值当执行或发布证据。完整说明见 `docs/PRODUCTION_HARDENING.md`。
+
 ## 统一配置与默认剪辑要求
 
 运行参数、用户偏好和密钥使用分层配置，不再散落在命令或文档中：
@@ -312,6 +320,8 @@ node scripts/kacha.mjs fonts validate --registry LOCAL_AUTHORIZED_FONTS.json
 node scripts/kacha.mjs breathing validate --plan BREATHING_PLAN.json
 node scripts/kacha.mjs captions validate --plan CAPTION_PLAN.json
 node scripts/kacha.mjs visual-capabilities validate --plan VISUAL_CAPABILITY_PLAN.json
+node scripts/kacha.mjs production-quality validate \
+  --contract PRODUCTION_QUALITY.json --stage plan
 node scripts/kacha.mjs studio validate
 node scripts/kacha.mjs studio serve
 ```
@@ -334,7 +344,7 @@ Git。默认要求只表示偏好，不构成上传、付费、发布、覆盖�
 字体查找顺序为显式/用户注册表、项目授权注册表、项目字体目录，最后才是咔嚓
 本地私有字体目录；命中私有目录时必须按当前安装位置重定位并复核文件哈希，
 不能继承开发机绝对路径。
-在“浅暖轻浮层”“空间光路”“幽默漫画”和“像素风”中，视频标题、术语、金句和大号字只用华光标题黑，封面主标题只用封神榜书，其他文字只用细体；除非缺字或用户显式指定，否则禁止其他字体。漫画字形、像素字形只允许作为图形材质，不得替代可读正文。
+在“浅暖轻浮层”“空间光路”“幽默漫画”“像素风”和“暗黑科技风”中，视频标题、术语、金句和大号字只用华光标题黑，封面主标题只用封神榜书，其他文字只用细体；除非缺字或用户显式指定，否则禁止其他字体。漫画字形、像素字形只允许作为图形材质，不得替代可读正文。
 五个正式栏目的封面人物统一采用原创的高品质院线级 3D 动画电影语言。用户
 口语中的“皮克斯风格”只解析为温暖、圆润但不幼龄化、可按叙事夸张、精细
 材质与电影级灯光；不得复制或近似 Pixar、Disney 或其他具体角色、影片造型、
@@ -347,12 +357,14 @@ Logo 与 IP。必须保留大灰本人可识别的成年脸型、黑框矩形眼
 区间实现中写死字体、颜色、圆角、阴影、边框或缓动。更换模式或风格走
 `style` 增量配方并按依赖失效重建。
 系统规范、组件与场景选择见 `docs/VIDEO_DESIGN_SYSTEM_V1.md`。
-行者风 2.0 的拍摄基线、语义色、渐变、栏目差异、封面人物比例和人物后文字
-合同见 `docs/XINGZHE_STYLE_V2.md`；幽默漫画与像素风的完整母合同分别见
+行者风 3.0 的电影化画面选择顺序、栏目占比预算、反网页禁用模式和镜头事件
+合同见 `docs/XINGZHE_STYLE_V3.md`；幽默漫画与像素风的完整母合同分别见
 `docs/HUMOR_COMIC_VISUAL_LANGUAGE.md` 和 `docs/PIXEL_EDITORIAL_VISUAL_LANGUAGE.md`。高影响视觉在正式制作前应先从
-`design/reference-gallery/xingzhe-v2/index.html` 查看当前设计摘要对应的
+`design/reference-gallery/xingzhe-v3/index.html` 查看当前设计摘要对应的
 参考效果；图库缺失或摘要过期时运行 `design gallery` 重新生成，不能只凭
 效果名称和文字描述猜实现。
+高频场景还必须运行 `design motion-preview` 生成正常速度短片，检查进入、
+停稳、清场和阅读时间；该预览只是设计系统代表证据，不得代替当期成片的正常速度人工审片。
 
 静态参考图只约束峰值构图，不能替代时间行为。可复用高影响效果必须通过
 `templates resolve` 取得 `motionContract`，并执行其中的 invariants、
@@ -379,7 +391,8 @@ parameters、adaptationRules、timing、audioContract 和 qualityGates。
 `fallbackReasonWhenNotApplied`，禁止只凭“科技”“轻松”等笼统题材套风格。
 图库交付前必须运行 `design library-qc --light <浅暖目录> --spatial <空间目录>
 --comic <漫画目录> --pixel <像素目录> --dark <暗黑目录> --contracts <合同注册表> --output <报告>`，同时检查 2400 张图片的唯一性、人物头部碰撞、金陵体
-像素证据、字幕阴影、文字对比度、空间黑块、漫画/像素/暗黑材质边界和 1200 份独立动效核心。
+像素证据、字幕阴影、文字对比度、空间黑块、漫画/像素/暗黑材质边界、旧版与孤儿产物，
+并逐字段核对 1200 份独立合同、manifest 内嵌合同和对应高保真图的执行计划。
 
 完整首剪与结构重做必须先生成 `plans.visualCapabilityPlan`。默认行者风按
 当前栏目对应的 `showProfiles` 计算可感知配额；工具分享、解读好书、有限的
@@ -482,6 +495,9 @@ picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共�
   不得提前形成可读结论；可见落位与声音峰值必须在重音帧 `±1` 帧内，并在
   下一事件或切回主画面前完整退出。不得把动画起始帧当成 SFX 落点，也不得
   按固定秒数随机套“网感”效果。
+- 前 60 秒必须单独通过 `production-quality` execution 门禁：唯一主开场之外，
+  至少 5 个语义动效、4 种机制和 3 个实测峰值 SFX；任意 10 秒不超过 3 个
+  主效果，同时保留规定的人物在场比例、呼吸区间和正常速度代表预览。
 - 正式语义动效只从已验证 timeline plan 渲染；展示模式标签、固定示例文案
   和 showcase 音轨不得进入成片。
 - 信息卡/流程图/弹窗要么全屏，要么避开人物头脸与字幕安全区；高影响模块
@@ -499,9 +515,15 @@ picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共�
   声像和语气强弱；只对齐 LUFS 不算完成。知识口播默认采用
   `references/audio.md` 的“自然口播参考基准”和 `warm-soft` 长听感预设。
 - SFX 按功能建立调色板并与事件逐一映射；禁止整片反复套一个声音。
+- SFX 计划先写可见/语义落点 `targetLandingSeconds`，再运行 `kacha sfx align`；
+  Timeline IR 必须以共享 20 ms RMS 测量器复算文件内部峰值并反推起播时间，
+  不接受人工把文件开始时间冒充峰值时间或手填 `deltaFrames` 放行。
 - 新增本地音效必须先转为 48 kHz 双声道工作副本，冻结源/工作副本 SHA、
   许可与分发边界，并为每个资产写精确 `use_when / placement /
   do_not_use_when`；重复文件只建 alias。来源未记录的项目音效永不进入公开包。
+- 电影级 3D 封面默认只以获批三视图作为生成输入，真人照只作生成后身份 QC；
+  使用 `kacha cover template|validate|prompt` 冻结资产 SHA，并逐期填写动作、
+  表情、视线、道具、重心与服装适配。没有逐期显式授权不得恢复双锚点生成。
 - 用户要求 BGM 时，最终混音必须保留闪避后的 dialogue/BGM/SFX 组件 stem
   和最终 mix stem，并在项目 manifest 声明 `outputs.audioStems` 与
   `expectedMedia.audioMix.bgmRequired=true`。同时必须从最终语义 cues 运行

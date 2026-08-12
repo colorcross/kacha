@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="brand-warm" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F5B544"/>
+      <stop offset="1" stop-color="#E66A32"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="24" flood-color="#16181B" flood-opacity=".14"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" fill="#F2EFE8"/>
+  <circle cx="1168" cy="86" r="170" fill="#6F8795" opacity=".07"/>
+  <circle cx="84" cy="670" r="190" fill="#F05A47" opacity=".045"/>
+  <text x="72" y="60" font-family="Avenir Next, PingFang SC, sans-serif" font-size="16" font-weight="700" letter-spacing="3" fill="#E98A2B">COMPONENT · CARD</text>
+  <text x="72" y="102" font-family="PingFang SC, sans-serif" font-size="34" font-weight="650" fill="#25282B">术语与边界</text>
+  <text x="72" y="132" font-family="Avenir Next, PingFang SC, sans-serif" font-size="15" fill="#626A70">definition_card · 状态 exit · fallback info_card</text>
+  <rect x="72" y="156" width="1136" height="492" rx="28" fill="#FBF8F1" filter="url(#soft-shadow)"/>
+  <defs><clipPath id="clip-94-178-1092-446"><rect x="94" y="178" width="1092" height="446" rx="20"/></clipPath></defs>
+  <rect x="94" y="178" width="1092" height="446" rx="20" fill="#E8E4DB"/>
+  <image x="94" y="178" width="1092" height="446" preserveAspectRatio="xMidYMid slice" clip-path="url(#clip-94-178-1092-446)" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMTIwIiBoZWlnaHQ9IjUxMCIgdmlld0JveD0iMCAwIDExMjAgNTEwIiBkYXRhLWNvbXBvbmVudC1wcmV2aWV3PSJkZWZpbml0aW9uX2NhcmQiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMTIwIiBoZWlnaHQ9IjUxMCIgcng9IjAiIGZpbGw9IiNGMkVGRTgiIHN0cm9rZT0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIwIi8+PGcgZGF0YS1jb21wb25lbnQtaWQ9ImRlZmluaXRpb25fY2FyZCIgZGF0YS1yZW5kZXJlcj0ic3ZnX3NlcXVlbmNlIiBkYXRhLXN0YXRlPSJleGl0Ij48bGluZSB4MT0iNDYuNzk3NiIgeTE9IjEwMC43NzYwMDAwMDAwMDAwMSIgeDI9IjQ2Ljc5NzYiIHkyPSIzNzQuOTUyIiBzdHJva2U9IiM1NTc3QjgiIHN0cm9rZS13aWR0aD0iOC4zMDcyMDAwMDAwMDAwMDIiLz48dGV4dCB4PSI2MS4wNDE5MDAwMDAwMDAwMDUiIHk9IjE5MC43Mzk5OTk5OTk5OTk5OCIgdGV4dC1hbmNob3I9InN0YXJ0IiBmb250LWZhbWlseT0i6Z2S6bif5Y2O5YWJ5qCH6aKY6buR5L2TIiBmb250LXNpemU9IjY4LjU0NCIgZm9udC13ZWlnaHQ9Ijc4MCIgbGV0dGVyLXNwYWNpbmc9IjBlbSIgZmlsbD0iIzI1MjgyQiIgb3BhY2l0eT0iMSI+5YiH6ZWcPC90ZXh0Pjx0ZXh0IHg9IjYxLjA0MTkwMDAwMDAwMDAwNSIgeT0iMjg5LjI3MiIgdGV4dC1hbmNob3I9InN0YXJ0IiBmb250LWZhbWlseT0i5oCd5rqQ6buR5L2TIENOIExpZ2h0IiBmb250LXNpemU9IjQwLjY5OCIgZm9udC13ZWlnaHQ9IjUwMCIgbGV0dGVyLXNwYWNpbmc9IjBlbSIgZmlsbD0iIzYyNkE3MCIgb3BhY2l0eT0iMSI+5L+h5oGv44CB5oOF57uq5oiW6KeG6KeS5Y+R55Sf5Y+Y5YyW5pe277yM6ZWc5aS05omN5pyJ5YiH5o2i55qE55CG55Sx44CCPC90ZXh0Pjx0ZXh0IHg9IjYxLjA0MTkwMDAwMDAwMDAwNSIgeT0iMzY2LjM4NCIgdGV4dC1hbmNob3I9InN0YXJ0IiBmb250LWZhbWlseT0i5oCd5rqQ6buR5L2TIENOIExpZ2h0IiBmb250LXNpemU9IjI5Ljk4OCIgZm9udC13ZWlnaHQ9IjUwMCIgbGV0dGVyLXNwYWNpbmc9IjBlbSIgZmlsbD0iIzU1NzdCOCIgb3BhY2l0eT0iMSI+6L6555WM77ya54m55pWI5LiN6IO95o6p55uW6ZSZ6K+v5YiH54K5PC90ZXh0PjwvZz48L3N2Zz4="/>
+    <rect x="110" y="194" width="146" height="28" rx="14" fill="#272B2F" opacity=".82"/>
+    <text x="183" y="213" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">SVG_SEQUENCE</text>
+  <text x="72" y="686" font-family="Avenir Next, sans-serif" font-size="13" font-weight="600" letter-spacing="2" fill="#626A70" opacity=".8">真实组件渲染 · 尺寸与色彩受当前模式配置约束</text>
+  <rect x="1110" y="674" width="98" height="5" rx="2.5" fill="url(#brand-warm)"/>
+</svg>

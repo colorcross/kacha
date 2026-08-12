@@ -33,7 +33,7 @@
     {"id": "split_cover", "template": "split"},
     {"id": "stack_left", "template": "stack_left"},
     {"id": "subject_and_ai_symbol", "template": "two_role"},
-    {"id": "subject_left_card_right", "template": "subject_left"},
+    {"id": "foreground_evidence_occlusion", "template": "foreground_occlusion"},
     {"id": "subject_negative_space", "template": "subject_left"},
     {"id": "subject_safe_bottom", "template": "subject_safe_bottom"},
     {"id": "subject_safe_right", "template": "subject_safe_right"},

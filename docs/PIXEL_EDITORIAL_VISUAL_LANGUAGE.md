@@ -69,6 +69,6 @@ HUD。它用有限色板、整数网格、阶梯边、像素光标、状态条�
 与动效合同中的选择证据。
 
 完整横竖峰值帧位于
-`设计参考/行者风高保真样板/全量效果库_v4_像素风/`；每个效果的正式时间行为
+`设计参考/行者风高保真样板/全量效果库_行者风3_像素风/`；每个效果的正式时间行为
 以 `config/effects/motion-contracts/design-effect-library-v3.json` 中
 `xingzhe-pixel-editorial` 合同为准。

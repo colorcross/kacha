@@ -51,7 +51,7 @@
     "xingzhe-light-overlay": {
       "label": "浅暖轻浮层",
       "intent": "保留真人口播的真实感，用轻量、半透明、有呼吸的信息层帮助理解，不做网页弹窗。",
-      "sourceReference": "设计参考/行者风高保真样板/index.html",
+      "sourceReference": "设计参考/行者风高保真样板/全量效果库_行者风3_浅暖轻浮层/index.html",
       "grammarSignature": {
         "id": "editorial-continuity-margin-notes",
         "temporalModel": "continuous_a_roll_with_sparse_annotations",
@@ -103,7 +103,7 @@
     "xingzhe-spatial-lightpath": {
       "label": "空间光路",
       "intent": "以真实口播画面为底，用玻璃节点、曲线光路、景深、局部辉光和少量粒子展示关系与流程，而不是把画面染黑。",
-      "sourceReference": "user-approved-spatial-lightpath-reference",
+      "sourceReference": "设计参考/行者风高保真样板/全量效果库_行者风3_空间光路/index.html",
       "grammarSignature": {
         "id": "single-take-depth-navigation",
         "temporalModel": "continuous_spatial_journey",
@@ -172,7 +172,7 @@
     "xingzhe-humor-comic": {
       "label": "幽默漫画",
       "intent": "用成年编辑漫画的分格、墨线、网点、反应构图和精确喜剧节奏放大真实反差；幽默来自叙事关系，不来自表情包堆叠或幼龄卡通化。",
-      "sourceReference": "设计参考/行者风高保真样板/全量效果库_v4_幽默漫画/index.html",
+      "sourceReference": "设计参考/行者风高保真样板/全量效果库_行者风3_幽默漫画/index.html",
       "grammarSignature": {
         "id": "setup-reaction-punchline-callback",
         "temporalModel": "comic_timing_with_deliberate_holds",
@@ -241,7 +241,7 @@
     "xingzhe-pixel-editorial": {
       "label": "像素风",
       "intent": "以编辑型像素图形表达系统状态、步骤、选择和数字变化；真人、证据和正式文字保持清晰，像素化只发生在有语义的图形与过渡层。",
-      "sourceReference": "设计参考/行者风高保真样板/全量效果库_v4_像素风/index.html",
+      "sourceReference": "设计参考/行者风高保真样板/全量效果库_行者风3_像素风/index.html",
       "grammarSignature": {
         "id": "deterministic-state-machine",
         "temporalModel": "discrete_state_transitions",
@@ -312,7 +312,7 @@
     "xingzhe-dark-tech": {
       "label": "暗黑科技风",
       "intent": "用局部暗场、观察孔、证据切片和一次明确裁决揭示异常、风险与隐性机制；暗部负责隔离干扰，不把真人、证据或整帧压成廉价赛博朋克。",
-      "sourceReference": "设计参考/行者风高保真样板/全量效果库_v5_暗黑科技风/index.html",
+      "sourceReference": "设计参考/行者风高保真样板/全量效果库_行者风3_暗黑科技风/index.html",
       "grammarSignature": {
         "id": "signal-isolate-evidence-verdict",
         "temporalModel": "forensic_reveal_with_bounded_uncertainty",

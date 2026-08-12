@@ -105,6 +105,61 @@ function displayItems(payload, fallback = []) {
     .slice(0, 5);
 }
 
+function displayItemCues(payload, fallback = []) {
+  const raw = Array.isArray(payload?.display?.itemCues)
+    ? payload.display.itemCues
+    : Array.isArray(payload?.itemCues)
+      ? payload.itemCues
+      : [];
+  if (raw.length > 0) {
+    return raw
+      .map((item, index) => ({
+        text: String(item?.text ?? item?.label ?? "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 10),
+        revealAt: clamp(Number(item?.revealAt ?? item?.progress ?? index * 0.26), 0, 0.92),
+      }))
+      .filter((item) => item.text)
+      .slice(0, 5);
+  }
+  const labels = displayItems(payload, fallback);
+  return labels.map((text, index) => ({
+    text,
+    revealAt: [0.12, 0.42, 0.72, 0.82, 0.88][index] ?? 0.88,
+  }));
+}
+
+function productionPayloadErrors(effect, payload) {
+  const errors = [];
+  if (effect.id === "parallel_progressive_row") {
+    const rawCues = Array.isArray(payload?.display?.itemCues)
+      ? payload.display.itemCues
+      : [];
+    const cues = displayItemCues(payload, []);
+    if (cues.length < 2) {
+      errors.push("parallel_progressive_row 正式渲染至少需要两个 display.itemCues");
+    }
+    if (rawCues.length === 0) {
+      errors.push("parallel_progressive_row 正式渲染必须提供 display.itemCues，不能按模块时长平均猜测");
+    }
+    let previousRevealAt = -1;
+    for (let index = 0; index < rawCues.length; index += 1) {
+      const revealAt = Number(rawCues[index]?.revealAt);
+      if (!Number.isFinite(revealAt) || revealAt < 0 || revealAt > 0.92) {
+        errors.push(`display.itemCues[${index}].revealAt 必须是 0–0.92 的语义触发进度`);
+        continue;
+      }
+      if (revealAt <= previousRevealAt) {
+        errors.push("display.itemCues.revealAt 必须严格递增");
+        break;
+      }
+      previousRevealAt = revealAt;
+    }
+  }
+  return errors;
+}
+
 function estimatedTextUnits(value) {
   return [...String(value ?? "")].reduce((total, character) => {
     if (/[\u3400-\u9fff\uff00-\uffef]/u.test(character)) return total + 1;
@@ -213,19 +268,58 @@ function parallelOverlay(effect, p, width, height, style, entry, payload = null)
       </g>`);
     });
   } else if (effect.id === "parallel_progressive_row") {
-    const rowY = height > width ? 0.56 : 0.54;
-    labels.slice(0, 3).forEach((label, index) => {
-      const local = easeOut((entry - index * 0.18) / 0.5);
-      cards.push(`<g opacity="${local}">
-        <rect x="${width * (0.07 + index * 0.3)}" y="${height * rowY}"
-          width="${width * 0.26}" height="${height * 0.13}" rx="${width * 0.02}"
-          fill="${index === visible - 1 ? palette.accent : palette.surface}"
-          stroke="${palette.ink}" stroke-width="${width * 0.003}"/>
-        <text x="${width * (0.2 + index * 0.3)}" y="${height * (rowY + 0.077)}"
-          text-anchor="middle" font-family="${bodyFont}" font-size="${fontSize * 0.68}"
-          font-weight="700" fill="${palette.ink}">${label}</text>
+    const landscape = width > height;
+    const pixelEditorial = style.visualLanguageId === "xingzhe-pixel-editorial";
+    const itemCues = displayItemCues(
+      payload,
+      ["第一项", "第二项", "第三项"],
+    ).slice(0, 3);
+    const activeIndex = itemCues.reduce(
+      (latest, cue, index) => (p >= cue.revealAt ? index : latest),
+      -1,
+    );
+    itemCues.forEach(({ text: label, revealAt }, index) => {
+      const smoothLocal = easeOut((p - revealAt) / 0.075);
+      const local = pixelEditorial
+        ? Math.min(1, Math.floor(smoothLocal * 4) / 4)
+        : smoothLocal;
+      const cardX = landscape ? 0.715 : 0.08;
+      const cardY = landscape ? 0.34 + index * 0.14 : 0.56 + index * 0.105;
+      const cardWidth = landscape ? 0.245 : 0.84;
+      const cardHeight = landscape ? 0.105 : 0.09;
+      const labelSize = fittedFontSize(
+        label,
+        width * (landscape ? 0.029 : 0.052),
+        width * cardWidth * 0.86,
+        width * (landscape ? 0.019 : 0.03),
+      );
+      const active = index === activeIndex;
+      cards.push(`<g opacity="${local}" transform="translate(${(1 - local) * width * 0.035} 0)"
+        filter="url(#progressive-soft-shadow)">
+        <rect x="${width * cardX}" y="${height * cardY}"
+          width="${width * cardWidth}" height="${height * cardHeight}"
+          rx="${pixelEditorial ? 0 : width * 0.014}"
+          fill="${active ? rgba(palette.accent, 0.94) : rgba(palette.surface, 0.9)}"
+          stroke="${rgba(active ? palette.accentSecondary : palette.inkSecondary, 0.46)}"
+          stroke-width="${Math.max(1, width * 0.0007)}"/>
+        ${pixelEditorial ? `
+          <rect x="${width * (cardX - 0.025)}" y="${height * (cardY + 0.015)}"
+            width="${width * 0.014}" height="${width * 0.014}"
+            fill="${active ? palette.accent : palette.accentSecondary}"/>
+          <rect x="${width * (cardX - 0.025)}" y="${height * (cardY + 0.056)}"
+            width="${width * 0.009}" height="${width * 0.009}"
+            fill="${palette.ink}"/>` : ""}
+        <text x="${width * (cardX + cardWidth / 2)}" y="${height * (cardY + cardHeight * 0.67)}"
+          text-anchor="middle" font-family="${displayFont}" font-size="${labelSize}"
+          font-weight="800" fill="${palette.ink}">${xml(label)}</text>
       </g>`);
     });
+    cards.unshift(`<defs>
+      <filter id="progressive-soft-shadow" x="-20%" y="-25%" width="140%" height="160%">
+        <feDropShadow dx="0" dy="${height * 0.009}" stdDeviation="${width * 0.004}"
+          flood-color="${palette.ink}" flood-opacity="0.18"/>
+      </filter>
+    </defs>`);
   } else if (effect.id === "parallel_orbit_labels") {
     const positions = [[0.17, 0.37], [0.66, 0.34], [0.61, 0.63]];
     cards.push(`<circle cx="${width * 0.44}" cy="${height * 0.49}" r="${width * 0.19}"
@@ -399,36 +493,72 @@ function overlaySvg(
     }
     case "subject_layer": {
       if (effect.id === "hook_title_behind_subject") {
-        const scale = 0.72 + 0.28 * entry;
-        const titleFontSize = fittedFontSize(
-          title,
-          displaySize * 1.15,
-          width * 0.82,
-          width * 0.055,
-        );
-        const subtitleFontSize = fittedFontSize(
-          subtitle,
-          bodySize,
-          width * 0.82,
-          width * 0.028,
-        );
-        content = `<g opacity="${alpha}" transform="translate(${width / 2} ${height * 0.48})
-          scale(${scale}) translate(${-width / 2} ${-height * 0.48})">
-          <text x="${width * 0.5}" y="${height * 0.43}" text-anchor="middle"
-            font-family="${displayFont}" font-size="${titleFontSize}" font-weight="900"
-            fill="${palette.accent}" stroke="${palette.ink}" stroke-width="${width * 0.008}"
-            paint-order="stroke">${xml(title)}</text>
-          <text x="${width * 0.5}" y="${height * 0.54}" text-anchor="middle"
-            font-family="${bodyFont}" font-size="${subtitleFontSize}" font-weight="700"
-            fill="${palette.surface}">${xml(subtitle)}</text>
-        </g>`;
+        const pixelEditorial = style.visualLanguageId === "xingzhe-pixel-editorial";
+        const requestedPhrases = displayItems(payload, []);
+        const hookPhrases = [];
+        let remainingCharacters = 7;
+        for (const requestedPhrase of requestedPhrases.length > 0 ? requestedPhrases : [title]) {
+          if (remainingCharacters <= 0 || hookPhrases.length >= 2) break;
+          const phrase = [...requestedPhrase].slice(0, Math.min(4, remainingCharacters)).join("");
+          if (!phrase) continue;
+          hookPhrases.push(phrase);
+          remainingCharacters -= [...phrase].length;
+        }
+        const phrases = hookPhrases.length > 0 ? hookPhrases : ["旅行"];
+        const phraseFontSize = Math.round(width * 0.078);
+        const phrasePositions = phrases.length === 1
+          ? [{ x: width * 0.28, anchor: "middle" }]
+          : [
+              { x: width * 0.33, anchor: "middle" },
+              { x: width * 0.685, anchor: "middle" },
+            ];
+        const phraseNodes = phrases.map((phrase, index) => {
+          const localEntry = easeOut((progress - index * 0.08) / 0.24);
+          const localAlpha = clamp(localEntry * exit);
+          const scale = 0.82 + 0.18 * localEntry;
+          const position = phrasePositions[index] ?? phrasePositions[0];
+          const fill = index === 1 ? "url(#hook-blue-gradient)" : "url(#hook-warm-gradient)";
+          return `<g opacity="${localAlpha}" transform="translate(${position.x} ${height * 0.45})
+            scale(${scale}) translate(${-position.x} ${-height * 0.45})">
+            <text x="${position.x}" y="${height * 0.49}" text-anchor="${position.anchor}"
+              font-family="${displayFont}" font-size="${phraseFontSize}" font-weight="900"
+              letter-spacing="${-phraseFontSize * 0.025}" fill="${fill}"
+              filter="url(#hook-title-shadow)">${xml(phrase)}</text>
+          </g>`;
+        }).join("");
+        content = `<defs>
+          <linearGradient id="hook-warm-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FF8A3D"/>
+            <stop offset="100%" stop-color="#F0445A"/>
+          </linearGradient>
+          <linearGradient id="hook-blue-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#8ED8FF"/>
+            <stop offset="100%" stop-color="#3379D7"/>
+          </linearGradient>
+          <filter id="hook-title-shadow" x="-20%" y="-25%" width="140%" height="160%">
+            <feDropShadow dx="0" dy="${height * 0.008}" stdDeviation="${width * 0.004}"
+              flood-color="${palette.ink}" flood-opacity="0.42"/>
+          </filter>
+        </defs>
+        ${pixelEditorial ? `<g opacity="${alpha * 0.78}">
+          ${[0, 1, 2, 3].map((index) => `<rect
+            x="${width * (0.205 + index * 0.018)}" y="${height * 0.315}"
+            width="${width * 0.011}" height="${width * 0.011}"
+            fill="${index < 3 ? palette.accent : palette.accentSecondary}"/>`).join("")}
+          ${[0, 1, 2].map((index) => `<rect
+            x="${width * (0.758 + index * 0.018)}" y="${height * 0.59}"
+            width="${width * 0.011}" height="${width * 0.011}"
+            fill="${index === 2 ? palette.accent : palette.accentSecondary}"/>`).join("")}
+        </g>` : ""}
+        ${phraseNodes}`;
       } else if (effect.id === "space_frame_between_layers") {
         const dx = (1 - entry) * width * 0.12;
+        const frameRadius = style.visualLanguageId === "xingzhe-pixel-editorial" ? 0 : width * 0.03;
         content = `<rect x="${width * 0.13 + dx}" y="${height * 0.17}" width="${width * 0.72}"
-          height="${height * 0.61}" rx="${width * 0.03}" fill="${palette.accent}"
+          height="${height * 0.61}" rx="${frameRadius}" fill="${palette.accent}"
           transform="rotate(-4 ${width / 2} ${height / 2})" opacity="${alpha}"/>
           <rect x="${width * 0.17 - dx}" y="${height * 0.2}" width="${width * 0.68}"
-          height="${height * 0.58}" rx="${width * 0.025}" fill="none"
+          height="${height * 0.58}" rx="${frameRadius}" fill="none"
           stroke="${palette.surface}" stroke-width="${width * 0.014}"
           transform="rotate(3 ${width / 2} ${height / 2})" opacity="${alpha}"/>`;
       } else {
@@ -444,6 +574,69 @@ function overlaySvg(
       break;
     }
     case "text_then_reveal": {
+      if (style.visualLanguageId === "xingzhe-pixel-editorial") {
+        const typeProgress = easeOut(progress / 0.3);
+        const shown = Math.max(1, Math.ceil(typeProgress * Math.max(1, title.length)));
+        const text = title.slice(0, shown);
+        const fullCoverUntil = clamp(Number(payload?.motion?.fullCoverUntil ?? 0.26), 0.08, 0.4);
+        const revealDuration = clamp(Number(payload?.motion?.revealDuration ?? 0.48), 0.24, 0.7);
+        const reveal = easeOut((progress - fullCoverUntil) / revealDuration);
+        const titleAlpha = clamp((progress < 0.76 ? 1 : 1 - easeInOut((progress - 0.76) / 0.2)) * entry);
+        // The first frame is a true full-cover state. A non-zero minimum hole
+        // exposes an arbitrary part of the face before the reveal has begun.
+        const windowWidth = reveal <= 0 ? 0 : width * (0.46 + reveal * 0.54);
+        const windowHeight = reveal <= 0 ? 0 : height * (0.58 + reveal * 0.42);
+        const windowX = (width - windowWidth) / 2;
+        const windowY = height * 0.43 - windowHeight * 0.43;
+        const pixelSize = Math.max(8, Math.round(width * 0.012));
+        const accentItems = items.slice(0, 3);
+        content = `<defs>
+          <linearGradient id="pixel-hook-title" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FF933E"/>
+            <stop offset="58%" stop-color="#F05A3F"/>
+            <stop offset="100%" stop-color="#E43E64"/>
+          </linearGradient>
+          <mask id="pixel-hook-reveal">
+            <rect width="${width}" height="${height}" fill="white"/>
+            <rect x="${windowX}" y="${windowY}" width="${windowWidth}" height="${windowHeight}" fill="black"/>
+            ${Array.from({ length: 10 }, (_, index) => {
+              const column = index % 5;
+              const row = Math.floor(index / 5);
+              const local = easeOut((reveal - index * 0.028) / 0.72);
+              const block = pixelSize * (1 + (index % 3));
+              const x = width * (0.1 + column * 0.2) - block / 2;
+              const y = height * (0.18 + row * 0.48) - block / 2;
+              return `<rect x="${x}" y="${y}" width="${block * local}" height="${block * local}" fill="black"/>`;
+            }).join("")}
+          </mask>
+          <filter id="pixel-hook-shadow" x="-20%" y="-30%" width="140%" height="170%">
+            <feDropShadow dx="0" dy="${height * 0.008}" stdDeviation="${width * 0.004}"
+              flood-color="#111827" flood-opacity="0.48"/>
+          </filter>
+        </defs>
+        <rect width="${width}" height="${height}" fill="${palette.darkSurface}" opacity="${1 - reveal * 0.48}"
+          mask="url(#pixel-hook-reveal)"/>
+        <g opacity="${titleAlpha}" filter="url(#pixel-hook-shadow)">
+          <text x="${width * 0.5}" y="${height * 0.2}" text-anchor="middle"
+            font-family="${displayFont}" font-size="${displaySize * 0.66}" font-weight="900"
+            letter-spacing="${-displaySize * 0.025}" fill="url(#pixel-hook-title)">${xml(text)}${progress < 0.3 && frame % 10 < 6 ? "▌" : ""}</text>
+          <rect x="${width * 0.32}" y="${height * 0.226}" width="${width * 0.36 * typeProgress}"
+            height="${Math.max(3, height * 0.006)}" fill="${palette.accentSecondary}"/>
+        </g>
+        <g opacity="${clamp(reveal * exit)}">
+          ${accentItems.map((item, index) => {
+            const local = easeOut((reveal - index * 0.16) / 0.54);
+            const x = width * (0.15 + index * 0.25);
+            return `<g opacity="${local}">
+              <rect x="${x}" y="${height * 0.7}" width="${pixelSize * 0.72}" height="${pixelSize * 0.72}"
+                fill="${index === 1 ? palette.accentSecondary : palette.accent}"/>
+              <text x="${x + pixelSize * 1.3}" y="${height * 0.714}" font-family="${bodyFont}"
+                font-size="${bodySize * 0.46}" font-weight="700" fill="${palette.surface}">${xml(item)}</text>
+            </g>`;
+          }).join("")}
+        </g>`;
+        break;
+      }
       const shown = Math.max(1, Math.floor(entry * Math.max(1, title.length)));
       const text = title.slice(0, shown);
       const reveal = easeOut((progress - 0.48) / 0.3);
@@ -497,31 +690,49 @@ function overlaySvg(
       break;
     }
     case "evidence_card": {
-      const x = width * (0.1 + (1 - entry) * 0.32);
+      const landscape = width > height;
+      const x = landscape
+        ? width * (0.705 + (1 - entry) * 0.16)
+        : width * (0.1 + (1 - entry) * 0.32);
+      const y = landscape ? height * 0.51 : height * 0.19;
+      const cardWidth = landscape ? width * 0.265 : width * 0.8;
+      const cardHeight = landscape ? height * 0.34 : height * 0.52;
+      const insetX = landscape ? width * 0.018 : width * 0.05;
+      const insetY = landscape ? height * 0.045 : height * 0.06;
+      const insetWidth = landscape ? width * 0.229 : width * 0.7;
+      const insetHeight = landscape ? height * 0.15 : height * 0.25;
       const titleFontSize = fittedFontSize(
         title,
-        displaySize * 0.52,
-        width * 0.7,
-        width * 0.035,
+        displaySize * (landscape ? 0.28 : 0.52),
+        insetWidth,
+        width * (landscape ? 0.018 : 0.035),
       );
       const subtitleFontSize = fittedFontSize(
         subtitle,
-        bodySize * 0.72,
-        width * 0.7,
-        width * 0.024,
+        bodySize * (landscape ? 0.42 : 0.72),
+        insetWidth,
+        width * (landscape ? 0.014 : 0.024),
       );
-      content = `<g opacity="${alpha}">
-        <rect x="${x}" y="${height * 0.19}" width="${width * 0.8}" height="${height * 0.52}"
-          rx="${width * 0.03}" fill="${palette.surface}" stroke="${palette.accent}"
-          stroke-width="${width * 0.012}"/>
-        <rect x="${x + width * 0.05}" y="${height * 0.25}" width="${width * 0.7}"
-          height="${height * 0.25}" rx="${width * 0.018}" fill="${palette.canvas}"/>
-        <path d="M${x + width * 0.08} ${height * 0.45} L${x + width * 0.25} ${height * 0.32}
-          L${x + width * 0.39} ${height * 0.41} L${x + width * 0.57} ${height * 0.29}
-          L${x + width * 0.72} ${height * 0.45} Z" fill="${palette.accentSecondary}" opacity="0.72"/>
-        <text x="${x + width * 0.05}" y="${height * 0.585}" font-family="${displayFont}"
+      content = `<defs><filter id="evidence-soft-shadow" x="-20%" y="-20%" width="140%" height="160%">
+          <feDropShadow dx="0" dy="${height * 0.01}" stdDeviation="${width * 0.0045}"
+            flood-color="${palette.ink}" flood-opacity="0.2"/>
+        </filter></defs>
+        <g opacity="${alpha}" filter="url(#evidence-soft-shadow)">
+        <rect x="${x}" y="${y}" width="${cardWidth}" height="${cardHeight}"
+          rx="${width * 0.018}" fill="${rgba(palette.surface, 0.94)}"
+          stroke="${rgba(palette.accentSecondary, 0.58)}"
+          stroke-width="${Math.max(1, width * 0.0008)}"/>
+        <rect x="${x + insetX}" y="${y + insetY}" width="${insetWidth}"
+          height="${insetHeight}" rx="${width * 0.018}" fill="${palette.canvas}"/>
+        <path d="M${x + insetX * 1.25} ${y + insetY + insetHeight * 0.82}
+          L${x + insetX + insetWidth * 0.28} ${y + insetY + insetHeight * 0.28}
+          L${x + insetX + insetWidth * 0.48} ${y + insetY + insetHeight * 0.66}
+          L${x + insetX + insetWidth * 0.72} ${y + insetY + insetHeight * 0.22}
+          L${x + insetX + insetWidth * 0.94} ${y + insetY + insetHeight * 0.82} Z"
+          fill="${palette.accentSecondary}" opacity="0.72"/>
+        <text x="${x + insetX}" y="${y + cardHeight * 0.73}" font-family="${displayFont}"
           font-size="${titleFontSize}" font-weight="800" fill="${palette.ink}">${xml(title)}</text>
-        <text x="${x + width * 0.05}" y="${height * 0.64}" font-family="${bodyFont}"
+        <text x="${x + insetX}" y="${y + cardHeight * 0.88}" font-family="${bodyFont}"
           font-size="${subtitleFontSize}" fill="${palette.inkSecondary}">${xml(subtitle)}</text>
       </g>`;
       break;
@@ -622,15 +833,30 @@ function overlaySvg(
       </g>`;
       break;
     default: {
+      const landscape = width > height;
       const localScale = 0.78 + entry * 0.22;
-      content = `<g opacity="${alpha}" transform="translate(${width / 2} ${height * 0.27})
-        scale(${localScale}) translate(${-width / 2} ${-height * 0.27})">
-        <text x="${width * 0.5}" y="${height * 0.25}" text-anchor="middle"
-          font-family="${displayFont}" font-size="${displaySize * 0.72}" font-weight="900"
-          fill="${palette.accent}" stroke="${palette.ink}" stroke-width="${width * 0.007}"
-          paint-order="stroke">${xml(title)}</text>
-        <path d="M${width * 0.25} ${height * 0.29} H${width * 0.75}"
-          stroke="${palette.surface}" stroke-width="${width * 0.01}"/>
+      const titleX = width * (landscape ? 0.22 : 0.5);
+      const titleY = height * (landscape ? 0.2 : 0.25);
+      const lineLeft = width * (landscape ? 0.08 : 0.25);
+      const lineRight = width * (landscape ? 0.36 : 0.75);
+      const lineY = height * (landscape ? 0.24 : 0.29);
+      const titleSize = fittedFontSize(
+        title,
+        displaySize * (landscape ? 0.54 : 0.72),
+        width * (landscape ? 0.34 : 0.5),
+        width * 0.025,
+      );
+      content = `<defs><filter id="title-soft-shadow" x="-20%" y="-30%" width="140%" height="170%">
+          <feDropShadow dx="0" dy="${height * 0.009}" stdDeviation="${width * 0.004}"
+            flood-color="${palette.ink}" flood-opacity="0.38"/>
+        </filter></defs>
+        <g opacity="${alpha}" transform="translate(${titleX} ${titleY})
+        scale(${localScale}) translate(${-titleX} ${-titleY})">
+        <text x="${titleX}" y="${titleY}" text-anchor="middle"
+          font-family="${displayFont}" font-size="${titleSize}" font-weight="900"
+          fill="${palette.accent}" filter="url(#title-soft-shadow)">${xml(title)}</text>
+        <path d="M${lineLeft} ${lineY} H${lineRight}"
+          stroke="${palette.surface}" stroke-width="${Math.max(2, width * 0.0016)}"/>
       </g>`;
     }
   }
@@ -719,10 +945,11 @@ function buildVisualFilter(
   const base = `scale=${width}:${height}:force_original_aspect_ratio=increase,`
     + `crop=${width}:${height},setsar=1,fps=${fps}`;
   if (effect.id === "semantic_evidence_insert" && hasAsset) {
-    const assetWidth = Math.round(width * 0.7);
-    const assetHeight = Math.round(height * 0.25);
-    const assetX = Math.round(width * 0.15);
-    const assetY = Math.round(height * 0.25);
+    const landscape = width > height;
+    const assetWidth = Math.round(width * (landscape ? 0.229 : 0.7));
+    const assetHeight = Math.round(height * (landscape ? 0.15 : 0.25));
+    const assetX = Math.round(width * (landscape ? 0.723 : 0.15));
+    const assetY = Math.round(height * (landscape ? 0.555 : 0.25));
     return `[0:v]${base},format=yuv420p[base];`
       + `[1:v]format=rgba[ov];[base][ov]overlay=0:0:shortest=1[mid];`
       + `[${assetInputIndex}:v]scale=${assetWidth}:${assetHeight}:`
@@ -1058,7 +1285,7 @@ if (!["list", "validate", "preview", "showcase"].includes(action)) {
   fail(
     "用法：kacha_netstyle.mjs list|validate|preview|showcase "
       + "[--input FILE --effect ID --mask FILE --output FILE --sfx-root DIR] "
-      + "[--production --payload JSON --video-only]",
+      + "[--visual-language ID --production --payload JSON --video-only]",
     2,
   );
 }
@@ -1075,7 +1302,24 @@ const design = resolveDesignSystem({
     density: "standard",
   },
 });
-const style = design.style;
+const visualLanguageId = option("--visual-language");
+let visualLanguage = null;
+if (visualLanguageId) {
+  const visualLanguagesFile = path.join(
+    skillDirectory,
+    "config",
+    "design-system",
+    "visual-languages.json",
+  );
+  const visualLanguages = readJson(visualLanguagesFile);
+  visualLanguage = visualLanguages.languages?.[visualLanguageId] ?? null;
+  if (!visualLanguage) fail(`视觉语言不存在：${visualLanguageId}`, 2);
+}
+const style = {
+  ...design.style,
+  visualLanguageId: visualLanguageId ?? null,
+  visualLanguage,
+};
 
 if (action === "validate") {
   console.log(JSON.stringify({
@@ -1141,6 +1385,10 @@ if (action === "preview") {
     fail(`payload 不存在：${path.resolve(payloadFile)}`, 2);
   }
   const payload = payloadFile ? readJson(path.resolve(payloadFile)) : null;
+  if (production) {
+    const payloadErrors = productionPayloadErrors(effect, payload);
+    if (payloadErrors.length > 0) fail(payloadErrors.join("\n"), 2);
+  }
   const result = renderClip({
     effect,
     input,
@@ -1161,6 +1409,7 @@ if (action === "preview") {
     status: "pass",
     registry: registry.id,
     designDigest: design.digest,
+    visualLanguageId: style.visualLanguageId,
     result,
   }, null, 2));
   process.exit(0);

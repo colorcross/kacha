@@ -3,7 +3,8 @@
 视频展现必须先解析“设计系统 + style profile + 五组 mode”，再由已注册的
 组件、场景、开场和转场共同消费。禁止在单个时间区间的渲染代码中重新写字体、
 颜色、圆角、阴影、边框、缓动或安全区。完整可执行规范见
-`docs/VIDEO_DESIGN_SYSTEM_V1.md`。
+`docs/VIDEO_DESIGN_SYSTEM_V1.md`；电影化选择顺序、栏目预算和反网页门禁见
+`docs/XINGZHE_STYLE_V3.md`。
 
 可直接解析执行的 62 个预制模板、原创资源、字体和按镜头素材路由见
 `references/effect-templates-resources.md`。实际项目应先运行
@@ -50,7 +51,11 @@ node scripts/kacha.mjs design list --kind scene
 node scripts/kacha.mjs design preview --scene process_progressive \
   --output /tmp/process-progressive.svg
 node scripts/kacha.mjs design gallery \
-  --output design/reference-gallery/xingzhe-v2 --overwrite
+  --output design/reference-gallery/xingzhe-v3 --overwrite
+node scripts/kacha.mjs design motion-preview \
+  --output design/reference-gallery/xingzhe-v3/normal-speed-previews --overwrite
+node scripts/kacha.mjs production-quality anti-web-audit \
+  --contract PROJECT/contracts/production-quality-contract.json --write
 node scripts/kacha.mjs effects validate
 node scripts/kacha.mjs effects show --kind opening --id editorial_label_reveal
 ```
@@ -88,10 +93,11 @@ node scripts/kacha.mjs effects show --kind opening --id editorial_label_reveal
 其他字体角色只有在风格合同明确允许时才可按顺序降级，并把最终命中字体写入
 handoff 和 QC。
 
-全部注册项的当前参考图位于 `design/reference-gallery/xingzhe-v2/`。浏览入口
+全部注册项的当前参考图位于 `design/reference-gallery/xingzhe-v3/`。浏览入口
 是 `index.html`；每张图和 `manifest.json` 都锁定 design digest。参考图库
 覆盖 52 个组件、69 个场景、8 个 renderer、36 个 layout 和 75 个 motion，
-用于统一策划、实现与返工的视觉预期，不替代真实视频动效验收。
+用于统一策划、实现与返工的视觉预期。场景参考必须是全画幅视频峰值帧，
+不得再用标题、标签和三态缩略图组成的网页外壳替代真实构图；静态图也不替代正常速度动效验收。
 
 项目高保真层为每个注册效果提供浅暖轻浮层、空间光路、幽默漫画、像素风与暗黑科技风五种
 视觉语言的 16:9 / 9:16 独立峰值帧，共 2400 张，并在
@@ -112,7 +118,8 @@ seek-safe 动效合同。幽默漫画必须由真实反差、误会、尺度错�
 风格场景白名单的效果允许完整替换叙事构图。只更换卡片材质、颜色、网点、像素边或
 玻璃光效不能冒充场景级风格切换，但也不能为了差异化牺牲效果名称与画面的一致性。
 生产库还必须通过同风格近似构图零容忍门禁；当前
-`docs/generated/five-style-library-qc.json` 记录五套 `nearDuplicatePairCount` 均为 0。
+`docs/generated/five-style-library-qc.json` 记录五套 `nearDuplicatePairCount`、
+`orphanAssetCount` 均为 0，同时确认旧版产物、基础图库孤儿文件、跨风格完全重复均为 0。
 
 ## 转场库
 

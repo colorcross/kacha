@@ -2,8 +2,8 @@
   "schemaVersion": "1.0",
   "id": "dahui-video-system",
   "name": "行者大灰视频设计系统",
-  "version": "1.5.0",
-  "description": "面向真人口播、工具演示、知识长谈、纪录片和人与AI互动的行者风 2.0 视频设计系统。",
+  "version": "1.6.0",
+  "description": "面向真人口播、工具演示、知识长谈、纪录片和人与AI互动的行者风 3.0 电影化编辑系统。",
   "styleProfile": "xingzhe",
     "registries": {
       "modes": "modes.json",
@@ -18,7 +18,8 @@
     "fontRouting": "../font-routing.json",
     "effectTemplates": "../effects/templates.json",
       "resourceCatalog": "../resources/core-catalog.json",
-      "visualLanguages": "visual-languages.json"
+      "visualLanguages": "visual-languages.json",
+      "antiWeb": "anti-web.json"
   },
   "defaultModes": {
     "show": "tool-share",
@@ -35,7 +36,9 @@
     "口播字幕按左右、上下、前后等信息关系排版，常规连续口播仍保持单行",
     "镜头运动与停稳交替形成呼吸，不允许全片持续漂移或缩放",
     "组件必须有进入、停稳、退出和失败回退",
-    "设计系统提供一致性，不替代具体内容判断"
+    "设计系统提供一致性，不替代具体内容判断",
+    "真人、真实空间和可核验证据优先于卡片、弹窗和网格",
+    "图形改变观看方式，不把视频组织成网页组件"
   ],
   "governance": {
     "tokenSourceOfTruth": "resolved JSON design contract",
@@ -58,6 +61,9 @@
       "forbidSilentFontFallback": true,
       "requireAdaptiveTextAndCardPlacement": true,
       "requirePersistentBrandContrastCheck": true,
-      "forbidOpaqueBlackSpatialWash": true
+      "forbidOpaqueBlackSpatialWash": true,
+      "requireCinematicEditorialAudit": true,
+      "forbidAdjacentBoundedSurfaces": true,
+      "forbidDashboardAndCardWall": true
   }
 }

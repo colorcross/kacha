@@ -1,0 +1,218 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "kacha-design-normal-speed-reference-previews",
+  "designSystem": {
+    "id": "dahui-video-system",
+    "version": "1.6.0",
+    "digest": "f34eca3e7a2e130fb91d594741efe3995ea05037ff2ab1bbea22b1d2285d918f"
+  },
+  "rendering": {
+    "width": 1280,
+    "height": 720,
+    "fps": 25,
+    "durationSeconds": 3.2
+  },
+  "previewCount": 6,
+  "previews": [
+    {
+      "sceneId": "info_single",
+      "trigger": "一项定义、条件或结论",
+      "entry": "mask_reveal",
+      "exit": "visuals_clear_early",
+      "fps": 25,
+      "durationSeconds": 3.2,
+      "file": "info_single.mp4",
+      "sha256": "3c7d9d637062ec50fc0d918878b5c0da3246c1b11641944d5cf00f46cace4157",
+      "reviewContract": {
+        "playbackSpeed": 1,
+        "purpose": "representative_motion_and_clearance_review",
+        "staticPeakFrameIsNotAcceptance": true,
+        "finalTimelineHumanReviewStillRequired": true
+      }
+    },
+    {
+      "sceneId": "info_bullets",
+      "trigger": "二至五项同层级要点",
+      "entry": "progressive_local",
+      "exit": "visuals_clear_early",
+      "fps": 25,
+      "durationSeconds": 3.2,
+      "file": "info_bullets.mp4",
+      "sha256": "ef31f8cb731b55a1f99814a2a635025a5d024e2d7836c5d8e9eca224e17129c2",
+      "reviewContract": {
+        "playbackSpeed": 1,
+        "purpose": "representative_motion_and_clearance_review",
+        "staticPeakFrameIsNotAcceptance": true,
+        "finalTimelineHumanReviewStillRequired": true
+      }
+    },
+    {
+      "sceneId": "narrative_quote",
+      "trigger": "引用直接支撑当前判断",
+      "entry": "quote_then_source",
+      "exit": "before_next_event",
+      "fps": 25,
+      "durationSeconds": 3.2,
+      "file": "narrative_quote.mp4",
+      "sha256": "013d2a467e6cdb1c700e7526ce2b0a3f8f5d693d2572bd9f2dea2cdbf6441959",
+      "reviewContract": {
+        "playbackSpeed": 1,
+        "purpose": "representative_motion_and_clearance_review",
+        "staticPeakFrameIsNotAcceptance": true,
+        "finalTimelineHumanReviewStillRequired": true
+      }
+    },
+    {
+      "sceneId": "compare_two",
+      "trigger": "两个方案按同一标准比较",
+      "entry": "split_reveal",
+      "exit": "highlight_winner_or_boundary",
+      "fps": 25,
+      "durationSeconds": 3.2,
+      "file": "compare_two.mp4",
+      "sha256": "db7f4d5f784f22fc5179d70826e26bc0cbe39abb011fb8cf137bf818c7b5d6e5",
+      "reviewContract": {
+        "playbackSpeed": 1,
+        "purpose": "representative_motion_and_clearance_review",
+        "staticPeakFrameIsNotAcceptance": true,
+        "finalTimelineHumanReviewStillRequired": true
+      }
+    },
+    {
+      "sceneId": "ai_response_popup",
+      "trigger": "AI作为第二角色回应但不抢前台",
+      "entry": "response_sync",
+      "exit": "before_subject_reply",
+      "fps": 25,
+      "durationSeconds": 3.2,
+      "file": "ai_response_popup.mp4",
+      "sha256": "68e8cebc0bf7786d3854458dee031e936976b3029bdc35c09278831806403989",
+      "reviewContract": {
+        "playbackSpeed": 1,
+        "purpose": "representative_motion_and_clearance_review",
+        "staticPeakFrameIsNotAcceptance": true,
+        "finalTimelineHumanReviewStillRequired": true
+      }
+    },
+    {
+      "sceneId": "ending_summary",
+      "trigger": "最终判断需要形成记忆点",
+      "entry": "phrase_groups",
+      "exit": "speech_end",
+      "fps": 25,
+      "durationSeconds": 3.2,
+      "file": "ending_summary.mp4",
+      "sha256": "d95b74cbff76280ae44768e8f6a99052362855e5a4e6fb9caf0eda5f9a64e297",
+      "reviewContract": {
+        "playbackSpeed": 1,
+        "purpose": "representative_motion_and_clearance_review",
+        "staticPeakFrameIsNotAcceptance": true,
+        "finalTimelineHumanReviewStillRequired": true
+      }
+    }
+  ],
+  "entries": [
+    {
+      "sceneId": "info_single",
+      "trigger": "一项定义、条件或结论",
+      "entry": "mask_reveal",
+      "exit": "visuals_clear_early",
+      "fps": 25,
+      "durationSeconds": 3.2,
+      "file": "info_single.mp4",
+      "sha256": "3c7d9d637062ec50fc0d918878b5c0da3246c1b11641944d5cf00f46cace4157",
+      "reviewContract": {
+        "playbackSpeed": 1,
+        "purpose": "representative_motion_and_clearance_review",
+        "staticPeakFrameIsNotAcceptance": true,
+        "finalTimelineHumanReviewStillRequired": true
+      }
+    },
+    {
+      "sceneId": "info_bullets",
+      "trigger": "二至五项同层级要点",
+      "entry": "progressive_local",
+      "exit": "visuals_clear_early",
+      "fps": 25,
+      "durationSeconds": 3.2,
+      "file": "info_bullets.mp4",
+      "sha256": "ef31f8cb731b55a1f99814a2a635025a5d024e2d7836c5d8e9eca224e17129c2",
+      "reviewContract": {
+        "playbackSpeed": 1,
+        "purpose": "representative_motion_and_clearance_review",
+        "staticPeakFrameIsNotAcceptance": true,
+        "finalTimelineHumanReviewStillRequired": true
+      }
+    },
+    {
+      "sceneId": "narrative_quote",
+      "trigger": "引用直接支撑当前判断",
+      "entry": "quote_then_source",
+      "exit": "before_next_event",
+      "fps": 25,
+      "durationSeconds": 3.2,
+      "file": "narrative_quote.mp4",
+      "sha256": "013d2a467e6cdb1c700e7526ce2b0a3f8f5d693d2572bd9f2dea2cdbf6441959",
+      "reviewContract": {
+        "playbackSpeed": 1,
+        "purpose": "representative_motion_and_clearance_review",
+        "staticPeakFrameIsNotAcceptance": true,
+        "finalTimelineHumanReviewStillRequired": true
+      }
+    },
+    {
+      "sceneId": "compare_two",
+      "trigger": "两个方案按同一标准比较",
+      "entry": "split_reveal",
+      "exit": "highlight_winner_or_boundary",
+      "fps": 25,
+      "durationSeconds": 3.2,
+      "file": "compare_two.mp4",
+      "sha256": "db7f4d5f784f22fc5179d70826e26bc0cbe39abb011fb8cf137bf818c7b5d6e5",
+      "reviewContract": {
+        "playbackSpeed": 1,
+        "purpose": "representative_motion_and_clearance_review",
+        "staticPeakFrameIsNotAcceptance": true,
+        "finalTimelineHumanReviewStillRequired": true
+      }
+    },
+    {
+      "sceneId": "ai_response_popup",
+      "trigger": "AI作为第二角色回应但不抢前台",
+      "entry": "response_sync",
+      "exit": "before_subject_reply",
+      "fps": 25,
+      "durationSeconds": 3.2,
+      "file": "ai_response_popup.mp4",
+      "sha256": "68e8cebc0bf7786d3854458dee031e936976b3029bdc35c09278831806403989",
+      "reviewContract": {
+        "playbackSpeed": 1,
+        "purpose": "representative_motion_and_clearance_review",
+        "staticPeakFrameIsNotAcceptance": true,
+        "finalTimelineHumanReviewStillRequired": true
+      }
+    },
+    {
+      "sceneId": "ending_summary",
+      "trigger": "最终判断需要形成记忆点",
+      "entry": "phrase_groups",
+      "exit": "speech_end",
+      "fps": 25,
+      "durationSeconds": 3.2,
+      "file": "ending_summary.mp4",
+      "sha256": "d95b74cbff76280ae44768e8f6a99052362855e5a4e6fb9caf0eda5f9a64e297",
+      "reviewContract": {
+        "playbackSpeed": 1,
+        "purpose": "representative_motion_and_clearance_review",
+        "staticPeakFrameIsNotAcceptance": true,
+        "finalTimelineHumanReviewStillRequired": true
+      }
+    }
+  ],
+  "reviewContract": {
+    "normalSpeedRequired": true,
+    "staticPeakFrameIsNotAcceptance": true,
+    "finalTimelineHumanReviewStillRequired": true
+  },
+  "digest": "a5da38c8654e1deceac1072098496b3c6921277bc4b4e43366cd94e2595ea7ef"
+}

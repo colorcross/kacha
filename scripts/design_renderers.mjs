@@ -149,6 +149,48 @@ function subjectPlaceholder(x, y, width, height, palette, surface = "footage") {
     + "</g>";
 }
 
+function editorialFootageBackdrop(width, height, palette) {
+  const shelfX = width * 0.56;
+  const shelfWidth = width * 0.42;
+  const shelfTop = height * 0.08;
+  const shelfHeight = height * 0.66;
+  const rowHeight = shelfHeight / 4;
+  const books = [];
+  for (let row = 0; row < 4; row += 1) {
+    const y = shelfTop + row * rowHeight;
+    books.push(`<line x1="${shelfX}" y1="${y + rowHeight * 0.82}" `
+      + `x2="${shelfX + shelfWidth}" y2="${y + rowHeight * 0.82}" `
+      + `stroke="${palette.ink}" stroke-opacity="0.16" stroke-width="${Math.max(2, height * 0.006)}"/>`);
+    let cursor = shelfX + shelfWidth * 0.04;
+    for (let index = 0; index < 12; index += 1) {
+      const bookWidth = shelfWidth * (0.035 + ((index + row) % 4) * 0.006);
+      const bookHeight = rowHeight * (0.34 + ((index * 3 + row) % 5) * 0.07);
+      const color = [
+        palette.accentSecondary,
+        palette.accent,
+        palette.accentInsight ?? palette.accentSecondary,
+        palette.accentVerified ?? palette.accentSecondary,
+        palette.inkSecondary,
+      ][(index + row * 2) % 5];
+      books.push(`<rect x="${cursor}" y="${y + rowHeight * 0.79 - bookHeight}" `
+        + `width="${bookWidth}" height="${bookHeight}" fill="${color}" opacity="0.2"/>`);
+      cursor += bookWidth + shelfWidth * 0.012;
+    }
+  }
+  return `<g data-role="editorial-footage-backdrop">`
+    + `<rect width="${width}" height="${height}" fill="${palette.canvas}"/>`
+    + `<ellipse cx="${width * 0.27}" cy="${height * 0.33}" rx="${width * 0.38}" `
+    + `ry="${height * 0.46}" fill="${palette.surfaceElevated}" opacity="0.58"/>`
+    + `<rect x="${shelfX}" y="${shelfTop}" width="${shelfWidth}" height="${shelfHeight}" `
+    + `fill="${palette.surface}" opacity="0.42"/>`
+    + books.join("")
+    + `<path d="M 0 ${height * 0.78} H ${width} V ${height} H 0 Z" `
+    + `fill="${palette.surfaceElevated}" opacity="0.82"/>`
+    + `<path d="M 0 ${height * 0.78} H ${width}" stroke="${palette.ink}" `
+    + `stroke-opacity="0.08" stroke-width="${Math.max(1, height * 0.004)}"/>`
+    + `</g>`;
+}
+
 function componentData(component, supplied, resolved) {
   const data = { ...DEFAULT_DATA, ...(supplied ?? {}) };
   data.show = supplied?.show ?? resolved.style.brand.label;
@@ -161,17 +203,34 @@ function brandComponent(component, data, box, resolved) {
   const { x, y, width, height } = box;
   const p = resolved.style.palette;
   const value = data[component.slots[0]];
+  const visualHeight = Math.min(height, width * 0.075);
+  if (component.id === "source_tag") {
+    const lineWidth = Math.min(width * 0.34, Math.max(visualHeight * 1.4, String(value).length * visualHeight * 0.1));
+    return `<line x1="${x}" y1="${y + visualHeight * 0.42}" x2="${x + lineWidth}" `
+      + `y2="${y + visualHeight * 0.42}" stroke="${p.accentInsight}" `
+      + `stroke-width="${Math.max(2, visualHeight * 0.012)}"/>`
+      + textNode({
+        x,
+        y: y + visualHeight * 0.88,
+        text: value,
+        size: visualHeight * 0.34,
+        fill: p.inkSecondary,
+        family: font(resolved, "label"),
+        weight: resolved.style.typography.label.weight,
+        letterSpacing: 0.04,
+      });
+  }
   const badge = component.id === "issue_badge";
   const warning = component.id === "disclosure_tag";
   const fill = warning ? p.accentSecondary : badge ? p.accent : p.darkSurface;
   const textColor = warning ? p.textOnDark : badge ? p.textOnAccent : p.textOnDark;
-  const chipWidth = Math.min(width, Math.max(height * 1.8, String(value).length * height * 0.56));
-  return roundedRect(x, y, chipWidth, height, height * 0.28, fill)
+  const chipWidth = Math.min(width, Math.max(visualHeight * 1.8, String(value).length * visualHeight * 0.56));
+  return roundedRect(x, y, chipWidth, visualHeight, visualHeight * 0.28, fill)
     + textNode({
       x: x + chipWidth / 2,
-      y: y + height * 0.65,
+      y: y + visualHeight * 0.65,
       text: value,
-      size: height * 0.34,
+      size: visualHeight * 0.34,
       fill: textColor,
       family: font(resolved, "label"),
       weight: resolved.style.typography.label.weight,
@@ -203,7 +262,13 @@ function subtitleComponent(component, data, box, resolved) {
     + `dy="${Math.max(1, height * 0.025)}" stdDeviation="${Math.max(1, height * 0.025)}" `
     + `flood-color="${s.shadow?.color ?? p.shadow}" `
     + `flood-opacity="${s.shadow?.opacity ?? 0.6}"/></filter>`;
-  const primarySize = Math.max(18, height * (component.id === "subtitle_bilingual" ? 0.31 : 0.38));
+  const primarySize = Math.max(
+    18,
+    Math.min(
+      height * (component.id === "subtitle_bilingual" ? 0.31 : 0.38),
+      width * 0.058,
+    ),
+  );
   const content = [];
   if (component.id === "subtitle_speaker") {
     content.push(roundedRect(x, y + height * 0.12, width * 0.18, height * 0.3, height * 0.08, p.accent));
@@ -480,6 +545,36 @@ function cardRows(items, x, y, width, rowHeight, resolved, checklist = false) {
   }).join("");
 }
 
+function editorialRows(items, x, y, width, rowHeight, resolved, checklist = false) {
+  const p = resolved.style.palette;
+  return items.slice(0, 4).map((item, index) => {
+    const cy = y + rowHeight * index;
+    const active = index === 0;
+    const marker = checklist ? (active ? "✓" : "○") : String(index + 1).padStart(2, "0");
+    return textNode({
+      x,
+      y: cy + rowHeight * 0.48,
+      text: marker,
+      size: rowHeight * 0.24,
+      fill: active ? p.accentSignal : p.accentInsight,
+      family: font(resolved, "label"),
+      weight: 700,
+    })
+      + `<line x1="${x + rowHeight * 0.62}" y1="${cy + rowHeight * 0.52}" `
+      + `x2="${x + width}" y2="${cy + rowHeight * 0.52}" stroke="${p.ink}" `
+      + `stroke-opacity="${active ? 0.42 : 0.16}" stroke-width="${Math.max(1, rowHeight * 0.012)}"/>`
+      + textNode({
+        x: x + rowHeight * 0.74,
+        y: cy + rowHeight * 0.43,
+        text: lineText(item, 18),
+        size: rowHeight * 0.28,
+        fill: p.ink,
+        family: font(resolved, "body"),
+        weight: active ? 650 : 420,
+      });
+  }).join("");
+}
+
 function cardComponent(component, data, box, resolved) {
   const { x, y, width, height } = box;
   const p = resolved.style.palette;
@@ -496,6 +591,179 @@ function cardComponent(component, data, box, resolved) {
     family: font(resolved, "display"),
     weight: 800,
   });
+  if (component.presentation === "boundaryless_progressive") {
+    return roundedRect(x, y + pad * 0.2, width * 0.012, height * 0.22, width * 0.006, p.accentSignal)
+      + heading
+      + editorialRows(
+        normalizedList(data.items, DEFAULT_DATA.items),
+        x + pad,
+        y + height * 0.27,
+        width - pad * 2,
+        height * 0.16,
+        resolved,
+        component.id === "checklist_card",
+      );
+  }
+  if (component.presentation === "full_bleed_editorial") {
+    return textNode({
+      x: x + pad,
+      y: y + height * 0.18,
+      text: "“",
+      size: height * 0.38,
+      fill: p.accentSignal,
+      family: font(resolved, "display"),
+      weight: 800,
+    })
+      + textNode({
+        x: x + pad * 1.8,
+        y: y + height * 0.52,
+        text: lineText(data.quote, 26),
+        size: height * 0.18,
+        fill: p.ink,
+        family: font(resolved, "display"),
+        weight: 760,
+      })
+      + `<line x1="${x + pad * 1.8}" y1="${y + height * 0.7}" `
+      + `x2="${x + width * 0.72}" y2="${y + height * 0.7}" stroke="${p.accentInsight}" `
+      + `stroke-width="${Math.max(2, height * 0.012)}"/>`
+      + textNode({
+        x: x + width - pad,
+        y: y + height * 0.82,
+        text: data.source,
+        size: height * 0.08,
+        fill: p.inkSecondary,
+        family: font(resolved, "label"),
+        anchor: "end",
+      });
+  }
+  if (["boundaryless_editorial", "edge_warning"].includes(component.presentation)) {
+    const accent = component.presentation === "edge_warning" ? p.accentSignal : p.accentInsight;
+    const main = component.id === "definition_card" ? data.term : title;
+    const body = component.id === "definition_card" ? data.definition : data.body;
+    return `<line x1="${x + pad * 0.4}" y1="${y + height * 0.14}" `
+      + `x2="${x + pad * 0.4}" y2="${y + height * 0.78}" stroke="${accent}" `
+      + `stroke-width="${Math.max(3, width * 0.008)}"/>`
+      + textNode({
+        x: x + pad * 1.35,
+        y: y + height * 0.35,
+        text: lineText(main, 20),
+        size: height * 0.16,
+        fill: p.ink,
+        family: font(resolved, "display"),
+        weight: 780,
+      })
+      + textNode({
+        x: x + pad * 1.35,
+        y: y + height * 0.58,
+        text: lineText(body, 34),
+        size: height * 0.095,
+        fill: p.inkSecondary,
+        family: font(resolved, "body"),
+      })
+      + (component.id === "definition_card" && data.boundary
+        ? textNode({
+          x: x + pad * 1.35,
+          y: y + height * 0.76,
+          text: `边界：${lineText(data.boundary, 26)}`,
+          size: height * 0.07,
+          fill: accent,
+          family: font(resolved, "label"),
+        })
+        : "");
+  }
+  if (component.presentation === "split_evidence") {
+    const left = data.left ?? data.before;
+    const right = data.right ?? data.after;
+    return heading
+      + `<line x1="${x + width * 0.5}" y1="${y + height * 0.3}" `
+      + `x2="${x + width * 0.5}" y2="${y + height * 0.76}" stroke="${p.ink}" `
+      + `stroke-opacity="0.2" stroke-width="${Math.max(1, width * 0.002)}"/>`
+      + textNode({
+        x: x + width * 0.24,
+        y: y + height * 0.58,
+        text: left,
+        size: height * 0.18,
+        fill: p.inkSecondary,
+        family: font(resolved, "display"),
+        weight: 650,
+        anchor: "middle",
+      })
+      + textNode({
+        x: x + width * 0.76,
+        y: y + height * 0.58,
+        text: right,
+        size: height * 0.18,
+        fill: p.accentSignal,
+        family: font(resolved, "display"),
+        weight: 780,
+        anchor: "middle",
+      })
+      + textNode({
+        x: x + width * 0.5,
+        y: y + height * 0.88,
+        text: data.criteria,
+        size: height * 0.075,
+        fill: p.inkSecondary,
+        family: font(resolved, "label"),
+        anchor: "middle",
+      });
+  }
+  if (component.presentation === "boundaryless_metric") {
+    return heading
+      + textNode({
+        x: x + width * 0.72,
+        y: y + height * 0.58,
+        text: data.score,
+        size: height * 0.36,
+        fill: p.accentSignal,
+        family: font(resolved, "display"),
+        weight: 800,
+        anchor: "middle",
+      })
+      + editorialRows(
+        normalizedList(data.dimensions),
+        x + pad,
+        y + height * 0.28,
+        width * 0.45,
+        height * 0.15,
+        resolved,
+      );
+  }
+  if (component.presentation === "bounded_source") {
+    const plateX = x + pad;
+    const plateY = y + height * 0.49;
+    const plateWidth = width * 0.62;
+    const plateHeight = height * 0.27;
+    return textNode({
+      x: x + pad,
+      y: y + height * 0.28,
+      text: lineText(title, 22),
+      size: height * 0.105,
+      fill: p.ink,
+      family: font(resolved, "display"),
+      weight: 780,
+    })
+      + `<rect x="${plateX}" y="${plateY}" width="${plateWidth}" height="${plateHeight}" `
+      + `rx="${Math.max(2, height * 0.012)}" fill="${p.surface}" fill-opacity="0.92"/>`
+      + `<line x1="${plateX}" y1="${plateY}" x2="${plateX + plateWidth * 0.22}" `
+      + `y2="${plateY}" stroke="${p.accentInsight}" stroke-width="${Math.max(3, height * 0.012)}"/>`
+      + textNode({
+        x: plateX + pad * 0.7,
+        y: plateY + plateHeight * 0.43,
+        text: lineText(data.source, 30),
+        size: height * 0.07,
+        fill: p.ink,
+        family: font(resolved, "body"),
+      })
+      + textNode({
+        x: plateX + pad * 0.7,
+        y: plateY + plateHeight * 0.76,
+        text: `${data.date} · ${data.scope}`,
+        size: height * 0.052,
+        fill: p.inkSecondary,
+        family: font(resolved, "label"),
+      });
+  }
   if (["comparison_card", "before_after_card"].includes(component.id)) {
     const left = data.left ?? data.before;
     const right = data.right ?? data.after;
@@ -547,25 +815,6 @@ function cardComponent(component, data, box, resolved) {
         anchor: "middle",
       })
       + cardRows(normalizedList(data.dimensions), x + pad, y + height * 0.28, width * 0.48, height * 0.15, resolved);
-  }
-  if (component.id === "source_card") {
-    return base + heading
-      + textNode({
-        x: x + pad,
-        y: y + height * 0.48,
-        text: lineText(data.source, 30),
-        size: height * 0.13,
-        fill: p.ink,
-        family: font(resolved, "body"),
-      })
-      + textNode({
-        x: x + pad,
-        y: y + height * 0.7,
-        text: `${data.date} · ${data.scope}`,
-        size: height * 0.09,
-        fill: p.inkSecondary,
-        family: font(resolved, "label"),
-      });
   }
   if (["quote_card", "definition_card"].includes(component.id)) {
     const main = component.id === "quote_card" ? `“${data.quote}”` : data.term;
@@ -666,13 +915,15 @@ function layoutComponent(component, data, box, resolved) {
       p,
       resolved.selectedModes.surface,
     )
-      + roundedRect(x + width * 0.48, y + height * 0.12, width * 0.48, height * 0.58, height * 0.05, p.darkSurface)
+      + `<line x1="${x + width * 0.5}" y1="${y + height * 0.18}" `
+      + `x2="${x + width * 0.5}" y2="${y + height * 0.68}" stroke="${p.accentInsight}" `
+      + `stroke-width="${Math.max(3, width * 0.006)}"/>`
       + textNode({
         x: x + width * 0.53,
         y: y + height * 0.34,
         text: lineText(data.title, 12),
         size: height * 0.13,
-        fill: p.textOnDark,
+        fill: p.ink,
         family: font(resolved, "display"),
         weight: 800,
       })
@@ -681,7 +932,7 @@ function layoutComponent(component, data, box, resolved) {
         y: y + height * 0.52,
         text: lineText(data.body, 24),
         size: height * 0.08,
-        fill: p.textOnDark,
+        fill: p.inkSecondary,
         family: font(resolved, "body"),
       });
   }
@@ -1182,7 +1433,9 @@ export function renderSceneArtifact(scene, resolved, {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" `
     + `viewBox="0 0 ${width} ${height}" data-scene-id="${xml(scene.id)}">`
     + `<metadata>${xml(JSON.stringify(metadata))}</metadata>`
-    + roundedRect(0, 0, width, height, 0, p.canvas)
+    + (resolved.selectedModes.surface === "footage"
+      ? editorialFootageBackdrop(width, height, p)
+      : roundedRect(0, 0, width, height, 0, p.canvas))
     + (["full_bleed", "screen_pip", "screen_focus"].includes(template)
       ? mediaPlaceholder(0, 0, width, height, p, "PRIMARY MEDIA")
       : "")

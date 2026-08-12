@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -21,6 +22,31 @@ FONT_HASHES = {
 EXPECTED_RENDERERS = {
     "chrome-svg-explicit-embedded-fonts",
     "rsvg-fontconfig-explicit-project-fonts",
+}
+
+AUTHORITATIVE_ARTIFACT_SET_ID = "xingzhe-style-library-current"
+LEGACY_EFFECT_IDS = {"subject_left_card_right"}
+LEGACY_REFERENCE_TOKENS = (
+    "xingzhe-v2",
+    "XINGZHE_STYLE_V2",
+    "全量效果库_v3_浅暖轻浮层",
+    "全量效果库_v3_空间光路",
+    "全量效果库_v4_幽默漫画",
+    "全量效果库_v4_像素风",
+    "全量效果库_v5_暗黑科技风",
+    "legacy-forbidden-layout",
+)
+LEGACY_ROOT_NAMES = {
+    "全量效果库",
+    "全量效果库_v3",
+    "动态视觉样板",
+    "四风格差异化代表样张_V5",
+    "render.mjs",
+    "render_effect_frames.py",
+    "make_full_library_contact_sheets.mjs",
+    "four-style-qc-report.json",
+    "design-system-matrix-qc.json",
+    "manifest.json",
 }
 
 # After removing the same-renderer A-roll and normalizing to changed bounds,
@@ -57,7 +83,16 @@ INTENTIONAL_SUBJECT_RECOMPOSITION_IDS = {
 # grammar. Registered components, layouts, renderers and motion diagrams must
 # always preserve their own visual function.
 STYLE_GRAMMAR_SCENE_IDS = {
-    "light": set(),
+    "light": {
+        "narrative_quote",
+        "narrative_definition",
+        "info_single",
+        "info_bullets",
+        "info_three_reasons",
+        "info_definition",
+        "checklist_progressive",
+        "ending_summary",
+    },
     "spatial": {
         "process_progressive",
         "decision_progressive",
@@ -146,6 +181,73 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def object_digest(value: dict) -> str:
+    normalized = copy.deepcopy(value)
+    normalized.pop("digest", None)
+    rendered = json.dumps(
+        normalized,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(rendered).hexdigest()
+
+
+def legacy_tokens(value: object) -> list[str]:
+    rendered = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    return [token for token in LEGACY_REFERENCE_TOKENS if token in rendered]
+
+
+def scan_legacy_artifacts(root: Path) -> list[str]:
+    findings: list[str] = []
+    if not root.exists():
+        return ["artifact root 不存在"]
+    for child in root.iterdir():
+        name = child.name
+        if (
+            name in LEGACY_ROOT_NAMES
+            or ".staging-" in name
+            or ".previous-" in name
+            or name.startswith("全量效果库_v3_")
+            or name.startswith("全量效果库_v4_")
+            or name.startswith("全量效果库_v5_")
+            or name.startswith("dark-tech-preview")
+            or name.startswith("dark-tech-subtitle-preview")
+            or name.startswith("master_")
+            or (len(name) > 3 and name[:2].isdigit() and name[2] == "_" and name.endswith(".png"))
+        ):
+            findings.append(name)
+    return sorted(findings)
+
+
+def scan_reference_gallery_orphans(manifest_path: Path, gallery: dict) -> list[str]:
+    """Reject stale gallery versions and unregistered SVGs beside the current manifest."""
+    findings: list[str] = []
+    directory = manifest_path.parent
+    for sibling in directory.parent.iterdir():
+        if sibling.is_dir() and sibling.name.startswith("xingzhe-v") and sibling != directory:
+            findings.append(f"../{sibling.name}")
+    expected = {
+        str((directory / item["path"]).resolve())
+        for item in gallery.get("entries", [])
+    }
+    for category in ("components", "scenes", "layouts", "renderers", "motions"):
+        category_dir = directory / category
+        if not category_dir.exists():
+            continue
+        for asset in category_dir.glob("*.svg"):
+            if str(asset.resolve()) not in expected:
+                findings.append(str(asset.relative_to(directory)))
+    return sorted(findings)
+
+
+def report_root(path: Path, external_scheme: str) -> str:
+    """Keep committed QC evidence portable and free of workstation user paths."""
+    try:
+        return str(path.resolve().relative_to(Path.cwd().resolve()))
+    except ValueError:
+        return f"{external_scheme}://{path.name}"
+
+
 def perceptual_feature(path: Path, reference_path: Path | None = None) -> tuple[int, Image.Image, int]:
     image = Image.open(path).convert("RGB")
     if reference_path and reference_path.exists():
@@ -217,7 +319,19 @@ def added_near_black_ratio(image: Image.Image, reference: Image.Image) -> float:
     return added.histogram()[255] / max(1, image.width * image.height)
 
 
-def validate_library(directory: Path, style: str, semantics: dict, contracts: dict) -> dict:
+def validate_library(
+    directory: Path,
+    style: str,
+    style_id: str,
+    semantics: dict,
+    contracts: dict,
+    gallery: dict,
+    registry: dict,
+    anti_web: dict,
+    anti_web_hash: str,
+    visual_languages: dict,
+    visual_languages_hash: str,
+) -> dict:
     failures: list[str] = []
     warnings: list[str] = []
     manifest_path = directory / "manifest.json"
@@ -230,16 +344,85 @@ def validate_library(directory: Path, style: str, semantics: dict, contracts: di
     assets = [asset for effect in effects for asset in effect.get("assets", {}).values()]
     semantic_map = {(item["kind"], item["id"]): item for item in semantics["items"]}
     effect_map = {(item["kind"], item["id"]): item for item in effects}
+    expected_keys = set(semantic_map)
+    artifact_set = manifest.get("artifactSet", {})
+    evidence_artifact_set = evidence.get("artifactSet", {})
+    if artifact_set.get("id") != AUTHORITATIVE_ARTIFACT_SET_ID or artifact_set.get("status") != "authoritative":
+        failures.append("manifest 未声明当前唯一权威效果库身份")
+    if evidence_artifact_set != artifact_set:
+        failures.append("manifest 与 render-evidence 的权威效果库身份不一致")
+    if manifest.get("style", {}).get("id") != style_id:
+        failures.append(f"manifest.style.id 与目录声明不一致：预期 {style_id}")
+    if manifest.get("digest") != object_digest(manifest):
+        failures.append("manifest.digest 与当前内容不一致")
+    if evidence.get("digest") != object_digest(evidence):
+        failures.append("render-evidence.digest 与当前内容不一致")
+    if legacy_tokens(manifest):
+        failures.append(f"manifest 仍引用旧版标识：{legacy_tokens(manifest)}")
+    if legacy_tokens(evidence):
+        failures.append(f"render-evidence 仍引用旧版标识：{legacy_tokens(evidence)}")
     if len(effects) != semantics["counts"]["total"]:
         failures.append(f"effects={len(effects)}，预期 {semantics['counts']['total']}")
     if len(effect_map) != len(effects):
         failures.append("效果 kind+id 不唯一")
+    if set(effect_map) != expected_keys:
+        failures.append("图库效果集合与权威语义目录不完全一致")
+    if any(effect_id in LEGACY_EFFECT_IDS for _kind, effect_id in effect_map):
+        failures.append("图库仍包含已删除的旧版效果")
     if len(assets) != expected_images:
         failures.append(f"assets={len(assets)}，预期 {expected_images}")
+    expected_asset_paths = {
+        str((directory / asset["path"]).resolve())
+        for asset in assets
+    }
+    orphan_asset_paths = []
+    for category in ("components", "scenes", "layouts", "renderers", "motions"):
+        category_dir = directory / category
+        if not category_dir.exists():
+            continue
+        for image_path in category_dir.glob("*.png"):
+            if str(image_path.resolve()) not in expected_asset_paths:
+                orphan_asset_paths.append(str(image_path.relative_to(directory)))
+    if orphan_asset_paths:
+        failures.append(f"目录存在 {len(orphan_asset_paths)} 张未注册旧图或孤儿图")
     if manifest.get("semanticCatalogDigest") != semantics.get("digest"):
         failures.append("manifest.semanticCatalogDigest 与权威语义目录不一致")
     if evidence.get("semanticCatalogDigest") != semantics.get("digest"):
         failures.append("render-evidence.semanticCatalogDigest 与权威语义目录不一致")
+    if manifest.get("sourceGalleryDigest") != gallery.get("digest"):
+        failures.append("manifest.sourceGalleryDigest 与当前基础图库不一致")
+    if evidence.get("sourceGalleryDigest") != gallery.get("digest"):
+        failures.append("render-evidence.sourceGalleryDigest 与当前基础图库不一致")
+    if manifest.get("designSystem") != gallery.get("designSystem"):
+        failures.append("manifest.designSystem 与当前基础图库设计系统不一致")
+    policy = manifest.get("cinematicEditorial", {})
+    if (
+        policy.get("policyId") != anti_web.get("id")
+        or policy.get("policyVersion") != anti_web.get("version")
+        or policy.get("policySha256") != anti_web_hash
+    ):
+        failures.append("manifest 反网页父合同与当前 anti-web.json 不一致")
+    evidence_policy = evidence.get("cinematicEditorialPolicy", {})
+    if evidence_policy != {
+        "id": anti_web.get("id"),
+        "version": anti_web.get("version"),
+        "sha256": anti_web_hash,
+    }:
+        failures.append("render-evidence 反网页父合同与当前 anti-web.json 不一致")
+    if manifest.get("visualLanguageRegistryDigest") != visual_languages_hash:
+        failures.append("manifest.visualLanguageRegistryDigest 与当前五风格注册表不一致")
+    if evidence.get("visualLanguageRegistryDigest") != visual_languages_hash:
+        failures.append("render-evidence.visualLanguageRegistryDigest 与当前五风格注册表不一致")
+    expected_language = visual_languages.get("languages", {}).get(style_id, {})
+    expected_grammar_id = expected_language.get("grammarSignature", {}).get("id")
+    if manifest.get("style", {}).get("grammar", {}).get("grammarSignature", {}).get("id") != expected_grammar_id:
+        failures.append("manifest 风格语法与 visual-languages.json 不一致")
+    registry_binding = manifest.get("contractRegistry", {})
+    evidence_registry_binding = evidence.get("contractRegistry", {})
+    if registry_binding.get("digest") != registry.get("digest"):
+        failures.append("manifest 未绑定当前合同注册表摘要")
+    if evidence_registry_binding != registry_binding:
+        failures.append("render-evidence 与 manifest 绑定了不同合同注册表")
     if evidence.get("style") != style:
         failures.append(f"render-evidence.style={evidence.get('style')}，预期 {style}")
     if evidence.get("renderer") not in EXPECTED_RENDERERS:
@@ -333,6 +516,16 @@ def validate_library(directory: Path, style: str, semantics: dict, contracts: di
         }.items()
         if source
     }
+    source_asset_paths = {
+        source_id: (directory / source).resolve()
+        for source_id, source in {
+            "horizontal": manifest.get("sources", {}).get("horizontal"),
+            "vertical": manifest.get("sources", {}).get("vertical"),
+            "horizontalPersonMask": manifest.get("sources", {}).get("horizontalPersonMask"),
+            "verticalPersonMask": manifest.get("sources", {}).get("verticalPersonMask"),
+        }.items()
+        if source
+    }
     mask_paths = {
         aspect: (directory / source).resolve()
         for aspect, source in {
@@ -341,6 +534,15 @@ def validate_library(directory: Path, style: str, semantics: dict, contracts: di
         }.items()
         if source
     }
+    source_bindings = evidence.get("sourceAssetBindings", {})
+    for source_id in ("horizontal", "vertical", "horizontalPersonMask", "verticalPersonMask"):
+        source_path = source_asset_paths.get(source_id)
+        if source_path is None or not source_path.exists():
+            failures.append(f"当前图库源素材不存在：{source_id}")
+            continue
+        binding = source_bindings.get(source_id, {})
+        if binding.get("sha256") != sha256_file(source_path):
+            failures.append(f"render-evidence 源素材哈希未绑定当前文件：{source_id}")
     reference_cache: dict[str, Image.Image] = {}
     head_mask_cache: dict[str, Image.Image | None] = {}
     head_collision_assets: list[str] = []
@@ -403,6 +605,10 @@ def validate_library(directory: Path, style: str, semantics: dict, contracts: di
         if not contract:
             failures.append(f"缺少动效合同：{key}")
         else:
+            if effect.get("motion", {}).get("contractId") != contract.get("contractId"):
+                failures.append(f"峰值图绑定了错误的动效合同 ID：{key}")
+            if effect.get("motion") != contract:
+                failures.append(f"manifest 内嵌合同与权威合同注册表不完全一致：{key}")
             alignment = contract.get("semanticAlignment", {})
             if alignment.get("semanticDigest") != semantic.get("semanticDigest"):
                 failures.append(f"动效合同语义摘要漂移：{key}")
@@ -588,6 +794,8 @@ def validate_library(directory: Path, style: str, semantics: dict, contracts: di
         "headCollisionAssets": head_collision_assets[:100],
         "spatialBlackAssetCount": len(spatial_black_assets),
         "spatialBlackAssets": spatial_black_assets[:100],
+        "orphanAssetCount": len(orphan_asset_paths),
+        "orphanAssets": orphan_asset_paths[:100],
         "fontBindings": {role: bindings.get(role, {}) for role in FONT_HASHES},
         "failures": failures,
         "warnings": warnings,
@@ -595,6 +803,94 @@ def validate_library(directory: Path, style: str, semantics: dict, contracts: di
             {"sha256": asset_hash, "kind": key[0], "id": key[1], "aspect": aspect}
             for asset_hash, key, aspect in hashes
         ],
+    }
+
+
+def validate_registry(
+    registry: dict,
+    semantics: dict,
+    gallery: dict,
+    anti_web: dict,
+    anti_web_hash: str,
+    visual_languages: dict,
+    visual_languages_hash: str,
+) -> dict:
+    failures: list[str] = []
+    contracts = registry.get("contracts", [])
+    semantic_map = {(item["kind"], item["id"]): item for item in semantics.get("items", [])}
+    style_map = visual_languages.get("languages", {})
+    expected_style_ids = set(style_map)
+    if registry.get("digest") != object_digest(registry):
+        failures.append("合同注册表 digest 与当前内容不一致")
+    if legacy_tokens(registry):
+        failures.append(f"合同注册表仍引用旧版标识：{legacy_tokens(registry)}")
+    if registry.get("sourceGalleryDigest") != gallery.get("digest"):
+        failures.append("合同注册表与当前基础图库摘要不一致")
+    if registry.get("semanticCatalogDigest") != semantics.get("digest"):
+        failures.append("合同注册表与当前语义目录摘要不一致")
+    if registry.get("visualLanguageRegistryDigest") != visual_languages_hash:
+        failures.append("合同注册表与当前五风格注册表摘要不一致")
+    if registry.get("cinematicEditorialPolicy") != {
+        "id": anti_web.get("id"),
+        "version": anti_web.get("version"),
+        "sha256": anti_web_hash,
+    }:
+        failures.append("合同注册表与当前反网页父合同不一致")
+    if set(registry.get("styles", {})) != expected_style_ids:
+        failures.append("合同注册表风格集合与 visual-languages.json 不一致")
+    contract_ids = [item.get("contractId") for item in contracts]
+    if len(contract_ids) != len(set(contract_ids)):
+        failures.append("合同 contractId 不唯一")
+    actual_keys: set[tuple[str, str, str]] = set()
+    for contract in contracts:
+        effect = contract.get("effect", {})
+        style = contract.get("style", {})
+        key = (effect.get("kind"), effect.get("id"))
+        style_id = style.get("id")
+        actual_keys.add((key[0], key[1], style_id))
+        expected_contract_id = f"{key[0]}.{key[1]}.{style_id}"
+        if contract.get("contractId") != expected_contract_id:
+            failures.append(f"合同 ID 与 kind/effect/style 不一致：{contract.get('contractId')}")
+        semantic = semantic_map.get(key)
+        if not semantic:
+            failures.append(f"合同引用未注册效果：{key}")
+            continue
+        if key[1] in LEGACY_EFFECT_IDS:
+            failures.append(f"合同仍包含已删除旧版效果：{key[1]}")
+        if contract.get("semanticAlignment", {}).get("semanticDigest") != semantic.get("semanticDigest"):
+            failures.append(f"合同与语义目录摘要不一致：{expected_contract_id}")
+        language = style_map.get(style_id, {})
+        if not language:
+            failures.append(f"合同引用未注册风格：{style_id}")
+            continue
+        if style.get("label") != language.get("label"):
+            failures.append(f"合同风格标签漂移：{expected_contract_id}")
+        grammar_id = language.get("grammarSignature", {}).get("id")
+        if contract.get("editingGrammarContract", {}).get("signature", {}).get("id") != grammar_id:
+            failures.append(f"合同剪辑语法与风格注册表不一致：{expected_contract_id}")
+    expected_keys = {
+        (kind, effect_id, style_id)
+        for kind, effect_id in semantic_map
+        for style_id in expected_style_ids
+    }
+    if actual_keys != expected_keys:
+        missing = len(expected_keys - actual_keys)
+        extra = len(actual_keys - expected_keys)
+        failures.append(f"合同矩阵不完整：缺少 {missing}，多出 {extra}")
+    counts = registry.get("counts", {})
+    if counts != {
+        "effects": len(semantic_map),
+        "styles": len(expected_style_ids),
+        "contracts": len(expected_keys),
+    }:
+        failures.append("合同注册表 counts 与当前权威矩阵不一致")
+    return {
+        "expectedEffects": len(semantic_map),
+        "expectedStyles": len(expected_style_ids),
+        "expectedContracts": len(expected_keys),
+        "actualContracts": len(contracts),
+        "uniqueContractIds": len(set(contract_ids)),
+        "failures": failures,
     }
 
 
@@ -607,10 +903,21 @@ def main() -> None:
     parser.add_argument("--dark", required=True)
     parser.add_argument("--contracts", required=True)
     parser.add_argument("--semantics", required=True)
+    parser.add_argument("--gallery", required=True)
+    parser.add_argument("--anti-web", required=True)
+    parser.add_argument("--visual-languages", required=True)
+    parser.add_argument("--artifact-root")
     parser.add_argument("--output")
     args = parser.parse_args()
     semantics = load(Path(args.semantics))
     registry = load(Path(args.contracts))
+    gallery = load(Path(args.gallery))
+    anti_web_path = Path(args.anti_web)
+    visual_languages_path = Path(args.visual_languages)
+    anti_web = load(anti_web_path)
+    visual_languages = load(visual_languages_path)
+    anti_web_hash = sha256_file(anti_web_path)
+    visual_languages_hash = sha256_file(visual_languages_path)
     style_specs = [
         ("light", Path(args.light), "xingzhe-light-overlay"),
         ("spatial", Path(args.spatial), "xingzhe-spatial-lightpath"),
@@ -619,9 +926,26 @@ def main() -> None:
         ("dark", Path(args.dark), "xingzhe-dark-tech"),
     ]
     report = {
-        "schemaVersion": "2.0",
+        "schemaVersion": "3.0",
         "kind": "kacha_reference_triad_qc",
+        "authority": {
+            "artifactSetId": AUTHORITATIVE_ARTIFACT_SET_ID,
+            "galleryDigest": gallery.get("digest"),
+            "semanticCatalogDigest": semantics.get("digest"),
+            "contractRegistryDigest": registry.get("digest"),
+            "antiWebPolicySha256": anti_web_hash,
+            "visualLanguageRegistrySha256": visual_languages_hash,
+        },
         "semanticCatalogDigest": semantics.get("digest"),
+        "registryConsistency": validate_registry(
+            registry,
+            semantics,
+            gallery,
+            anti_web,
+            anti_web_hash,
+            visual_languages,
+            visual_languages_hash,
+        ),
         "libraries": [],
     }
     for style, directory, style_id in style_specs:
@@ -631,8 +955,33 @@ def main() -> None:
             if item.get("style", {}).get("id") == style_id
         }
         report["libraries"].append(
-            validate_library(directory, style, semantics, style_contracts)
+            validate_library(
+                directory,
+                style,
+                style_id,
+                semantics,
+                style_contracts,
+                gallery,
+                registry,
+                anti_web,
+                anti_web_hash,
+                visual_languages,
+                visual_languages_hash,
+            )
         )
+    artifact_root = Path(args.artifact_root) if args.artifact_root else Path(args.light).parent
+    legacy_artifacts = scan_legacy_artifacts(artifact_root)
+    report["legacyArtifactScan"] = {
+        "root": report_root(artifact_root, "external-artifact-root"),
+        "findingCount": len(legacy_artifacts),
+        "findings": legacy_artifacts,
+    }
+    gallery_orphans = scan_reference_gallery_orphans(Path(args.gallery), gallery)
+    report["referenceGalleryOrphanScan"] = {
+        "root": report_root(Path(args.gallery).parent, "reference-gallery"),
+        "findingCount": len(gallery_orphans),
+        "findings": gallery_orphans,
+    }
     cross_style_hashes: dict[str, list[dict]] = {}
     for library in report["libraries"]:
         for item in library.pop("_assetHashes", []):
@@ -657,7 +1006,12 @@ def main() -> None:
     if None in grammar_ids or len(set(grammar_ids)) != len(style_specs):
         for library in report["libraries"]:
             library["failures"].append("五套效果库没有五个互不相同的剪辑语法签名")
-    failures = [failure for library in report["libraries"] for failure in library["failures"]]
+    failures = [
+        *report["registryConsistency"]["failures"],
+        *([f"发现 {len(legacy_artifacts)} 个旧版或失败生成物"] if legacy_artifacts else []),
+        *([f"基础图库发现 {len(gallery_orphans)} 个旧版本或清单外孤儿文件"] if gallery_orphans else []),
+        *[failure for library in report["libraries"] for failure in library["failures"]],
+    ]
     report["status"] = "pass" if not failures else "fail"
     report["failures"] = failures
     rendered = json.dumps(report, ensure_ascii=False, indent=2) + "\n"

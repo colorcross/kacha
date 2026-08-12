@@ -60,6 +60,27 @@ const visualLanguagesFile = path.join(
   "design-system",
   "visual-languages.json",
 );
+const motionContractRegistryFile = path.join(
+  skillRoot,
+  "config",
+  "effects",
+  "motion-contracts",
+  "design-effect-library-v3.json",
+);
+const semanticCatalogFile = path.join(
+  skillRoot,
+  "config",
+  "effects",
+  "reference-semantics",
+  "light-overlay.json",
+);
+const referenceGalleryManifestFile = path.join(
+  skillRoot,
+  "design",
+  "reference-gallery",
+  "xingzhe-v3",
+  "manifest.json",
+);
 
 const VIDEO_EXTENSIONS = new Set([
   ".mov",
@@ -85,6 +106,8 @@ const BGM_PRESET_IDS = new Set([
 ]);
 const EFFECT_DENSITIES = new Set(["restrained", "balanced", "active"]);
 const VISUAL_LANGUAGE_SELECTION_MODES = new Set(["automatic", "preferred"]);
+const PRESET_KINDS = new Set(["master-style", "production-preset"]);
+const EFFECT_LIBRARY_POLICIES = new Set(["authoritative", "inherit-master"]);
 const BEAUTY_PROFILES = new Set(["natural", "visible"]);
 const TASKS = new Set(["source_edit", "content_generation", "local_optimization"]);
 const LANGUAGES = new Set(["zh", "en", "bilingual"]);
@@ -216,10 +239,86 @@ function loadBaseRegistry() {
   if (registry.schemaVersion !== "1.0") {
     throw new Error("production-studio schemaVersion 必须为 1.0");
   }
-  if (!Array.isArray(registry.stylePresets) || registry.stylePresets.length < 4) {
-    throw new Error("production-studio 至少需要四套内置风格");
+  if (!Array.isArray(registry.stylePresets) || registry.stylePresets.length !== 5) {
+    throw new Error("production-studio 必须包含 1 套行者风主风格与 4 套继承式生产预设");
   }
   return registry;
+}
+
+function validateStyleArchitecture(registry, visualLanguageRegistry) {
+  const architecture = registry.styleArchitecture;
+  if (!isPlainObject(architecture)) throw new Error("production-studio 缺少 styleArchitecture");
+  if (
+    architecture.masterStyleId !== "xingzhe"
+    || architecture.masterStyleVersion !== "3.0"
+    || architecture.presetRelationship
+      !== "production-presets-inherit-master-effect-library"
+    || architecture.visualLanguageRelationship
+      !== "five-visual-languages-are-xingzhe-substyles"
+    || architecture.highFidelityArtifactSetId !== "xingzhe-style-library-current"
+  ) {
+    throw new Error("styleArchitecture 必须声明行者风 3.0、继承式生产预设与五套子风格视觉语言");
+  }
+  const expectedPaths = new Map([
+    ["visualLanguageRegistry", visualLanguagesFile],
+    ["motionContractRegistry", motionContractRegistryFile],
+    ["semanticCatalog", semanticCatalogFile],
+    ["referenceGallery", path.dirname(referenceGalleryManifestFile)],
+  ]);
+  for (const [key, expected] of expectedPaths) {
+    const resolved = path.resolve(skillRoot, nonEmptyString(architecture[key], `styleArchitecture.${key}`));
+    if (resolved !== expected) throw new Error(`styleArchitecture.${key} 未指向当前唯一权威：${architecture[key]}`);
+    if (!fs.existsSync(resolved)) throw new Error(`styleArchitecture.${key} 不存在：${resolved}`);
+  }
+  const counts = architecture.expectedCounts;
+  if (
+    !isPlainObject(counts)
+    || counts.productionPresets !== 5
+    || counts.visualLanguages !== 5
+    || counts.effectsPerVisualLanguage !== 240
+    || counts.motionContracts !== 1200
+    || counts.highFidelityFrames !== 2400
+  ) {
+    throw new Error("styleArchitecture.expectedCounts 必须冻结 5 预设、5 视觉语言、240 效果、1200 合同与 2400 峰值帧");
+  }
+  const contractRegistry = readJson(motionContractRegistryFile);
+  const semanticCatalog = readJson(semanticCatalogFile);
+  const galleryManifest = readJson(referenceGalleryManifestFile);
+  const visualLanguageIds = visualLanguageRegistry.languages
+    .map((language) => language.id)
+    .sort();
+  const contractStyleIds = Object.keys(contractRegistry.styles ?? {}).sort();
+  if (
+    contractRegistry.kind !== "kacha_design_effect_motion_contract_registry"
+    || contractRegistry.counts?.effects !== counts.effectsPerVisualLanguage
+    || contractRegistry.counts?.styles !== counts.visualLanguages
+    || contractRegistry.counts?.contracts !== counts.motionContracts
+    || contractRegistry.contracts?.length !== counts.motionContracts
+    || JSON.stringify(contractStyleIds) !== JSON.stringify(visualLanguageIds)
+  ) {
+    throw new Error("五视觉语言与 1200 份动效合同的风格矩阵不一致");
+  }
+  if (
+    semanticCatalog.kind !== "kacha_light_overlay_reference_semantics"
+    || semanticCatalog.counts?.total !== counts.effectsPerVisualLanguage
+    || galleryManifest.kind !== "kacha_design_reference_gallery"
+    || galleryManifest.counts?.total !== counts.effectsPerVisualLanguage
+    || semanticCatalog.sourceGalleryDigest !== galleryManifest.digest
+    || contractRegistry.sourceGalleryDigest !== galleryManifest.digest
+    || contractRegistry.semanticCatalogDigest !== semanticCatalog.digest
+    || contractRegistry.visualLanguageRegistryDigest !== visualLanguageRegistry.digest
+  ) {
+    throw new Error("效果目录、预期峰值语义、五视觉语言与动效合同 digest 不一致");
+  }
+  return {
+    ...clone(architecture),
+    authorityDigests: {
+      visualLanguageRegistry: visualLanguageRegistry.digest,
+      motionContractRegistry: contractRegistry.digest,
+      semanticCatalog: semanticCatalog.digest,
+      referenceGallery: galleryManifest.digest,
+    },
+  };
 }
 
 function loadVisualLanguageRegistry() {
@@ -276,7 +375,7 @@ function loadVisualLanguageRegistry() {
     defaultSelectionMode: registry.defaultSelectionMode,
     noMatchFallback: registry.noMatchFallback,
     languages,
-    digest: sha256Value(registry),
+    digest: sha256File(visualLanguagesFile),
   };
 }
 
@@ -614,6 +713,16 @@ function normalizeStylePreset(value, {
     schemaVersion: "1.0",
     id: idValue(merged.id, `${label}.id`),
     name: nonEmptyString(merged.name, `${label}.name`),
+    presetKind: builtIn
+      ? enumValue(merged.presetKind, PRESET_KINDS, `${label}.presetKind`)
+      : "custom-production-preset",
+    effectLibraryPolicy: builtIn
+      ? enumValue(
+          merged.effectLibraryPolicy,
+          EFFECT_LIBRARY_POLICIES,
+          `${label}.effectLibraryPolicy`,
+        )
+      : "inherit-master",
     tagline: nonEmptyString(merged.tagline, `${label}.tagline`),
     description: nonEmptyString(merged.description, `${label}.description`),
     builtIn,
@@ -633,6 +742,7 @@ export function loadProductionCatalog({
 } = {}) {
   const registry = loadBaseRegistry();
   const visualLanguageRegistry = loadVisualLanguageRegistry();
+  const styleArchitecture = validateStyleArchitecture(registry, visualLanguageRegistry);
   const effects = effectCatalog();
   const openings = effects.filter((effect) => effect.kind === "opening");
   const openingIds = new Set(openings.map((effect) => effect.id));
@@ -641,6 +751,36 @@ export function loadProductionCatalog({
     { label: `stylePresets[${index}]`, builtIn: true, openingIds },
   ));
   const builtInById = new Map(builtIns.map((style) => [style.id, style]));
+  const requiredPresetIds = [
+    "xingzhe",
+    "clear-knowledge",
+    "deep-reading",
+    "modern-tech",
+    "calm-documentary",
+  ];
+  if (
+    JSON.stringify(builtIns.map((style) => style.id)) !== JSON.stringify(requiredPresetIds)
+    || builtIns[0].presetKind !== "master-style"
+    || builtIns[0].effectLibraryPolicy !== "authoritative"
+    || builtIns[0].baseStyleId !== null
+    || builtIns.slice(1).some((style) => (
+      style.presetKind !== "production-preset"
+      || style.effectLibraryPolicy !== "inherit-master"
+      || style.baseStyleId !== styleArchitecture.masterStyleId
+      || style.design.profile !== styleArchitecture.masterStyleId
+    ))
+  ) {
+    throw new Error("五个内置项必须由行者风主风格与四个继承同一效果库的生产预设组成");
+  }
+  for (const style of builtIns) {
+    if (
+      style.caption.preferredFontFamily !== "方正粗金陵简体"
+      || style.caption.shadowOpacity !== 0.6
+      || style.caption.background !== "none"
+    ) {
+      throw new Error(`${style.id} 的常规字幕必须使用金陵体、无底色与 60% 阴影`);
+    }
+  }
   const custom = includeCustom
     ? readCustomStyles(environment).map((style, index) => {
       const baseId = style.baseStyleId ?? registry.defaultStyleId;
@@ -670,6 +810,7 @@ export function loadProductionCatalog({
     name: registry.name,
     defaultStyleId: registry.defaultStyleId,
     authorityBoundary: registry.authorityBoundary,
+    styleArchitecture,
     styles,
     visualLanguagePolicy: {
       parentProfile: visualLanguageRegistry.parentProfile,
@@ -1481,7 +1622,19 @@ async function runCli() {
               defaultStyleId: catalog.defaultStyleId,
               builtInStyleCount: catalog.styles.filter((style) => style.builtIn).length,
               customStyleCount: catalog.styles.filter((style) => !style.builtIn).length,
+              masterStyleId: catalog.styleArchitecture.masterStyleId,
+              masterStyleVersion: catalog.styleArchitecture.masterStyleVersion,
+              productionPresetRelationship:
+                catalog.styleArchitecture.presetRelationship,
               visualLanguageCount: catalog.visualLanguages.length,
+              visualLanguageRelationship:
+                catalog.styleArchitecture.visualLanguageRelationship,
+              effectCountPerVisualLanguage:
+                catalog.styleArchitecture.expectedCounts.effectsPerVisualLanguage,
+              motionContractCount:
+                catalog.styleArchitecture.expectedCounts.motionContracts,
+              highFidelityFrameCount:
+                catalog.styleArchitecture.expectedCounts.highFidelityFrames,
               defaultVisualLanguageSelectionMode:
                 catalog.visualLanguagePolicy.defaultSelectionMode,
               visualLanguageParentProfile:

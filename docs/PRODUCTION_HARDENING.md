@@ -241,6 +241,46 @@
     事实、移动和创意七类决策路由；空间变化按蒙版视线、层间插框、文字纵深和
     抠像演示四类路由。每个事件必须有语义触发、进入/峰值/停稳/退出、声音落点、
     失败条件和最简回退，且同时最多一个主效果。
+22. **清单模块按效果时长平均弹出**：清单正式渲染必须提供逐项 `itemCues`，
+    每项绑定实际口播触发词或可见动作，`revealAt` 严格递增；底层持续存在，
+    当前项单独进入和点亮。每项各有一次与可见落位同帧的轻量信息音效，禁止
+    在模块开头一次性弹出全部项目，也禁止用一个音效覆盖整组。
+23. **自动换行被冒充多行字幕**：常规字幕仍是一行金陵体、无底色、无描边、
+    60% 阴影。只有对比、因果、层级或递进关系成立时才能使用多行版式，并为
+    每行提供独立 `lineCue`；第一行先落位，第二行在对应口播后再出现。不同场景
+    可切换华光标题黑、字号、颜色和排版，但不能因自动换行同时展示两行。
+24. **PIP 只是缩小复制主画面**：每个 PIP 必须记录与主画面的信息差；优先放
+    外部证据、情境示意、细节、清单或演示素材。同源同内容重复时改用 full-frame
+    fit、虚拟景别或移除。PIP 进入、停稳、退出三态都要通过头脸、字幕和平台
+    安全区碰撞检查。
+25. **粗描边制造廉价感**：常规字幕禁止描边；标题和弹窗默认使用细边界、色块
+    层级与柔和阴影，4K 卡片实线边界建议不超过 4 px。只有像素块、蒙版边界或
+    明确的印刷语言可以使用可见轮廓，且不能把厚黑边同时套在字体和弹窗上。
+26. **外部或生成素材只看风格不看语义**：素材必须逐项核对对象、动作、状态、
+    角色、时态和镜头运动；概念画面标注“情境示意”。保存来源、授权、提示词、
+    生成模型、文件 SHA 与使用区间。不能用视觉相近但语义不成立的素材填空。
+27. **封面人物固定站姿只换标题**：电影级 3D 人物每张封面都必须提交
+    `poseContract`，把场景信号、叙事意图、身体动作、视线、表情、道具交互和
+    重心变化绑定到当前选题，并冻结动作素材 SHA。`poseAdapted=true` 不能单独
+    放行；T-pose、A-pose、证件站姿、对称展示站姿和跨期/跨栏目固定姿势直接
+    失败。需要延续同一动作时，必须证明连续叙事关系并改变至少两项动作变量。
+28. **开场首帧先露局部人脸小口**：闭合式蒙版、像素窗或 iris reveal 的第 0 帧
+    必须是真正全覆盖；首次打开时要么直接覆盖足以识别完整脸/上半身的区域，
+    要么改用边缘、条带或块状揭幕，禁止短暂只露眼睛、鼻子或半张脸。代表预览
+    必须保留第 0 帧和首次非零揭幕帧作为证据。
+29. **把 SFX 文件起点当成声音落点**：每个首分钟和高影响事件必须解码实际 SFX，
+    测量短窗 RMS 峰值偏移；时间线起点按 `目标视觉落点 - 波形峰值偏移` 计算，
+    并记录 `fileStartSeconds / measuredPeakOffsetSeconds / targetLandingSeconds /
+    deltaFrames`。动画起点、素材文件起点和峰值落点不得混为一谈，误差超过 1 帧
+    必须阻断代表预览。
+30. **首分钟只有“多”没有吸引力和活人感**：`production-quality` 独立审计前
+    60 秒，至少 5 个语义动效、4 种机制和 3 个工具实测峰值 SFX；任意 10 秒最多
+    3 个主效果。人物在场比例至少 55%，全屏接管最多 35%，呼吸空间至少 20%，
+    并保留至少一个真人反应窗口。缺少正常速度代表预览时不得进入 final render。
+31. **封面 3D 角色被真人照片重新污染**：默认生成输入必须只有获批 3D 三视图，
+    真人照片角色固定为 `post_generation_identity_qc_only`。`kacha cover prompt`
+    在动作、表情、视线、重心、道具和服装适配字段不完整时不输出提示词；双锚点
+    模式必须逐期显式授权，不能由模型或旧模板自动恢复。
 
 ## 13. 性能、Token 与弱模型生产门禁
 
@@ -322,3 +362,42 @@
    基线/候选输出必须不同，输出也不能跨项目复用。
 10. **状态页信任旧 pass**：`status/observe` 每次重验当前计划与缓存；损坏 JSON
     显示可恢复阻断，`run` 从当前输入重建后才能继续。
+
+## 16. 返工经验统一生产质量合同
+
+上述语义剪切、连接点、开场、效果密度、字幕、清单、PIP、外部素材、BGM、
+电影级 3D 封面和正常速度审片要求，不再只作为说明文档存在。新建源视频项目
+默认生成 `contracts/production-quality-contract.json`，并在 manifest 中设置：
+
+```json
+{
+  "productionQualityV1": { "required": true },
+  "plans": { "productionQuality": "production-quality-contract.json" }
+}
+```
+
+三道门禁分别验证不同事实：
+
+- `gate-plan`：规则本身完整且没有把错误做法写成默认值；
+- `gate-render`：逐词语义审查、全部最终连接点、唯一开场、逐项清单、语义多行
+  字幕、人物身后短词、PIP 信息差、三态避碰、素材语义五元组、专业 BGM 提示词
+  和电影级 3D 双身份锚点已经落实；
+- `gate-release`：当前 Timeline、dialogue/BGM/SFX/mix stems、BGM 覆盖或有意留白、
+  代表段正常速度复核、全片正常速度通看和设备试听都绑定真实 SHA-256 证据。
+
+统一入口：
+
+```bash
+node scripts/kacha.mjs production-quality template \
+  --project-id PROJECT --output contracts/production-quality-contract.json
+node scripts/kacha.mjs production-quality validate \
+  --contract contracts/production-quality-contract.json --stage plan
+node scripts/kacha.mjs production-quality validate \
+  --contract contracts/production-quality-contract.json --stage execution
+node scripts/kacha.mjs production-quality validate \
+  --contract contracts/production-quality-contract.json --stage release
+```
+
+兼容边界：历史 manifest 只有在显式设置 `productionQualityV1.required=true` 时才
+强制此合同；所有由当前 `kacha start` 创建的新源视频项目默认强制。合同通过只
+证明相应阶段证据齐全，不能把计划验证、静态帧或自动 QC 冒充最终人工验片。

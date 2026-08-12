@@ -1,7 +1,23 @@
 {
-  "schemaVersion": "2.0",
+  "schemaVersion": "3.0",
   "kind": "kacha_reference_triad_qc",
-  "semanticCatalogDigest": "932cc5ee160f7cd9deafce436aac62d07ec3fac81cd9db41c278e68b75b5a688",
+  "authority": {
+    "artifactSetId": "xingzhe-style-library-current",
+    "galleryDigest": "9eebdd6563b9b12de6b8d3921e52c38374f509db476f84084b46083212652bad",
+    "semanticCatalogDigest": "fe7087a1ed13123e6d42bc44eac56a5bd9397dbaad8d7f543e49f105a7f0120c",
+    "contractRegistryDigest": "a19aecea8a7524715f5975d384ff86681a5575dd134944bab9128b5f670e59ff",
+    "antiWebPolicySha256": "6d190cd8280047abefc6561b17b99339a17e0128d39492cdcc189fbfaa0ecb82",
+    "visualLanguageRegistrySha256": "4e628b7dca2c6ffb17689b473d2440b679d8852842d7c49fd75e998e3614078d"
+  },
+  "semanticCatalogDigest": "fe7087a1ed13123e6d42bc44eac56a5bd9397dbaad8d7f543e49f105a7f0120c",
+  "registryConsistency": {
+    "expectedEffects": 240,
+    "expectedStyles": 5,
+    "expectedContracts": 1200,
+    "actualContracts": 1200,
+    "uniqueContractIds": 1200,
+    "failures": []
+  },
   "libraries": [
     {
       "style": "light",
@@ -10,7 +26,7 @@
       "images": 480,
       "semanticTriads": 240,
       "exactDuplicateAssets": 0,
-      "allowedExactDuplicateAssets": 47,
+      "allowedExactDuplicateAssets": 43,
       "allowedExactDuplicateGroups": [
         [
           "component:subtitle_single:horizontal",
@@ -81,28 +97,12 @@
           "scene:numeric_result:vertical"
         ],
         [
-          "component:definition_term:horizontal",
-          "scene:narrative_definition:horizontal"
+          "component:caution_card:horizontal",
+          "scene:info_warning:horizontal"
         ],
         [
-          "component:definition_term:vertical",
-          "scene:narrative_definition:vertical"
-        ],
-        [
-          "component:quote_pull:horizontal",
-          "scene:narrative_quote:horizontal"
-        ],
-        [
-          "component:quote_pull:vertical",
-          "scene:narrative_quote:vertical"
-        ],
-        [
-          "component:checklist_card:horizontal",
-          "scene:checklist_progressive:horizontal"
-        ],
-        [
-          "component:checklist_card:vertical",
-          "scene:checklist_progressive:vertical"
+          "component:caution_card:vertical",
+          "scene:info_warning:vertical"
         ],
         [
           "component:subject_safe_popup:horizontal",
@@ -906,11 +906,13 @@
           "featureDistance": 0.006
         }
       ],
-      "declaredFamilySimilarityPairCount": 201,
+      "declaredFamilySimilarityPairCount": 200,
       "headCollisionAssetCount": 0,
       "headCollisionAssets": [],
       "spatialBlackAssetCount": 0,
       "spatialBlackAssets": [],
+      "orphanAssetCount": 0,
+      "orphanAssets": [],
       "fontBindings": {
         "subtitle": {
           "family": "方正粗金陵简体",
@@ -951,7 +953,7 @@
       "images": 480,
       "semanticTriads": 240,
       "exactDuplicateAssets": 0,
-      "allowedExactDuplicateAssets": 47,
+      "allowedExactDuplicateAssets": 51,
       "allowedExactDuplicateGroups": [
         [
           "component:subtitle_single:horizontal",
@@ -1036,6 +1038,22 @@
         [
           "component:quote_pull:vertical",
           "scene:narrative_quote:vertical"
+        ],
+        [
+          "component:three_reason_card:horizontal",
+          "scene:info_three_reasons:horizontal"
+        ],
+        [
+          "component:three_reason_card:vertical",
+          "scene:info_three_reasons:vertical"
+        ],
+        [
+          "component:caution_card:horizontal",
+          "scene:info_warning:horizontal"
+        ],
+        [
+          "component:caution_card:vertical",
+          "scene:info_warning:vertical"
         ],
         [
           "component:checklist_card:horizontal",
@@ -1820,20 +1838,6 @@
         },
         {
           "aspect": "vertical",
-          "left": "component:comparison_card",
-          "right": "component:before_after_card",
-          "hashDistance": 1,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "scene:info_single",
-          "right": "scene:info_bullets",
-          "hashDistance": 1,
-          "featureDistance": 0.011
-        },
-        {
-          "aspect": "vertical",
           "left": "scene:compare_two",
           "right": "scene:compare_before_after",
           "hashDistance": 0,
@@ -1845,13 +1849,29 @@
           "right": "layout:full_bleed_footage",
           "hashDistance": 0,
           "featureDistance": 0.0
+        },
+        {
+          "aspect": "vertical",
+          "left": "layout:full_bleed_event_photo",
+          "right": "layout:full_screen",
+          "hashDistance": 0,
+          "featureDistance": 0.0
+        },
+        {
+          "aspect": "vertical",
+          "left": "layout:full_bleed_footage",
+          "right": "layout:full_screen",
+          "hashDistance": 0,
+          "featureDistance": 0.0
         }
       ],
-      "declaredFamilySimilarityPairCount": 233,
+      "declaredFamilySimilarityPairCount": 231,
       "headCollisionAssetCount": 0,
       "headCollisionAssets": [],
       "spatialBlackAssetCount": 0,
       "spatialBlackAssets": [],
+      "orphanAssetCount": 0,
+      "orphanAssets": [],
       "fontBindings": {
         "subtitle": {
           "family": "方正粗金陵简体",
@@ -1903,6 +1923,13 @@
       "nearDuplicatePairs": [],
       "nearDuplicatePairCount": 0,
       "declaredFamilySimilarityPairs": [
+        {
+          "aspect": "horizontal",
+          "left": "component:comparison_card",
+          "right": "component:before_after_card",
+          "hashDistance": 0,
+          "featureDistance": 0.011
+        },
         {
           "aspect": "horizontal",
           "left": "scene:compare_two",
@@ -2595,20 +2622,15 @@
           "right": "motion:term_then_body",
           "hashDistance": 1,
           "featureDistance": 0.005
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:progressive",
-          "right": "motion:term_then_definition",
-          "hashDistance": 0,
-          "featureDistance": 0.004
         }
       ],
-      "declaredFamilySimilarityPairCount": 141,
+      "declaredFamilySimilarityPairCount": 142,
       "headCollisionAssetCount": 0,
       "headCollisionAssets": [],
       "spatialBlackAssetCount": 0,
       "spatialBlackAssets": [],
+      "orphanAssetCount": 0,
+      "orphanAssets": [],
       "fontBindings": {
         "subtitle": {
           "family": "方正粗金陵简体",
@@ -2655,6 +2677,20 @@
       "nearDuplicatePairs": [],
       "nearDuplicatePairCount": 0,
       "declaredFamilySimilarityPairs": [
+        {
+          "aspect": "horizontal",
+          "left": "component:bullet_card",
+          "right": "component:checklist_card",
+          "hashDistance": 0,
+          "featureDistance": 0.01
+        },
+        {
+          "aspect": "horizontal",
+          "left": "component:comparison_card",
+          "right": "component:before_after_card",
+          "hashDistance": 0,
+          "featureDistance": 0.008
+        },
         {
           "aspect": "horizontal",
           "left": "scene:compare_two",
@@ -3115,7 +3151,7 @@
           "left": "motion:natural_action",
           "right": "motion:static",
           "hashDistance": 0,
-          "featureDistance": 0.007
+          "featureDistance": 0.004
         },
         {
           "aspect": "horizontal",
@@ -3340,27 +3376,15 @@
           "right": "motion:term_then_body",
           "hashDistance": 0,
           "featureDistance": 0.003
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:step_up",
-          "right": "motion:term_then_definition",
-          "hashDistance": 1,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "horizontal",
-          "left": "motion:term_then_body",
-          "right": "motion:term_then_definition",
-          "hashDistance": 1,
-          "featureDistance": 0.002
         }
       ],
-      "declaredFamilySimilarityPairCount": 172,
+      "declaredFamilySimilarityPairCount": 174,
       "headCollisionAssetCount": 0,
       "headCollisionAssets": [],
       "spatialBlackAssetCount": 0,
       "spatialBlackAssets": [],
+      "orphanAssetCount": 0,
+      "orphanAssets": [],
       "fontBindings": {
         "subtitle": {
           "family": "方正粗金陵简体",
@@ -3401,7 +3425,7 @@
       "images": 480,
       "semanticTriads": 240,
       "exactDuplicateAssets": 0,
-      "allowedExactDuplicateAssets": 47,
+      "allowedExactDuplicateAssets": 49,
       "allowedExactDuplicateGroups": [
         [
           "component:subtitle_single:horizontal",
@@ -3486,6 +3510,14 @@
         [
           "component:quote_pull:vertical",
           "scene:narrative_quote:vertical"
+        ],
+        [
+          "component:three_reason_card:horizontal",
+          "scene:info_three_reasons:horizontal"
+        ],
+        [
+          "component:three_reason_card:vertical",
+          "scene:info_three_reasons:vertical"
         ],
         [
           "component:checklist_card:horizontal",
@@ -4060,6 +4092,13 @@
         },
         {
           "aspect": "horizontal",
+          "left": "motion:natural_action",
+          "right": "motion:static",
+          "hashDistance": 2,
+          "featureDistance": 0.001
+        },
+        {
+          "aspect": "horizontal",
           "left": "motion:per_character",
           "right": "motion:typing_or_soft_pop",
           "hashDistance": 0,
@@ -4235,20 +4274,6 @@
         },
         {
           "aspect": "vertical",
-          "left": "component:comparison_card",
-          "right": "component:before_after_card",
-          "hashDistance": 1,
-          "featureDistance": 0.004
-        },
-        {
-          "aspect": "vertical",
-          "left": "scene:info_single",
-          "right": "scene:info_bullets",
-          "hashDistance": 1,
-          "featureDistance": 0.012
-        },
-        {
-          "aspect": "vertical",
           "left": "scene:compare_two",
           "right": "scene:compare_before_after",
           "hashDistance": 0,
@@ -4295,13 +4320,22 @@
           "right": "motion:quote_then_source",
           "hashDistance": 1,
           "featureDistance": 0.004
+        },
+        {
+          "aspect": "vertical",
+          "left": "motion:a_then_b",
+          "right": "motion:strike_then_replace",
+          "hashDistance": 1,
+          "featureDistance": 0.002
         }
       ],
-      "declaredFamilySimilarityPairCount": 205,
+      "declaredFamilySimilarityPairCount": 204,
       "headCollisionAssetCount": 0,
       "headCollisionAssets": [],
       "spatialBlackAssetCount": 0,
       "spatialBlackAssets": [],
+      "orphanAssetCount": 0,
+      "orphanAssets": [],
       "fontBindings": {
         "subtitle": {
           "family": "方正粗金陵简体",
@@ -4336,6 +4370,16 @@
       "warnings": []
     }
   ],
+  "legacyArtifactScan": {
+    "root": "external-artifact-root://行者风高保真样板",
+    "findingCount": 0,
+    "findings": []
+  },
+  "referenceGalleryOrphanScan": {
+    "root": "design/reference-gallery/xingzhe-v3",
+    "findingCount": 0,
+    "findings": []
+  },
   "crossStyleExactDuplicateGroupCount": 0,
   "crossStyleExactDuplicateGroups": [],
   "distinctEditingGrammarCount": 5,

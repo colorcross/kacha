@@ -65,7 +65,7 @@
 | NLE 语义交换 | OTIO/FCPXML 保留语义 ID；真实应用验证另绑定 NLE 版本、导入/导出报告、应用证据和人工正常速度复核 |
 | 可观测性能 | 自动采集耗时、Token 来源、缓存和编码次数；重型资源跨项目共享主机锁 |
 | BGM 成片证明 | 测量可听性、重建组件混音，并验证最终视频没有漏混音乐 |
-| 视频设计系统 | 行者风 2.0 统一栏目、画幅、语言、字幕、语义色、卡片、PIP、流程图、封面和运动语言 |
+| 视频设计系统 | 行者风 3.0 统一栏目、画幅、语言、字幕、语义色、镜头机制、PIP、封面和运动语言，并以反网页合同约束生产 |
 | 效果参考图库 | 240 个注册效果均有浅暖轻浮层、空间光路、幽默漫画、像素风与暗黑科技风五套横竖参考图，并绑定 1200 份可执行动效合同；效果身份优先，只有命中场景语义才允许改变结构 |
 | 五种剪辑语法 | 连续编辑旁注、单次空间导航、喜剧节拍、确定性状态机与取证揭示分别组织镜头、空间、转场和声音；七轴门禁阻止只换材质的“换皮” |
 | 预制效果与资源 | 62 个模板统一解析开场、转场、语义画面、贴纸、纵深、流程、关键帧、并列句、字幕和呼吸；附原创视觉资源与许可路由 |
@@ -100,11 +100,11 @@
 [能力覆盖与返工预算](references/capability-coverage-and-rework-budget.md)、
 [架构说明](docs/ARCHITECTURE.md)与
 [视频设计系统](docs/VIDEO_DESIGN_SYSTEM_V1.md)、
-[行者风 2.0](docs/XINGZHE_STYLE_V2.md)和
+[行者风 3.0](docs/XINGZHE_STYLE_V3.md)和
 [五风格剪辑语法](docs/FIVE_STYLE_EDITING_GRAMMARS.md)、
 [V7 实施状态与证据边界](docs/V7_IMPLEMENTATION_STATUS_2026-08-09.md)、
 [V8 质量不降级效率](docs/QUALITY_PRESERVING_EFFICIENCY_V8.md)、
-[效果参考图库](design/reference-gallery/xingzhe-v2/index.html)。
+[效果参考图库](design/reference-gallery/xingzhe-v3/index.html)。
 
 ## 最快安装
 
@@ -298,7 +298,7 @@ node scripts/kacha.mjs doctor --profile core
 | [V6 智能剪辑证据闭环](docs/INTELLIGENT_EDITING_V6.md) | 全片导演、素材缺口、语义审片、偏好学习、编辑评测、NLE 交换与可观测性 |
 | [V6 全面优化实施状态](docs/V6_IMPLEMENTATION_STATUS_2026-08-08.md) | 已实施范围、生产门禁、验证证据、依赖安全例外与真实项目待办 |
 | [视频设计系统](docs/VIDEO_DESIGN_SYSTEM_V1.md) | 视觉 token、组件、场景和 QC |
-| [行者风 2.0](docs/XINGZHE_STYLE_V2.md) | 拍摄基线、语义色、渐变、封面比例、栏目差异和参考图库 |
+| [行者风 3.0](docs/XINGZHE_STYLE_V3.md) | 电影化选择顺序、反网页门禁、栏目预算、五风格镜头语法和当前参考图库 |
 | [五风格剪辑语法](docs/FIVE_STYLE_EDITING_GRAMMARS.md) | 五种风格各自的时间单位、空间拓扑、转场、声音与换皮失败门禁 |
 | [Beauty v2](references/beauty-v2.md) | 本地美颜能力、门禁与人工复核 |
 | [FaceFusion](references/facefusion.md) | 换脸、口型同步、人脸修复、模型许可与专项 QC |

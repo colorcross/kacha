@@ -13,5 +13,9 @@
 - 置信度不足、规则冲突、身份/物理连续性风险时，只渲染局部预览并升级，不降低
   质量合同。
 - 相同输入、配置、实现和 seed 必须生成相同计划 digest。
+- 最终时间线上每一个连接点都要进入 `production-quality-contract.json`：检测数、
+  剪点表数、审计数和事件数完全一致；每项说明 clean/J/L/action/match/cutaway/
+  PIP/B-roll/transition 等决定及其动机。半句话一律整句保留或整句删除，转场不得
+  掩盖错误剪点。
 
 完成条件：EDL、连接审计、确定性 decision plan、局部预览范围和升级项全部明确。

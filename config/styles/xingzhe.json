@@ -2,10 +2,10 @@
   "schemaVersion": "1.0",
   "id": "xingzhe",
   "name": "行者风",
-  "description": "咔嚓默认生产风格。暖而不黄、静而不闷，以人物、证据、路径和节点建立明亮克制、真实可信的表达。",
+  "description": "行者风 3.0。以真人、真实空间和可核验证据为主体，用镜头、遮挡、景别、插镜和边界外排版建立明亮克制、电影化且有呼吸感的表达。",
   "designSystem": {
     "id": "dahui-video-system",
-    "minimumVersion": "1.5.0"
+    "minimumVersion": "1.6.0"
   },
   "palette": {
     "canvas": "#F2EFE8",
@@ -187,7 +187,9 @@
     "paddingRatio": 0.035,
     "persistentBase": true,
     "progressiveUpdateMode": "local_highlight",
-    "screenFlashPolicy": "forbid_full_frame_fade"
+    "screenFlashPolicy": "forbid_full_frame_fade",
+    "defaultPresentation": "boundaryless_editorial",
+    "boundedSurfaceOnlyWhen": ["source_integrity", "dense_reading", "comparison_structure", "multi_item_progression", "privacy_boundary"]
   },
   "brand": {
     "label": "栏目",
@@ -240,7 +242,8 @@
     "backgroundSaturationReductionRange": [0.08, 0.15],
     "backgroundExposureReductionStops": [0.2, 0.4],
     "facePriority": "face_and_eyes_first",
-    "tableHighlightPolicy": "keep_below_face_salience"
+    "tableHighlightPolicy": "keep_below_face_salience",
+    "picturePriority": ["a_roll", "real_evidence", "screen_recording", "licensed_cutaway", "disclosed_generated_illustration", "graphic_container"]
   },
   "motion": {
     "entryFrames": 9,
@@ -259,8 +262,10 @@
   "defaults": {
     "opening": "editorial_label_reveal",
     "transition": "clean_cut",
-    "popupEntry": "soft_pop",
-    "popupExit": "short_fade",
-    "emphasis": "accent_weight"
+    "popupEntry": "mask_reveal",
+    "popupExit": "visuals_clear_early",
+    "emphasis": "accent_weight",
+    "informationPresentation": "boundaryless_first",
+    "boundedSurfaceFallback": "real_picture_or_plain_caption"
   }
 }

@@ -264,6 +264,7 @@ function buildManifest({ projectId, projectRoot, input, runtimeLock, options }) 
     platform: options.platform,
     language: options.language,
     intelligenceV6: { required: true },
+    productionQualityV1: { required: true },
     plans: {
       proposal: rel(path.join(contracts, "edit-proposal.json")),
       editPlan: rel(path.join(contracts, "edit-plan.json")),
@@ -272,6 +273,8 @@ function buildManifest({ projectId, projectRoot, input, runtimeLock, options }) 
       assetGapPlan: rel(path.join(contracts, "asset-gap-plan.json")),
       temporalPerceptionAudit: rel(path.join(contracts, "temporal-perception-audit.json")),
       semanticReviewSession: rel(path.join(projectRoot, ".kacha", "review", "review-session.json")),
+      productionQuality: rel(path.join(contracts, "production-quality-contract.json")),
+      coverIdentity: rel(path.join(contracts, "cover-identity-contract.json")),
       qualityEfficiency: rel(path.join(projectRoot, ".kacha", "efficiency-plan.json")),
       netstyleTimelines: [],
       visualBreathingTimelines: [],
@@ -417,6 +420,26 @@ export function initializeProject({
       runtimeLock,
       options,
     }));
+    const productionQualityFile = path.join(
+      baseRoot,
+      "contracts",
+      "production-quality-contract.json",
+    );
+    const productionQuality = run(process.execPath, [
+      path.join(scriptDirectory, "production_quality_contract.mjs"),
+      "template",
+      "--project-id",
+      resolvedProjectId,
+      "--output",
+      productionQualityFile,
+    ]);
+    if (productionQuality.status !== 0) {
+      throw new Error(
+        productionQuality.stderr.trim()
+          || productionQuality.stdout.trim()
+          || "无法初始化生产质量合同",
+      );
+    }
   } else {
     contentContractFile = path.join(baseRoot, "contracts", "content-project.json");
     writeJsonAtomic(contentContractFile, buildContentContract({
@@ -727,6 +750,7 @@ function deriveNextAction(projectRoot, orchestration, runtime, inputCheck) {
         "contracts/edit-plan.json",
         "contracts/director-plan.json",
         "contracts/asset-gap-plan.json",
+        "contracts/cover-identity-contract.json",
       ],
     };
   }

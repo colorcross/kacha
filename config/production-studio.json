@@ -4,12 +4,32 @@
   "name": "咔嚓本地生产台",
   "defaultStyleId": "xingzhe",
   "authorityBoundary": "页面生成的是本地剪辑意图与配置，不自动上传、付费生成、发布、覆盖源文件或跳过质量门禁。",
+  "styleArchitecture": {
+    "masterStyleId": "xingzhe",
+    "masterStyleVersion": "3.0",
+    "presetRelationship": "production-presets-inherit-master-effect-library",
+    "visualLanguageRelationship": "five-visual-languages-are-xingzhe-substyles",
+    "visualLanguageRegistry": "config/design-system/visual-languages.json",
+    "motionContractRegistry": "config/effects/motion-contracts/design-effect-library-v3.json",
+    "semanticCatalog": "config/effects/reference-semantics/light-overlay.json",
+    "referenceGallery": "design/reference-gallery/xingzhe-v3",
+    "highFidelityArtifactSetId": "xingzhe-style-library-current",
+    "expectedCounts": {
+      "productionPresets": 5,
+      "visualLanguages": 5,
+      "effectsPerVisualLanguage": 240,
+      "motionContracts": 1200,
+      "highFidelityFrames": 2400
+    }
+  },
   "stylePresets": [
     {
       "id": "xingzhe",
       "name": "行者风",
+      "presetKind": "master-style",
+      "effectLibraryPolicy": "authoritative",
       "tagline": "暖而不黄，静而不闷",
-      "description": "行者风 2.0。人物与证据优先，以暖灰、石墨和克制暖橙建立编辑感，用路径、节点和语义色表达行动与判断。",
+      "description": "行者风 3.0。人物与证据优先，以镜头、遮挡、景别、插镜和无边界排版建立明亮、克制且有呼吸感的电影化编辑。",
       "builtIn": true,
       "design": {
         "system": "dahui-video-system",
@@ -32,7 +52,7 @@
         "baselineYRatio": 0.72,
         "primaryColor": "#FFF8EE",
         "emphasisColor": "#E98A2B",
-        "shadowOpacity": 0.68,
+        "shadowOpacity": 0.6,
         "singleLine": true,
         "background": "none"
       },
@@ -71,6 +91,8 @@
     {
       "id": "clear-knowledge",
       "name": "清朗知识",
+      "presetKind": "production-preset",
+      "effectLibraryPolicy": "inherit-master",
       "tagline": "更轻、更清楚、更理性",
       "description": "适合课程、方法论和知识解释；降低装饰密度，强化结构、证据和长时间阅读。",
       "builtIn": true,
@@ -105,7 +127,7 @@
         "baselineYRatio": 0.72,
         "primaryColor": "#202326",
         "emphasisColor": "#E98A2B",
-        "shadowOpacity": 0.68,
+        "shadowOpacity": 0.6,
         "singleLine": true,
         "background": "none"
       },
@@ -144,6 +166,8 @@
     {
       "id": "deep-reading",
       "name": "沉浸阅读",
+      "presetKind": "production-preset",
+      "effectLibraryPolicy": "inherit-master",
       "tagline": "更稳、更深、更有余味",
       "description": "适合解读好书和长篇思考；保留真实停顿，以资料、引用和章节证明支撑观点，减少持续音乐和短视频式刺激。",
       "builtIn": true,
@@ -169,7 +193,7 @@
         "baselineYRatio": 0.72,
         "primaryColor": "#FFF9F1",
         "emphasisColor": "#B96D45",
-        "shadowOpacity": 0.68,
+        "shadowOpacity": 0.6,
         "singleLine": true,
         "background": "none"
       },
@@ -209,6 +233,8 @@
     {
       "id": "modern-tech",
       "name": "现代科技",
+      "presetKind": "production-preset",
+      "effectLibraryPolicy": "inherit-master",
       "tagline": "清脆节奏，界面与数据优先",
       "description": "适合 AI、软件和工具演示；强调 UI 反馈、流程节点和明确的方向性运动。",
       "builtIn": true,
@@ -243,14 +269,14 @@
       },
       "caption": {
         "templateId": "tech-sans",
-        "fontRole": "caption_tech",
-        "preferredFontFamily": "Source Han Sans CN",
+        "fontRole": "subtitle_primary",
+        "preferredFontFamily": "方正粗金陵简体",
         "fontSizeRatio": 0.046,
         "maxWidthRatio": 0.82,
         "baselineYRatio": 0.72,
         "primaryColor": "#F6F8FA",
         "emphasisColor": "#F05A47",
-        "shadowOpacity": 0.72,
+        "shadowOpacity": 0.6,
         "singleLine": true,
         "background": "none"
       },
@@ -289,6 +315,8 @@
     {
       "id": "calm-documentary",
       "name": "沉静纪录",
+      "presetKind": "production-preset",
+      "effectLibraryPolicy": "inherit-master",
       "tagline": "少效果，重时间与余味",
       "description": "适合长期观察、人物故事和反思性表达；更多停稳、声音桥和自然景别变化。",
       "builtIn": true,
@@ -328,7 +356,7 @@
         "baselineYRatio": 0.72,
         "primaryColor": "#FFF9F1",
         "emphasisColor": "#D7A45B",
-        "shadowOpacity": 0.64,
+        "shadowOpacity": 0.6,
         "singleLine": true,
         "background": "none"
       },
@@ -375,21 +403,24 @@
     },
     {
       "id": "clean-sans",
-      "name": "清朗无衬线",
+      "name": "清朗金陵体",
       "fontRole": "subtitle_primary",
-      "description": "高识别度，适合课程、工具演示和信息密集口播。"
+      "preferredFontFamily": "方正粗金陵简体",
+      "description": "兼容旧模板 ID；常规字幕仍使用真正金陵体、无底色无描边和 60% 阴影。"
     },
     {
       "id": "tech-sans",
-      "name": "科技界面",
-      "fontRole": "caption_tech",
-      "description": "适合 UI、数据、AI 对话和流程演示。"
+      "name": "科技场景金陵体",
+      "fontRole": "subtitle_primary",
+      "preferredFontFamily": "方正粗金陵简体",
+      "description": "兼容旧模板 ID；科技场景的常规字幕不换字体，界面标签才可使用细体。"
     },
     {
       "id": "editorial-serif",
-      "name": "人文编辑体",
-      "fontRole": "caption_editorial",
-      "description": "适合引用、反思、书籍和纪录片式表达。"
+      "name": "人文场景金陵体",
+      "fontRole": "subtitle_primary",
+      "preferredFontFamily": "方正粗金陵简体",
+      "description": "兼容旧模板 ID；常规字幕保持金陵体，引用与金句另走华光标题黑角色。"
     }
   ],
   "audioPresets": [

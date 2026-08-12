@@ -34,7 +34,7 @@
       "parallelSafe": false,
       "outputGroups": ["contracts_inventory"],
       "summary": "冻结只读输入、真实媒体身份、栏目/期号、运行版本、授权和能力证据",
-      "evidence": ["source identity", "runtime lock", "capability manifest", "series identity"]
+      "evidence": ["source identity", "runtime lock", "capability manifest", "series identity", "production quality plan contract"]
     },
     {
       "id": "transcript_structure",
@@ -58,7 +58,7 @@
       "parallelSafe": true,
       "outputGroups": ["rough_timeline"],
       "summary": "从完整语义建立粗剪，不切断数字、否定、条件、因果和结论",
-      "evidence": ["rough cut timeline", "semantic cut decisions"]
+      "evidence": ["rough cut timeline", "semantic cut decisions", "word-timed semantic completeness ledger"]
     },
     {
       "id": "dialogue_preprocess",
@@ -82,7 +82,7 @@
       "parallelSafe": false,
       "outputGroups": ["connection_review"],
       "summary": "枚举所有真实连接点并正常速度检查音画、口型、动作和头部完整性",
-      "evidence": ["connection audit", "normal-speed handles"]
+      "evidence": ["connection audit", "normal-speed handles", "detected/cut-sheet/audited/event count parity"]
     },
     {
       "id": "fine_cut",
@@ -106,7 +106,7 @@
       "parallelSafe": true,
       "outputGroups": ["visual_master"],
       "summary": "按五风格语法、能力计划、素材许可和设计预检实施视觉包装",
-      "evidence": ["visual capability plan", "design preflight", "packaged timeline"]
+      "evidence": ["visual capability plan", "design preflight", "packaged timeline", "production quality execution contract"]
     },
     {
       "id": "subtitles",
@@ -142,7 +142,26 @@
       "parallelSafe": true,
       "outputGroups": ["covers"],
       "summary": "制作栏目名、期号、标题和大灰身份正确的横竖封面",
-      "evidence": ["cover artifacts", "thumbnail review", "font and identity evidence"]
+      "evidence": [
+        "cover artifacts",
+        "thumbnail review",
+        "font identity",
+        "approved 3D turnaround generation anchor",
+        "real photo post-generation identity QC",
+        "cover identity contract",
+        "narrative pose adaptation evidence"
+      ],
+      "identityPolicy": {
+        "defaultGenerationInputMode": "turnaround_only_real_photo_qc",
+        "generationIdentityPriority": "approved 3D turnaround anchor",
+        "realPhotoRole": "post_generation_identity_qc_only",
+        "realPhotoGenerationInputForbiddenByDefault": true,
+        "allowedGenerationInputModes": ["dual_anchor", "turnaround_only_real_photo_qc"],
+        "dualAnchorRequiresExplicitAuthorization": true,
+        "displayPoseForbidden": true,
+        "sceneSpecificActionExpressionClothingRequired": true,
+        "generatedActionFinalRequiresIdentityReview": true
+      }
     },
     {
       "id": "preview_render",
@@ -178,7 +197,7 @@
       "parallelSafe": false,
       "outputGroups": ["release_package"],
       "summary": "完成十一项当前版本人工审片、release gate 和本地交付包",
-      "evidence": ["release report", "semantic review session", "release gate report"]
+      "evidence": ["release report", "semantic review session", "release gate report", "production quality release contract", "full normal-speed playback evidence"]
     }
   ]
 }

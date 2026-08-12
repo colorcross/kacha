@@ -11,7 +11,8 @@ const readJson = (file) => JSON.parse(fs.readFileSync(file, "utf8"));
 const stable = (value) => JSON.stringify(value, Object.keys(value).sort());
 const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 
-const gallery = readJson(path.join(repoRoot, "design/reference-gallery/xingzhe-v2/manifest.json"));
+const gallery = readJson(path.join(repoRoot, "design/reference-gallery/xingzhe-v3/manifest.json"));
+const antiWeb = readJson(path.join(repoRoot, "config/design-system/anti-web.json"));
 const components = readJson(path.join(repoRoot, "config/design-system/components.json")).components;
 const scenes = readJson(path.join(repoRoot, "config/design-system/scenes.json")).scenes;
 const implementations = readJson(path.join(repoRoot, "config/design-system/implementations.json"));
@@ -42,6 +43,8 @@ const visualEquivalenceGroups = new Map([
   ["term-definition", ["component:definition_term", "scene:narrative_definition"]],
   ["quote-pull", ["component:quote_pull", "scene:narrative_quote"]],
   ["checklist", ["component:checklist_card", "scene:checklist_progressive"]],
+  ["three-reasons", ["component:three_reason_card", "scene:info_three_reasons"]],
+  ["caution-warning", ["component:caution_card", "scene:info_warning"]],
   ["subject-safe-popup", ["component:subject_safe_popup", "scene:ai_response_popup"]],
   ["screen-focus", ["component:screen_focus_callout", "scene:tool_click_focus"]],
   ["bar-chart", ["component:bar_chart", "scene:data_bar"]],
@@ -157,7 +160,7 @@ const layoutRows = [
   ["split_cover","对比型封面","左右或上下同基准展示两个结果，标题不跨分界线","split-cover"],
   ["stack_left","左侧关键词堆叠","最多三组短词在左侧按层级堆叠，人物保持完整","stack-left"],
   ["subject_and_ai_symbol","人物与AI符号关系","人物与AI符号分居两侧，表现关系而非第二主持人","two-role-symbol"],
-  ["subject_left_card_right","左人右卡","人物在左，信息卡在右，字幕占底部独立安全带","subject-left-card"],
+  ["foreground_evidence_occlusion","前景证据遮挡布局","让真实证据或前景物件穿过人物边缘建立前中后景；人物头脸、证据主体和字幕保持完整可读","foreground-evidence"],
   ["subject_negative_space","人物加负空间","根据人物位置把题眼放进相对空的一侧","subject-negative"],
   ["subject_safe_bottom","人物安全底部信息","纠错或说明位于人物下方且高于平台遮挡区","subject-bottom"],
   ["subject_safe_right","人物右侧信息区","定义或说明进入人物右侧，不压住头部和手部","subject-right-safe"],
@@ -282,7 +285,7 @@ function semanticFor(entry, raw) {
       entry: "8–14帧完成构图重排；移动路径避开人物头部和主字幕。",
       hold: "所有内容区都完整可读，横竖版独立排版。",
       exit: "切回主画面前3–5帧完成附加元素清场。",
-      sfx: "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh或soft-pop。",
+      sfx: "只有可感知的分屏、PIP或尺度变化才使用匹配whoosh；禁止用统一soft-pop把构图做成网页组件。",
     };
   } else if (entry.kind === "renderer") {
     meta = rendererMeta.get(entry.id);
@@ -317,7 +320,12 @@ function semanticFor(entry, raw) {
     intendedOutcome = `${categoryPurpose(raw.category)}；“${entry.label}”只表达其注册槽位和状态。`;
     peakFrame = `峰值帧必须可辨识 ${raw.slots.join("、")} 槽位，并呈现 ${raw.states.join("、")} 中的峰值状态。`;
     requiredVisualMarkers = [raw.category, ...raw.slots, ...raw.states];
-    relationships = { renderer: raw.renderer, fallback: raw.fallback, tokenRefs: raw.tokenRefs };
+    relationships = {
+      renderer: raw.renderer,
+      fallback: raw.fallback,
+      tokenRefs: raw.tokenRefs,
+      presentation: raw.presentation,
+    };
     motion = baseMotion(raw.category, entry.id, raw.states);
     meta = { label: entry.label, visualArchetype: `${raw.category}:${entry.id}` };
   }
@@ -371,8 +379,13 @@ const output = {
   style: "xingzhe-light-overlay",
   sourceGalleryDigest: gallery.digest,
   policy: {
+    antiWebId: antiWeb.id,
+    antiWebVersion: antiWeb.version,
+    antiWebDigest: digest(antiWeb),
     triadMustMatch: ["expected", "peakFrameAsset", "motionContract"],
     duplicatePolicy: "只有 relationships 明确声明继承或场景复用时允许构图近似；否则视为异常。",
+    cinematicSelectionOrder: antiWeb.selectionOrder,
+    forbiddenPatterns: antiWeb.forbiddenPatterns,
     fontPolicy: "四套项目授权字体均可用于最终视频与图片发布；缺字、缺文件或哈希变化必须阻断，禁止静默回退。",
   },
   counts: Object.fromEntries(["component","scene","renderer","layout","motion"].map((kind) => [kind, items.filter((item) => item.kind === kind).length])),

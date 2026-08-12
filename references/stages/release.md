@@ -12,3 +12,7 @@
 - 预览、自动 QC、编辑器状态和“渲染成功”都不是发布完成。
 - 只有 `gate-release` 通过才到 `local_release_ready`；外传、上传和发布仍需用户
   明确授权。
+- `production-quality` release 门禁额外绑定当前最终 Timeline 与四条 stems，验证
+  BGM 覆盖率或逐段有意留白原因，并要求代表段正常速度复核、全片正常速度通看、
+  设备试听三项均为 `pass` 且各有当前文件 SHA-256 证据。静态截图、峰值帧和测试
+  报告不能替代这三项。

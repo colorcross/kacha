@@ -13,6 +13,7 @@ import {
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
 import { loadKachaConfig } from "./kacha_config.mjs";
+import { measureSfxPeak } from "./sfx_peak_alignment.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillDirectory = path.resolve(scriptDirectory, "..");
@@ -49,32 +50,8 @@ function execute(command, commandArgs) {
   return result;
 }
 
-const sfxPeakCache = new Map();
 function sfxPeakSeconds(file) {
-  if (sfxPeakCache.has(file)) return sfxPeakCache.get(file);
-  const measurement = run("ffmpeg", [
-    "-hide_banner", "-loglevel", "info",
-    "-i", file,
-    "-af",
-    "asetnsamples=n=1024:p=0,astats=metadata=1:reset=1,ametadata=print",
-    "-f", "null", "-",
-  ]);
-  const lines = String(measurement.stderr ?? "").split(/\r?\n/);
-  let time = 0;
-  let bestTime = 0;
-  let bestLevel = -Infinity;
-  for (const line of lines) {
-    const timeMatch = /pts_time:([0-9.]+)/.exec(line);
-    if (timeMatch) time = Number(timeMatch[1]);
-    const peakMatch = /lavfi\.astats\.Overall\.Peak_level=([-+0-9.]+)/.exec(line);
-    if (peakMatch && Number(peakMatch[1]) > bestLevel) {
-      bestLevel = Number(peakMatch[1]);
-      bestTime = time;
-    }
-  }
-  const value = Number.isFinite(bestLevel) ? bestTime : 0;
-  sfxPeakCache.set(file, value);
-  return value;
+  return measureSfxPeak(file).measuredPeakOffsetSeconds;
 }
 
 function parseTimestamp(value) {

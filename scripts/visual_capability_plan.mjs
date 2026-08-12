@@ -188,6 +188,13 @@ function coveragePolicy(profileId, durationSeconds, requestedShowId = null) {
       },
     ]),
   );
+  const resourceRules = structuredClone(selected.resourceRules ?? {});
+  if (Number.isFinite(Number(resourceRules.minimumSupportingMediaKinds))) {
+    resourceRules.minimumSupportingMediaKinds = Math.min(
+      Number(resourceRules.minimumSupportingMediaKinds),
+      Number(families.supporting_media?.minimum ?? 0),
+    );
+  }
   return {
     profileId,
     showId,
@@ -199,7 +206,7 @@ function coveragePolicy(profileId, durationSeconds, requestedShowId = null) {
     durationSeconds,
     active,
     families,
-    resourceRules: selected.resourceRules,
+    resourceRules,
     diversity: selected.diversity,
     perceptual: selected.perceptual,
     longFormRequirements: selected.longFormRequirements,
