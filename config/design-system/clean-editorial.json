@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "1.0",
+  "id": "clean-editorial-cinematic",
+  "version": "1.0.0",
+  "intent": "以真人、真实空间和证据为主体，用克制的无边界排版、景别变化和少量信息表面帮助理解。",
+  "selectionOrder": [
+    "camera_reframe",
+    "real_evidence_cutaway",
+    "boundaryless_typography",
+    "picture_relationship",
+    "bounded_information_surface"
+  ],
+  "cinematicMechanisms": [
+    "clean_a_roll",
+    "camera_reframe",
+    "detail_insert",
+    "real_evidence_cutaway",
+    "screen_evidence_focus",
+    "boundaryless_typography",
+    "picture_in_picture",
+    "split_relationship",
+    "reaction_insert",
+    "match_cut",
+    "sound_bridge",
+    "bounded_information_surface"
+  ],
+  "sourceTypes": [
+    "a_roll",
+    "real_world_footage",
+    "project_evidence",
+    "screen_recording",
+    "licensed_external_media",
+    "disclosed_generated_illustration",
+    "typography_only"
+  ],
+  "containerTypes": [
+    "none",
+    "boundaryless",
+    "source_plate",
+    "comparison_surface",
+    "progressive_list_surface",
+    "card",
+    "popup"
+  ],
+  "boundedSurfaceReasons": [
+    "source_integrity",
+    "dense_reading",
+    "comparison_structure",
+    "multi_item_progression",
+    "privacy_boundary"
+  ],
+  "forbiddenPatterns": [
+    "web_hero",
+    "centered_modal",
+    "sidebar_panel",
+    "pill_navigation",
+    "dashboard_grid",
+    "browser_chrome_decoration",
+    "uniform_three_card_row",
+    "full_width_ui_bar",
+    "card_wall",
+    "card_to_card_transition"
+  ],
+  "globalRules": {
+    "dialogueOrActionRemainsPrimaryClock": true,
+    "realPictureBeforeGraphicContainer": true,
+    "boundarylessBeforeBounded": true,
+    "noAdjacentBoundedSurfaces": true,
+    "compositionCooldownSeconds": 45,
+    "maximumSingleBoundedSurfaceSeconds": 8,
+    "maximumRoundedContainerAreaRatio": 0.34,
+    "maximumSimultaneousReadingZones": 3,
+    "minimumCleanReturnSecondsAfterBoundedSurface": 1.2,
+    "sameMechanismMaximumShare": 0.5,
+    "requireOneDominantMotionPerBeat": true,
+    "requireNormalSpeedRepresentativePreview": true,
+    "staticPeakFrameIsNotAcceptance": true
+  },
+  "showBudgets": {
+    "talking-head": {
+      "minimumRealPictureRatio": 0.7,
+      "maximumBoundedSurfaceRatio": 0.3,
+      "maximumDashboardRatio": 0,
+      "minimumDistinctMechanismsPer120Seconds": 2
+    }
+  },
+  "styleGrammarMechanisms": {
+    "clean-editorial": [
+      "clean_a_roll",
+      "camera_reframe",
+      "detail_insert",
+      "real_evidence_cutaway",
+      "screen_evidence_focus",
+      "boundaryless_typography",
+      "picture_in_picture",
+      "split_relationship",
+      "reaction_insert",
+      "match_cut",
+      "sound_bridge"
+    ]
+  }
+}

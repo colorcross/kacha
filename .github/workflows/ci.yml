@@ -9,9 +9,26 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  static:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Check syntax
+        run: make check-static
+
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [core, proposal, cleanup, generated, visual, audio, sfx, qc, incremental]
     steps:
       - uses: actions/checkout@v7
 
@@ -25,16 +42,37 @@ jobs:
           sudo apt-get install -y ffmpeg jq librsvg2-bin fonts-noto-cjk fonts-dejavu-core
           python3 -m pip install --user Pillow fonttools
 
-      - name: Check syntax
-        run: |
-          find scripts tests -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
-          find scripts -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
-          python3 -m py_compile scripts/*.py
+      - name: Run ${{ matrix.suite }} suite
+        run: node tests/run_tests.mjs --suite "${{ matrix.suite }}"
 
-      - name: Scan repository for secrets
-        run: python3 scripts/scan_secrets.py
+  installer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
 
-      - name: Run regression tests
-        run: |
-          node tests/run_tests.mjs
-          bash tests/test_installer.sh
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Test safe installer behavior
+        run: bash tests/test_installer.sh
+
+  website:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install website dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: Check website
+        run: make check-website

@@ -430,6 +430,10 @@ export function initializeProject({
       "template",
       "--project-id",
       resolvedProjectId,
+      "--pack",
+      "xingzhe-dahui",
+      "--show",
+      options.show,
       "--output",
       productionQualityFile,
     ]);

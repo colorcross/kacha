@@ -46,6 +46,43 @@
     "minimumBreathingRoomRatio": 0.2,
     "principle": "以真实语义、人物反应和呼吸区间建立吸引力；丰富不等于高密度堆叠"
   },
+  "showProfiles": {
+    "tool-share": {
+      "productionPack": "xingzhe-dahui",
+      "minimumMotivatedEffects": 5,
+      "minimumDistinctMechanisms": 4,
+      "minimumPeakAlignedSfx": 3,
+      "principle": "真实任务与操作证据快速建立价值承诺"
+    },
+    "book-talk": {
+      "productionPack": "xingzhe-dahui",
+      "minimumMotivatedEffects": 2,
+      "minimumDistinctMechanisms": 2,
+      "minimumPeakAlignedSfx": 0,
+      "principle": "观点、文本证据与思考停顿优先"
+    },
+    "infinite-game": {
+      "productionPack": "xingzhe-dahui",
+      "minimumMotivatedEffects": 1,
+      "minimumDistinctMechanisms": 1,
+      "minimumPeakAlignedSfx": 0,
+      "principle": "事件与人物反应优先，不用配额制造虚假戏剧性"
+    },
+    "very-ai": {
+      "productionPack": "xingzhe-dahui",
+      "minimumMotivatedEffects": 5,
+      "minimumDistinctMechanisms": 4,
+      "minimumPeakAlignedSfx": 2,
+      "principle": "概念、案例、实测证据快速交替且保持信息增量"
+    },
+    "casual-chat": {
+      "productionPack": "xingzhe-dahui",
+      "minimumMotivatedEffects": 2,
+      "minimumDistinctMechanisms": 2,
+      "minimumPeakAlignedSfx": 1,
+      "principle": "表情、停顿和关系感优先，只包装转折与笑点"
+    }
+  },
   "semanticRouting": [
     {
       "id": "importance_zoom",

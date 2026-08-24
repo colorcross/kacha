@@ -67,7 +67,7 @@ python3 -c "from PIL import Image; from fontTools.ttLib import TTFont"
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
-  | bash -s -- --agent codex
+  | bash -s -- --agent codex --channel canary
 ```
 
 ## Claude Code
@@ -82,12 +82,17 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
-  | bash -s -- --agent claude
+  | bash -s -- --agent claude --channel canary
 ```
 
 Claude Code 会监控已经存在的 skills 目录；如果安装器首次创建了顶层 `~/.claude/skills`，可能需要重启 Claude Code 才能进入自动发现列表。当前会话仍可以让 Claude 直接读取安装后的 `SKILL.md` 并立即使用。
 
 两个 Agent 都读取同一个标准 `SKILL.md` 和 supporting files，不需要维护两套内容。
+
+`stable` 与 `canary` 的 ref 由 `config/release-channels.json` 唯一控制。显式
+`--ref`、`KACHA_REF`、`KACHA_ARCHIVE_URL` 或本地 `--archive` 都属于
+`custom` 来源；安装记录会保存实际 ref/来源和归档 SHA-256，不会把自定义来源
+显示成稳定版。
 
 用户配置和密钥不放在 Skill 安装目录，所以更新 Codex/Claude 安装不会覆盖：
 

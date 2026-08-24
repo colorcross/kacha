@@ -8,10 +8,13 @@
   <img src="assets/brand/kacha-og.png" alt="咔嚓 Kacha：本地专业 AI 视频工作流" width="100%">
 </p>
 
-**咔嚓是一套支持 Codex 与 Claude Code 的本地专业视频工作流 skill。**
+**咔嚓是一套支持 Codex 与 Claude Code 的本地、AI 辅助、证据化专业视频生产工作流 skill。**
 
 它把脚本策划、精剪、声音、视觉包装、字幕、统一审片、增量返工和质量检查
 组织成一条可恢复、可审计、可复现的流程。
+
+它不是“一键全自动成片器”：内容判断、授权、正常速度审片和发布决定仍由人负责；
+AI 负责组织证据、编译计划、执行获批修改并把技术结果留痕。
 
 [官网](https://colorcross.github.io/kacha/) ·
 [English site](https://colorcross.github.io/kacha/en/) ·
@@ -65,6 +68,7 @@
 | NLE 语义交换 | OTIO/FCPXML 保留语义 ID；真实应用验证另绑定 NLE 版本、导入/导出报告、应用证据和人工正常速度复核 |
 | 可观测性能 | 自动采集耗时、Token 来源、缓存和编码次数；重型资源跨项目共享主机锁 |
 | BGM 成片证明 | 测量可听性、重建组件混音，并验证最终视频没有漏混音乐 |
+| Production pack | 通用引擎不硬编码单一品牌；字体、封面身份和前一分钟节奏按项目与栏目版本化绑定 |
 | 视频设计系统 | 行者风 3.0 统一栏目、画幅、语言、字幕、语义色、镜头机制、PIP、封面和运动语言，并以反网页合同约束生产 |
 | 效果参考图库 | 240 个注册效果均有浅暖轻浮层、空间光路、幽默漫画、像素风与暗黑科技风五套横竖参考图，并绑定 1200 份可执行动效合同；效果身份优先，只有命中场景语义才允许改变结构 |
 | 五种剪辑语法 | 连续编辑旁注、单次空间导航、喜剧节拍、确定性状态机与取证揭示分别组织镜头、空间、转场和声音；七轴门禁阻止只换材质的“换皮” |
@@ -83,7 +87,7 @@
 核心资源、10 种转场、5 种开场、5 种画面呼吸运动、7 种口播字幕布局，以及
 从 6 条参考视频中验证出的 33 种语义网感机制。机制可从最终带时间文稿生成
 帧级计划、进入完整视频渲染，并通过摘要、资源、时序与媒体保真门禁。
-当前仓库完整回归为 137 项；五套图库另有语义三元组、跨风格重复、同风格未声明
+当前仓库完整回归为 146 项；五套图库另有语义三元组、跨风格重复、同风格未声明
 近似构图、人物头部碰撞、黑块、字体和动效合同专项 QC。当前提交的 1200 组
 “效果定义—参考图—动效合同”语义三元组全部匹配，其余上述问题均为 0。
 
@@ -106,6 +110,9 @@
 [V8 质量不降级效率](docs/QUALITY_PRESERVING_EFFICIENCY_V8.md)、
 [效果参考图库](design/reference-gallery/xingzhe-v3/index.html)。
 
+Production pack 的生成与验证示例见
+[栏目感知生产包](docs/PRODUCTION_PACKS.md)。
+
 ## 最快安装
 
 把下面这段话复制给 Codex 或 Claude Code：
@@ -123,15 +130,20 @@ skills 目录；不要覆盖已有安装，不上传或提交我的本地文件�
 ```bash
 # Codex
 curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
-  | bash -s -- --agent codex
+  | bash -s -- --agent codex --channel canary
 
 # Claude Code
 curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
-  | bash -s -- --agent claude
+  | bash -s -- --agent claude --channel canary
 ```
 
 安装位置分别为 `~/.codex/skills/kacha` 和 `~/.claude/skills/kacha`。安装器
-不会覆盖已有目标。详见[一句话安装](docs/AGENT_INSTALL.md)。
+不会覆盖已有目标。`canary` 跟随当前 `main`；`stable` 只指向最后一个正式 tag，
+在下一次 Release 完成前仍是 `v1.1.0`，不包含后续 Unreleased 能力。详见
+[一句话安装](docs/AGENT_INSTALL.md)。
+`stable/canary` 的 ref 只从 `config/release-channels.json` 读取；显式 `--ref`、
+自定义归档 URL 或本地 `--archive` 一律显示为 `custom`，并在真实安装记录归档
+SHA-256，不能冒充稳定或 canary 来源。
 
 ## 工作方式
 

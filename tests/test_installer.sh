@@ -10,6 +10,34 @@ source_clone="$temporary/source"
 archive="$temporary/kacha.tar.gz"
 mkdir -p "$test_home"
 
+stable_plan=$(HOME="$test_home" "$root/scripts/install.sh" \
+  --agent codex \
+  --channel stable \
+  --dry-run)
+[[ "$stable_plan" == *"from ref v1.1.0"* ]]
+
+canary_plan=$(HOME="$test_home" "$root/scripts/install.sh" \
+  --agent codex \
+  --channel canary \
+  --dry-run)
+[[ "$canary_plan" == *"from ref main"* ]]
+
+if HOME="$test_home" "$root/scripts/install.sh" \
+  --agent codex --channel stable --ref main --dry-run >/dev/null 2>&1; then
+  printf '%s\n' "installer accepted conflicting --channel and --ref" >&2
+  exit 1
+fi
+
+if HOME="$test_home" KACHA_STABLE_REF=main "$root/scripts/install.sh" \
+  --agent codex --channel stable --dry-run >/dev/null 2>&1; then
+  printf '%s\n' "installer accepted an environment override for the stable ref" >&2
+  exit 1
+fi
+
+custom_plan=$(HOME="$test_home" KACHA_CHANNEL=stable KACHA_REF=main \
+  "$root/scripts/install.sh" --agent codex --dry-run)
+[[ "$custom_plan" == *"Channel: custom; ref: main"* ]]
+
 archive_paths() {
   if git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     git -C "$root" ls-files --cached --others --exclude-standard -z \
@@ -36,6 +64,11 @@ archive_paths \
   | tar -xf - -C "$source_clone/kacha-fixture"
 tar -czf "$archive" -C "$source_clone" kacha-fixture
 
+local_plan=$(HOME="$test_home" "$root/scripts/install.sh" \
+  --agent codex --archive "$archive" --dry-run)
+[[ "$local_plan" == *"from ref local-archive"* ]]
+[[ "$local_plan" == *"Channel: custom; ref: local-archive"* ]]
+
 HOME="$test_home" "$root/scripts/install.sh" \
   --agent both \
   --archive "$archive" \
@@ -47,6 +80,9 @@ claude_skill="$test_home/.claude/skills/kacha"
 [[ -f "$claude_skill/SKILL.md" ]]
 [[ -f "$codex_skill/.kacha-version" ]]
 [[ -f "$claude_skill/.kacha-version" ]]
+grep -qx 'channel=custom' "$codex_skill/.kacha-version"
+grep -qx 'ref=main' "$codex_skill/.kacha-version"
+grep -Eq '^archive_sha256=[0-9a-f]{64}$' "$codex_skill/.kacha-version"
 [[ ! -e "$codex_skill/website" ]]
 [[ ! -e "$claude_skill/website" ]]
 

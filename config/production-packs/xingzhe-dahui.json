@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "1.0",
+  "id": "xingzhe-dahui",
+  "version": "1.0.0",
+  "description": "行者大灰五栏目专用生产包；共享身份、字幕和证据底线，按栏目覆盖节奏与效果配额。",
+  "base": {
+    "cinematicPolicyFile": "anti-web.json",
+    "typography": {
+      "allowedFonts": ["细体", "金陵体", "华光标题黑", "封神榜书"],
+      "regularSubtitle": {
+        "font": "金陵体",
+        "background": "none",
+        "outline": "none",
+        "shadowOpacity": 0.6
+      },
+      "displayFont": "华光标题黑",
+      "coverTitleFont": "封神榜书",
+      "sequentialMultilineOnly": true
+    },
+    "cover": {
+      "mode": "cinematic_3d",
+      "approved3dTurnaroundDefaultGenerationAnchor": true,
+      "defaultGenerationInputMode": "turnaround_only_real_photo_qc",
+      "realPhotoGenerationInputForbiddenByDefault": true,
+      "realPhotoPriority": "post_generation_identity_qc_only",
+      "turnaroundPriority": "generation_identity_body_clothing_continuity",
+      "turnaroundPoseForbiddenForDisplay": true,
+      "sceneSpecificPoseContractRequired": true,
+      "poseReuseForbidden": true,
+      "allowedGenerationInputModes": ["dual_anchor", "turnaround_only_real_photo_qc"],
+      "dualAnchorRequiresExplicitAuthorization": true,
+      "requiredPoseFields": [
+        "sceneSignal", "narrativeIntent", "bodyAction", "gaze", "expression",
+        "propInteraction", "weightShift", "clothingAdaptation", "clothingContinuity"
+      ]
+    },
+    "firstMinute": {
+      "windowSeconds": 60,
+      "minimumMotivatedEffects": 5,
+      "minimumDistinctMechanisms": 4,
+      "minimumPeakAlignedSfx": 3,
+      "maximumPrimaryEventsPer10Seconds": 3,
+      "minimumHumanPresenceRatio": 0.65,
+      "maximumFullScreenTakeoverRatio": 0.35,
+      "minimumBreathingRoomRatio": 0.2,
+      "minimumHumanReactionWindows": 1,
+      "openingHookRequired": true,
+      "audioVisualIntentMustMatch": true,
+      "normalSpeedPreviewRequired": true
+    }
+  },
+  "shows": {
+    "tool-share": {
+      "editorialIntent": "真实任务驱动，尽早呈现前后差异、操作证据和结论。"
+    },
+    "book-talk": {
+      "editorialIntent": "观点与文本证据优先，让人物、停顿和思考承担主要张力。",
+      "firstMinute": {
+        "minimumMotivatedEffects": 2,
+        "minimumDistinctMechanisms": 2,
+        "minimumPeakAlignedSfx": 0,
+        "maximumPrimaryEventsPer10Seconds": 2,
+        "minimumHumanPresenceRatio": 0.78,
+        "maximumFullScreenTakeoverRatio": 0.22,
+        "minimumBreathingRoomRatio": 0.32
+      }
+    },
+    "infinite-game": {
+      "editorialIntent": "事件与人物反应驱动，允许长观察和自然声，不以动效数量制造戏剧性。",
+      "firstMinute": {
+        "minimumMotivatedEffects": 1,
+        "minimumDistinctMechanisms": 1,
+        "minimumPeakAlignedSfx": 0,
+        "maximumPrimaryEventsPer10Seconds": 1,
+        "minimumHumanPresenceRatio": 0.82,
+        "maximumFullScreenTakeoverRatio": 0.18,
+        "minimumBreathingRoomRatio": 0.4,
+        "minimumHumanReactionWindows": 2
+      }
+    },
+    "very-ai": {
+      "editorialIntent": "概念、案例和实测证据快速交替，但每个视觉机制必须对应信息增量。",
+      "firstMinute": {
+        "minimumMotivatedEffects": 5,
+        "minimumDistinctMechanisms": 4,
+        "minimumPeakAlignedSfx": 2,
+        "minimumHumanPresenceRatio": 0.62,
+        "minimumBreathingRoomRatio": 0.22
+      }
+    },
+    "casual-chat": {
+      "editorialIntent": "保留口语停顿、表情和关系感，只在转折与笑点落位时使用包装。",
+      "firstMinute": {
+        "minimumMotivatedEffects": 2,
+        "minimumDistinctMechanisms": 2,
+        "minimumPeakAlignedSfx": 1,
+        "maximumPrimaryEventsPer10Seconds": 2,
+        "minimumHumanPresenceRatio": 0.85,
+        "maximumFullScreenTakeoverRatio": 0.15,
+        "minimumBreathingRoomRatio": 0.38,
+        "minimumHumanReactionWindows": 2
+      }
+    }
+  }
+}

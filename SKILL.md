@@ -300,6 +300,9 @@ semantic review session；v2 首剪和 v3 增量 manifest 使用同一开关，�
 BGM、粗描边、3D 封面身份漂移，以及用静态证据代替正常速度审片。
 `gate-plan / gate-render / gate-release` 分别验证 `plan / execution / release`，
 不得把计划占位值当执行或发布证据。完整说明见 `docs/PRODUCTION_HARDENING.md`。
+品牌字体、封面身份与栏目节奏不再写死在通用验证器中；新合同必须记录
+`productionProfile.packId / showId / packSha256`。行者大灰使用
+`xingzhe-dahui` production pack，其他项目可使用不含行者品牌资产的包。
 
 ## 统一配置与默认剪辑要求
 
@@ -496,8 +499,10 @@ picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共�
   下一事件或切回主画面前完整退出。不得把动画起始帧当成 SFX 落点，也不得
   按固定秒数随机套“网感”效果。
 - 前 60 秒必须单独通过 `production-quality` execution 门禁：唯一主开场之外，
-  至少 5 个语义动效、4 种机制和 3 个实测峰值 SFX；任意 10 秒不超过 3 个
-  主效果，同时保留规定的人物在场比例、呼吸区间和正常速度代表预览。
+  按 production pack 与栏目 profile 执行动效、机制、SFX、人物在场和呼吸区间
+  门槛；工具分享保持 5/4/3 基线，解读好书、有限的无限游戏和闲聊不得为了
+  统一配额牺牲停顿、自然声或人物反应。任意 10 秒仍不得超过 profile 规定的
+  主效果密度，并保留正常速度代表预览。
 - 正式语义动效只从已验证 timeline plan 渲染；展示模式标签、固定示例文案
   和 showcase 音轨不得进入成片。
 - 信息卡/流程图/弹窗要么全屏，要么避开人物头脸与字幕安全区；高影响模块

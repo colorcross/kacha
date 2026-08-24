@@ -11,6 +11,7 @@ import {
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
 import { alignSfxPeak } from "./sfx_peak_alignment.mjs";
+import { loadProductionPack } from "./production_pack.mjs";
 
 const STAGES = new Set(["plan", "execution", "release"]);
 const JOIN_TYPES = new Set([
@@ -26,15 +27,10 @@ const JOIN_TYPES = new Set([
   "broll_bridge",
 ]);
 const RELATIONS = new Set(["contrast", "cause", "hierarchy", "progression"]);
-const ALLOWED_FONTS = ["细体", "金陵体", "华光标题黑", "封神榜书"];
+const PROFESSIONAL_AUDIO_PROMPT_FIELDS = [
+  "instrumentation", "style", "tempo", "timbre", "harmony", "lowFrequency", "highFrequency",
+];
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
-const antiWebPolicyFile = path.resolve(
-  scriptDirectory,
-  "..",
-  "config",
-  "design-system",
-  "anti-web.json",
-);
 const BOUNDED_CONTAINER_TYPES = new Set([
   "source_plate",
   "comparison_surface",
@@ -45,14 +41,10 @@ const BOUNDED_CONTAINER_TYPES = new Set([
   "dashboard",
 ]);
 
-function antiWebPolicy() {
-  return readJson(antiWebPolicyFile);
-}
-
 function usage() {
   console.error(
     "用法：\n"
-      + "  production_quality_contract.mjs template --project-id ID --output FILE\n"
+      + "  production_quality_contract.mjs template --project-id ID --output FILE [--pack PACK_ID] [--show SHOW_ID]\n"
       + "  production_quality_contract.mjs validate --contract FILE --stage plan|execution|release\n"
       + "  production_quality_contract.mjs anti-web-audit --contract FILE [--write]",
   );
@@ -63,13 +55,23 @@ function option(name, fallback = null) {
   return index >= 0 ? process.argv[index + 1] : fallback;
 }
 
-function template(projectId) {
-  const cinematic = antiWebPolicy();
+export function template(projectId, {
+  packId = "xingzhe-dahui",
+  showId = "tool-share",
+} = {}) {
+  const productionPack = loadProductionPack(packId, showId);
   return {
     schemaVersion: "1.0",
     kind: "kacha-production-quality-contract",
     projectId,
     policies: {
+      productionProfile: {
+        packId: productionPack.id,
+        packVersion: productionPack.version,
+        packSha256: productionPack.sha256,
+        showId: productionPack.showId,
+        editorialIntent: productionPack.policies.editorialIntent,
+      },
       semanticEdit: {
         fragmentPolicy: "keep_or_remove_complete_unit",
         pausePolicy: "remove_unintentional_preserve_intentional",
@@ -95,18 +97,7 @@ function template(projectId) {
         behindSubjectDefaultChineseCharacters: 4,
         behindSubjectMaxChineseCharacters: 7,
       },
-      typography: {
-        allowedFonts: ALLOWED_FONTS,
-        regularSubtitle: {
-          font: "金陵体",
-          background: "none",
-          outline: "none",
-          shadowOpacity: 0.6,
-        },
-        displayFont: "华光标题黑",
-        coverTitleFont: "封神榜书",
-        sequentialMultilineOnly: true,
-      },
+      typography: structuredClone(productionPack.policies.typography),
       overlays: {
         threeStateCollisionCheck: true,
         protectFaceHeadSubtitlesAndPlatformUi: true,
@@ -121,9 +112,7 @@ function template(projectId) {
       audio: {
         adaptiveBgmRequired: true,
         rhythmEmotionContentAnalysisRequired: true,
-        professionalPromptFields: [
-          "instrumentation", "style", "tempo", "timbre", "harmony", "lowFrequency", "highFrequency",
-        ],
+        professionalPromptFields: PROFESSIONAL_AUDIO_PROMPT_FIELDS,
         stemsRequired: ["dialogue", "bgm", "sfx", "mix"],
         minimumCoverageRatio: 0.95,
         sfxWaveformPeakEvidenceRequired: true,
@@ -131,49 +120,9 @@ function template(projectId) {
         semanticLandingIsTimelineAuthority: true,
         sfxPeakToleranceFrames: 1,
       },
-      cover: {
-        approved3dTurnaroundDefaultGenerationAnchor: true,
-        defaultGenerationInputMode: "turnaround_only_real_photo_qc",
-        realPhotoGenerationInputForbiddenByDefault: true,
-        realPhotoPriority: "post_generation_identity_qc_only",
-        turnaroundPriority: "generation_identity_body_clothing_continuity",
-        turnaroundPoseForbiddenForDisplay: true,
-        sceneSpecificPoseContractRequired: true,
-        poseReuseForbidden: true,
-        allowedGenerationInputModes: ["dual_anchor", "turnaround_only_real_photo_qc"],
-        dualAnchorRequiresExplicitAuthorization: true,
-        requiredPoseFields: [
-          "sceneSignal", "narrativeIntent", "bodyAction", "gaze", "expression",
-          "propInteraction", "weightShift", "clothingAdaptation", "clothingContinuity",
-        ],
-      },
-      firstMinute: {
-        windowSeconds: 60,
-        minimumMotivatedEffects: 5,
-        minimumDistinctMechanisms: 4,
-        minimumPeakAlignedSfx: 3,
-        maximumPrimaryEventsPer10Seconds: 3,
-        minimumHumanPresenceRatio: 0.55,
-        maximumFullScreenTakeoverRatio: 0.35,
-        minimumBreathingRoomRatio: 0.2,
-        openingHookRequired: true,
-        audioVisualIntentMustMatch: true,
-        normalSpeedPreviewRequired: true,
-      },
-      cinematicEditorial: {
-        policyId: cinematic.id,
-        policyVersion: cinematic.version,
-        policySha256: sha256File(antiWebPolicyFile),
-        selectionOrder: cinematic.selectionOrder,
-        cinematicMechanisms: cinematic.cinematicMechanisms,
-        sourceTypes: cinematic.sourceTypes,
-        containerTypes: cinematic.containerTypes,
-        boundedSurfaceReasons: cinematic.boundedSurfaceReasons,
-        forbiddenPatterns: cinematic.forbiddenPatterns,
-        globalRules: cinematic.globalRules,
-        showBudgets: cinematic.showBudgets,
-        styleGrammarMechanisms: cinematic.styleGrammarMechanisms,
-      },
+      cover: structuredClone(productionPack.policies.cover),
+      firstMinute: structuredClone(productionPack.policies.firstMinute),
+      cinematicEditorial: structuredClone(productionPack.cinematicEditorial),
       review: {
         representativeNormalSpeedRequired: true,
         fullNormalSpeedPlaybackRequired: true,
@@ -378,6 +327,20 @@ function identityFile(contractFile, identity, label, errors) {
 
 function validatePolicies(contract, errors) {
   const policy = contract.policies ?? {};
+  let expectedPack = null;
+  try {
+    expectedPack = loadProductionPack(
+      policy.productionProfile?.packId,
+      policy.productionProfile?.showId,
+    );
+    if (
+      policy.productionProfile?.packVersion !== expectedPack.version
+      || policy.productionProfile?.packSha256 !== expectedPack.sha256
+      || policy.productionProfile?.editorialIntent !== expectedPack.policies.editorialIntent
+    ) errors.push("policies.productionProfile 未绑定当前 production pack 版本、摘要或栏目意图");
+  } catch (error) {
+    errors.push(`policies.productionProfile 无效：${error.message}`);
+  }
   if (policy.semanticEdit?.fragmentPolicy !== "keep_or_remove_complete_unit") {
     errors.push("policies.semanticEdit 必须禁止半句话残片");
   }
@@ -407,14 +370,9 @@ function validatePolicies(contract, errors) {
     || Number(policy.effects?.behindSubjectMaxChineseCharacters) > 7
   ) errors.push("policies.effects 未落实语义触发、单主效果、逐项清单或人物身后短词限制");
   if (
-    !exactArray(policy.typography?.allowedFonts, ALLOWED_FONTS)
-    || policy.typography?.regularSubtitle?.font !== "金陵体"
-    || policy.typography?.regularSubtitle?.background !== "none"
-    || policy.typography?.regularSubtitle?.outline !== "none"
-    || Number(policy.typography?.regularSubtitle?.shadowOpacity) !== 0.6
-    || policy.typography?.displayFont !== "华光标题黑"
-    || policy.typography?.coverTitleFont !== "封神榜书"
-  ) errors.push("policies.typography 与行者字体、字幕背景、描边和阴影合同不一致");
+    !expectedPack
+    || JSON.stringify(policy.typography) !== JSON.stringify(expectedPack.policies.typography)
+  ) errors.push("policies.typography 与所选 production pack 的字体、字幕背景、描边和阴影合同不一致");
   const maxBorder = Number(policy.overlays?.maxCardBorderPxAt4k);
   if (
     policy.overlays?.threeStateCollisionCheck !== true
@@ -429,7 +387,7 @@ function validatePolicies(contract, errors) {
     || policy.externalAssets?.provenanceRequired !== true
     || policy.externalAssets?.illustrativeLabel !== "情境示意"
   ) errors.push("policies.externalAssets 未落实语义五元组、来源和情境示意标记");
-  const requiredPromptFields = template("fixture").policies.audio.professionalPromptFields;
+  const requiredPromptFields = PROFESSIONAL_AUDIO_PROMPT_FIELDS;
   if (
     policy.audio?.adaptiveBgmRequired !== true
     || policy.audio?.rhythmEmotionContentAnalysisRequired !== true
@@ -442,52 +400,39 @@ function validatePolicies(contract, errors) {
     || Number(policy.audio?.sfxPeakToleranceFrames) !== 1
   ) errors.push("policies.audio 未落实自适应配乐、专业提示词字段或连续覆盖");
   if (
-    policy.cover?.approved3dTurnaroundDefaultGenerationAnchor !== true
-    || policy.cover?.defaultGenerationInputMode !== "turnaround_only_real_photo_qc"
-    || policy.cover?.realPhotoGenerationInputForbiddenByDefault !== true
-    || policy.cover?.realPhotoPriority !== "post_generation_identity_qc_only"
-    || policy.cover?.turnaroundPriority !== "generation_identity_body_clothing_continuity"
-    || policy.cover?.turnaroundPoseForbiddenForDisplay !== true
-    || policy.cover?.sceneSpecificPoseContractRequired !== true
-    || policy.cover?.poseReuseForbidden !== true
-    || !exactArray(policy.cover?.allowedGenerationInputModes, ["dual_anchor", "turnaround_only_real_photo_qc"])
-    || policy.cover?.dualAnchorRequiresExplicitAuthorization !== true
-    || !exactArray(policy.cover?.requiredPoseFields, template("fixture").policies.cover.requiredPoseFields)
-  ) errors.push("policies.cover 未落实获批 3D 三视图默认生成锚点、真人仅后置 QC 和展示姿态转换");
+    !expectedPack
+    || JSON.stringify(policy.cover) !== JSON.stringify(expectedPack.policies.cover)
+  ) errors.push("policies.cover 未落实所选 production pack 的封面身份、输入与姿态合同");
   const firstMinute = policy.firstMinute ?? {};
   if (
     Number(firstMinute.windowSeconds) !== 60
-    || Number(firstMinute.minimumMotivatedEffects) < 5
-    || Number(firstMinute.minimumDistinctMechanisms) < 4
-    || Number(firstMinute.minimumPeakAlignedSfx) < 3
+    || Number(firstMinute.minimumMotivatedEffects) < 0
+    || Number(firstMinute.minimumDistinctMechanisms) < 0
+    || Number(firstMinute.minimumPeakAlignedSfx) < 0
+    || Number(firstMinute.minimumHumanReactionWindows) < 0
+    || !Number.isInteger(Number(firstMinute.minimumMotivatedEffects))
+    || !Number.isInteger(Number(firstMinute.minimumDistinctMechanisms))
+    || !Number.isInteger(Number(firstMinute.minimumPeakAlignedSfx))
+    || !Number.isInteger(Number(firstMinute.minimumHumanReactionWindows))
+    || !expectedPack
+    || JSON.stringify(firstMinute) !== JSON.stringify(expectedPack.policies.firstMinute)
     || Number(firstMinute.maximumPrimaryEventsPer10Seconds) > 3
-    || Number(firstMinute.minimumHumanPresenceRatio) < 0.55
-    || Number(firstMinute.maximumFullScreenTakeoverRatio) > 0.35
-    || Number(firstMinute.minimumBreathingRoomRatio) < 0.2
+    || Number(firstMinute.maximumPrimaryEventsPer10Seconds) < 1
+    || Number(firstMinute.minimumHumanPresenceRatio) < 0.5
+    || Number(firstMinute.minimumHumanPresenceRatio) > 1
+    || Number(firstMinute.maximumFullScreenTakeoverRatio) < 0
+    || Number(firstMinute.maximumFullScreenTakeoverRatio) > 0.4
+    || Number(firstMinute.minimumBreathingRoomRatio) < 0.15
+    || Number(firstMinute.minimumBreathingRoomRatio) > 1
     || firstMinute.openingHookRequired !== true
     || firstMinute.audioVisualIntentMustMatch !== true
     || firstMinute.normalSpeedPreviewRequired !== true
-  ) errors.push("policies.firstMinute 未落实前 60 秒吸引力、丰富度、高级感和活人感门槛");
-  const currentCinematic = antiWebPolicy();
+  ) errors.push("policies.firstMinute 未落实所选栏目在前 60 秒的吸引力、克制密度、呼吸空间和活人感门槛");
   const cinematic = policy.cinematicEditorial ?? {};
   if (
-    cinematic.policyId !== currentCinematic.id
-    || cinematic.policyVersion !== currentCinematic.version
-    || cinematic.policySha256 !== sha256File(antiWebPolicyFile)
-    || !exactArray(cinematic.selectionOrder, currentCinematic.selectionOrder)
-    || !exactArray(cinematic.cinematicMechanisms, currentCinematic.cinematicMechanisms)
-    || !exactArray(cinematic.sourceTypes, currentCinematic.sourceTypes)
-    || !exactArray(cinematic.containerTypes, currentCinematic.containerTypes)
-    || !exactArray(cinematic.boundedSurfaceReasons, currentCinematic.boundedSurfaceReasons)
-    || !exactArray(cinematic.forbiddenPatterns, currentCinematic.forbiddenPatterns)
-    || cinematic.globalRules?.realPictureBeforeGraphicContainer !== true
-    || cinematic.globalRules?.boundarylessBeforeBounded !== true
-    || cinematic.globalRules?.noAdjacentBoundedSurfaces !== true
-    || cinematic.globalRules?.staticPeakFrameIsNotAcceptance !== true
-    || JSON.stringify(cinematic.showBudgets) !== JSON.stringify(currentCinematic.showBudgets)
-    || JSON.stringify(cinematic.styleGrammarMechanisms)
-      !== JSON.stringify(currentCinematic.styleGrammarMechanisms)
-  ) errors.push("policies.cinematicEditorial 必须绑定当前行者风 3.0 电影化编辑与反网页合同");
+    !expectedPack
+    || JSON.stringify(cinematic) !== JSON.stringify(expectedPack.cinematicEditorial)
+  ) errors.push("policies.cinematicEditorial 必须绑定所选 production pack 的当前电影化编辑合同");
   if (
     policy.review?.representativeNormalSpeedRequired !== true
     || policy.review?.fullNormalSpeedPlaybackRequired !== true
@@ -499,11 +444,16 @@ function validateCinematicEditorial(contractFile, contract, execution, errors) {
   const policy = contract.policies?.cinematicEditorial ?? {};
   const record = execution.cinematicEditorial ?? {};
   const durationSeconds = Number(record.durationSeconds);
-  const budget = policy.showBudgets?.[record.showId];
+  const budget = policy.budget;
   const events = Array.isArray(record.events)
     ? [...record.events].sort((left, right) => Number(left.startSeconds) - Number(right.startSeconds))
     : [];
-  if (!budget) errors.push("execution.cinematicEditorial.showId 必须是当前五栏目之一");
+  if (
+    !hasValue(record.showId)
+    || record.showId !== contract.policies?.productionProfile?.showId
+    || record.showId !== policy.showId
+  ) errors.push("execution.cinematicEditorial.showId 必须与 policies.productionProfile.showId 一致");
+  if (!budget) errors.push("execution.cinematicEditorial 缺少当前 production pack 的栏目预算");
   if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
     errors.push("execution.cinematicEditorial.durationSeconds 必须大于 0");
     return;
@@ -542,7 +492,7 @@ function validateCinematicEditorial(contractFile, contract, execution, errors) {
       errors.push(`${prefix}.containerType 不是已注册容器类型`);
     }
     if (!policy.styleGrammarMechanisms?.[event.styleId]) {
-      errors.push(`${prefix}.styleId 不是五套正式视觉语言之一`);
+      errors.push(`${prefix}.styleId 不是所选 production pack 注册的视觉语言`);
     } else if (
       !["bounded_information_surface", "clean_a_roll"].includes(event.mechanism)
       && !policy.styleGrammarMechanisms[event.styleId].includes(event.mechanism)
@@ -717,20 +667,22 @@ function validateExecution(contractFile, contract, errors) {
     ) errors.push(`execution.effects.progressiveLists[${index}] 必须逐项随口播出现并逐项落独立音效峰值`);
   }
   for (const [index, item] of (effects.behindSubjectText ?? []).entries()) {
+    const displayFont = contract.policies?.typography?.displayFont;
     if (
       chineseLength(item.text) > 7
-      || item.font !== "华光标题黑"
+      || item.font !== displayFont
       || item.maskVerified !== true
-    ) errors.push(`execution.effects.behindSubjectText[${index}] 必须是 7 字以内华光标题黑短词并验证人物遮挡`);
+    ) errors.push(`execution.effects.behindSubjectText[${index}] 必须是 7 字以内、使用 production pack 展示字体的短词并验证人物遮挡`);
   }
 
   const regularStyle = execution.captions?.regularStyle ?? {};
+  const expectedRegularStyle = contract.policies?.typography?.regularSubtitle ?? {};
   if (
-    regularStyle.font !== "金陵体"
-    || regularStyle.background !== "none"
-    || regularStyle.outline !== "none"
-    || Number(regularStyle.shadowOpacity) !== 0.6
-  ) errors.push("execution.captions.regularStyle 必须是金陵体、无底色、无描边、60% 阴影");
+    regularStyle.font !== expectedRegularStyle.font
+    || regularStyle.background !== expectedRegularStyle.background
+    || regularStyle.outline !== expectedRegularStyle.outline
+    || Number(regularStyle.shadowOpacity) !== Number(expectedRegularStyle.shadowOpacity)
+  ) errors.push("execution.captions.regularStyle 必须与 production pack 的常规字幕合同一致");
   for (const [index, group] of (execution.captions?.relationshipGroups ?? []).entries()) {
     if (
       !RELATIONS.has(group.relation)
@@ -811,6 +763,9 @@ function validateExecution(contractFile, contract, errors) {
   }
 
   const cover = execution.cover ?? {};
+  if (cover.mode !== contract.policies?.cover?.mode) {
+    errors.push("execution.cover.mode 必须与 production pack 的封面模式一致");
+  }
   if (cover.mode === "cinematic_3d") {
     identityFile(contractFile, cover.realFaceAnchor, "execution.cover.realFaceAnchor", errors);
     identityFile(contractFile, cover.turnaroundAnchor, "execution.cover.turnaroundAnchor", errors);
@@ -841,6 +796,13 @@ function validateExecution(contractFile, contract, errors) {
     const missingPoseFields = requiredPoseFields.filter((field) => !hasValue(pose[field]));
     if (missingPoseFields.length > 0 || pose.reusedApprovedPose !== false) {
       errors.push(`execution.cover 人物动作必须绑定当前场景且不得复用固定姿势：${missingPoseFields.join(", ") || "reusedApprovedPose"}`);
+    }
+  } else if (cover.mode === "editorial_2d") {
+    if (contract.policies?.cover?.identityEvidenceRequired === true) {
+      identityFile(contractFile, cover.identityEvidence, "execution.cover.identityEvidence", errors);
+    }
+    if (!(contract.policies?.cover?.allowedGenerationInputModes ?? []).includes(cover.generationInputMode)) {
+      errors.push("execution.cover.generationInputMode 不符合 production pack 的 2D 封面合同");
     }
   }
 
@@ -879,7 +841,7 @@ function validateExecution(contractFile, contract, errors) {
     || Number(firstMinute.fullScreenTakeoverRatio) > Number(firstMinutePolicy.maximumFullScreenTakeoverRatio)
     || Number(firstMinute.breathingRoomRatio) < Number(firstMinutePolicy.minimumBreathingRoomRatio)
     || !Array.isArray(firstMinute.humanReactionWindows)
-    || firstMinute.humanReactionWindows.length < 1
+    || firstMinute.humanReactionWindows.length < Number(firstMinutePolicy.minimumHumanReactionWindows)
   ) errors.push("execution.firstMinute 未同时满足语义动效丰富度、克制密度、呼吸空间与真人在场感");
   const peakAlignedIds = new Set(firstMinute.peakAlignedSfxEventIds ?? []);
   const audioEventIds = new Set((audio.sfxEvents ?? []).map((event) => event.id).filter(hasValue));
@@ -961,12 +923,19 @@ const [, , command] = process.argv;
 if (command === "template") {
   const projectId = option("--project-id");
   const output = option("--output");
+  const packId = option("--pack", "xingzhe-dahui");
+  const showId = option("--show", "tool-share");
   if (!projectId || !output) {
     usage();
     process.exit(2);
   }
-  writeJsonAtomic(output, template(projectId));
-  console.log(JSON.stringify({ status: "pass", output: path.resolve(output) }, null, 2));
+  writeJsonAtomic(output, template(projectId, { packId, showId }));
+  console.log(JSON.stringify({
+    status: "pass",
+    output: path.resolve(output),
+    productionPack: packId,
+    showId,
+  }, null, 2));
 } else if (command === "validate") {
   const contractFile = option("--contract");
   const stage = option("--stage", "plan");

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0",
+  "id": "clean-editorial",
+  "version": "1.0.0",
+  "description": "不包含行者大灰品牌资产的通用克制型真人口播生产包。",
+  "base": {
+    "cinematicPolicyFile": "clean-editorial.json",
+    "typography": {
+      "allowedFonts": ["PingFang SC", "Noto Sans CJK SC", "Source Han Sans SC"],
+      "regularSubtitle": {
+        "font": "PingFang SC",
+        "background": "none",
+        "outline": "none",
+        "shadowOpacity": 0.45
+      },
+      "displayFont": "Source Han Sans SC",
+      "coverTitleFont": "Source Han Sans SC",
+      "sequentialMultilineOnly": true
+    },
+    "cover": {
+      "mode": "editorial_2d",
+      "identityEvidenceRequired": true,
+      "sceneSpecificPoseContractRequired": false,
+      "poseReuseForbidden": false,
+      "allowedGenerationInputModes": ["real_photo", "local_generated", "none"],
+      "requiredPoseFields": []
+    },
+    "firstMinute": {
+      "windowSeconds": 60,
+      "minimumMotivatedEffects": 2,
+      "minimumDistinctMechanisms": 2,
+      "minimumPeakAlignedSfx": 0,
+      "maximumPrimaryEventsPer10Seconds": 2,
+      "minimumHumanPresenceRatio": 0.7,
+      "maximumFullScreenTakeoverRatio": 0.3,
+      "minimumBreathingRoomRatio": 0.3,
+      "minimumHumanReactionWindows": 1,
+      "openingHookRequired": true,
+      "audioVisualIntentMustMatch": true,
+      "normalSpeedPreviewRequired": true
+    }
+  },
+  "shows": {
+    "talking-head": {
+      "editorialIntent": "人物与论点优先，包装只承担结构提示和证据展示。"
+    }
+  }
+}

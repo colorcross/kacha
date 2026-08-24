@@ -29,21 +29,21 @@ Codex：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
-  | bash -s -- --agent codex
+  | bash -s -- --agent codex --channel canary
 ```
 
 Claude Code：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
-  | bash -s -- --agent claude
+  | bash -s -- --agent claude --channel canary
 ```
 
 同时安装：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
-  | bash -s -- --agent both
+  | bash -s -- --agent both --channel canary
 ```
 
 直接执行远程脚本前，应先查看脚本内容。更推荐上面的自然语言安装方式，让 Agent 先检查仓库和脚本再执行。
@@ -53,6 +53,8 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 - 使用 GitHub 公开源码归档下载，不读取 Git 凭据；
 - 目标不存在时，先下载到临时目录，验证结构和隐私扫描后再移动；
 - 目标已存在时保持不变，不覆盖已有安装或本地修改；
+- `stable/canary` 的 ref 只读取 `config/release-channels.json`；环境变量不能改写渠道映射；
+- `--ref`、自定义 URL 与本地 archive 统一标为 `custom`，本地安装记录归档 SHA-256；
 - 不读取、不复制、不上传用户项目、密钥、素材和现有其他 skills；
 - Codex 安装不会修改 Claude Code 目录，Claude Code 安装不会修改 Codex 目录。
 

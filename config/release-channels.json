@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0",
+  "defaultChannel": "canary",
+  "channels": {
+    "stable": {
+      "ref": "v1.1.0",
+      "meaning": "最后一个已正式标记的公开版本；不包含其后的 Unreleased 能力",
+      "promotionGate": "候选提交、全量 CI、macOS smoke、安装回读、版本标签和 Release 均有证据"
+    },
+    "canary": {
+      "ref": "main",
+      "meaning": "当前开发主线；能力更新但不等于正式稳定发布",
+      "promotionGate": null
+    }
+  },
+  "boundary": "修改本文件或安装器不能替代真实 tag、Release、下载和安装回读。"
+}

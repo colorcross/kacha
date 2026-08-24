@@ -150,7 +150,7 @@ export const zhContent: SiteContent = {
     titleLead: "从脚本或素材，",
     titleAccent: "到可以发布的成片。",
     summary:
-      "咔嚓把内容策划、结构精剪、人声处理、视觉包装和增量返工组织成可恢复的本地项目；代表区间减少试错，安全并行缩短等待，完整审片和真实编辑评测守住质量。",
+      "咔嚓是本地、AI 辅助、证据化的视频生产工作流：把内容策划、结构精剪、人声处理、视觉包装和增量返工组织成可恢复项目；人负责判断、完整审片和发布。",
     primaryCta: "看看能解决什么",
     secondaryCta: "快速安装",
     contracts: ["素材优先留在本地", "不剪断完整语义", "每次修改可追踪"],
@@ -160,9 +160,9 @@ export const zhContent: SiteContent = {
   proofLabel: "咔嚓的核心工作方式",
   proof: [
     { value: "LOCAL", label: "默认本地处理素材" },
-    { value: "FULL", label: "覆盖完整后期流程" },
+    { value: "HUMAN", label: "判断、审片与发布由人负责" },
     { value: "DELTA", label: "返工只改受影响层" },
-    { value: "137", label: "自动回归检查" },
+    { value: "146", label: "自动回归检查" },
   ],
   problems: {
     title: "真正耗时间的，不只是拖动时间线。",
@@ -463,7 +463,7 @@ export const enContent: SiteContent = {
     titleLead: "From script or footage",
     titleAccent: "to a publishable cut.",
     summary:
-      "Kacha turns content planning, editing, mixing, packaging, and revision into a recoverable local project. Representative ranges reduce iteration, safe waves reduce waiting, and full review preserves quality.",
+      "Kacha is a local, AI-assisted, evidence-driven video production workflow. It turns planning, editing, mixing, packaging, and revision into a recoverable project while people retain editorial, review, and publishing responsibility.",
     primaryCta: "See what it solves",
     secondaryCta: "Install Kacha",
     contracts: ["Media stays local by default", "Complete meaning stays intact", "Every change is traceable"],
@@ -473,9 +473,9 @@ export const enContent: SiteContent = {
   proofLabel: "How Kacha works",
   proof: [
     { value: "LOCAL", label: "local-first media handling" },
-    { value: "FULL", label: "end-to-end post workflow" },
+    { value: "HUMAN", label: "people own review and release" },
     { value: "DELTA", label: "affected layers only" },
-    { value: "137", label: "regression checks" },
+    { value: "146", label: "regression checks" },
   ],
   problems: {
     title: "The timeline is not the only expensive part.",

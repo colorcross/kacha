@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ref=${KACHA_REF:-main}
+ref=${KACHA_REF:-}
+channel=${KACHA_CHANNEL:-canary}
+ref_explicit=false
+channel_explicit=false
+[[ -n "$ref" ]] && ref_explicit=true
 archive_url=${KACHA_ARCHIVE_URL:-}
+archive_url_explicit=false
+[[ -n "$archive_url" ]] && archive_url_explicit=true
 archive_file=""
 agent=""
 custom_target=""
@@ -13,7 +19,7 @@ usage() {
 Install Kacha as a user-level Agent Skill.
 
 Usage:
-  install.sh --agent codex|claude|both [--ref REF] [--target DIR] [--dry-run]
+  install.sh --agent codex|claude|both [--channel stable|canary | --ref REF] [--target DIR] [--dry-run]
 
 Default locations:
   Codex       ~/.codex/skills/kacha
@@ -21,9 +27,10 @@ Default locations:
 
 Options:
   --agent NAME    Required: codex, claude, or both
-  --ref REF       GitHub branch or tag; default: main
+  --channel NAME  stable uses the last formally tagged release; canary follows main (default)
+  --ref REF       Explicit GitHub branch or tag; reported as the custom channel
   --target DIR    Custom target; only valid with one agent
-  --archive FILE  Install from a local tar.gz archive
+  --archive FILE  Install from a local tar.gz archive; reported as the custom channel
   --dry-run       Print planned actions without changing files
   -h, --help      Show this help
 
@@ -44,6 +51,13 @@ while [[ $# -gt 0 ]]; do
     --ref)
       [[ $# -ge 2 ]] || { usage >&2; exit 2; }
       ref=$2
+      ref_explicit=true
+      shift 2
+      ;;
+    --channel)
+      [[ $# -ge 2 ]] || { usage >&2; exit 2; }
+      channel=$2
+      channel_explicit=true
       shift 2
       ;;
     --target)
@@ -81,6 +95,63 @@ case "$agent" in
     ;;
 esac
 
+for command_name in python3 tar; do
+  command -v "$command_name" >/dev/null 2>&1 || {
+    printf '%s is required\n' "$command_name" >&2
+    exit 2
+  }
+done
+
+if [[ -n "${KACHA_STABLE_REF:-}" || -n "${KACHA_CANARY_REF:-}" ]]; then
+  printf '%s\n' "Stable/canary refs are controlled by config/release-channels.json; use --ref for a custom source." >&2
+  exit 2
+fi
+release_channels_file=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/config/release-channels.json
+[[ -f "$release_channels_file" ]] || {
+  printf 'Release channel config not found: %s\n' "$release_channels_file" >&2
+  exit 2
+}
+IFS=$'\t' read -r stable_ref canary_ref < <(python3 - "$release_channels_file" <<'PY'
+import json
+import pathlib
+import sys
+
+payload = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+channels = payload.get("channels", {})
+stable = channels.get("stable", {}).get("ref")
+canary = channels.get("canary", {}).get("ref")
+if not isinstance(stable, str) or not stable or not isinstance(canary, str) or not canary:
+    raise SystemExit("release channel config is missing stable/canary refs")
+print(f"{stable}\t{canary}")
+PY
+)
+
+case "$channel" in
+  stable|canary) ;;
+  *)
+    printf '%s\n' "--channel must be stable or canary" >&2
+    exit 2
+    ;;
+esac
+if $ref_explicit && $channel_explicit; then
+  printf '%s\n' "--ref cannot be combined with --channel" >&2
+  exit 2
+fi
+if $ref_explicit; then
+  channel=custom
+elif [[ -n "$archive_file" ]]; then
+  channel=custom
+  ref=local-archive
+elif $archive_url_explicit; then
+  channel=custom
+  ref=custom-url
+else
+  case "$channel" in
+    stable) ref=$stable_ref ;;
+    canary) ref=$canary_ref ;;
+  esac
+fi
+
 [[ "$ref" =~ ^[A-Za-z0-9._/-]+$ && "$ref" != -* ]] || {
   printf '%s\n' "Invalid GitHub ref" >&2
   exit 2
@@ -89,12 +160,6 @@ esac
   printf '%s\n' "HOME must be an absolute, non-root directory" >&2
   exit 2
 }
-for command_name in python3 tar; do
-  command -v "$command_name" >/dev/null 2>&1 || {
-    printf '%s is required\n' "$command_name" >&2
-    exit 2
-  }
-done
 if [[ -z "$archive_file" ]]; then
   command -v curl >/dev/null 2>&1 || {
     printf '%s\n' "curl is required" >&2
@@ -137,6 +202,7 @@ prepare_source() {
   local candidate="$work_root/kacha"
   local top_directory
   local version
+  local archive_sha256
 
   if [[ -n "$archive_file" ]]; then
     downloaded_archive=$archive_file
@@ -190,8 +256,20 @@ PY
 
   python3 "$candidate/scripts/scan_secrets.py" >&2
   version=${top_directory##*-}
-  printf 'ref=%s\nsource=%s\narchive=%s\n' \
-    "$ref" "$version" "${archive_url:-local}" > "$candidate/.kacha-version"
+  archive_sha256=$(python3 - "$downloaded_archive" <<'PY'
+import hashlib
+import pathlib
+import sys
+
+digest = hashlib.sha256()
+with pathlib.Path(sys.argv[1]).open("rb") as handle:
+    for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+        digest.update(chunk)
+print(digest.hexdigest())
+PY
+)
+  printf 'channel=%s\nref=%s\nsource=%s\narchive=%s\narchive_sha256=%s\n' \
+    "$channel" "$ref" "$version" "${archive_url:-local}" "$archive_sha256" > "$candidate/.kacha-version"
   printf '%s\n' "$candidate"
 }
 
@@ -224,7 +302,7 @@ install_one() {
   mkdir -p "$parent"
   mv "$source" "$target"
   printf 'Installed for %s: %s\n' "$agent_name" "$target"
-  printf 'Version: %s\n' "$(sed -n '2s/^source=//p' "$target/.kacha-version")"
+  printf 'Version: %s\n' "$(sed -n 's/^source=//p' "$target/.kacha-version")"
 }
 
 if $dry_run; then
@@ -254,4 +332,8 @@ else
 fi
 
 printf '%s\n' "Installation complete."
+printf 'Channel: %s; ref: %s\n' "$channel" "$ref"
+if [[ "$channel" == "stable" ]]; then
+  printf 'Note: stable remains %s until a newer candidate is formally tagged; use canary for the configured development line.\n' "$stable_ref"
+fi
 printf '%s\n' "Current Agent: read the installed SKILL.md now, then load the required references before use."

@@ -27,6 +27,7 @@ import {
   buildAssetInbox,
   validateAssetInbox,
 } from "../scripts/asset_inbox.mjs";
+import { loadProductionPack } from "../scripts/production_pack.mjs";
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillDirectory = path.dirname(testDirectory);
@@ -2929,6 +2930,81 @@ await test("production studio exposes five visual-language choices and live cont
   }
 }, "visual");
 
+await test("production packs separate generic policy from five show-specific editorial rhythms", () => {
+  const root = path.join(temporary, "production-packs");
+  fs.mkdirSync(root, { recursive: true });
+  const expected = {
+    "tool-share": [5, 4, 3],
+    "book-talk": [2, 2, 0],
+    "infinite-game": [1, 1, 0],
+    "very-ai": [5, 4, 2],
+    "casual-chat": [2, 2, 1],
+  };
+  for (const [showId, thresholds] of Object.entries(expected)) {
+    const contractFile = path.join(root, `${showId}.json`);
+    execute(process.execPath, [
+      path.join(scripts, "kacha.mjs"),
+      "production-quality", "template",
+      "--project-id", `pack-${showId}`,
+      "--pack", "xingzhe-dahui",
+      "--show", showId,
+      "--output", contractFile,
+    ]);
+    execute(process.execPath, [
+      path.join(scripts, "kacha.mjs"),
+      "production-quality", "validate",
+      "--contract", contractFile,
+      "--stage", "plan",
+    ]);
+    const policy = readJson(contractFile).policies;
+    if (
+      policy.productionProfile.showId !== showId
+      || policy.firstMinute.minimumMotivatedEffects !== thresholds[0]
+      || policy.firstMinute.minimumDistinctMechanisms !== thresholds[1]
+      || policy.firstMinute.minimumPeakAlignedSfx !== thresholds[2]
+    ) throw new Error(`show-specific production pack did not resolve: ${showId}`);
+  }
+
+  const genericFile = path.join(root, "generic.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "production-quality", "template",
+    "--project-id", "pack-generic",
+    "--pack", "clean-editorial",
+    "--show", "talking-head",
+    "--output", genericFile,
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "production-quality", "validate",
+    "--contract", genericFile,
+    "--stage", "plan",
+  ]);
+  const generic = readJson(genericFile).policies;
+  if (
+    generic.typography.allowedFonts.includes("金陵体")
+    || generic.cover.mode !== "editorial_2d"
+    || generic.productionProfile.packId !== "clean-editorial"
+  ) throw new Error("generic production pack still depends on xingzhe-dahui brand rules");
+
+  const malformedRoot = path.join(root, "malformed-pack-root");
+  fs.mkdirSync(malformedRoot, { recursive: true });
+  const malformed = readJson(path.join(skillDirectory, "config", "production-packs", "clean-editorial.json"));
+  malformed.id = "malformed";
+  delete malformed.base.firstMinute.maximumPrimaryEventsPer10Seconds;
+  writeJson(path.join(malformedRoot, "malformed.json"), malformed);
+  let malformedRejected = false;
+  try {
+    loadProductionPack("malformed", "talking-head", {
+      packRoot: malformedRoot,
+      designRoot: path.join(skillDirectory, "config", "design-system"),
+    });
+  } catch (error) {
+    malformedRejected = error.message.includes("maximumPrimaryEventsPer10Seconds");
+  }
+  if (!malformedRejected) throw new Error("malformed production pack disabled a required numeric quality limit");
+}, "core");
+
 await test("production quality contract gates recurring editorial defects across all stages", () => {
   const root = path.join(temporary, "production-quality-contract");
   fs.mkdirSync(root, { recursive: true });
@@ -3113,7 +3189,7 @@ await test("production quality contract gates recurring editorial defects across
       normalSpeedPreview: identity,
     },
     cinematicEditorial: {
-      showId: "casual-chat",
+      showId: "tool-share",
       durationSeconds: 30,
       events: [
         {
@@ -3200,6 +3276,60 @@ await test("production quality contract gates recurring editorial defects across
     "--stage", "release",
   ]);
 
+  const mismatchedShow = structuredClone(contract);
+  mismatchedShow.execution.cinematicEditorial.showId = "casual-chat";
+  const mismatchedShowFile = path.join(root, "mismatched-show.json");
+  writeJson(mismatchedShowFile, mismatchedShow);
+  const mismatchedShowFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "production-quality", "validate",
+    "--contract", mismatchedShowFile,
+    "--stage", "release",
+  ]);
+  if (!mismatchedShowFailure.stderr.includes("必须与 policies.productionProfile.showId 一致")) {
+    throw new Error("production quality accepted a cinematic budget from another show");
+  }
+
+  const genericContractFile = path.join(root, "generic-contract.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "production-quality", "template",
+    "--project-id", "generic-quality-contract",
+    "--pack", "clean-editorial",
+    "--show", "talking-head",
+    "--output", genericContractFile,
+  ]);
+  const genericContract = readJson(genericContractFile);
+  genericContract.execution = structuredClone(contract.execution);
+  genericContract.release = structuredClone(contract.release);
+  genericContract.execution.effects.behindSubjectText[0].font = genericContract.policies.typography.displayFont;
+  genericContract.execution.captions.regularStyle = structuredClone(
+    genericContract.policies.typography.regularSubtitle,
+  );
+  genericContract.execution.cover = {
+    mode: "editorial_2d",
+    identityEvidence: identity,
+    generationInputMode: "real_photo",
+  };
+  genericContract.execution.cinematicEditorial.showId = "talking-head";
+  for (const event of genericContract.execution.cinematicEditorial.events) {
+    event.styleId = "clean-editorial";
+  }
+  genericContract.execution.cinematicEditorial.auditMetrics = null;
+  writeJson(genericContractFile, genericContract);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "production-quality", "anti-web-audit",
+    "--contract", genericContractFile,
+    "--write",
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "production-quality", "validate",
+    "--contract", genericContractFile,
+    "--stage", "release",
+  ]);
+
   const broken = structuredClone(contract);
   broken.execution.semanticEdit.unresolvedFragments = 1;
   broken.execution.connections.cutSheetCount = 0;
@@ -3276,7 +3406,7 @@ await test("V7 orchestrator starts source and script projects with recoverable m
     "--source", source,
     "--project-root", sourceRoot,
     "--project-id", "orchestrated-source",
-    "--show", "tool-share",
+    "--show", "book-talk",
     "--development",
     "--confirm-execute",
   ]).stdout);
@@ -3298,6 +3428,13 @@ await test("V7 orchestrator starts source and script projects with recoverable m
   ) {
     throw new Error("source project did not freeze V6, runtime and media identity");
   }
+  const sourceQualityContract = readJson(
+    path.join(sourceRoot, "contracts", "production-quality-contract.json"),
+  );
+  if (
+    sourceQualityContract.policies?.productionProfile?.packId !== "xingzhe-dahui"
+    || sourceQualityContract.policies?.productionProfile?.showId !== sourceManifest.show
+  ) throw new Error("orchestrator did not propagate the selected show into production quality");
   execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
     "production-quality", "validate",
