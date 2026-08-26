@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "packageVersion": "6.5.0",
+  "recommendedRoute": "figma-make-code-prototype",
+  "userControl": {
+    "alternativeRoutesAllowed": true,
+    "makeIsRequired": false,
+    "makeCodeIsProductionCode": false,
+    "userMayApproveAutomation": true
+  },
+  "routing": {
+    "makeEntryUrl": "https://www.figma.com/make/new",
+    "loginStates": ["authenticated", "unauthenticated", "unknown"],
+    "promptPackStatuses": ["ready", "missing"],
+    "actions": ["browser_automation", "prepare_prompt_pack", "prompt_pack_handoff"],
+    "rules": [
+      {"loginState": "authenticated", "promptPackStatus": "ready", "action": "browser_automation"},
+      {"loginState": "authenticated", "promptPackStatus": "missing", "action": "prepare_prompt_pack"},
+      {"loginState": "unauthenticated", "promptPackStatus": "ready", "action": "prompt_pack_handoff"},
+      {"loginState": "unauthenticated", "promptPackStatus": "missing", "action": "prompt_pack_handoff"},
+      {"loginState": "unknown", "promptPackStatus": "ready", "action": "prompt_pack_handoff"},
+      {"loginState": "unknown", "promptPackStatus": "missing", "action": "prompt_pack_handoff"}
+    ]
+  },
+  "sourceOfTruthPrecedence": [
+    "product-and-business-contracts",
+    "page-state-transition-and-journey-contracts",
+    "frozen-running-make-prototype",
+    "generated-prototype-code-internals"
+  ],
+  "claims": ["structure", "prompt-pack-ready", "prototype-frozen", "prototype-validated", "implementation-aligned"],
+  "requiredPrototypeSubjects": ["runtime", "all-pages", "all-page-states", "all-interactions", "all-journeys", "responsive", "accessibility", "human-review"],
+  "excludedDirectories": [".git", "node_modules", "dist", "build", ".cache", ".next", "coverage"],
+  "forbiddenFileNames": [".env", ".env.local", ".env.production", ".npmrc", ".pypirc", "id_rsa", "id_ed25519", "credentials.json"],
+  "forbiddenFileExtensions": [".pem", ".key", ".p12", ".pfx", ".jks", ".keystore", ".mobileprovision"],
+  "forbiddenFilePatterns": ["*credentials*.json", "*service-account*.json", "*service_account*.json", "*auth-token*", "*access-token*"],
+  "forbiddenContentMarkers": ["-----begin private key-----", "-----begin rsa private key-----", "-----begin ec private key-----"],
+  "sensitiveContentScanBytes": 131072,
+  "packageManifests": ["package.json"],
+  "lockfiles": ["package-lock.json", "pnpm-lock.yaml", "yarn.lock", "bun.lock", "bun.lockb"],
+  "deliveryClaimMapping": {
+    "structure": "structure",
+    "code-done": "implementation-aligned",
+    "candidate-ready": "implementation-aligned",
+    "release-ready": "implementation-aligned",
+    "production-verified": "implementation-aligned"
+  }
+}

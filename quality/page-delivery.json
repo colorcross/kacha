@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "status": "completed",
+  "surfaces": [
+    {"id": "cli-capability-governance", "kind": "cli", "states": ["valid", "excluded", "ranked", "blocked"], "status": "completed", "evidenceRefs": ["quality/evidence/openmontage-local-verification.json"]},
+    {"id": "cli-production-intelligence", "kind": "cli", "states": ["empty", "analyzed", "validated", "limited"], "status": "completed", "evidenceRefs": ["quality/evidence/openmontage-local-verification.json"]},
+    {"id": "studio-production-flight", "kind": "local-web-read-only", "states": ["empty", "loading", "ready", "error"], "status": "completed", "evidenceRefs": ["quality/evidence/openmontage-local-verification.json"]}
+  ],
+  "journeys": [
+    {"id": "reference-to-original-plan", "steps": ["analyze reference", "validate rights boundary", "derive original constraints", "handoff to Kacha plan"], "status": "completed"},
+    {"id": "provider-to-reconciled-cost", "steps": ["rank provider", "estimate", "reserve", "approve if required", "execute externally only when explicitly authorized", "reconcile"], "status": "completed_locally_without_paid_call"},
+    {"id": "project-to-flight-replay", "steps": ["discover evidence sources", "normalize", "sort", "snapshot", "replay/read in Studio"], "status": "completed"}
+  ]
+}

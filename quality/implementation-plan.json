@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "1.0",
+  "planId": "openmontage-inspired-kacha-optimization-2026-08-26",
+  "status": "approved",
+  "approvedBy": "product-owner:user",
+  "approvedAt": "2026-08-26T09:30:07+08:00",
+  "objective": "Preserve Kacha's deterministic local production kernel while adding governed capability breadth, reference-first intelligence, cost control, observability and reusable production packs.",
+  "inScope": [
+    "Capability Broker and provider registry",
+    "Cost estimate/reserve/approve/reconcile/refund ledger",
+    "Rights-aware reference-video intelligence",
+    "Production flight recorder and deterministic replay",
+    "Clip-level media corpus search with diversity and truthful fallback",
+    "Series/hero composition routing",
+    "Validated high-value workflow packs",
+    "CLI, README, SKILL, architecture, tests and local install sync"
+  ],
+  "outOfScope": [
+    "Copying OpenMontage AGPL source or assets",
+    "Paid provider calls or automatic external uploads",
+    "Production deployment, public release, commit or push",
+    "Claiming real creator growth, audience outcome or device evidence",
+    "Replacing Kacha V7/V8 orchestration, Timeline IR, Studio or existing media index"
+  ],
+  "architectureDecisions": [
+    {"id": "AD-01", "decision": "Capability decisions are code-enforced artifacts, not Markdown-only orchestration."},
+    {"id": "AD-02", "decision": "Hard privacy, license, availability, mode and cost gates run before ranking."},
+    {"id": "AD-03", "decision": "Unknown cost is never treated as free when a budget is enforced."},
+    {"id": "AD-04", "decision": "The flight recorder is a read-only observer and cannot mutate production state."},
+    {"id": "AD-05", "decision": "Reference analysis records source and rights boundaries and derives concepts, never a shot-for-shot copy plan."},
+    {"id": "AD-06", "decision": "Embedding unavailability must be labeled keyword_fallback; semantic quality cannot be implied."},
+    {"id": "AD-07", "decision": "Composition routing records chosen engine, exclusions and alternatives; it does not silently switch engines."}
+  ],
+  "verticalSlices": [
+    {"id": "CAP", "findingIds": ["F-OM-001"], "deliverables": ["config/capabilities/provider-registry.json", "scripts/capability_broker.mjs"], "acceptance": ["Registry validates", "Rank excludes incompatible providers", "Decision includes score breakdown and evidence freshness"]},
+    {"id": "COST", "findingIds": ["F-OM-002"], "deliverables": ["scripts/cost_ledger.mjs"], "acceptance": ["Atomic locked ledger updates", "Budget overrun is blocked", "Reserve/approve/reconcile/refund transitions are validated"]},
+    {"id": "REF", "findingIds": ["F-OM-003"], "deliverables": ["scripts/reference_intelligence.mjs"], "acceptance": ["Local reference technical analysis", "Explicit rights and source boundary", "keep/change/doNotCopy handoff validates"]},
+    {"id": "FLIGHT", "findingIds": ["F-OM-004"], "deliverables": ["scripts/production_flight_recorder.mjs", "Studio read-only endpoint"], "acceptance": ["Aggregates known event sources", "Stable ordering", "No mutation endpoint"]},
+    {"id": "CORPUS", "findingIds": ["F-OM-005"], "deliverables": ["scripts/media_corpus.mjs"], "acceptance": ["Clip records have source identity and time ranges", "MMR diversity", "Retrieval mode and limitations exposed"]},
+    {"id": "COMPOSITION", "findingIds": ["F-OM-006"], "deliverables": ["scripts/composition_router.mjs"], "acceptance": ["series and hero validate", "Hard capability gates", "Alternatives recorded"]},
+    {"id": "PACKS", "findingIds": ["F-OM-007"], "deliverables": ["config/workflow-packs.json", "scripts/workflow_packs.mjs"], "acceptance": ["Four packs validate", "Stages map to existing Kacha commands", "No alternate orchestrator"]},
+    {"id": "UXDOC", "findingIds": ["F-OM-008"], "deliverables": ["scripts/kacha.mjs", "README.md", "SKILL.md", "docs/ARCHITECTURE.md", "tests/run_tests.mjs"], "acceptance": ["CLI discoverable", "Docs match behavior", "Focused and full regression pass"]}
+  ],
+  "completionBoundary": "Complete means all locally executable deliverables and tests pass. Independent final review, external provider evidence, release/deploy and production outcomes remain separately gated."
+}

@@ -1,0 +1,11 @@
+schema_version: 1
+stage: "S2"
+route: ""
+skill_names: []
+tool_capabilities: []
+inputs: []
+outputs: []
+validation: []
+status: planned
+fallback_reason: null
+observed_at: null

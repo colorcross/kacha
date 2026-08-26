@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0",
+  "planId": "openmontage-inspired-kacha-optimization-2026-08-26",
+  "status": "passed_with_external_boundaries",
+  "checks": [
+    {"id": "V-CAP-01", "slice": "CAP", "command": "node scripts/kacha.mjs capabilities validate", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
+    {"id": "V-COST-01", "slice": "COST", "command": "node tests/run_tests.mjs --match 'cost ledger'", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
+    {"id": "V-REF-01", "slice": "REF", "command": "node tests/run_tests.mjs --match 'reference intelligence'", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
+    {"id": "V-FLIGHT-01", "slice": "FLIGHT", "command": "node tests/run_tests.mjs --match 'production flight recorder'", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
+    {"id": "V-CORPUS-01", "slice": "CORPUS", "command": "node tests/run_tests.mjs --match 'media corpus'", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
+    {"id": "V-COMP-01", "slice": "COMPOSITION", "command": "node tests/run_tests.mjs --match 'composition router'", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
+    {"id": "V-PACK-01", "slice": "PACKS", "command": "node scripts/kacha.mjs workflows validate", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
+    {"id": "V-REG-01", "slice": "UXDOC", "command": "node tests/run_tests.mjs", "expected": "154/154 pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
+    {"id": "V-PRIV-01", "slice": "UXDOC", "command": "make check-static", "expected": "syntax and secret scan pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
+    {"id": "V-INSTALL-01", "slice": "UXDOC", "command": "node scripts/kacha.mjs install status --agent both", "expected": "source and installs synchronized", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json", "bundleDigest": "9079e2e34469531e75ee234387a7d9653ccd450f141b4d3a130df69040291407"}
+  ]
+}

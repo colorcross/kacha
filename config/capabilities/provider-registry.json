@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "1.0",
+  "policy": {
+    "evidenceMaxAgeHours": 168,
+    "weights": {
+      "taskFit": 0.22,
+      "qualityEvidence": 0.15,
+      "controllability": 0.13,
+      "reliability": 0.13,
+      "costEfficiency": 0.08,
+      "latency": 0.06,
+      "continuity": 0.08,
+      "privacy": 0.08,
+      "license": 0.04,
+      "productionProfileFit": 0.03
+    }
+  },
+  "providers": [
+    {
+      "id": "ffmpeg-local",
+      "version": "system",
+      "maturity": "production",
+      "capabilities": ["video-compose", "audio-mix", "subtitle-render", "media-probe", "clip-extract"],
+      "runtime": {"kind": "binary", "command": "ffmpeg", "probeArgs": ["-version"]},
+      "privacy": "local",
+      "license": {"use": "system-runtime", "redistribution": "not-bundled"},
+      "sideEffects": ["local-files"],
+      "determinism": "high",
+      "resume": true,
+      "retry": true,
+      "supportedModes": ["preview", "final", "series", "hero"],
+      "costModel": {"kind": "local-compute", "currency": "CNY", "unitCost": 0},
+      "scores": {"qualityEvidence": 0.9, "controllability": 0.98, "reliability": 0.95, "costEfficiency": 1, "latency": 0.75, "continuity": 0.95, "privacy": 1, "license": 0.9, "productionProfileFit": 0.9}
+    },
+    {
+      "id": "remotion-local",
+      "version": "workspace",
+      "maturity": "beta",
+      "capabilities": ["motion-graphics", "video-compose", "kinetic-typography"],
+      "runtime": {"kind": "workspace-binary", "path": "node_modules/.bin/remotion", "probeArgs": ["--version"]},
+      "privacy": "local",
+      "license": {"use": "dependency-license", "redistribution": "not-bundled"},
+      "sideEffects": ["local-files", "package-cache"],
+      "determinism": "medium",
+      "resume": false,
+      "retry": true,
+      "supportedModes": ["preview", "final", "hero"],
+      "costModel": {"kind": "local-compute", "currency": "CNY", "unitCost": 0},
+      "scores": {"qualityEvidence": 0.72, "controllability": 0.9, "reliability": 0.72, "costEfficiency": 0.95, "latency": 0.55, "continuity": 0.6, "privacy": 1, "license": 0.8, "productionProfileFit": 0.78}
+    },
+    {
+      "id": "hyperframes-local",
+      "version": "workspace",
+      "maturity": "beta",
+      "capabilities": ["motion-graphics", "video-compose", "kinetic-typography", "product-demo"],
+      "runtime": {"kind": "path", "environment": "HYPERFRAMES_HOME"},
+      "privacy": "local",
+      "license": {"use": "workspace-runtime", "redistribution": "not-bundled"},
+      "sideEffects": ["local-files", "browser-render"],
+      "determinism": "medium",
+      "resume": true,
+      "retry": true,
+      "supportedModes": ["preview", "final", "hero"],
+      "costModel": {"kind": "local-compute", "currency": "CNY", "unitCost": 0},
+      "scores": {"qualityEvidence": 0.76, "controllability": 0.88, "reliability": 0.7, "costEfficiency": 0.9, "latency": 0.55, "continuity": 0.75, "privacy": 1, "license": 0.75, "productionProfileFit": 0.82}
+    },
+    {
+      "id": "apple-nl-local",
+      "version": "system",
+      "maturity": "production",
+      "capabilities": ["semantic-retrieval"],
+      "runtime": {"kind": "platform", "platform": "darwin", "command": "xcrun", "probeArgs": ["--version"]},
+      "privacy": "local",
+      "license": {"use": "system-framework", "redistribution": "not-bundled"},
+      "sideEffects": ["local-cache"],
+      "determinism": "medium",
+      "resume": true,
+      "retry": true,
+      "supportedModes": ["series", "hero"],
+      "costModel": {"kind": "local-compute", "currency": "CNY", "unitCost": 0},
+      "scores": {"qualityEvidence": 0.68, "controllability": 0.84, "reliability": 0.82, "costEfficiency": 1, "latency": 0.9, "continuity": 0.9, "privacy": 1, "license": 0.9, "productionProfileFit": 0.82}
+    },
+    {
+      "id": "minimax-external",
+      "version": "api",
+      "maturity": "experimental",
+      "capabilities": ["vision-analysis", "image-generation", "video-generation", "speech-generation"],
+      "runtime": {"kind": "environment", "environment": "MINIMAX_API_KEY"},
+      "privacy": "external-upload",
+      "license": {"use": "provider-terms", "redistribution": "output-terms-dependent"},
+      "sideEffects": ["network", "external-upload", "metered-cost"],
+      "determinism": "low",
+      "resume": false,
+      "retry": true,
+      "supportedModes": ["preview", "final", "hero"],
+      "costModel": {"kind": "metered-unknown", "currency": "CNY", "unitCost": null},
+      "scores": {"qualityEvidence": 0.5, "controllability": 0.45, "reliability": 0.55, "costEfficiency": 0.3, "latency": 0.35, "continuity": 0.4, "privacy": 0.2, "license": 0.45, "productionProfileFit": 0.5}
+    }
+  ]
+}

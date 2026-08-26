@@ -73,6 +73,50 @@ edit plan、overlay、字幕、dialogue、BGM、SFX 与字体目录的真实内�
 
 三者都是执行证据，不由对话历史代替。
 
+### 治理式能力、费用与制作决策
+
+`config/capabilities/provider-registry.json` 是能力提供者的版本化注册表；
+`capability_broker.mjs` 对真实运行时探测后，先执行可用性、必需能力、制作模式、
+隐私、外传授权、许可和已知费用硬门禁，再对合格候选做可解释排名。硬门禁和
+排名维度分离，避免“综合分较高”绕过版权、隐私或费用红线。
+
+`.kacha/cost-ledger.json` 使用文件锁与原子替换维护 estimate/reserve/approve/
+consume/reconcile/refund 生命周期。账本只记录已明确输入的价格和证据，不根据模型名称
+猜价；未知费用保持未知并阻断需要已知预算的路线。
+现有 MiniMax `vision-enrich` 在真实 cache miss 前强制核对账本预占项、provider、
+capability、金额和审批状态，并将执行意图绑定的一次性预占原子转换为
+`reconciliation_required`。缓存命中不消费预占；调用成功或失败都必须以实际账单
+完成对账，不能用同一条预占授权第二次外部调用。
+
+`kacha-composition-request/decision` 把 `series` 或 `hero` 意图、必需能力、约束、
+候选排除原因和选中引擎冻结为决策证据。该层不直接渲染；选中后仍编译到现有
+Timeline IR、Render Graph 和发布门禁，引擎变化必须创建新决策。
+
+### 参考视频、素材语料与飞行记录
+
+`kacha-reference-analysis` 冻结本地参考文件身份、版权状态、用途、证据、技术参数
+和人工输入的创意观察；`kacha-reference-derived-plan` 只派生抽象原则与原创约束，
+禁止逐镜、原文和源资产复制。版权未知、仅分析用途、许可缺少证据或源文件漂移时
+派生失败关闭。
+
+`kacha-media-corpus` 从现有 `kacha_media_index` 建立片段级时间范围、源 SHA、
+许可、文本证据和运动测量状态。检索使用 MMR 降低同源/同语义重复；当前没有
+兼容向量证据时必须返回 `keyword_fallback`，并披露视觉语义能力缺失。构建与校验
+都重验索引摘要、源文件强身份、媒体时长和片段边界，防止旧索引静默污染检索。
+
+`kacha-production-flight` 把 `.kacha/project-events.jsonl`、遥测、后台任务、费用
+事件和能力决策归一为稳定排序、限量且脱敏的只读事件流；项目外 realpath、符号
+链接源和超量输入会被拒绝或显式降级。Studio 只暴露带本地读标识的 GET 观察接口，
+不把飞行记录器变成第二个状态机。
+
+`config/workflow-packs.json` 的四套工作流包只引用现有 Kacha 命令、人工门禁和
+退出条件。它们是可审计清单，不拥有执行状态，也不替代 V7 编排器。
+
+仓库根目录的 `quality/` 与 `tools/` 是 AppCreate 项目治理、审查和完成度控制面，
+不属于用户级 Kacha runtime bundle。双 Agent 同步显式排除这两个目录，避免把
+项目迭代证据和依赖外部 AppCreate 包的检查器复制到每个用户安装中；正式运行所需
+的 `scripts/`、`config/`、`references/`、`docs/`、`studio/` 和测试仍进入 bundle。
+
 ### `.kacha` Agent 对话控制面
 
 - `mutation-delta.json`：一次 JSON 合同操作的紧凑变化证据，只返回变化路径、

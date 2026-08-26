@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "appcreate://schemas/completion-contract.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "scope", "claimedStatus", "tasks", "changeSet", "evidence", "placeholderScan", "changeHistory"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schemaVersion": {"const": 1},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "revision", "status", "baselineRef", "candidateRef", "inScopeTaskIds", "outOfScope", "planSource", "frozenAt", "approvedBy"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "minLength": 1},
+        "status": {"enum": ["draft", "frozen", "changed"]},
+        "baselineRef": {"type": ["string", "null"]},
+        "candidateRef": {"type": ["string", "null"]},
+        "inScopeTaskIds": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "outOfScope": {"type": "array", "items": {"type": "string"}},
+        "planSource": {"type": ["string", "null"]},
+        "frozenAt": {"type": ["string", "null"], "format": "date-time"},
+        "approvedBy": {"type": ["string", "null"]}
+      }
+    },
+    "claimedStatus": {"enum": ["not_started", "in_progress", "partial", "blocked", "completed"]},
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "workType", "risk", "required", "planRefs", "status", "implementationActor", "implementationRefs", "testRefs", "evidenceRefs", "acceptanceCriteria", "deliverables", "blocker", "completionReview"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "title": {"type": "string", "minLength": 1},
+          "workType": {"enum": ["code", "ui", "config", "data", "docs", "research", "operations"]},
+          "risk": {"enum": ["critical", "high", "medium", "low"]},
+          "required": {"type": "boolean"},
+          "planRefs": {"type": "array", "items": {"type": "string"}},
+          "status": {"enum": ["not_started", "in_progress", "partial", "blocked", "completed"]},
+          "startedAt": {"type": ["string", "null"]},
+          "finishedAt": {"type": ["string", "null"]},
+          "implementationActor": {"type": ["string", "null"]},
+          "implementationRefs": {"type": "array", "items": {"type": "string"}},
+          "testRefs": {"type": "array", "items": {"type": "string"}},
+          "evidenceRefs": {"type": "array", "items": {"type": "string"}},
+          "acceptanceCriteria": {"type": "array", "items": {"type": "object"}},
+          "deliverables": {"type": "array", "items": {"type": "object"}},
+          "blocker": {"type": ["object", "null"]},
+          "completionReview": {"type": "object"}
+        }
+      }
+    },
+    "changeSet": {"type": "array", "items": {"type": "object"}},
+    "evidence": {"type": "array", "items": {"type": "object"}},
+    "placeholderScan": {"type": "object", "required": ["exceptions"], "properties": {"exceptions": {"type": "array", "items": {"type": "object"}}}},
+    "changeHistory": {"type": "array", "items": {"type": "object"}}
+  }
+}

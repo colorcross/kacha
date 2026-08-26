@@ -13,6 +13,7 @@ import {
 } from "./kacha_studio.mjs";
 import { loadKachaConfig } from "./kacha_config.mjs";
 import { readJson } from "./kacha_utils.mjs";
+import { buildFlightSnapshot } from "./production_flight_recorder.mjs";
 import {
   buildPreferenceCandidate,
   loadReviewBundle,
@@ -128,6 +129,11 @@ function requireLocalMutation(request, port) {
   if (!String(request.headers["content-type"] ?? "").startsWith("application/json")) {
     throw new Error("只接受 application/json");
   }
+}
+
+function requireLocalRead(request, port) {
+  if (!sameOrigin(request, port)) throw new Error("拒绝跨站读取");
+  if (request.headers["x-kacha-studio"] !== "1") throw new Error("缺少本地生产台读取标记");
 }
 
 function nativePick(kind) {
@@ -299,6 +305,15 @@ async function handleApi(request, response, url, port) {
         localOnly: true,
       },
     });
+    return;
+  }
+  if (request.method === "GET" && pathname === "/api/flight") {
+    requireLocalRead(request, port);
+    const projectRoot = url.searchParams.get("projectRoot");
+    if (!projectRoot || !path.isAbsolute(projectRoot)) {
+      throw new Error("flight projectRoot must be an absolute path");
+    }
+    json(response, 200, buildFlightSnapshot(projectRoot));
     return;
   }
   if (["GET", "HEAD"].includes(request.method) && pathname === "/api/review/media") {

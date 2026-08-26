@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "packageVersion": "6.5.0",
+  "trigger": "existing-product comprehensive audit followed by an implemented upgrade iteration",
+  "permissions": {
+    "reviewDoesNotAuthorizeNewImplementation": true,
+    "userMayContinueNonReleaseWorkWithRecordedGaps": true,
+    "claimsCannotExceedEvidence": true,
+    "riskAcceptanceRequiresExplicitOwner": true
+  },
+  "workflow": ["freeze-candidate-and-scope","audit-to-implementation-trace","specialist-domain-review","multi-perspective-review","multi-level-review","finding-remediation","layered-regression","independent-final-review","claim-decision"],
+  "domains": [
+    "product-direction","product-design","ui-design","interaction-journeys","business-logic","data-api",
+    "code-architecture","code-implementation","security-privacy-compliance","accessibility-inclusion",
+    "performance-reliability","test-quality","deployment-operations","market-operations"
+  ],
+  "mandatoryDomains": ["product-direction","product-design","business-logic","code-implementation","test-quality","deployment-operations","market-operations"],
+  "perspectives": ["product","design","engineering","quality","security-privacy","sre-operations","data-analytics","market-growth","independent-final-review"],
+  "mandatoryPerspectives": ["product","engineering","quality","independent-final-review"],
+  "reviewerAssignment": {
+    "fixedMinimumCount": null,
+    "oneReviewerMayCoverMultiplePerspectives": true,
+    "finalReviewerMustDifferFromProducer": true
+  },
+  "reviewRunRules": {
+    "mustResolveToEvidence": true,
+    "oneRunCannotRepresentMultipleReviewers": true,
+    "finalRunMustMatchIndependentPerspective": true
+  },
+  "levels": ["artifact","component-module","page-surface","cross-page-journey","service-integration","system-data","target-environment-device","candidate-release","production-outcome"],
+  "mandatoryLevels": ["artifact","system-data","target-environment-device"],
+  "evidenceLevels": ["E0-unverified","E1-document","E2-source-or-local-check","E3-integrated-target-environment","E4-production-observation","E5-user-or-business-outcome"],
+  "findingSeverities": ["critical","high","medium","low"],
+  "findingStatuses": ["open","fixing","fixed_unverified","verified_closed","accepted_risk"],
+  "outcomeMetricCategories": ["product","market-business"],
+  "claims": {
+    "review-structured": ["valid-three-axis-structure","audit-and-iteration-traceability"],
+    "deep-review-complete": ["all-applicable-domains-perspectives-levels-closed","independent-final-review","all-findings-owned","closed-findings-have-regression-evidence"],
+    "release-review-ready": ["deep-review-complete","candidate-release-passed","target-environment-device-passed","rollback-evidence","no-unresolved-critical-or-high","final-release-decision"],
+    "outcome-reviewed": ["release-review-ready","production-observation-window-complete","E4-production-evidence","E5-user-or-business-evidence","market-and-product-metrics-reviewed"]
+  },
+  "riskRules": {
+    "criticalMayBeAccepted": false,
+    "highAcceptanceRequires": ["approvedBy","reason","expiresAt","remediationPlan","independentReviewer"],
+    "producerCannotBeFinalReviewer": true,
+    "criticalHighRequireIndependentReview": true
+  },
+  "scopeCoverage": {
+    "component-module": "changedModules",
+    "page-surface": "changedPages",
+    "cross-page-journey": "changedJourneys",
+    "service-integration": "changedServices"
+  },
+  "boundaries": [
+    "development-time review does not replace post-iteration whole-product review",
+    "deep-review-complete does not mean release-ready",
+    "release-review-ready does not mean deployed or released",
+    "outcome-reviewed requires real production and business evidence",
+    "review findings do not grant permission to implement fixes",
+    "reviewer count is determined by scope and risk; there is no fixed minimum",
+    "one reviewer may cover multiple perspectives when every perspective remains explicitly reviewed and evidence-backed"
+  ]
+}

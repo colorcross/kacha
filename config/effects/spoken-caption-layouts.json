@@ -1,11 +1,109 @@
 {
   "schemaVersion": "1.0",
+  "designSystemVersion": "2.0",
   "id": "spoken-caption-layouts",
   "name": "咔嚓口播字幕排版",
   "sourceStudy": {
     "reference": "https://www.douyin.com/video/7659640195897268724",
     "extractedMechanisms": ["左右关系", "上下主从", "人物前后景层次"],
     "copyrightBoundary": "只提炼信息关系、运动和验收规则，不复制参考视频的字体、贴纸、成片或音频"
+  },
+  "designSystem": {
+    "name": "行者大灰动态字景",
+    "principle": "屏幕文字是与人物、物体和镜头负空间共同构图的设计图层；连续字幕仍以阅读为先，语义字景只服务明确的信息关系。",
+    "typeRoles": {
+      "reading": "金陵体承载逐句阅读",
+      "display": "华光标题黑承载题眼、术语、引语和大号关键词",
+      "support": "思源细体承载来源、栏目和极短注释"
+    },
+    "depthLayers": ["echo_background", "subject_plane", "reading_foreground"],
+    "forbidden": [
+      "厚描边",
+      "整行卡拉OK变色",
+      "无语义贴纸",
+      "每句都做大字",
+      "没有逐帧蒙版时伪造人物遮挡",
+      "用动效掩盖错字或时间轴错误"
+    ]
+  },
+  "presentationTiers": {
+    "reading": {
+      "purpose": "连续口播阅读基线",
+      "maximumShare": 1,
+      "sfx": "none"
+    },
+    "semantic": {
+      "purpose": "对照、定义、问答、引语和单一判断落点",
+      "recommendedMaximumShare": 0.28,
+      "maximumConsecutive": 2
+    },
+    "spatial": {
+      "purpose": "章节题眼或需要人物前后遮挡的核心记忆点",
+      "recommendedMaximumShare": 0.1,
+      "maximumConsecutive": 1,
+      "maskRequiredForOcclusion": true
+    }
+  },
+  "showProfiles": {
+    "neutral": {
+      "label": "通用",
+      "accent": "#E9A92F",
+      "secondaryAccent": "#FFF1D0",
+      "lightAccent": "#8A5A00",
+      "lightSecondaryAccent": "#5D4A26",
+      "graphicMotif": "single_rule",
+      "motionCharacter": "measured"
+    },
+    "tool_share": {
+      "label": "工具分享",
+      "aliases": ["工具分享", "tool-share"],
+      "accent": "#55C7E8",
+      "secondaryAccent": "#DDF7FF",
+      "lightAccent": "#176B80",
+      "lightSecondaryAccent": "#285C68",
+      "graphicMotif": "precision_ticks",
+      "motionCharacter": "precise"
+    },
+    "book_talk": {
+      "label": "解读好书",
+      "aliases": ["解读好书", "book-talk"],
+      "accent": "#D2AE72",
+      "secondaryAccent": "#F5E7CE",
+      "lightAccent": "#7A5720",
+      "lightSecondaryAccent": "#665235",
+      "graphicMotif": "editorial_quote",
+      "motionCharacter": "restrained"
+    },
+    "infinite_game": {
+      "label": "有限的无限游戏",
+      "aliases": ["有限的无限游戏", "infinite-game"],
+      "accent": "#9887D8",
+      "secondaryAccent": "#E7E1FF",
+      "lightAccent": "#56458F",
+      "lightSecondaryAccent": "#514A72",
+      "graphicMotif": "open_horizon",
+      "motionCharacter": "expansive"
+    },
+    "very_ai": {
+      "label": "灰常AI",
+      "aliases": ["灰常AI", "very-ai"],
+      "accent": "#62D9B0",
+      "secondaryAccent": "#DAFFF2",
+      "lightAccent": "#176E55",
+      "lightSecondaryAccent": "#315F52",
+      "graphicMotif": "data_brackets",
+      "motionCharacter": "technical"
+    },
+    "casual_chat": {
+      "label": "闲聊",
+      "aliases": ["闲聊", "casual-chat"],
+      "accent": "#E89A72",
+      "secondaryAccent": "#FFE4D7",
+      "lightAccent": "#8A482D",
+      "lightSecondaryAccent": "#6F4A39",
+      "graphicMotif": "loose_corner",
+      "motionCharacter": "conversational"
+    }
   },
   "globalRules": {
     "defaultLayout": "plain_single",
@@ -17,6 +115,13 @@
     "sfxSyncToleranceFrames": 2,
     "minimumReadableSeconds": 0.72,
     "ordinarySubtitleSfx": "none",
+    "designedTextSceneDensity": {
+      "recommendedMaximumRatio": 0.28,
+      "spatialMaximumRatio": 0.1,
+      "maximumConsecutiveSemantic": 2,
+      "maximumConsecutiveSpatial": 1,
+      "enforcement": "warn_in_plan_fail_in_strict_validation"
+    },
     "safeArea": {
       "horizontalRatio": 0.07,
       "topRatio": 0.09,
@@ -104,12 +209,70 @@
       "failureModes": ["上方标题遮住头部", "上下两组其实是并列关系", "底部落入平台UI"]
     },
     {
+      "id": "editorial_stack",
+      "label": "编辑堆叠字景",
+      "function": "以一组大号题眼和一组小号解释建立海报式比例，同时保留口播阅读基线",
+      "trigger": "定义、章节句、先判断后解释或需要一主一次的短句",
+      "zones": ["editorial_primary", "editorial_secondary", "subtitle_center"],
+      "fontRole": "display_title_zh",
+      "presentationTier": "semantic",
+      "soundTrigger": "knowledge",
+      "entry": "axis_slide_settle",
+      "exit": "directional_cut",
+      "fallback": "top_bottom_hierarchy",
+      "constraints": {
+        "maximumCharactersPrimary": 8,
+        "maximumCharactersSecondary": 16,
+        "maximumCharactersEcho": 4
+      },
+      "failureModes": ["主次文本不是同一句的真实层级", "三组文字竞争", "大字侵入五官或手势"]
+    },
+    {
+      "id": "edge_annotation",
+      "label": "边缘注释字景",
+      "function": "把极短术语或数字锚定在画面边缘，以细线和注释建立空间指向",
+      "trigger": "工具参数、术语、数字、来源或画面内对象的极短说明",
+      "zones": ["edge_anchor", "edge_annotation", "subtitle_center"],
+      "fontRole": "term_definition",
+      "presentationTier": "semantic",
+      "soundTrigger": "info",
+      "entry": "rule_then_type",
+      "exit": "directional_cut",
+      "fallback": "logic_emphasis_inline",
+      "constraints": {
+        "maximumCharactersPrimary": 8,
+        "maximumCharactersAnnotation": 18,
+        "allowedAnchors": ["left", "right"]
+      },
+      "failureModes": ["指向线没有对应对象", "注释落入平台按钮区", "小字在手机端不可读"]
+    },
+    {
+      "id": "quote_field",
+      "label": "引语场",
+      "function": "用引语、出处和低透明度回声词构成克制的编辑画面",
+      "trigger": "书中原句、人物原话或已核实出处的金句",
+      "zones": ["quote_primary", "quote_source", "echo_background"],
+      "fontRole": "quote_pull",
+      "presentationTier": "semantic",
+      "soundTrigger": "transition",
+      "entry": "quote_mark_cut",
+      "exit": "directional_cut",
+      "fallback": "top_bottom_hierarchy",
+      "constraints": {
+        "maximumCharactersPrimary": 24,
+        "maximumCharactersSource": 14,
+        "sourceRequired": true
+      },
+      "failureModes": ["没有核实出处", "长段原文缩成小字", "引号和装饰比正文更抢眼"]
+    },
+    {
       "id": "oversize_background_word",
       "label": "大字后景",
       "function": "用一个极短关键词建立空间深度和记忆点",
       "trigger": "章节题眼、核心名词或反差词，且逐帧人物蒙版可用",
       "zones": ["background_word", "subtitle_center"],
       "fontRole": "display_title_zh",
+      "presentationTier": "spatial",
       "soundTrigger": "emphasis",
       "entry": "background_scale_settle",
       "exit": "clear_before_next_cue",
@@ -127,6 +290,7 @@
       "trigger": "强题眼需要人物作为空间分隔，且背景词和前景词各自很短",
       "zones": ["background_phrase", "foreground_phrase"],
       "fontRole": "display_title_zh",
+      "presentationTier": "spatial",
       "soundTrigger": "transition",
       "entry": "back_then_front",
       "exit": "clear_before_next_cue",

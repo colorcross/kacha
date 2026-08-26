@@ -1,0 +1,15 @@
+{
+  "$schema": "appcreate://schemas/figma-make-prototype.schema.json",
+  "schemaVersion": 1,
+  "product": {"id": "replace-me", "name": "", "summary": "", "targetUsers": [], "platforms": []},
+  "productContracts": {"businessRules": [], "dataAndApi": [], "rolesAndPermissions": [], "failureBoundaries": []},
+  "applicability": {"status": "undetermined", "selectedBy": null, "selectedAt": null, "reason": null, "approvedBy": null},
+  "route": {"loginState": "unknown", "promptPackStatus": "missing", "action": "prompt_pack_handoff", "makeEntryUrl": "https://www.figma.com/make/new", "decisionReason": "Login state and product brief have not been verified.", "observedAt": null},
+  "design": {"direction": "", "tokens": [], "responsiveModes": [], "accessibilityRequirements": [], "contentConstraints": [], "nonGoals": []},
+  "pages": [],
+  "journeys": [],
+  "promptPack": {"sourceRefs": [], "sourceDocuments": [], "outputPath": null, "digest": null, "generatedAt": null},
+  "prototype": {"makeRef": null, "producer": null, "codeRoot": null, "packageManifest": null, "lockfiles": [], "fileManifest": [], "treeDigest": null, "frozenAt": null, "run": {"argv": [], "cwd": null, "baseUrl": null, "evidenceRef": null}},
+  "implementation": {"root": null, "sourceRevision": null, "fileManifest": [], "treeDigest": null, "frozenAt": null, "pageMappings": [], "journeyMappings": [], "verifiedAt": null},
+  "evidence": []
+}

@@ -4258,6 +4258,17 @@ await test("caption layout plan renders relationship layouts and guarded depth t
   if (readJson(planFile).events[0].font.roleId !== "caption_tech") {
     throw new Error("caption layout did not route typography by scene role");
   }
+  const plannedValue = readJson(planFile);
+  if (
+    plannedValue.resources.mask.width !== 320
+    || plannedValue.resources.mask.height !== 180
+    || plannedValue.resources.mask.fps !== 25
+    || Math.abs(plannedValue.resources.mask.duration - 2) > 0.04
+    || plannedValue.resources.mask.frameCount !== 50
+    || Math.abs(plannedValue.resources.mask.startTime) > 0.001
+  ) {
+    throw new Error("caption layout plan did not freeze mask media identity");
+  }
   const output = path.join(temporary, "caption-layout.mp4");
   execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
@@ -4274,6 +4285,11 @@ await test("caption layout plan renders relationship layouts and guarded depth t
     || manifest.qc.depthLayoutsUsedOnlyWithMask !== true
     || manifest.events.length !== 2
     || manifest.sfxPeakAlignmentPlan.length !== 2
+    || manifest.sfxPeakAlignmentPlan.some((item) => (
+      item.deltaFrames !== 0
+      || item.targetLandingSeconds !== item.actualLandingSeconds
+      || !Number.isFinite(item.measuredPeakOffsetSeconds)
+    ))
   ) {
     throw new Error("caption layout render did not honor geometry, mask, or SFX contracts");
   }
@@ -4289,6 +4305,264 @@ await test("caption layout plan renders relationship layouts and guarded depth t
   ]);
   if (!failure.stderr.includes("蒙版")) {
     throw new Error("depth caption plan without a mask did not fail closed");
+  }
+  const shortMaskFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "captions", "plan",
+    "--input", baseVideo,
+    "--transcript", cues,
+    "--mask", shortMask,
+    "--output", path.join(temporary, "caption-layout-short-mask.json"),
+  ]);
+  if (!shortMaskFailure.stderr.includes("同尺寸、同帧率和同帧数")) {
+    throw new Error("caption layout accepted a temporally misaligned person mask");
+  }
+}, "visual");
+
+await test("cinematic text scenes route show identity, typography layers, and density gates", () => {
+  ensureMediaFixtures();
+  const cues = path.join(temporary, "cinematic-text-scene-cues.json");
+  writeJson(cues, [
+    {
+      id: "editorial",
+      start: 0,
+      end: 0.58,
+      text: "真正省时间的是工作流",
+      textScene: {
+        show: "tool-share",
+        layout: "editorial_stack",
+        anchor: "left",
+        progressMode: "micro_rail",
+        entryFrames: 6,
+        rotationDegrees: 0.8,
+        displayOpacity: 0.9,
+      },
+      display: { primary: "工作流", secondary: "把重复步骤变成稳定路径", echo: "效率" },
+      words: [
+        { text: "真正省时间的", start: 0, end: 0.18 },
+        { text: "是", start: 0.18, end: 0.35 },
+        { text: "工作流", start: 0.35, end: 0.58 },
+      ],
+    },
+    {
+      id: "annotation",
+      start: 0.62,
+      end: 1.22,
+      text: "上下文窗口决定模型能读多少信息",
+      textScene: {
+        show: "灰常AI",
+        layout: "edge_annotation",
+        anchor: "right",
+        surface: "light",
+      },
+      display: { primary: "上下文", annotation: "一次推理可读取的信息范围" },
+    },
+    {
+      id: "quote",
+      start: 1.26,
+      end: 1.88,
+      text: "有限游戏以取胜为目的",
+      textScene: { show: "解读好书", layout: "quote_field" },
+      display: { primary: "有限游戏以取胜为目的", source: "《有限与无限的游戏》", echo: "取胜" },
+    },
+  ]);
+  const planFile = path.join(temporary, "cinematic-text-scene-plan.json");
+  const planned = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "captions", "plan",
+    "--input", baseVideo,
+    "--transcript", cues,
+    "--show", "tool-share",
+    "--output", planFile,
+  ]).stdout);
+  const plan = readJson(planFile);
+  if (
+    planned.eventCount !== 3
+    || !planned.layouts.includes("editorial_stack")
+    || !planned.layouts.includes("edge_annotation")
+    || !planned.layouts.includes("quote_field")
+    || plan.events[0].textScene.showProfile.id !== "tool_share"
+    || plan.design.modes.show !== "tool-share"
+    || plan.events[1].textScene.showProfile.id !== "very_ai"
+    || plan.events[1].textScene.graphics.accent !== "#176E55"
+    || plan.events[1].textScene.graphics.secondaryAccent !== "#315F52"
+    || plan.events[2].textScene.showProfile.id !== "book_talk"
+    || plan.events.some((event) => event.typography.reading.roleId !== "subtitle_primary")
+    || plan.events.some((event) => event.typography.support.roleId !== "thin_support")
+    || plan.events.some((event) => event.textScene.material.outline !== "none")
+    || plan.events[0].textScene.lyricProgress.mode !== "micro_rail"
+    || plan.events[0].wordTiming.length !== 3
+    || plan.events[0].textScene.motion.entryFrames !== 6
+    || plan.events[0].peakFrame !== plan.events[0].startFrame + 6
+    || plan.events[0].entryStartFrame !== plan.events[0].startFrame
+    || plan.events[0].visibleLandingFrame !== plan.events[0].peakFrame
+    || plan.events[0].sfxPeakFrame !== plan.events[0].peakFrame
+    || plan.events[0].sound.peakFrame !== plan.events[0].peakFrame
+    || plan.events[0].textScene.spatial.rotationDegrees !== 0.8
+    || plan.events[0].textScene.material.displayOpacity !== 0.9
+  ) {
+    throw new Error("cinematic text scene plan lost show, typography, or material contracts");
+  }
+  const output = path.join(temporary, "cinematic-text-scenes.mp4");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "captions", "render",
+    "--plan", planFile,
+    "--output", output,
+  ]);
+  const manifest = readJson(`${output}.manifest.json`);
+  if (
+    manifest.status !== "pass"
+    || manifest.events.length !== 3
+    || manifest.qc.strictTextSceneValidation !== "not_run_required_for_production_delivery"
+  ) {
+    throw new Error("cinematic text scene renderer did not produce a verified deliverable");
+  }
+  const strictFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "captions", "validate",
+    "--plan", planFile,
+    "--strict-text-scenes",
+  ]);
+  if (!strictFailure.stderr.includes("视觉留白")) {
+    throw new Error("strict cinematic text density validation did not fail closed");
+  }
+  const fallbackPlan = readJson(planFile);
+  fallbackPlan.events[0].font.file = null;
+  fallbackPlan.events[0].font.sha256 = null;
+  fallbackPlan.events[0].typography.display = fallbackPlan.events[0].font;
+  fallbackPlan.fonts = fallbackPlan.fonts.map((font) => (
+    font.roleId === fallbackPlan.events[0].font.roleId
+      && font.family === fallbackPlan.events[0].font.family
+      ? fallbackPlan.events[0].font
+      : font
+  ));
+  fallbackPlan.digest = sha256Value({ ...fallbackPlan, digest: undefined });
+  const fallbackPlanFile = path.join(temporary, "cinematic-text-scene-font-fallback.json");
+  writeJson(fallbackPlanFile, fallbackPlan);
+  const fallbackFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "captions", "validate",
+    "--plan", fallbackPlanFile,
+    "--strict-text-scenes",
+  ]);
+  if (!fallbackFailure.stderr.includes("严格模式禁止系统字体回退")) {
+    throw new Error("strict cinematic text font fallback validation did not fail closed");
+  }
+  const invalidCues = path.join(temporary, "cinematic-text-scene-invalid.json");
+  writeJson(invalidCues, [{
+    id: "quote-without-source",
+    start: 0,
+    end: 1,
+    text: "未经核实的引语",
+    textScene: { show: "解读好书", layout: "quote_field" },
+    display: { primary: "未经核实的引语" },
+  }]);
+  const invalidFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "captions", "plan",
+    "--input", baseVideo,
+    "--transcript", invalidCues,
+    "--output", path.join(temporary, "invalid-quote-plan.json"),
+  ]);
+  if (!invalidFailure.stderr.includes("display.primary/source")) {
+    throw new Error("quote field accepted an unverified source-less quote");
+  }
+
+  const invalidNumericCues = path.join(temporary, "cinematic-text-scene-invalid-number.json");
+  writeJson(invalidNumericCues, [{
+    id: "invalid-number",
+    start: 0,
+    end: 1,
+    text: "非法参数不能进入计划",
+    textScene: {
+      show: "灰常AI",
+      layout: "edge_annotation",
+      rotationDegrees: "not-a-number",
+    },
+    display: { primary: "非法参数", annotation: "必须在计划阶段阻断" },
+  }]);
+  const invalidNumericFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "captions", "plan",
+    "--input", baseVideo,
+    "--transcript", invalidNumericCues,
+    "--output", path.join(temporary, "invalid-number-plan.json"),
+  ]);
+  if (!invalidNumericFailure.stderr.includes("有限数值")) {
+    throw new Error("caption plan accepted a non-finite text-scene parameter");
+  }
+
+  const overflowCues = path.join(temporary, "cinematic-text-scene-overflow.json");
+  writeJson(overflowCues, [{
+    id: "overflow",
+    start: 0,
+    end: 1,
+    text: "超长背景文字不能被静默截断",
+    captionLayout: "oversize_background_word",
+    display: { background: "三个字", foreground: "完整阅读字幕" },
+  }]);
+  const overflowFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "captions", "plan",
+    "--input", baseVideo,
+    "--transcript", overflowCues,
+    "--mask", exactMask,
+    "--output", path.join(temporary, "overflow-plan.json"),
+  ]);
+  if (!overflowFailure.stderr.includes("display.background 超过 2 字")) {
+    throw new Error("depth caption text was still silently truncated by the renderer contract");
+  }
+
+  const wordMismatchCues = path.join(temporary, "cinematic-text-scene-word-mismatch.json");
+  writeJson(wordMismatchCues, [{
+    id: "word-mismatch",
+    start: 0,
+    end: 1,
+    text: "逐字时间必须覆盖完整文本",
+    textScene: { show: "闲聊", layout: "plain_single", progressMode: "micro_rail" },
+    words: [{ text: "逐字时间", start: 0, end: 1 }],
+  }]);
+  const wordMismatchFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "captions", "plan",
+    "--input", baseVideo,
+    "--transcript", wordMismatchCues,
+    "--output", path.join(temporary, "word-mismatch-plan.json"),
+  ]);
+  if (!wordMismatchFailure.stderr.includes("words 文本与 cue.text 不一致")) {
+    throw new Error("micro progress accepted incomplete word timing text");
+  }
+
+  const droppedCueFile = path.join(temporary, "cinematic-text-scene-invalid-cue.json");
+  writeJson(droppedCueFile, [
+    { id: "valid", start: 0, end: 0.8, text: "有效字幕" },
+    { id: "invalid", start: 1, end: 1, text: "不能静默丢弃" },
+  ]);
+  const droppedCueFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "captions", "plan",
+    "--input", baseVideo,
+    "--transcript", droppedCueFile,
+    "--output", path.join(temporary, "invalid-cue-plan.json"),
+  ]);
+  if (!droppedCueFailure.stderr.includes("时间区间无效")) {
+    throw new Error("caption planning silently dropped an invalid transcript cue");
+  }
+
+  const tampered = readJson(planFile);
+  tampered.densityAssessment.designedRatio = 0;
+  tampered.digest = sha256Value({ ...tampered, digest: undefined });
+  const tamperedFile = path.join(temporary, "cinematic-text-scene-tampered-density.json");
+  writeJson(tamperedFile, tampered);
+  const tamperedFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "captions", "validate", "--plan", tamperedFile,
+  ]);
+  if (!tamperedFailure.stderr.includes("densityAssessment")) {
+    throw new Error("caption validation trusted a partially forged density assessment");
+  }
+
+  const rewritten = readJson(planFile);
+  rewritten.events[0].display.primary = "被篡改的题眼";
+  rewritten.digest = sha256Value({ ...rewritten, digest: undefined });
+  const rewrittenFile = path.join(temporary, "cinematic-text-scene-rewritten-display.json");
+  writeJson(rewrittenFile, rewritten);
+  const rewrittenFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "captions", "validate", "--plan", rewrittenFile,
+  ]);
+  if (!rewrittenFailure.stderr.includes("无法从冻结 cue 重建")) {
+    throw new Error("caption validation trusted rewritten display text after digest recomputation");
   }
 }, "visual");
 
@@ -7313,6 +7587,13 @@ await test("Claude visual evidence is local, cacheable and upload-gated", () => 
   ) {
     throw new Error("local visual evidence provenance is unsafe or incomplete");
   }
+  const invalidEvidenceFile = path.join(outputDirectory, "invalid-visual-evidence.json");
+  fs.writeFileSync(invalidEvidenceFile, "null\n");
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "vision-enrich", invalidEvidenceFile, "--dry-run"]).stderr.includes("KACHA-E140")) throw new Error("MiniMax enrichment did not reject a null evidence root cleanly");
+  const duplicateEvidence = structuredClone(evidence);
+  duplicateEvidence.frames[1].id = duplicateEvidence.frames[0].id;
+  writeJson(invalidEvidenceFile, duplicateEvidence);
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "vision-enrich", invalidEvidenceFile, "--dry-run"]).stderr.includes("frame id")) throw new Error("MiniMax enrichment accepted duplicate frame identities");
   const reused = execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
     "visual-evidence",
@@ -7397,6 +7678,26 @@ await test("Claude visual evidence is local, cacheable and upload-gated", () => 
   ]);
   if (!unpaid.stderr.includes("KACHA-E410")) {
     throw new Error("unpaid MiniMax request did not fail authorization");
+  }
+  const paidContext = path.join(temporary, "paid-visual-context.json");
+  writeJson(paidContext, {
+    authorization: {
+      externalUploadAllowed: true,
+      paidGenerationAllowed: true,
+    },
+  });
+  const unreserved = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"),
+    "vision-enrich",
+    evidenceFile,
+    "--context",
+    paidContext,
+    "--allow-external-upload",
+    "--max-frames",
+    "1",
+  ]);
+  if (!unreserved.stderr.includes("--cost-ledger") || !unreserved.stderr.includes("--cost-entry")) {
+    throw new Error("authorized MiniMax request bypassed the cost reservation gate");
   }
   const denied = expectFailure(process.execPath, [
     path.join(scripts, "kacha.mjs"),
@@ -7953,11 +8254,12 @@ await test("effect templates and resource catalog resolve deterministic executio
     "validate",
   ]).stdout);
   if (
-    validation.templates !== 62
+    validation.templates !== 65
     || validation.catalogs.length !== 1
     || validation.catalogs[0].assets !== 23
     || validation.byCategory.opening !== 10
     || validation.byCategory.transition !== 10
+    || validation.byCategory.spoken_caption_layout !== 10
   ) {
     throw new Error(`unexpected effect catalog coverage: ${JSON.stringify(validation)}`);
   }
@@ -10234,6 +10536,13 @@ await test("V6 review workbench is local-only and exposes the new review assets"
     ) {
       throw new Error(`review observability API fabricated cost evidence: ${JSON.stringify(observed)}`);
     }
+    const flightUrl = new URL("/api/flight", origin);
+    flightUrl.searchParams.set("projectRoot", root);
+    const flightResponse = await fetch(flightUrl, { headers: { "X-Kacha-Studio": "1" } });
+    const flight = await flightResponse.json();
+    if (!flightResponse.ok || flight.kind !== "kacha-production-flight" || !Array.isArray(flight.events)) {
+      throw new Error(`read-only flight API failed: ${JSON.stringify(flight)}`);
+    }
   } finally {
     child.kill("SIGTERM");
     await Promise.race([
@@ -10241,6 +10550,236 @@ await test("V6 review workbench is local-only and exposes the new review assets"
       new Promise((resolve) => setTimeout(resolve, 2000)),
     ]);
   }
+}, "core");
+
+await test("capability broker enforces hard exclusions before explainable ranking", () => {
+  const validated = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "capabilities", "validate",
+  ]).stdout);
+  if (validated.providers < 5 || !validated.digest) throw new Error("provider registry validation is incomplete");
+  const ranked = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "capabilities", "rank",
+    "--capability", "video-compose", "--modes", "series",
+    "--local-only", "--require-known-cost",
+  ]).stdout);
+  const external = ranked.alternatives.find((item) => item.providerId === "minimax-external");
+  if (
+    ranked.chosenProviderId !== "ffmpeg-local"
+    || !ranked.alternatives.every((item) => item.dimensions && Array.isArray(item.exclusions) && item.evidenceFreshness?.status === "current")
+    || external?.eligible !== false
+    || !external.exclusions.includes("external_upload_not_authorized")
+    || !external.exclusions.includes("cost_unknown")
+  ) throw new Error("capability broker bypassed a hard gate or omitted its evidence");
+  const customRegistry = path.join(temporary, "custom-provider-registry.json");
+  fs.copyFileSync(path.join(skillDirectory, "config", "capabilities", "provider-registry.json"), customRegistry);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "capabilities", "validate", "--registry", customRegistry]);
+  expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "capabilities", "probe", "--registry", customRegistry]);
+  const malformed = readJson(customRegistry);
+  malformed.providers[0].sideEffects = "local-files";
+  malformed.providers[0].runtime.probeArgs = "-version";
+  writeJson(customRegistry, malformed);
+  const malformedResult = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "capabilities", "validate", "--registry", customRegistry]);
+  if (!malformedResult.stderr.includes("sideEffects") || !malformedResult.stderr.includes("probeArgs")) throw new Error("provider registry accepted malformed executable fields");
+  fs.writeFileSync(customRegistry, "null\n");
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "capabilities", "validate", "--registry", customRegistry]).stderr.includes("root must be an object")) throw new Error("provider registry null root was not rejected cleanly");
+}, "core");
+
+await test("cost ledger locks budget through reserve approve reconcile and refund", () => {
+  const root = path.join(temporary, "cost-ledger-project");
+  fs.mkdirSync(root, { recursive: true });
+  expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "init", "--project-root", path.join(temporary, "missing-budget")]);
+  expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "init", "--project-root", path.join(temporary, "invalid-currency"), "--budget", "100", "--currency", "cny"]);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "init", "--project-root", root, "--budget", "100", "--approval-threshold", "50"]);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "reserve", "--project-root", root, "--id", "small", "--provider", "ffmpeg-local", "--capability", "video-compose", "--amount", "10"]);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "reconcile", "--project-root", root, "--id", "small", "--actual", "8"]);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "refund", "--project-root", root, "--id", "small", "--amount", "2"]);
+  const large = JSON.parse(execute(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "reserve", "--project-root", root, "--id", "large", "--provider", "metered", "--capability", "video-generation", "--amount", "60"]).stdout);
+  if (large.entry.status !== "pending_approval") throw new Error("approval threshold was not enforced");
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "reconcile", "--project-root", root, "--id", "large", "--actual", "60"]).stderr.includes("requires reserved, approved or reconciliation_required")) throw new Error("unapproved cost was not blocked");
+  if (fs.existsSync(path.join(root, ".kacha", "cost-ledger.json.lock"))) throw new Error("failed cost transition leaked its operation lock");
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "approve", "--project-root", root, "--id", "large", "--evidence", "test-approval"]);
+  const status = JSON.parse(execute(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "status", "--project-root", root]).stdout);
+  if (status.totals.available !== 34 || status.totals.netSpent !== 6) throw new Error("cost totals are not reconciled");
+  const malformedLedgerFile = path.join(temporary, "malformed-cost-ledger.json");
+  const malformedLedger = readJson(path.join(root, ".kacha", "cost-ledger.json"));
+  malformedLedger.kind = "forged-ledger";
+  malformedLedger.entries.push(null);
+  writeJson(malformedLedgerFile, malformedLedger);
+  const malformedResult = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "validate", "--ledger", malformedLedgerFile]);
+  if (!malformedResult.stderr.includes("kind must be kacha-cost-ledger") || !malformedResult.stderr.includes("must be an object")) throw new Error("cost ledger validation accepted malformed identity or entries");
+  const intentDigest = "a".repeat(64);
+  const consumed = JSON.parse(execute(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "consume", "--project-root", root, "--id", "large", "--provider", "metered", "--capability", "video-generation", "--execution-id", "exec-1", "--intent-digest", intentDigest]).stdout);
+  if (consumed.entry.status !== "reconciliation_required" || consumed.entry.executionId !== "exec-1") throw new Error("cost reservation was not atomically consumed");
+  const replay = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "consume", "--project-root", root, "--id", "large", "--provider", "metered", "--capability", "video-generation", "--execution-id", "exec-2", "--intent-digest", intentDigest]);
+  if (!replay.stderr.includes("unused reserved or approved")) throw new Error("a consumed cost reservation could be replayed");
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "reconcile", "--project-root", root, "--id", "large", "--actual", "60"]);
+  expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "reserve", "--project-root", root, "--provider", "metered", "--capability", "video-generation", "--amount", "35"]);
+  const ledgerFile = path.join(root, ".kacha", "cost-ledger.json");
+  const tampered = readJson(ledgerFile);
+  tampered.entries.find((entry) => entry.id === "small").refundAmount = 999;
+  writeJson(ledgerFile, tampered);
+  const tamperedResult = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "cost", "validate", "--project-root", root]);
+  if (!tamperedResult.stderr.includes("refundAmount exceeds actualAmount")) throw new Error("cost ledger validation accepted forged refund credit");
+}, "core");
+
+await test("reference intelligence freezes rights and forbids shot for shot derivation", () => {
+  const media = path.join(skillDirectory, "design", "reference-gallery", "xingzhe-v3", "normal-speed-previews", "info_single.mp4");
+  const analysis = path.join(temporary, "reference-analysis.json");
+  const plan = path.join(temporary, "reference-plan.json");
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "analyze", "--input", media, "--output", analysis, "--rights-status", "owned", "--keep", "editorial hierarchy", "--change", "replace every shot"]);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "derive", "--analysis", analysis, "--output", plan, "--show", "工具分享"]);
+  const value = readJson(plan);
+  if (value.originality.shotForShotCopyAllowed !== false || !value.translation.doNotCopy.includes("exact shots")) throw new Error("originality boundary is missing");
+  const digestlessAnalysis = readJson(analysis);
+  delete digestlessAnalysis.analysisDigest;
+  const digestlessAnalysisFile = path.join(temporary, "reference-analysis-without-digest.json");
+  writeJson(digestlessAnalysisFile, digestlessAnalysis);
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "validate", "--input", digestlessAnalysisFile]).stderr.includes("analysisDigest is required")) throw new Error("reference validation accepted an artifact without its integrity digest");
+  const digestlessPlan = readJson(plan);
+  delete digestlessPlan.planDigest;
+  const digestlessPlanFile = path.join(temporary, "reference-plan-without-digest.json");
+  writeJson(digestlessPlanFile, digestlessPlan);
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "validate", "--input", digestlessPlanFile]).stderr.includes("planDigest is required")) throw new Error("reference plan validation accepted an artifact without its integrity digest");
+  const unknown = path.join(temporary, "reference-unknown.json");
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "analyze", "--input", media, "--output", unknown]);
+  expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "derive", "--analysis", unknown, "--output", path.join(temporary, "must-not-exist.json")]);
+  const licensed = path.join(temporary, "reference-licensed.json");
+  const licensedResult = JSON.parse(execute(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "analyze", "--input", media, "--output", licensed, "--rights-status", "licensed", "--permitted-use", "principle-derivation"]).stdout);
+  if (licensedResult.status !== "limited") throw new Error("licensed reference without evidence was marked derivation-ready");
+  expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "derive", "--analysis", licensed, "--output", path.join(temporary, "unlicensed-plan.json")]);
+  const copiedMedia = path.join(temporary, "reference-copy.mp4");
+  fs.copyFileSync(media, copiedMedia);
+  const copiedAnalysis = path.join(temporary, "reference-copy-analysis.json");
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "analyze", "--input", copiedMedia, "--output", copiedAnalysis, "--rights-status", "owned"]);
+  fs.appendFileSync(copiedMedia, "identity-changed");
+  const staleReference = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "validate", "--input", copiedAnalysis]);
+  if (!staleReference.stderr.includes("source identity is stale")) throw new Error("reference validation accepted changed source media");
+  const nullReference = path.join(temporary, "null-reference.json");
+  fs.writeFileSync(nullReference, "null\n");
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "validate", "--input", nullReference]).stderr.includes("root must be an object")) throw new Error("reference null root was not rejected cleanly");
+}, "core");
+
+await test("production flight recorder normalizes sources without exposing raw payloads", () => {
+  const root = path.join(temporary, "flight-project");
+  fs.mkdirSync(path.join(root, ".kacha", "metrics"), { recursive: true });
+  fs.writeFileSync(path.join(root, ".kacha", "project-events.jsonl"), `${JSON.stringify({ at: "2026-01-01T00:00:02Z", type: "stage_complete", status: "pass", message: { ["api" + "Key"]: "flight-secret-value", ["pass" + "word"]: "nested-secret-value" } })}\n`);
+  fs.writeFileSync(path.join(root, ".kacha", "metrics", "events.jsonl"), `${JSON.stringify({ eventId: "m1", stage: "render", status: "pass", timing: { startedAt: "2026-01-01T00:00:01Z" }, command: ["secret-value"] })}\n`);
+  const output = path.join(temporary, "flight.json");
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "flight", "snapshot", "--project-root", root, "--output", output]);
+  const flight = readJson(output);
+  if (flight.events.length !== 2 || flight.events[0].source !== "telemetry" || JSON.stringify(flight).includes("flight-secret-value") || JSON.stringify(flight).includes("nested-secret-value") || !JSON.stringify(flight).includes("[REDACTED]")) throw new Error("flight normalization leaked or misordered evidence");
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "flight", "validate", "--input", output]);
+  const outside = path.join(temporary, "outside-flight-decisions");
+  fs.mkdirSync(outside);
+  writeJson(path.join(outside, "secret.json"), { decidedAt: "2026-01-01T00:00:03Z", kind: "outside", request: { capability: "must-not-read" } });
+  fs.symlinkSync(outside, path.join(root, ".kacha", "decisions"));
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "flight", "snapshot", "--project-root", root, "--output", output]);
+  const symlinkSafe = readJson(output);
+  if (JSON.stringify(symlinkSafe).includes("must-not-read") || !symlinkSafe.limitations.some((item) => item.includes("symlink_directory_rejected"))) throw new Error("flight recorder followed an out-of-project symlink");
+  fs.writeFileSync(output, "null\n");
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "flight", "validate", "--input", output]).stderr.includes("root must be an object")) throw new Error("flight null root was not rejected cleanly");
+}, "core");
+
+await test("media corpus exposes keyword fallback motion evidence and MMR diversity", () => {
+  const root = path.join(skillDirectory, "design", "reference-gallery", "xingzhe-v3", "normal-speed-previews");
+  const index = path.join(temporary, "corpus-media-index.json");
+  const corpus = path.join(temporary, "media-corpus.json");
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "media", "index", "--root", root, "--output", index]);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "corpus", "build", "--index", index, "--output", corpus, "--clip-seconds", "5"]);
+  const search = JSON.parse(execute(process.execPath, [path.join(scripts, "kacha.mjs"), "corpus", "search", "--input", corpus, "--query", "info", "--limit", "4"]).stdout);
+  if (search.retrievalMode !== "keyword_fallback" || search.results.length < 1 || search.diversity.method !== "MMR" || search.results.some((item) => item.motion.status !== "unavailable")) throw new Error("corpus search overclaimed semantics or omitted diversity/motion state");
+  const digestlessCorpus = readJson(corpus);
+  delete digestlessCorpus.digest;
+  const digestlessCorpusFile = path.join(temporary, "media-corpus-without-digest.json");
+  writeJson(digestlessCorpusFile, digestlessCorpus);
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "corpus", "validate", "--input", digestlessCorpusFile]).stderr.includes("corpus digest is required")) throw new Error("corpus validation accepted an artifact without its integrity digest");
+  const staleRoot = path.join(temporary, "stale-corpus-media");
+  fs.mkdirSync(staleRoot);
+  const source = path.join(staleRoot, "info.mp4");
+  fs.copyFileSync(path.join(root, "info_single.mp4"), source);
+  const staleIndex = path.join(temporary, "stale-corpus-index.json");
+  const staleCorpus = path.join(temporary, "stale-corpus.json");
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "media", "index", "--root", staleRoot, "--output", staleIndex]);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "corpus", "build", "--index", staleIndex, "--output", staleCorpus]);
+  fs.appendFileSync(source, "identity-changed");
+  const staleValidation = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "corpus", "validate", "--input", staleCorpus]);
+  if (!staleValidation.stderr.includes("source file identity is stale")) throw new Error("corpus validation accepted a changed source file");
+  expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "corpus", "build", "--index", staleIndex, "--output", staleCorpus]);
+  const nullCorpus = path.join(temporary, "null-corpus.json");
+  fs.writeFileSync(nullCorpus, "null\n");
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "corpus", "validate", "--input", nullCorpus]).stderr.includes("root must be an object")) throw new Error("corpus null root was not rejected cleanly");
+}, "core");
+
+await test("composition router records explicit series choice and blocks unavailable hero engine", () => {
+  const series = JSON.parse(execute(process.execPath, [path.join(scripts, "kacha.mjs"), "composition", "route", "--mode", "series", "--requires", "video-compose"]).stdout);
+  if (series.chosenEngine !== "ffmpeg-local" || series.silentFallbackAllowed !== false) throw new Error("series engine decision is not explicit");
+  const hero = run(process.execPath, [path.join(scripts, "kacha.mjs"), "composition", "route", "--mode", "hero", "--requires", "video-compose,motion-graphics"], { cwd: temporary });
+  const heroDecision = JSON.parse(hero.stdout || hero.stderr);
+  if (hero.status === 0) {
+    const chosen = heroDecision.alternatives.find((item) => item.providerId === heroDecision.chosenEngine);
+    if (!chosen?.eligible || chosen.probe?.available !== true || chosen.exclusions.length) throw new Error("hero route selected an engine without current capability evidence");
+  } else if (heroDecision.status !== "blocked" || heroDecision.chosenEngine !== null) {
+    throw new Error("unavailable hero engine was silently substituted");
+  }
+  const tampered = structuredClone(series);
+  tampered.chosenEngine = "minimax-external";
+  tampered.engineHandoff.providerId = "minimax-external";
+  delete tampered.output;
+  delete tampered.decisionDigest;
+  tampered.decisionDigest = sha256Value(tampered);
+  const tamperedFile = path.join(temporary, "tampered-composition-decision.json");
+  writeJson(tamperedFile, tampered);
+  const tamperedResult = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "composition", "validate", "--input", tamperedFile]);
+  if (!tamperedResult.stderr.includes("eligible exclusion-free")) throw new Error("composition validation accepted an ineligible chosen engine");
+  const digestless = structuredClone(series);
+  delete digestless.output;
+  delete digestless.decisionDigest;
+  const digestlessFile = path.join(temporary, "composition-decision-without-digest.json");
+  writeJson(digestlessFile, digestless);
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "composition", "validate", "--input", digestlessFile]).stderr.includes("decisionDigest is required")) throw new Error("composition validation accepted a decision without its integrity digest");
+  fs.writeFileSync(digestlessFile, "null\n");
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "composition", "validate", "--input", digestlessFile]).stderr.includes("root must be an object")) throw new Error("composition null root was not rejected cleanly");
+}, "core");
+
+await test("workflow packs validate and resolve through existing Kacha commands", () => {
+  const registry = JSON.parse(execute(process.execPath, [path.join(scripts, "kacha.mjs"), "workflows", "validate"]).stdout);
+  if (registry.packs !== 4) throw new Error("expected four workflow packs");
+  const variables = path.join(temporary, "workflow-vars.json");
+  const output = path.join(temporary, "workflow-instance.json");
+  writeJson(variables, {
+    REFERENCE_VIDEO: "/tmp/reference.mp4",
+    RIGHTS_STATUS: "owned",
+    RIGHTS_EVIDENCE: "owner-attestation:test",
+    PERMITTED_USE: "principle-derivation",
+    ANALYSIS_JSON: "/tmp/analysis.json",
+    DERIVED_PLAN_JSON: "/tmp/plan.json",
+    BRIEF_JSON: "/tmp/brief.json"
+  });
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "workflows", "resolve", "--pack", "reference-to-original", "--vars", variables, "--output", output]);
+  const instance = readJson(output);
+  if (instance.status !== "ready" || instance.unresolved.length || instance.steps.some((step) => !step.command.startsWith("kacha "))) throw new Error("workflow pack did not resolve into an auditable Kacha checklist");
+  const hostileVariables = readJson(variables);
+  hostileVariables.REFERENCE_VIDEO = "/tmp/reference.mp4'; touch /tmp/forbidden; echo '";
+  writeJson(variables, hostileVariables);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "workflows", "resolve", "--pack", "reference-to-original", "--vars", variables, "--output", output]);
+  const quoted = readJson(output).steps[0].command;
+  if (!quoted.includes(`'"'"'`) || quoted.includes("--input /tmp/reference")) throw new Error("workflow variable was not safely shell quoted");
+  const structuredVariables = readJson(variables);
+  structuredVariables.REFERENCE_VIDEO = { path: "/tmp/reference.mp4" };
+  writeJson(variables, structuredVariables);
+  const structuredFailure = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "workflows", "resolve", "--pack", "reference-to-original", "--vars", variables, "--output", output]);
+  if (!structuredFailure.stderr.includes("single-line scalar")) throw new Error("workflow resolver accepted a structured command variable");
+  writeJson(variables, hostileVariables);
+  const customRegistry = path.join(temporary, "custom-workflows.json");
+  fs.copyFileSync(path.join(skillDirectory, "config", "workflow-packs.json"), customRegistry);
+  expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "workflows", "resolve", "--registry", customRegistry, "--pack", "reference-to-original", "--vars", variables, "--output", output]);
+  const injectedRegistry = readJson(customRegistry);
+  injectedRegistry.packs[0].steps[0].command += "; touch /tmp/forbidden";
+  writeJson(customRegistry, injectedRegistry);
+  const injectedFailure = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "workflows", "validate", "--registry", customRegistry]);
+  if (!injectedFailure.stderr.includes("shell control operators")) throw new Error("workflow registry accepted a shell-control operator");
+  fs.writeFileSync(customRegistry, "null\n");
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "workflows", "validate", "--registry", customRegistry]).stderr.includes("root must be an object")) throw new Error("workflow registry null root was not rejected cleanly");
 }, "core");
 
 try {

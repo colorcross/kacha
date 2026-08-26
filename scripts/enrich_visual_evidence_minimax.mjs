@@ -2,6 +2,8 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
+import { fileURLToPath } from "node:url";
 import {
   acquireFileLock,
   commandExists,
@@ -19,6 +21,7 @@ import {
 } from "./kacha_config.mjs";
 import { diagnostic } from "./kacha_error_catalog.mjs";
 
+const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
 const input = firstPositional(args, [
   "--context",
@@ -26,6 +29,8 @@ const input = firstPositional(args, [
   "--max-frames",
   "--prompt",
   "--frame-id",
+  "--cost-ledger",
+  "--cost-entry",
   "--config",
   "--secrets",
 ]);
@@ -56,6 +61,8 @@ const contextInput = option("--context");
 const outputInput = option("--output");
 const promptOverride = option("--prompt");
 const selectedIds = repeated("--frame-id");
+const costLedgerInput = option("--cost-ledger");
+const costEntryId = option("--cost-entry");
 const dryRun = args.includes("--dry-run");
 const allowUpload = args.includes("--allow-external-upload");
 let loadedConfig;
@@ -94,6 +101,7 @@ if (
       + "--context project-context.json --allow-external-upload "
       + "[--frame-id frame-001] [--max-frames 6] [--output FILE] "
       + "[--prompt TEXT] [--config FILE] [--secrets FILE] "
+      + "[--cost-ledger FILE --cost-entry ID] "
       + "[--dry-run] [--use-configured-network|--direct-no-proxy]",
     2,
   );
@@ -109,11 +117,18 @@ try {
   fail("KACHA-E140", `视觉证据无法解析：${error.message}`);
 }
 if (
-  evidence.schemaVersion !== "1.0"
+  !evidence
+  || typeof evidence !== "object"
+  || Array.isArray(evidence)
+  || evidence.schemaVersion !== "1.0"
   || !Array.isArray(evidence.frames)
   || evidence.frames.length === 0
 ) {
   fail("KACHA-E140", "输入不是有效的 visual-evidence 1.0");
+}
+const frameIds = evidence.frames.map((frame) => frame?.id);
+if (frameIds.some((id) => typeof id !== "string" || !id) || new Set(frameIds).size !== frameIds.length) {
+  fail("KACHA-E140", "visual-evidence frame id 必须非空且唯一");
 }
 
 let context = null;
@@ -142,9 +157,79 @@ if (!dryRun) {
         + "paidGenerationAllowed=true 和命令行 --allow-external-upload",
     );
   }
-  if (!commandExists("mmx")) {
-    fail("KACHA-E130", "mmx CLI 不可用");
+}
+
+let costAuthorization = null;
+let costExecutionIntentDigest = null;
+function preflightCostAuthorization() {
+  if (!costLedgerInput || !costEntryId) {
+    fail("KACHA-E410", "MiniMax 真实付费调用必须提供 --cost-ledger 和 --cost-entry 预算预占证据");
   }
+  const ledgerFile = path.resolve(costLedgerInput);
+  if (!fs.existsSync(ledgerFile) || !fs.statSync(ledgerFile).isFile()) {
+    fail("KACHA-E100", `费用账本不存在：${ledgerFile}`);
+  }
+  let ledger;
+  try { ledger = readJson(ledgerFile); }
+  catch (error) { fail("KACHA-E140", `费用账本无法解析：${error.message}`); }
+  if (ledger?.schemaVersion !== "1.0" || ledger?.kind !== "kacha-cost-ledger" || !Array.isArray(ledger.entries)) {
+    fail("KACHA-E410", "费用账本结构无效");
+  }
+  const entry = ledger.entries.find((item) => item?.id === costEntryId);
+  if (!entry) fail("KACHA-E410", `费用预占不存在：${costEntryId}`);
+  if (entry.providerId !== "minimax-external" || entry.capability !== "vision-analysis") {
+    fail("KACHA-E410", "费用预占与 MiniMax 视觉调用不匹配");
+  }
+  if (!new Set(["reserved", "approved"]).has(entry.status)) {
+    fail("KACHA-E410", `费用预占不可执行：${entry.status}`);
+  }
+  if (entry.approvalRequired === true && (!entry.approvedAt || !entry.approvalEvidence)) {
+    fail("KACHA-E410", "费用预占缺少审批证据");
+  }
+  if (!Number.isFinite(entry.reservedAmount) || entry.reservedAmount <= 0) {
+    fail("KACHA-E410", "费用预占金额必须大于 0；未知费用不能按免费处理");
+  }
+  return ledgerFile;
+}
+
+function requireCostAuthorization() {
+  if (costAuthorization) return costAuthorization;
+  const ledgerFile = preflightCostAuthorization();
+  if (!costExecutionIntentDigest) fail("KACHA-E500", "费用执行意图尚未冻结");
+  const executionId = crypto.randomUUID();
+  const consumed = run(process.execPath, [
+    path.join(scriptDirectory, "cost_ledger.mjs"),
+    "consume",
+    "--ledger", ledgerFile,
+    "--id", costEntryId,
+    "--provider", "minimax-external",
+    "--capability", "vision-analysis",
+    "--execution-id", executionId,
+    "--intent-digest", costExecutionIntentDigest,
+    "--actor", "vision-enrich",
+  ]);
+  if (consumed.status !== 0) {
+    fail("KACHA-E410", `费用预占无法原子消费：${consumed.stderr.trim() || consumed.stdout.trim()}`);
+  }
+  let response;
+  try { response = JSON.parse(consumed.stdout); }
+  catch { fail("KACHA-E500", "费用账本返回了无效响应"); }
+  const entry = response.entry;
+  if (!entry || entry.status !== "reconciliation_required" || entry.executionId !== executionId) {
+    fail("KACHA-E500", "费用预占消费后状态不一致");
+  }
+  if (!Number.isFinite(entry.reservedAmount) || entry.reservedAmount <= 0) fail("KACHA-E410", "费用预占金额必须大于 0；未知费用不能按免费处理");
+  costAuthorization = {
+    ledger: ledgerFile,
+    ledgerSha256: sha256File(ledgerFile),
+    entryId: entry.id,
+    status: entry.status,
+    executionId,
+    executionIntentDigest: costExecutionIntentDigest,
+    reservedAmount: entry.reservedAmount,
+    currency: entry.currency,
+  };
+  return costAuthorization;
 }
 
 function spread(values, limit) {
@@ -226,6 +311,15 @@ if (outputFile === evidenceFile) {
 }
 const cacheDirectory = path.join(path.dirname(evidenceFile), ".cache", "minimax-vision");
 const contextSha256 = contextFile ? sha256File(contextFile) : null;
+costExecutionIntentDigest = sha256Value({
+  providerId: "minimax-external",
+  capability: "vision-analysis",
+  evidenceSha256: sha256File(evidenceFile),
+  contextSha256,
+  promptSha256,
+  frameSha256s: frames.map((frame) => frame.sha256),
+  network: useConfiguredNetwork ? "configured_environment" : "direct_no_proxy",
+});
 const plan = {
   schemaVersion: "1.0",
   status: dryRun ? "dry_run" : "ready",
@@ -367,6 +461,14 @@ function hasValidRemoteSchema(value) {
   );
 }
 
+function validCachedItem(value, { cacheKey, frame }) {
+  if (!value || typeof value !== "object" || value.cacheKey !== cacheKey || value.frameId !== frame.id || value.frameSha256 !== frame.sha256) return false;
+  if (!/^[a-f0-9]{64}$/i.test(value.itemDigest ?? "")) return false;
+  const copy = structuredClone(value);
+  delete copy.itemDigest;
+  return value.itemDigest === sha256Value(copy);
+}
+
 const results = [];
 for (const frame of frames) {
   const cacheKey = sha256Value({
@@ -382,12 +484,22 @@ for (const frame of frames) {
   if (fs.existsSync(cacheFile)) {
     try {
       const cached = readJson(cacheFile);
-      results.push({ ...cached, cache: "hit" });
-      continue;
+      if (validCachedItem(cached, { cacheKey, frame })) {
+        const hit = { ...cached, cache: "hit", cacheArtifactDigest: cached.itemDigest };
+        delete hit.itemDigest;
+        hit.itemDigest = sha256Value(hit);
+        results.push(hit);
+        continue;
+      }
     } catch {
       // Corrupt cache is overwritten only after a successful response.
     }
   }
+  preflightCostAuthorization();
+  if (!commandExists("mmx")) {
+    fail("KACHA-E130", "mmx CLI 不可用");
+  }
+  requireCostAuthorization();
   const response = run("mmx", [
     "vision",
     "describe",
@@ -438,6 +550,7 @@ for (const frame of frames) {
     parseStatus: !parsed ? "raw_only" : schemaValid ? "pass" : "schema_fail",
     rawText,
   };
+  item.itemDigest = sha256Value(item);
   writeJsonAtomic(cacheFile, item);
   results.push(item);
 }
@@ -464,6 +577,7 @@ const enriched = {
       externalUploadAllowed: true,
       paidGenerationAllowed: true,
       explicitFlag: true,
+      cost: costAuthorization,
     },
     privacy: {
       wholeVideoUploaded: false,

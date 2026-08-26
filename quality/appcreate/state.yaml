@@ -1,0 +1,20 @@
+schema_version: 1
+current_stage: S0
+next_milestone: "Complete intake and agree on the first evidence-backed milestone."
+stages:
+  S0: {name: intake, status: in_progress}
+  S1: {name: opportunity, status: not_started}
+  S2: {name: strategy, status: not_started}
+  S3: {name: identity, status: not_started}
+  S4: {name: experience, status: not_started}
+  S5: {name: architecture, status: not_started}
+  S6: {name: delivery, status: not_started}
+  S7: {name: release, status: not_started}
+  S8: {name: operations, status: not_started}
+  S9: {name: growth, status: not_started}
+  S10: {name: iteration, status: not_started}
+  S11: {name: retirement, status: not_started}
+active_decisions: []
+active_risks: []
+latest_release_ref: null
+updated_at: "2026-08-26T01:28:56+00:00"

@@ -27,6 +27,36 @@ Placeholder 的 ready 状态与产物 SHA；重复对象 ID 必须使用确定�
 源码开发态先用 `install status` 检查 Codex/Claude 安装，但通过测试前不得
 同步。完整规则见 `references/agent-chat-control-plane.md`。
 
+### 治理式生产控制面
+
+涉及多引擎、外部模型、参考视频、费用或高价值复用工作流时，Agent 必须先使用
+下列代码合同，不能只在回复中声称已经比较或控费：
+
+- `capabilities rank`：可用性、必需能力、模式、隐私、许可和已知费用是硬门禁；
+  只有通过硬门禁的候选才允许按质量、可控性、可靠性、成本、延迟和连续性排名。
+- `cost init/reserve/approve/consume/reconcile/refund`：付费执行前必须存在项目账本和预占；
+  未知单价不得填成 0，超过审批阈值不得在批准前对账为已执行。
+  `vision-enrich` 的真实 cache miss 还必须显式传入 `--cost-ledger` 与
+  `--cost-entry`；执行前会将预占原子消费为 `reconciliation_required`，同一预占
+  不得跨调用复用。缓存命中不新增付费预占；调用失败也保留待对账状态，必须按
+  真实账单将实际金额（包括 0）对账。
+- `reference analyze/derive`：只接收本地、已确认来源的参考文件；版权为 `unknown`
+  或仅允许 `analysis-only` 时禁止派生；`licensed`/`fair-use-review` 要求权利证据。
+  派生物必须保留 `keep/change/doNotCopy` 和禁止逐镜复制合同，源文件变化后旧分析失效。
+- `composition route`：`series` 与 `hero` 的必需能力和选中引擎必须落盘；引擎
+  不可用时阻断并重新决策，禁止静默替换。
+- `corpus build/search`：片段必须绑定当前索引、源 SHA 和有效时间范围；源文件或
+  索引变化后旧 corpus 失效。没有真实向量证据时输出
+  `keyword_fallback`，不能把文件名或关键词命中表述为视觉语义理解。
+- `flight snapshot/replay`：只读、限量、脱敏地汇总项目事件、遥测、后台任务、
+  费用和决策；拒绝项目外链接源。它是观察器，不得承担状态迁移。
+- `workflows validate/resolve`：工作流包只生成现有 Kacha 命令清单。执行仍回到
+  V7/V8、Timeline IR、Render Graph、QC 和人工门禁。
+
+默认工作流包为 `reference-to-original`、`clip-factory`、`screen-demo` 和
+`localization-dub`。完整实施边界见
+`docs/OPENMONTAGE_OPTIMIZATION_IMPLEMENTATION_2026-08-26.md`。
+
 ## V7 默认生产入口
 
 新项目必须先进入可恢复编排器，不再只生成 brief 后把十三阶段留给对话记忆：
@@ -146,6 +176,8 @@ node scripts/kacha.mjs efficiency compare BASELINE-COHORT.json CANDIDATE-COHORT.
   `references/z-en-editing-system.md`
 - 画面呼吸、左右/上下/前后口播字幕排版和项目字体路由：
   `references/visual-breathing-caption-typography.md`
+- 阅读字幕、语义字景、空间字景、栏目图形母题和歌词微型进度线：
+  `docs/CINEMATIC_TEXT_SCENES_V1.md`
 - 本地页面选素材、建基础风格、选择五套剪辑视觉语言、指定开场/效果并生成项目配置：
   `references/production-studio.md`
 - 字幕/封面/品牌/系列：`references/subtitles-covers-brand.md`
@@ -467,10 +499,14 @@ node scripts/kacha.mjs templates resolve \
 picture lock 后先编译画面呼吸，再编译口播字幕排版；两者共享同一份最终带
 时间文稿和帧边界。画面呼吸只在语义、情绪或真实空间变化成立时使用，默认
 运动覆盖不超过 55%、静止不少于 45%，缓慢推拉和横移不配音效。字幕以普通
-单行为默认，只在对照、层级或空间关系明确时升级为左右、上下或前后景布局。
+单行为默认，只在对照、层级、定义、引语或空间关系明确时升级为语义字景或
+前后景空间字景；正式交付使用 `captions validate --strict-text-scenes` 阻断
+字景过密。歌词或精确节奏口播只有在逐字时间存在时才能使用 `micro_rail`，
+正文不得整行卡拉 OK 变色。
 项目字体通过本地注册表按角色、字符覆盖和授权状态解析，不把字体文件写进
 公开 skill。完整命令、路由和 QC 见
-`references/visual-breathing-caption-typography.md`。正式项目把计划分别登记
+`references/visual-breathing-caption-typography.md` 和
+`docs/CINEMATIC_TEXT_SCENES_V1.md`。正式项目把计划分别登记
 在 `plans.visualBreathingTimelines` 和 `plans.captionTimelines`，
 `gate-plan` 会验证计划。
 

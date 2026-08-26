@@ -1,0 +1,166 @@
+{
+  "$schema": "appcreate://schemas/lifecycle.schema.json",
+  "schemaVersion": 2,
+  "policyVersion": "6.5.0",
+  "currentStage": "S0",
+  "stages": [
+    {
+      "id": "S0",
+      "name": "intake",
+      "status": "in_progress",
+      "evidenceRefs": [],
+      "waiver": null,
+      "cycle": 1,
+      "cycleStartedAt": "2026-08-26T01:28:56+00:00",
+      "updatedAt": "2026-08-26T01:28:56+00:00",
+      "capabilityStatus": "unknown",
+      "freshUntil": null
+    },
+    {
+      "id": "S1",
+      "name": "opportunity",
+      "status": "not_started",
+      "evidenceRefs": [],
+      "waiver": null,
+      "cycle": 0,
+      "cycleStartedAt": null,
+      "updatedAt": null,
+      "capabilityStatus": "unknown",
+      "freshUntil": null
+    },
+    {
+      "id": "S2",
+      "name": "strategy",
+      "status": "not_started",
+      "evidenceRefs": [],
+      "waiver": null,
+      "cycle": 0,
+      "cycleStartedAt": null,
+      "updatedAt": null,
+      "capabilityStatus": "unknown",
+      "freshUntil": null
+    },
+    {
+      "id": "S3",
+      "name": "identity",
+      "status": "not_started",
+      "evidenceRefs": [],
+      "waiver": null,
+      "cycle": 0,
+      "cycleStartedAt": null,
+      "updatedAt": null,
+      "capabilityStatus": "unknown",
+      "freshUntil": null
+    },
+    {
+      "id": "S4",
+      "name": "experience",
+      "status": "not_started",
+      "evidenceRefs": [],
+      "waiver": null,
+      "cycle": 0,
+      "cycleStartedAt": null,
+      "updatedAt": null,
+      "capabilityStatus": "unknown",
+      "freshUntil": null
+    },
+    {
+      "id": "S5",
+      "name": "architecture",
+      "status": "not_started",
+      "evidenceRefs": [],
+      "waiver": null,
+      "cycle": 0,
+      "cycleStartedAt": null,
+      "updatedAt": null,
+      "capabilityStatus": "unknown",
+      "freshUntil": null
+    },
+    {
+      "id": "S6",
+      "name": "delivery",
+      "status": "not_started",
+      "evidenceRefs": [],
+      "waiver": null,
+      "cycle": 0,
+      "cycleStartedAt": null,
+      "updatedAt": null,
+      "capabilityStatus": "unknown",
+      "freshUntil": null
+    },
+    {
+      "id": "S7",
+      "name": "release",
+      "status": "not_started",
+      "evidenceRefs": [],
+      "waiver": null,
+      "cycle": 0,
+      "cycleStartedAt": null,
+      "updatedAt": null,
+      "capabilityStatus": "unknown",
+      "freshUntil": null
+    },
+    {
+      "id": "S8",
+      "name": "operations",
+      "status": "not_started",
+      "evidenceRefs": [],
+      "waiver": null,
+      "cycle": 0,
+      "cycleStartedAt": null,
+      "updatedAt": null,
+      "capabilityStatus": "unknown",
+      "freshUntil": null
+    },
+    {
+      "id": "S9",
+      "name": "growth",
+      "status": "not_started",
+      "evidenceRefs": [],
+      "waiver": null,
+      "cycle": 0,
+      "cycleStartedAt": null,
+      "updatedAt": null,
+      "capabilityStatus": "unknown",
+      "freshUntil": null
+    },
+    {
+      "id": "S10",
+      "name": "iteration",
+      "status": "not_started",
+      "evidenceRefs": [],
+      "waiver": null,
+      "cycle": 0,
+      "cycleStartedAt": null,
+      "updatedAt": null,
+      "capabilityStatus": "unknown",
+      "freshUntil": null
+    },
+    {
+      "id": "S11",
+      "name": "retirement",
+      "status": "not_started",
+      "evidenceRefs": [],
+      "waiver": null,
+      "cycle": 0,
+      "cycleStartedAt": null,
+      "updatedAt": null,
+      "capabilityStatus": "unknown",
+      "freshUntil": null
+    }
+  ],
+  "transitions": [
+    {
+      "stage": "S0",
+      "from": "not_started",
+      "to": "in_progress",
+      "actor": "appcreate-init",
+      "reason": "initialize product lifecycle",
+      "evidenceRefs": [],
+      "observedAt": "2026-08-26T01:28:56+00:00"
+    }
+  ],
+  "updatedAt": "2026-08-26T01:28:56+00:00",
+  "releaseSnapshots": [],
+  "riskProfileRef": null
+}

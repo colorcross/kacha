@@ -52,6 +52,13 @@ function usage() {
       + "  kacha.mjs resources status|run [options]\n"
       + "  kacha.mjs delta diff|apply [options]\n"
       + "  kacha.mjs media index|search [options]\n"
+      + "  kacha.mjs capabilities validate|list|probe|rank [options]\n"
+      + "  kacha.mjs cost init|estimate|reserve|approve|consume|reconcile|refund|status|validate [options]\n"
+      + "  kacha.mjs reference analyze|derive|validate [options]\n"
+      + "  kacha.mjs flight snapshot|replay|validate [options]\n"
+      + "  kacha.mjs corpus build|search|validate [options]\n"
+      + "  kacha.mjs composition template|route|validate [options]\n"
+      + "  kacha.mjs workflows validate|list|show|resolve [options]\n"
       + "  kacha.mjs asset-inbox build|refresh|attach|validate [options]\n"
       + "  kacha.mjs jobs submit|status|list|cancel|resume [options]\n"
       + "  kacha.mjs refs index|resolve|parse [options]\n"
@@ -166,6 +173,13 @@ const delegatedCommands = {
   resources: "resource_scheduler.mjs",
   delta: "kacha_delta.mjs",
   media: "kacha_media.mjs",
+  capabilities: "capability_broker.mjs",
+  cost: "cost_ledger.mjs",
+  reference: "reference_intelligence.mjs",
+  flight: "production_flight_recorder.mjs",
+  corpus: "media_corpus.mjs",
+  composition: "composition_router.mjs",
+  workflows: "workflow_packs.mjs",
   "asset-inbox": "asset_inbox.mjs",
   jobs: "kacha_jobs.mjs",
   refs: "kacha_refs.mjs",

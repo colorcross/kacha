@@ -61,6 +61,13 @@ AI 负责组织证据、编译计划、执行获批修改并把技术结果留�
 | 高成本复用 | ASR、人声分离、蒙版、Beauty、样式帧和生成素材按模型/实现强指纹缓存 |
 | 弱模型稳定生产 | 五种紧凑 packet + 十三阶段文件证据状态机，减少上下文与临场猜测 |
 | Agent 对话控制面 | 自然语言仍是主入口；Mutation Delta、确定性对象 `@` 引用、本地句向量素材搜索和终态受保护的异步任务在后台运行 |
+| 治理式能力路由 | 先按可用性、模式、隐私、许可和费用做硬排除，再输出带探测证据的逐维排名；不让总分绕过红线 |
+| 费用账本 | 估算、预占、超阈值审批、对账和退款使用项目级原子状态机；未知费用不等于免费 |
+| 参考片到原创方案 | 冻结本地参考文件身份和版权状态，把可借鉴原则、必须改造项与禁止复制项交给既有 Kacha 计划门禁 |
+| 制作飞行记录 | 只读汇总项目事件、遥测、任务、费用和能力决策；项目状态台可回看，不修改生产状态 |
+| 片段级素材语料 | 从现有 media index 建立带时间区间、来源身份、运动证据状态的 clip corpus，以 MMR 控制重复；无向量时明确标记关键词回退 |
+| Series / Hero 制作模式 | 制作意图、必需能力、选中引擎和被排除方案形成正式决策；引擎失效时禁止静默替换 |
+| 四套高价值工作流包 | 参考片原创化、长视频切片、真实屏幕演示、本地化配音只编排现有命令和门禁，不另造状态机 |
 | 全片智能导演 | 从带时间语义 cues 编译主线、内容优先级、唯一开场、强调预算、安静比例、五风格语法和最简回退 |
 | 统一审片中心 | 1× 正常速度查看高影响决定，再完成绑定当前成片 SHA-256 的十一项发布检查；失败项形成返工请求 |
 | 可解释偏好学习 | 只从候选就绪的完整审片结果重建候选；按 scope 并发安全合并，需显式激活，可版本回滚，不保存自由文本内容 |
@@ -72,7 +79,7 @@ AI 负责组织证据、编译计划、执行获批修改并把技术结果留�
 | 视频设计系统 | 行者风 3.0 统一栏目、画幅、语言、字幕、语义色、镜头机制、PIP、封面和运动语言，并以反网页合同约束生产 |
 | 效果参考图库 | 240 个注册效果均有浅暖轻浮层、空间光路、幽默漫画、像素风与暗黑科技风五套横竖参考图，并绑定 1200 份可执行动效合同；效果身份优先，只有命中场景语义才允许改变结构 |
 | 五种剪辑语法 | 连续编辑旁注、单次空间导航、喜剧节拍、确定性状态机与取证揭示分别组织镜头、空间、转场和声音；七轴门禁阻止只换材质的“换皮” |
-| 预制效果与资源 | 62 个模板统一解析开场、转场、语义画面、贴纸、纵深、流程、关键帧、并列句、字幕和呼吸；附原创视觉资源与许可路由 |
+| 预制效果与资源 | 65 个模板统一解析开场、转场、语义画面、贴纸、纵深、流程、关键帧、并列句、字幕和呼吸；附原创视觉资源与许可路由 |
 | 可感知能力覆盖 | 行者风按时长约束外部/AI/HyperFrames 素材、PIP、蒙版、纵深、关键帧、关系字幕和大字的最低覆盖与多样性 |
 | 画面呼吸 | 用语义驱动的推近、停稳、释放、横移和重音冲击改善节奏，避免全片持续缩放 |
 | 口播字幕编排 | 普通单行优先，按真实信息关系使用左右、上下或人物前后景排版并联动功能音效 |
@@ -83,11 +90,11 @@ AI 负责组织证据、编译计划、执行获批修改并把技术结果留�
 | 双 Agent 支持 | 同一套 skill、安装器、配置和门禁同时支持 Codex 与 Claude Code |
 | 失败即停 | 输入、授权、能力或 QC 不满足时停止，不用预览伪装最终成片 |
 
-当前版本包含 52 个设计组件、69 个复用场景、62 个预制效果模板、23 个公共
+当前版本包含 52 个设计组件、69 个复用场景、65 个预制效果模板、23 个公共
 核心资源、10 种转场、5 种开场、5 种画面呼吸运动、7 种口播字幕布局，以及
 从 6 条参考视频中验证出的 33 种语义网感机制。机制可从最终带时间文稿生成
 帧级计划、进入完整视频渲染，并通过摘要、资源、时序与媒体保真门禁。
-当前仓库完整回归为 146 项；五套图库另有语义三元组、跨风格重复、同风格未声明
+当前仓库完整回归为 154 项；五套图库另有语义三元组、跨风格重复、同风格未声明
 近似构图、人物头部碰撞、黑块、字体和动效合同专项 QC。当前提交的 1200 组
 “效果定义—参考图—动效合同”语义三元组全部匹配，其余上述问题均为 0。
 
@@ -100,6 +107,7 @@ AI 负责组织证据、编译计划、执行获批修改并把技术结果留�
 详细能力边界见
 [网感剪辑系统](references/z-en-editing-system.md)、
 [画面呼吸与字幕字体系统](references/visual-breathing-caption-typography.md)、
+[行者大灰动态字景设计与生产规范](docs/CINEMATIC_TEXT_SCENES_V1.md)、
 [效果模板与资源目录](references/effect-templates-resources.md)、
 [能力覆盖与返工预算](references/capability-coverage-and-rework-budget.md)、
 [架构说明](docs/ARCHITECTURE.md)与
@@ -108,6 +116,7 @@ AI 负责组织证据、编译计划、执行获批修改并把技术结果留�
 [五风格剪辑语法](docs/FIVE_STYLE_EDITING_GRAMMARS.md)、
 [V7 实施状态与证据边界](docs/V7_IMPLEMENTATION_STATUS_2026-08-09.md)、
 [V8 质量不降级效率](docs/QUALITY_PRESERVING_EFFICIENCY_V8.md)、
+[OpenMontage 差距优化实施记录](docs/OPENMONTAGE_OPTIMIZATION_IMPLEMENTATION_2026-08-26.md)、
 [效果参考图库](design/reference-gallery/xingzhe-v3/index.html)。
 
 Production pack 的生成与验证示例见
@@ -152,6 +161,28 @@ SHA-256，不能冒充稳定或 canary 来源。
 ```bash
 node scripts/kacha.mjs studio serve
 ```
+
+需要先判断本机能力、费用、参考片边界或制作引擎时，使用治理式生产控制面：
+
+```bash
+node scripts/kacha.mjs capabilities rank --capability video-compose \
+  --modes series --local-only --require-known-cost
+node scripts/kacha.mjs cost init --project-root PROJECT --budget 100
+node scripts/kacha.mjs cost consume --project-root PROJECT --id ENTRY_ID \
+  --provider minimax-external --capability vision-analysis \
+  --execution-id EXECUTION_ID --intent-digest SHA256
+node scripts/kacha.mjs reference analyze --input REFERENCE.mp4 \
+  --rights-status licensed --rights-evidence LICENSE_RECORD \
+  --permitted-use principle-derivation --output reference-analysis.json
+node scripts/kacha.mjs flight snapshot --project-root PROJECT
+node scripts/kacha.mjs corpus build --index media-index.json --output corpus.json
+node scripts/kacha.mjs composition route --mode series --requires video-compose
+node scripts/kacha.mjs workflows list
+```
+
+这些命令只建立证据、选择和可执行清单；`cost consume` 只原子占用一次预占项，
+不会自行调用提供者。外部上传、付费调用、正式渲染、发布和
+部署仍需各自已有授权与门禁；Studio 的制作飞行记录接口保持只读。
 
 页面只读取本机路径，可从脚本、选题或视频开始，支持基础风格、自建风格、
 “自动按语义”或浅暖轻浮层/空间光路/幽默漫画/像素风优先、开场选择和多组
@@ -314,7 +345,7 @@ node scripts/kacha.mjs doctor --profile core
 | [五风格剪辑语法](docs/FIVE_STYLE_EDITING_GRAMMARS.md) | 五种风格各自的时间单位、空间拓扑、转场、声音与换皮失败门禁 |
 | [Beauty v2](references/beauty-v2.md) | 本地美颜能力、门禁与人工复核 |
 | [FaceFusion](references/facefusion.md) | 换脸、口型同步、人脸修复、模型许可与专项 QC |
-| [效果模板与资源](references/effect-templates-resources.md) | 62 个模板、可调动效合同、原创资源、字体/SFX 与素材路由 |
+| [效果模板与资源](references/effect-templates-resources.md) | 65 个模板、可调动效合同、原创资源、字体/SFX 与素材路由 |
 | [增量返工](docs/INCREMENTAL_WORKFLOW_V3.md) | 依赖复用与冻结流证明 |
 | [隐私安全](docs/PRIVACY_SECURITY.md) | 上传、付费、发布与凭证边界 |
 

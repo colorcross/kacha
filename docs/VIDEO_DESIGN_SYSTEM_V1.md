@@ -33,7 +33,7 @@ Style Profile
     +
 33 个语义网感机制
     +
-62 个预制效果模板 / 23 个公共核心资源
+65 个预制效果模板 / 23 个公共核心资源
     ↓
 8 个生产 Renderer / 36 个 Layout / 75 个 Motion
     ↓
@@ -174,16 +174,18 @@ showcase 的家族标签、效果名称和固定示例文字。项目在
 
 - `config/effects/visual-breathing.json`：慢推、慢拉、横移、重音冲击和停稳；
 - `config/effects/spoken-caption-layouts.json`：普通单行、逻辑重音、左右、
-  侧边、上下和前后景布局；
+  侧边、上下、编辑堆叠、边缘注释、引语场和前后景布局，并注册五个栏目
+  的副色、图形母题、运动性格与字景密度门禁；
 - `config/font-routing.json`：金陵体字幕、华光标题黑展示字、封神榜书封面标题和细体辅助文字的限定角色。
 - `config/design-system/visual-languages.json`：五套高保真视觉语言的材质、布局、碰撞、对比度、品牌、动态和声音母合同。
 
 它们进入 design digest，但不把本地字体文件写进系统。正式应用分别走
 `breathing plan → validate → render` 和
 `captions plan → validate → render`；排版计划冻结实际字体文件 hash 与项目
-授权记录，前后景布局同时冻结逐帧人物蒙版。
+授权记录，前后景布局同时冻结逐帧人物蒙版。设计与 cue 数据合同见
+`docs/CINEMATIC_TEXT_SCENES_V1.md`。
 
-V1.6 把注册表进一步编译为 62 个预制效果模板，并把行者风 3.0 的反网页合同
+V1.6 把注册表进一步编译为 65 个预制效果模板，并把行者风 3.0 的反网页合同
 纳入解析、预检和生产质量门禁。模板覆盖开场、转场、语义
 画面、贴纸/视线、空间纵深、关键帧、并列句、字幕布局和画面呼吸；每个模板
 统一声明场景、组件、进入/停稳/退出、字体角色、音效触发、人物/字幕/品牌

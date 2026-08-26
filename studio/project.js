@@ -18,6 +18,13 @@ async function api(path, body) {
   return result;
 }
 
+async function getApi(path) {
+  const response = await fetch(path, { headers: { "X-Kacha-Studio": "1" } });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || `请求失败：${response.status}`);
+  return result;
+}
+
 function toast(message, error = false) {
   const node = $("toast");
   node.textContent = message;
@@ -128,6 +135,56 @@ function render(status) {
   }).join("");
 }
 
+function renderFlight(flight) {
+  const events = flight.events ?? [];
+  const counts = Object.entries(flight.counts ?? {})
+    .map(([source, count]) => `${source} ${count}`)
+    .join(" · ");
+  $("flightSummary").textContent = events.length
+    ? `${events.length} 个标准化事件 · ${counts || "本地证据"}`
+    : "当前项目还没有可读取的运行事件。";
+  const list = $("flightList");
+  const allowedStatusClasses = new Set(["pass", "complete", "reconciled", "blocked", "fail"]);
+  if (!events.length) {
+    const empty = document.createElement("p");
+    empty.className = "flight-empty";
+    empty.textContent = "暂无事件；该观察器不会创建或修改生产状态。";
+    list.replaceChildren(empty);
+    return;
+  }
+  const nodes = events.slice(-8).reverse().map((event) => {
+    const article = document.createElement("article");
+    const time = document.createElement("time");
+    time.dateTime = event.at;
+    time.textContent = new Date(event.at).toLocaleString("zh-CN", { hour12: false });
+    const type = document.createElement("strong");
+    type.textContent = event.type;
+    const status = document.createElement("span");
+    status.textContent = event.status || event.source;
+    if (allowedStatusClasses.has(event.status)) status.className = event.status;
+    const detail = document.createElement("p");
+    detail.textContent = event.subject || event.summary || event.sourceRef;
+    article.append(time, type, status, detail);
+    return article;
+  });
+  list.replaceChildren(...nodes);
+}
+
+async function loadFlight(projectRoot) {
+  $("flightSummary").textContent = "正在汇总项目事件、任务、费用和决策证据…";
+  try {
+    const url = new URL("/api/flight", window.location.origin);
+    url.searchParams.set("projectRoot", projectRoot);
+    renderFlight(await getApi(url));
+  } catch (error) {
+    $("flightSummary").textContent = `飞行记录读取失败：${error.message}`;
+    const empty = document.createElement("p");
+    empty.className = "flight-empty";
+    empty.textContent = "观察器保持只读；项目执行不受影响。";
+    $("flightList").replaceChildren(empty);
+  }
+}
+
 async function loadProject({ quiet = false } = {}) {
   const projectRoot = $("projectRoot").value.trim();
   if (!projectRoot) throw new Error("请填写项目目录");
@@ -136,6 +193,7 @@ async function loadProject({ quiet = false } = {}) {
   try {
     const status = await api("/api/project/status", { projectRoot });
     render(status);
+    await loadFlight(projectRoot);
     $("loadStatus").textContent = `已读取 · ${status.lifecycle.status}`;
     if (!quiet) toast("项目状态已刷新");
   } catch (error) {

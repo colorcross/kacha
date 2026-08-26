@@ -1,0 +1,113 @@
+{
+  "$schema": "appcreate://schemas/completion-contract.schema.json",
+  "schemaVersion": 1,
+  "scope": {
+    "id": "openmontage-optimization",
+    "revision": "scope-2026-08-26-r1",
+    "status": "frozen",
+    "baselineRef": "0e4cda8f6615d186caa25e382ff620e182472369",
+    "candidateRef": null,
+    "inScopeTaskIds": ["CAP", "COST", "REF", "FLIGHT", "CORPUS", "COMPOSITION", "PACKS", "UXDOC"],
+    "outOfScope": ["AGPL source copying", "paid provider calls", "external publication", "production deployment", "real audience outcomes", "pre-existing cinematic text-scene changes"],
+    "planSource": "quality/implementation-plan.json",
+    "frozenAt": "2026-08-26T01:30:07Z",
+    "approvedBy": "product-owner:user"
+  },
+  "claimedStatus": "in_progress",
+  "tasks": [
+    {
+      "id": "CAP", "title": "Capability Broker", "workType": "code", "risk": "high", "required": true,
+      "planRefs": ["vertical-slice:CAP"], "status": "in_progress", "startedAt": "2026-08-26T01:30:07Z", "finishedAt": null,
+      "implementationActor": "codex-primary", "implementationRefs": ["scripts/capability_broker.mjs", "config/capabilities/provider-registry.json"], "testRefs": [], "evidenceRefs": [],
+      "acceptanceCriteria": [
+        {"id": "registry", "description": "Registry validates", "status": "pending", "evidenceRefs": []},
+        {"id": "exclusion", "description": "Rank excludes incompatible providers", "status": "pending", "evidenceRefs": []},
+        {"id": "decision", "description": "Decision includes score breakdown and evidence freshness", "status": "pending", "evidenceRefs": []}
+      ],
+      "deliverables": [], "blocker": null, "completionReview": {}
+    },
+    {
+      "id": "COST", "title": "Cost ledger", "workType": "code", "risk": "high", "required": true,
+      "planRefs": ["vertical-slice:COST"], "status": "in_progress", "startedAt": "2026-08-26T01:30:07Z", "finishedAt": null,
+      "implementationActor": "codex-primary", "implementationRefs": ["scripts/cost_ledger.mjs"], "testRefs": [], "evidenceRefs": [],
+      "acceptanceCriteria": [
+        {"id": "atomic", "description": "Atomic locked ledger updates", "status": "pending", "evidenceRefs": []},
+        {"id": "budget", "description": "Budget overrun is blocked", "status": "pending", "evidenceRefs": []},
+        {"id": "lifecycle", "description": "Reserve/approve/reconcile/refund transitions are validated", "status": "pending", "evidenceRefs": []}
+      ],
+      "deliverables": [], "blocker": null, "completionReview": {}
+    },
+    {
+      "id": "REF", "title": "Reference intelligence", "workType": "code", "risk": "high", "required": true,
+      "planRefs": ["vertical-slice:REF"], "status": "in_progress", "startedAt": "2026-08-26T01:30:07Z", "finishedAt": null,
+      "implementationActor": "codex-primary", "implementationRefs": ["scripts/reference_intelligence.mjs"], "testRefs": [], "evidenceRefs": [],
+      "acceptanceCriteria": [
+        {"id": "technical", "description": "Local reference technical analysis", "status": "pending", "evidenceRefs": []},
+        {"id": "rights", "description": "Explicit rights and source boundary", "status": "pending", "evidenceRefs": []},
+        {"id": "handoff", "description": "keep/change/doNotCopy handoff validates", "status": "pending", "evidenceRefs": []}
+      ],
+      "deliverables": [], "blocker": null, "completionReview": {}
+    },
+    {
+      "id": "FLIGHT", "title": "Production flight recorder", "workType": "ui", "risk": "medium", "required": true,
+      "planRefs": ["vertical-slice:FLIGHT"], "status": "in_progress", "startedAt": "2026-08-26T01:30:07Z", "finishedAt": null,
+      "implementationActor": "codex-primary", "implementationRefs": ["scripts/production_flight_recorder.mjs", "scripts/kacha_studio_server.mjs", "studio/project.html", "studio/project.js", "studio/project.css"], "testRefs": [], "evidenceRefs": [],
+      "acceptanceCriteria": [
+        {"id": "aggregate", "description": "Aggregates known event sources", "status": "pending", "evidenceRefs": []},
+        {"id": "order", "description": "Stable ordering", "status": "pending", "evidenceRefs": []},
+        {"id": "readonly", "description": "No mutation endpoint", "status": "pending", "evidenceRefs": []}
+      ],
+      "deliverables": [], "blocker": null, "completionReview": {}
+    },
+    {
+      "id": "CORPUS", "title": "Clip-level media corpus", "workType": "code", "risk": "medium", "required": true,
+      "planRefs": ["vertical-slice:CORPUS"], "status": "in_progress", "startedAt": "2026-08-26T01:30:07Z", "finishedAt": null,
+      "implementationActor": "codex-primary", "implementationRefs": ["scripts/media_corpus.mjs"], "testRefs": [], "evidenceRefs": [],
+      "acceptanceCriteria": [
+        {"id": "identity", "description": "Clip records have source identity and time ranges", "status": "pending", "evidenceRefs": []},
+        {"id": "mmr", "description": "MMR diversity", "status": "pending", "evidenceRefs": []},
+        {"id": "fallback", "description": "Retrieval mode and limitations exposed", "status": "pending", "evidenceRefs": []}
+      ],
+      "deliverables": [], "blocker": null, "completionReview": {}
+    },
+    {
+      "id": "COMPOSITION", "title": "Composition routing", "workType": "code", "risk": "medium", "required": true,
+      "planRefs": ["vertical-slice:COMPOSITION"], "status": "in_progress", "startedAt": "2026-08-26T01:30:07Z", "finishedAt": null,
+      "implementationActor": "codex-primary", "implementationRefs": ["scripts/composition_router.mjs"], "testRefs": [], "evidenceRefs": [],
+      "acceptanceCriteria": [
+        {"id": "modes", "description": "series and hero validate", "status": "pending", "evidenceRefs": []},
+        {"id": "gates", "description": "Hard capability gates", "status": "pending", "evidenceRefs": []},
+        {"id": "alternatives", "description": "Alternatives recorded", "status": "pending", "evidenceRefs": []}
+      ],
+      "deliverables": [], "blocker": null, "completionReview": {}
+    },
+    {
+      "id": "PACKS", "title": "High-value workflow packs", "workType": "config", "risk": "medium", "required": true,
+      "planRefs": ["vertical-slice:PACKS"], "status": "in_progress", "startedAt": "2026-08-26T01:30:07Z", "finishedAt": null,
+      "implementationActor": "codex-primary", "implementationRefs": ["scripts/workflow_packs.mjs", "config/workflow-packs.json"], "testRefs": [], "evidenceRefs": [],
+      "acceptanceCriteria": [
+        {"id": "four", "description": "Four packs validate", "status": "pending", "evidenceRefs": []},
+        {"id": "mapping", "description": "Stages map to existing Kacha commands", "status": "pending", "evidenceRefs": []},
+        {"id": "boundary", "description": "No alternate orchestrator", "status": "pending", "evidenceRefs": []}
+      ],
+      "deliverables": [], "blocker": null, "completionReview": {}
+    },
+    {
+      "id": "UXDOC", "title": "CLI Studio documentation and tests", "workType": "docs", "risk": "medium", "required": true,
+      "planRefs": ["vertical-slice:UXDOC"], "status": "in_progress", "startedAt": "2026-08-26T01:30:07Z", "finishedAt": null,
+      "implementationActor": "codex-primary", "implementationRefs": ["scripts/kacha.mjs", "README.md", "SKILL.md", "docs/ARCHITECTURE.md", "tests/run_tests.mjs"], "testRefs": [], "evidenceRefs": [],
+      "acceptanceCriteria": [
+        {"id": "cli", "description": "CLI discoverable", "status": "pending", "evidenceRefs": []},
+        {"id": "docs", "description": "Docs match behavior", "status": "pending", "evidenceRefs": []},
+        {"id": "regression", "description": "Focused and full regression pass", "status": "pending", "evidenceRefs": []}
+      ],
+      "deliverables": [], "blocker": null, "completionReview": {}
+    }
+  ],
+  "changeSet": [],
+  "evidence": [],
+  "placeholderScan": {
+    "exceptions": []
+  },
+  "changeHistory": []
+}

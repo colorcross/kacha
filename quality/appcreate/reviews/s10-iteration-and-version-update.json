@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "stage": "S10",
+  "phase": "iteration-and-version-update",
+  "status": "not_started",
+  "artifactRefs": [],
+  "producer": null,
+  "qc": {
+    "profile": "feedback-impact-regression-debt",
+    "owner": null,
+    "result": "not_run",
+    "evidenceRefs": []
+  },
+  "review": {
+    "profile": "version-review",
+    "reviewer": null,
+    "decision": "not_reviewed",
+    "evidenceRefs": []
+  },
+  "findings": [],
+  "regression": {
+    "commands": [],
+    "result": "not_run",
+    "evidenceRefs": []
+  },
+  "separationWaiver": null,
+  "updatedAt": "2026-08-26T01:28:56+00:00"
+}

@@ -1,0 +1,47 @@
+schema_version: 1
+product:
+  name: "咔嚓 Kacha"
+  one_line: "本地优先、可恢复、证据化的专业 AI 视频生产工作流。"
+  owner: "product-owner:user"
+  lifecycle_status: iteration
+  product_refs:
+    - README.md
+    - SKILL.md
+    - docs/ARCHITECTURE.md
+task:
+  mode: "iterate"
+  goal: "完成 OpenMontage 差距优化，同时保持咔嚓确定性本地生产内核。"
+  target_users:
+    - "行者大灰内容生产者"
+    - "使用 Codex 或 Claude Code 的专业视频创作者"
+  platforms:
+    - web
+  support_components: [] # backend | admin
+  platform_plan_ref: null
+  deliverables:
+    - "Capability Broker 与费用账本"
+    - "参考视频、素材语料和制作飞行记录"
+    - "制作模式路由与四套工作流包"
+    - "CLI、Studio、文档和回归测试"
+  constraints:
+    - "clean-room，不复制 OpenMontage AGPL 源码或资产"
+    - "不执行付费调用、外部发布或生产部署"
+    - "保留开工前电影化字景未提交改动"
+  success_metrics:
+    - "全部新增合同有代码级验证与失败关闭测试"
+    - "154 项完整回归通过"
+    - "隐私和 Git diff 检查通过"
+  deadline: null
+runtime_context_ref: null
+permissions:
+  allow_local_reads: true
+  allow_local_writes: true
+  allow_external_reads: true
+  allow_external_writes: false
+  allow_paid_operations: false
+  allow_production_changes: false
+  allow_user_communications: false
+  allow_publish: false
+  allow_destructive_actions: false
+created_at: "2026-08-26T01:28:56+00:00"
+updated_at: "2026-08-26T01:28:56+00:00"

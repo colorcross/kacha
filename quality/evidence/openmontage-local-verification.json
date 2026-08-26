@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "kacha-local-verification-evidence",
+  "status": "passed",
+  "observedAt": "2026-08-26T03:02:05Z",
+  "producer": "codex-primary",
+  "baselineRevision": "0e4cda8f6615d186caa25e382ff620e182472369",
+  "checks": [
+    {
+      "id": "interim-full-regression",
+      "command": "node tests/run_tests.mjs --report /tmp/kacha-openmontage-deep-review-tests.json",
+      "result": "failed_then_fixed",
+      "tests": 154,
+      "passed": 153,
+      "failed": 1,
+      "failure": "The secret scanner correctly rejected a credential-shaped object key in a new redaction test fixture.",
+      "remediation": "Constructed the fixture key at runtime, then reran the secret scan, flight regression and Agent control-plane regression successfully. This interim run is not used as final pass evidence."
+    },
+    {
+      "id": "bundle-full-regression-and-sync",
+      "command": "node scripts/kacha.mjs install sync --agent both --apply",
+      "result": "passed",
+      "tests": 154,
+      "passed": 154,
+      "failed": 0,
+      "evidence": "sync_skill_installs.mjs requires the bundled tests/run_tests.mjs and installer test to exit zero before applying the atomic install"
+    },
+    {
+      "id": "deep-review-focused-regression",
+      "command": "capability broker; cost ledger; reference intelligence; flight recorder; media corpus; composition router; workflow packs; MiniMax visual evidence; Studio workbench; Agent control plane",
+      "result": "passed",
+      "tests": 10,
+      "passed": 10,
+      "failed": 0
+    },
+    {
+      "id": "static-and-secret-scan",
+      "command": "make check-static; git diff --check",
+      "result": "passed",
+      "secretScan": "no common credentials or private user paths found",
+      "scannerSha256": "2df54535bd2942c4abb750811fa8a87e2263fc19f48f1e5e413e0cb72a428ff0"
+    },
+    {
+      "id": "installer",
+      "command": "bash tests/test_installer.sh",
+      "result": "passed"
+    },
+    {
+      "id": "product-documentation",
+      "command": "python3 tools/check_product_documentation.py --claim iteration-docs-current",
+      "result": "passed"
+    },
+    {
+      "id": "structured-review",
+      "command": "python3 tools/check_post_iteration_review.py quality/post-iteration-review.json --claim review-structured",
+      "result": "passed",
+      "findings": 11,
+      "findingStatus": "fixed_unverified"
+    },
+    {
+      "id": "completion-honest-status",
+      "command": "python3 tools/check_completion_integrity.py --claim honest-status",
+      "result": "passed",
+      "derivedStatus": "in_progress",
+      "reason": "Independent final review and release/production evidence are intentionally absent."
+    },
+    {
+      "id": "dual-agent-install-readback",
+      "command": "node scripts/kacha.mjs install status --agent both",
+      "result": "passed",
+      "bundleDigest": "1695f1504b0978cd64b47c158b0dd5e6a3ccdc1b307588136a40c0bdf3e49770",
+      "coreContentSha256": "7576a1769ed1711a4a7681372f91dac15e52752ee219af5365dcc7e1106188b5",
+      "codexState": "current",
+      "claudeState": "current",
+      "backupRef": "local-backup:2026-08-26T03-01-00-866Z-98776"
+    }
+  ],
+  "sourceIdentities": {
+    "testsRunTestsSha256": "1fc4ff3badb8e1fe9af8e0ad9a2e45224ac1596232d9ea1285500c264cc3e344",
+    "deepReviewSha256": "26b641ec0fa2fb037a042ed07412edaeee3cd90eaa0df8e7df3c7e815ac1038a"
+  },
+  "subjectRefs": [
+    "task:CAP",
+    "task:COST",
+    "task:REF",
+    "task:FLIGHT",
+    "task:CORPUS",
+    "task:COMPOSITION",
+    "task:PACKS",
+    "task:UXDOC"
+  ],
+  "limitations": [
+    "No paid provider call was executed.",
+    "No public release, deployment, device acceptance or production observation was performed.",
+    "The implementation producer performed this review, so all eleven findings remain fixed_unverified until an independent reviewer closes them.",
+    "The repository remains an uncommitted dirty working tree and includes protected pre-existing cinematic text-scene changes."
+  ]
+}

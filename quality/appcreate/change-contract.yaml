@@ -1,0 +1,38 @@
+schema_version: 1
+goal: "把 OpenMontage 对比建议落实为咔嚓可执行、可恢复、可验收的本地产品能力。"
+user_direction: "全面实施方案中当前环境可以完成的所有任务，并持续记录防止上下文漂移。"
+must_change:
+  - "增加能力路由与真实运行时探测"
+  - "增加费用预占审批与对账状态机"
+  - "增加版权感知参考视频派生"
+  - "增加只读飞行记录、片段语料、制作模式和工作流包"
+  - "同步 CLI、Studio、文档、测试与双 Agent 安装"
+must_not_change:
+  - "不得替换 V7/V8、Timeline IR、Render Graph 和现有门禁"
+  - "不得复制 OpenMontage AGPL 源码或资产"
+  - "不得回退开工前电影化字景改动"
+  - "不得执行付费调用、发布或生产部署"
+affected_surfaces:
+  - "CLI"
+  - "Studio 项目状态台"
+  - "本地项目 .kacha 控制面"
+behavior_invariants:
+  - "默认本地处理，外传和费用必须显式授权"
+  - "硬门禁先于排序，失败关闭"
+  - "观察器不得修改生产状态"
+  - "工作流包不得形成第二套编排器"
+compatibility_contracts:
+  - "现有命令保持兼容"
+  - "既有 media index 是 corpus 的上游事实源"
+  - "选中引擎仍回到现有 Timeline IR 与 QC"
+baseline_evidence:
+  - "revision:0e4cda8f6615d186caa25e382ff620e182472369"
+  - "tracked-diff-sha256:f9f808ce0275923b89f83aeac887f0a6108a6cd889f731dd5c8415d12c164448"
+acceptance_matrix:
+  - "quality/verification-matrix.json"
+known_risks:
+  - "外部提供者当前未执行真实付费调用"
+  - "高风险改动尚需独立最终复核"
+  - "发布、部署和真实运营结果不在本轮证据范围"
+recovery_path: "从 quality/implementation-plan.json、verification-matrix.json 和实施日志恢复；所有状态均由文件证据重建。"
+status: frozen

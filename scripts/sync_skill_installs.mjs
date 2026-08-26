@@ -61,6 +61,8 @@ function copyCore(source, output) {
         "node_modules",
         "output",
         "outputs",
+        "quality",
+        "tools",
         "website",
       ].includes(first);
     },

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "kacha-workflow-pack-registry",
+  "orchestrationBoundary": "Packs compose existing Kacha commands and gates; they do not create an alternate orchestrator.",
+  "packs": [
+    {
+      "id": "reference-to-original",
+      "version": "1.0.0",
+      "label": "参考片到原创方案",
+      "intent": "Extract reusable principles from a rights-reviewed reference and hand an original brief to Kacha.",
+      "requiredInputs": ["REFERENCE_VIDEO", "RIGHTS_STATUS", "RIGHTS_EVIDENCE", "PERMITTED_USE", "ANALYSIS_JSON", "DERIVED_PLAN_JSON", "BRIEF_JSON"],
+      "humanGates": ["rights review", "originality review", "confirm execution"],
+      "steps": [
+        {"id": "analyze", "command": "kacha reference analyze --input {{REFERENCE_VIDEO}} --rights-status {{RIGHTS_STATUS}} --rights-evidence {{RIGHTS_EVIDENCE}} --permitted-use {{PERMITTED_USE}} --output {{ANALYSIS_JSON}}"},
+        {"id": "derive", "command": "kacha reference derive --analysis {{ANALYSIS_JSON}} --output {{DERIVED_PLAN_JSON}}"},
+        {"id": "start", "command": "kacha start --brief {{BRIEF_JSON}}"}
+      ],
+      "exitGates": ["reference analysis validates", "derived plan validates", "Kacha project initialized"],
+      "prohibitions": ["shot-for-shot copying", "implicit network download", "source media redistribution"]
+    },
+    {
+      "id": "clip-factory",
+      "version": "1.0.0",
+      "label": "长视频切片工厂",
+      "intent": "Produce traceable short-video candidates from approved long-form source media.",
+      "requiredInputs": ["SOURCE_VIDEO", "TRANSCRIPT_JSON", "PROJECT_ROOT", "MEDIA_INDEX", "CORPUS_JSON"],
+      "humanGates": ["content boundary approval", "representative clip review", "candidate review"],
+      "steps": [
+        {"id": "transcribe", "command": "kacha transcribe {{SOURCE_VIDEO}} --output {{TRANSCRIPT_JSON}}"},
+        {"id": "index", "command": "kacha media index --root {{PROJECT_ROOT}} --output {{MEDIA_INDEX}}"},
+        {"id": "corpus", "command": "kacha corpus build --index {{MEDIA_INDEX}} --output {{CORPUS_JSON}}"},
+        {"id": "start", "command": "kacha start --source {{SOURCE_VIDEO}} --project-root {{PROJECT_ROOT}}"}
+      ],
+      "exitGates": ["transcript identity frozen", "clip corpus validates", "candidate QC passes"],
+      "prohibitions": ["invented quotes", "context-breaking extraction", "publishing without review"]
+    },
+    {
+      "id": "screen-demo",
+      "version": "1.0.0",
+      "label": "真实屏幕演示",
+      "intent": "Build a creator-led product or tool walkthrough from real screen evidence.",
+      "requiredInputs": ["SCRIPT_FILE", "PROJECT_ROOT", "SOURCE_VIDEO", "VISUAL_EVIDENCE_DIR"],
+      "humanGates": ["fact approval", "recording handoff", "privacy review"],
+      "steps": [
+        {"id": "content", "command": "kacha start --script {{SCRIPT_FILE}} --task content_generation --project-root {{PROJECT_ROOT}}"},
+        {"id": "handoff", "command": "kacha handoff {{PROJECT_ROOT}} --source {{SOURCE_VIDEO}} --confirm-content-approved"},
+        {"id": "evidence", "command": "kacha visual-evidence {{SOURCE_VIDEO}} --output-dir {{VISUAL_EVIDENCE_DIR}} --mode review"}
+      ],
+      "exitGates": ["claims linked to screen evidence", "private data masked", "full video QC passes"],
+      "prohibitions": ["fabricated product UI", "credential exposure", "unmarked simulated results"]
+    },
+    {
+      "id": "localization-dub",
+      "version": "1.0.0",
+      "label": "本地化与配音",
+      "intent": "Create a synchronized language adaptation while preserving source meaning and evidence.",
+      "requiredInputs": ["SOURCE_VIDEO", "TRANSCRIPT_JSON", "CAPTION_PLAN", "TIMELINE_PLAN"],
+      "humanGates": ["translation review", "voice authorization", "lip-sync and subtitle review"],
+      "steps": [
+        {"id": "transcribe", "command": "kacha transcribe {{SOURCE_VIDEO}} --output {{TRANSCRIPT_JSON}}"},
+        {"id": "captions", "command": "kacha captions validate --plan {{CAPTION_PLAN}}"},
+        {"id": "timeline", "command": "kacha timeline validate --plan {{TIMELINE_PLAN}}"}
+      ],
+      "exitGates": ["translation approved", "voice rights recorded", "timing and loudness QC pass"],
+      "prohibitions": ["unauthorized voice cloning", "meaning-changing compression", "subtitle timing guessed from text length"]
+    }
+  ]
+}

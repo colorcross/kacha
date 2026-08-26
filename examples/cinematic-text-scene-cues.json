@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "1.0",
+  "description": "行者大灰动态字景示例；普通阅读与高信息密度字景交替，空间字景必须配逐帧人物蒙版。",
+  "cues": [
+    {
+      "id": "reading-01",
+      "start": 0.2,
+      "end": 1.55,
+      "text": "字幕首先要让人读得清楚"
+    },
+    {
+      "id": "tool-editorial",
+      "start": 1.7,
+      "end": 3.3,
+      "text": "真正省时间的不是按钮，而是工作流",
+      "textScene": {
+        "show": "工具分享",
+        "layout": "editorial_stack",
+        "role": "核心判断",
+        "anchor": "left"
+      },
+      "display": {
+        "primary": "工作流",
+        "secondary": "把重复步骤变成稳定路径",
+        "echo": "效率"
+      }
+    },
+    {
+      "id": "reading-02",
+      "start": 3.45,
+      "end": 4.75,
+      "text": "下一句回到安静的阅读基线"
+    },
+    {
+      "id": "book-quote",
+      "start": 4.9,
+      "end": 6.8,
+      "text": "有限游戏以取胜为目的",
+      "textScene": {
+        "show": "解读好书",
+        "layout": "quote_field",
+        "role": "已核实引语"
+      },
+      "display": {
+        "primary": "有限游戏以取胜为目的",
+        "source": "《有限与无限的游戏》",
+        "echo": "取胜"
+      }
+    },
+    {
+      "id": "reading-03",
+      "start": 6.95,
+      "end": 8.2,
+      "text": "引语结束后不让装饰继续滞留"
+    },
+    {
+      "id": "game-editorial",
+      "start": 8.35,
+      "end": 10.05,
+      "text": "规则不是边界，它也能成为新的起点",
+      "textScene": {
+        "show": "有限的无限游戏",
+        "layout": "editorial_stack",
+        "role": "章节题眼",
+        "anchor": "right"
+      },
+      "display": {
+        "primary": "新的起点",
+        "secondary": "在有限规则里继续创造",
+        "echo": "边界"
+      }
+    },
+    {
+      "id": "reading-04",
+      "start": 10.2,
+      "end": 11.45,
+      "text": "画面重新留出呼吸和停顿"
+    },
+    {
+      "id": "ai-annotation",
+      "start": 11.6,
+      "end": 13.3,
+      "text": "这个参数决定模型能记住多少上下文",
+      "textScene": {
+        "show": "灰常AI",
+        "layout": "edge_annotation",
+        "role": "术语定义",
+        "anchor": "right"
+      },
+      "display": {
+        "primary": "上下文窗口",
+        "annotation": "一次推理可读取的信息范围"
+      }
+    },
+    {
+      "id": "reading-05",
+      "start": 13.45,
+      "end": 14.75,
+      "text": "小字只在手机端仍然可读时使用"
+    },
+    {
+      "id": "chat-depth",
+      "start": 14.9,
+      "end": 16.7,
+      "text": "闲聊也可以有一个真正值得记住的落点",
+      "captionLayout": "oversize_background_word",
+      "textScene": {
+        "show": "闲聊",
+        "role": "结尾记忆点"
+      },
+      "display": {
+        "background": "落点",
+        "foreground": "真正值得记住"
+      }
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "packageVersion": "6.5.0",
+  "stateArtifact": "quality/product-documentation-state.json",
+  "checker": "tools/check_product_documentation.py",
+  "canonicalDocuments": [
+    {"id": "current-product", "path": "docs/product/current-product.md", "required": true},
+    {"id": "product-experience", "path": "docs/product/product-experience.md", "required": true},
+    {"id": "business-rules", "path": "docs/product/business-rules.md", "required": true},
+    {"id": "metrics-and-learning", "path": "docs/product/metrics-and-learning.md", "required": true},
+    {"id": "roadmap-and-decisions", "path": "docs/product/roadmap-and-decisions.md", "required": true}
+  ],
+  "changeDimensions": {
+    "product-direction": ["current-product", "roadmap-and-decisions", "metrics-and-learning"],
+    "target-users-and-problems": ["current-product", "metrics-and-learning"],
+    "scope-and-capabilities": ["current-product", "product-experience", "business-rules", "roadmap-and-decisions"],
+    "information-architecture-and-journeys": ["product-experience"],
+    "ui-and-interaction": ["product-experience"],
+    "business-rules-and-permissions": ["business-rules"],
+    "data-and-integrations": ["business-rules", "product-experience"],
+    "metrics-and-market-learning": ["metrics-and-learning", "roadmap-and-decisions"],
+    "operations-and-service-model": ["business-rules", "roadmap-and-decisions"],
+    "no-product-change": []
+  },
+  "claimMapping": {
+    "structure": "structure",
+    "code-done": "iteration-docs-current",
+    "candidate-ready": "candidate-docs-current",
+    "release-ready": "candidate-docs-current",
+    "production-verified": "candidate-docs-current"
+  },
+  "allowedStatuses": ["review_required", "drifted", "in_progress", "in_sync"],
+  "documentStatuses": ["update_required", "in_progress", "current", "not_applicable"],
+  "breakingChangeRequiredDocuments": ["current-product", "roadmap-and-decisions"],
+  "notApplicableRequires": ["reason", "approvedBy"],
+  "synchronizedDocumentRequires": [
+    "owner",
+    "contentDigest",
+    "reflectsProductRevision",
+    "lastUpdatedAt",
+    "reviewedBy",
+    "reviewedAt",
+    "changeRefs",
+    "evidenceRefs"
+  ]
+}

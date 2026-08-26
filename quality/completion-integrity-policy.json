@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "packageVersion": "6.5.0",
+  "statuses": ["not_started", "in_progress", "partial", "blocked", "completed"],
+  "claims": ["structure", "honest-status", "code-done", "candidate-ready"],
+  "completionRequires": [
+    "scope-frozen",
+    "all-acceptance-passed",
+    "evidence-resolved-and-hash-matched",
+    "deliverables-resolved-and-hash-matched",
+    "substantive-change-for-implementation-work",
+    "placeholder-scan-passed",
+    "completion-review-passed"
+  ],
+  "implementationWorkTypes": ["code", "ui", "config", "data"],
+  "changeSetRequiredWorkTypes": ["code", "ui", "config", "data", "docs", "research"],
+  "independentReviewRiskLevels": ["critical", "high"],
+  "evidence": {
+    "requiredResult": "passed",
+    "digestPrefix": "sha256:",
+    "requireScopeRevisionMatch": true,
+    "requireObservedAtNotBeforeTaskStart": true,
+    "allowExternalEvidence": false
+  },
+  "deliverables": {
+    "requireAtLeastOnePerCompletedTask": true,
+    "defaultMinimumBytes": 1,
+    "allowedStatuses": ["present", "removed"]
+  },
+  "changeSet": {
+    "requireForImplementationWork": true,
+    "requireModifiedDigestDifference": true,
+    "requireGitBaselineForCompletionClaims": true,
+    "requireActualGitChangeCoverage": true,
+    "documentationSuffixes": [".md", ".mdx", ".txt", ".rst"]
+  },
+  "placeholderScan": {
+    "maximumFileBytes": 2000000,
+    "scanDisableAllowedPrefixes": ["quality/"],
+    "patterns": [
+      {"id": "todo-marker", "regex": "(?i)\\b(?:TODO|FIXME|XXX)\\b"},
+      {"id": "placeholder-copy", "regex": "(?i)\\b(?:placeholder|coming\\s+soon|not\\s+implemented|mock\\s+data|dummy\\s+data|lorem\\s+ipsum)\\b"},
+      {"id": "placeholder-copy-zh", "regex": "(?:待开发|暂未实现|敬请期待|占位)"},
+      {"id": "not-implemented-error", "regex": "(?:NotImplementedError|UnimplementedError)"},
+      {"id": "todo-panic", "regex": "(?i)panic\\s*\\(\\s*[\"']TODO[\"']\\s*\\)"},
+      {"id": "not-implemented-throw", "regex": "(?i)throw\\s+new\\s+Error\\s*\\(\\s*[\"'][^\"']*not\\s+implemented[^\"']*[\"']\\s*\\)"}
+    ],
+    "exceptionRequiredFields": ["path", "patternId", "taskRefs", "reason", "approvedBy", "expiresAt"]
+  },
+  "planCoverage": {
+    "requiredPrefix": "vertical-slice:",
+    "requireExactOneTaskPerSlice": true
+  },
+  "candidate": {
+    "requireCandidateRef": true,
+    "requireEvidenceSubject": "candidate"
+  },
+  "semantics": {
+    "commandSuccessMeansExecutionOnly": true,
+    "statusIsDerivedNotSelfDeclared": true,
+    "requiredTaskCannotBeWaivedAsCompleted": true,
+    "userMayChangeScopeWithRecordedRevision": true,
+    "partialOrBlockedWorkMayContinueWithoutFalseCompletion": true
+  }
+}

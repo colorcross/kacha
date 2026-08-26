@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 2,
+  "mode": "takeover",
+  "stateMode": "project-native",
+  "delegatedScopes": [
+    "OpenMontage差距优化：Capability Broker、费用账本、参考视频工作流、生产飞行记录器、素材检索增强、制作模式与高价值工作流包；不含外部发布、付费调用和生产部署"
+  ],
+  "actor": "appcreate-init",
+  "reason": "explicit scoped delegation",
+  "updatedAt": "2026-08-26T01:28:56+00:00",
+  "history": []
+}

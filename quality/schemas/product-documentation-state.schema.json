@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://appcreate.local/schemas/product-documentation-state.schema.json",
+  "title": "AppCreate product documentation state",
+  "type": "object",
+  "required": ["schemaVersion", "productRef", "currentProductRevision", "currentIterationId", "status", "changeImpact", "documents", "iterationHistory"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "productRef": {"type": "string", "minLength": 1},
+    "currentProductRevision": {"type": "string", "minLength": 1},
+    "currentIterationId": {"type": "string", "minLength": 1},
+    "candidateRevision": {"type": ["string", "null"]},
+    "status": {"enum": ["review_required", "drifted", "in_progress", "in_sync"]},
+    "breakingProductChange": {"type": "boolean"},
+    "changeImpact": {
+      "type": "object",
+      "required": ["dimensions", "summary", "changeRefs", "affectedDocumentIds"],
+      "properties": {
+        "dimensions": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+        "summary": {"type": "string"},
+        "changeRefs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "affectedDocumentIds": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      },
+      "additionalProperties": true
+    },
+    "documents": {"type": "array", "minItems": 1, "items": {"type": "object"}},
+    "iterationHistory": {"type": "array", "items": {"type": "object"}},
+    "supersededProductDefinitions": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": true
+}

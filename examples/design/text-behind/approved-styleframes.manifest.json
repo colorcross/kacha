@@ -3,7 +3,7 @@
   "status": "rendered",
   "designSystemId": "dahui-video-system",
   "designSystemVersion": "1.6.0",
-  "designDigest": "f34eca3e7a2e130fb91d594741efe3995ea05037ff2ab1bbea22b1d2285d918f",
+  "designDigest": "f39172154f9d4efea3f35fc371e80cbeeef3e8f1904d70048c2a460193255e58",
   "implementationDigest": "df98a165e49f148e31c197c307c5503834f41f7a6b72b5cfa754db725996c43c",
   "rendererCodeSha256": "f157de1f801dc7b3550f70d209c4f6c14c61eadee5b5fb72a41ed97c5313c079",
   "sceneId": "text_behind_subject_scene",

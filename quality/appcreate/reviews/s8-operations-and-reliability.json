@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "stage": "S8",
+  "phase": "operations-and-reliability",
+  "status": "not_started",
+  "artifactRefs": [],
+  "producer": null,
+  "qc": {
+    "profile": "slo-alert-runbook-restore-cost",
+    "owner": null,
+    "result": "not_run",
+    "evidenceRefs": []
+  },
+  "review": {
+    "profile": "sre-and-operations-review",
+    "reviewer": null,
+    "decision": "not_reviewed",
+    "evidenceRefs": []
+  },
+  "findings": [],
+  "regression": {
+    "commands": [],
+    "result": "not_run",
+    "evidenceRefs": []
+  },
+  "separationWaiver": null,
+  "updatedAt": "2026-08-26T01:28:56+00:00"
+}
