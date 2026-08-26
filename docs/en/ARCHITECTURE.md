@@ -54,6 +54,26 @@ supported final visual version uses at most one full video encode. Reuse
 requires the graph, all inputs, the final output, and every declared stem to
 remain current; replacing an asset in place invalidates reuse.
 
+### `Timebase V2 + Timeline Projection + Command Journal`
+
+The Timeline editing boundary uses 120,000 integer ticks per second and a
+rational frame rate. Legacy seconds remain accepted; when ticks exist they are
+authoritative and seconds must agree within half a frame. Migration writes a
+new file by default.
+
+`timeline_projection.mjs` derives typed picture, overlay, caption, effect,
+dialogue, BGM, and SFX tracks while retaining stable source pointers and an
+editable-field allowlist. It never becomes a second project model.
+
+`editor_command_journal.mjs` stores forward and inverse mutations,
+before/after hashes, content-addressed snapshots, affected tracks, required QC,
+and a chained append-only record. Optimistic SHA locking protects apply, undo,
+and redo. `recover` restores the last verified snapshot and archives the damaged
+state; `reopen` explicitly accepts a valid external edit. Both require the current
+Timeline SHA. The Studio Canvas provider maps output time through the EDL but does
+not composite overlaps, so it is never final-eligible. The canonical FFmpeg Render
+Graph also has to pass its current runtime probe before final eligibility.
+
 ### `.kacha/metrics + cache + project-state`
 
 - `metrics/` records stage wall time, measured/estimated token provenance,

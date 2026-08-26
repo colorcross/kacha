@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "kacha-local-iteration-verification",
+  "iterationId": "opencut-informed-editor-core-2026-08-26",
+  "status": "passed",
+  "result": "passed",
+  "observedAt": "2026-08-26T06:45:00Z",
+  "producer": "codex-primary",
+  "baselineRef": "432809035127e0aae6926a496964f89fca28c797",
+  "checks": [
+    {"id": "editor-focused", "command": "node tests/run_tests.mjs --suite editor", "status": "passed", "passed": 5, "failed": 0, "report": "/tmp/kacha-editor-review-report-2.json", "coverage": ["fractional timebase", "array/object inverse", "apply/undo/redo", "external drift/reopen", "journal tamper/trailing truncation/recover", "strict command contract", "source media byte range", "preview runtime gate"]},
+    {"id": "full-regression", "command": "node tests/run_tests.mjs --report /tmp/kacha-opencut-final-review-tests.json", "status": "passed", "passed": 159, "failed": 0, "report": "/tmp/kacha-opencut-final-review-tests.json"},
+    {"id": "static-and-secret", "command": "make check-static", "status": "passed", "details": ["Node syntax", "shell syntax", "Python compile", "secret and private-path scan"]},
+    {"id": "installer-regression", "command": "bash tests/test_installer.sh", "status": "passed"},
+    {"id": "product-documentation", "command": "python3 tools/check_product_documentation.py --claim iteration-docs-current", "status": "passed"},
+    {"id": "diff-integrity", "command": "git diff --check", "status": "passed"},
+    {"id": "browser-journey", "tool": "Playwright CLI Chromium", "status": "passed", "journey": ["empty state", "open real source Timeline", "select second EDL segment", "verify output 00:00:01 maps to source 00:00:02", "select overlay", "apply x=140", "undo x=120", "redo x=140", "desktop viewport", "390x844 viewport"], "consoleErrors": 0},
+    {"id": "preview-boundary", "command": "kacha editor preview-capabilities and preview-eligibility", "status": "passed", "canonicalFinal": "ffmpeg-render-graph", "runtimeProbe": "available", "approximateOnly": "studio-canvas", "notImplemented": "webgpu"},
+    {"id": "dual-agent-install", "command": "node scripts/kacha.mjs install status --agent both", "status": "passed", "bundleDigest": "738121d4af1fe2754b33dcf189745e62ad4b15119a28f436d705e960fa03842d", "coreContentSha256": "cd22b627547a71bedf71a4f2bf3f3d56dc3286912ef787ac722d7aa5bcba8880", "codex": "current", "claude": "current", "backupRoot": "~/.kacha-backups/2026-08-26T06-44-58-507Z-88111"}
+  ],
+  "review": {
+    "status": "passed",
+    "findingIds": ["R-ED-001", "R-ED-002", "R-ED-003", "R-ED-004", "R-ED-005", "R-ED-006", "R-ED-007", "R-ED-008", "R-ED-009", "R-ED-010", "R-ED-011", "R-ED-012", "R-ED-013", "R-ED-014"],
+    "allProducerFindingsFixed": true,
+    "independentFinalReview": "not_performed"
+  },
+  "limitations": [
+    "Commit and push are authorized but are recorded separately from this pre-commit local verification artifact.",
+    "No real creator project final render or normal-speed human review was performed.",
+    "No GitHub Release, final video publication or production-outcome claim is included.",
+    "Independent final review remains open for high-risk completion governance."
+  ]
+}

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="data:,">
+  <title>咔嚓 · 专业调整工作台</title>
+  <link rel="stylesheet" href="/editor.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="返回咔嚓生产台">
+      <img src="/brand/kacha-logo.png" alt="">
+      <span>咔嚓</span>
+    </a>
+    <nav aria-label="生产台页面">
+      <a href="/content">内容</a><a href="/">配置</a><a href="/project">项目</a>
+      <a class="active" href="/editor" aria-current="page">调整</a><a href="/review">审片</a>
+    </nav>
+    <div class="preview-badge" title="正式成片仍由 FFmpeg Render Graph 生成">
+      APPROXIMATE PREVIEW
+    </div>
+  </header>
+
+  <main>
+    <section class="open-panel" aria-labelledby="open-title">
+      <div>
+        <p class="eyebrow">TIMELINE IR · SINGLE SOURCE OF TRUTH</p>
+        <h1 id="open-title">专业调整工作台</h1>
+        <p>用于查看、校正、撤销和批准。Agent 仍是默认生产入口；这里不会绕过渲染、QC 或人工审片。</p>
+      </div>
+      <form id="openForm">
+        <label for="timelinePath">Timeline IR 绝对路径</label>
+        <div class="path-row">
+          <input id="timelinePath" name="timelinePath" autocomplete="off" spellcheck="false"
+            placeholder="/absolute/path/contracts/timeline.json" required>
+          <button type="submit">打开时间线</button>
+        </div>
+      </form>
+      <p id="status" class="status" role="status">等待打开本机 Timeline IR。</p>
+    </section>
+
+    <section id="workspace" class="workspace" hidden>
+      <section class="preview-panel" aria-label="近似画面预览">
+        <div class="panel-heading">
+          <div><span class="panel-index">01</span><h2>画面</h2></div>
+          <span id="projectMeta" class="mono"></span>
+        </div>
+        <div id="stage" class="stage">
+          <video id="video" controls preload="metadata"></video>
+          <div id="overlayLayer" class="overlay-layer" aria-hidden="true"></div>
+          <div class="stage-note">播放器显示源时间 · Timeline 显示成片时间 · 非正式渲染</div>
+        </div>
+      </section>
+
+      <aside class="inspector-panel" aria-labelledby="inspector-title">
+        <div class="panel-heading">
+          <div><span class="panel-index">02</span><h2 id="inspector-title">Inspector</h2></div>
+        </div>
+        <div id="emptyInspector" class="empty">从时间线选择一个条目。</div>
+        <form id="inspector" hidden>
+          <div class="object-head"><strong id="itemLabel"></strong><code id="itemType"></code></div>
+          <p id="sourcePointer" class="mono pointer"></p>
+          <div id="fieldList" class="field-list"></div>
+          <p id="readonlyReason" class="notice" hidden></p>
+          <label for="reason">修改理由</label>
+          <input id="reason" value="人工调整工作台校正">
+          <button id="applyButton" type="submit">应用 Command</button>
+        </form>
+        <div class="history-actions">
+          <button id="undoButton" type="button" disabled>撤销</button>
+          <button id="redoButton" type="button" disabled>重做</button>
+        </div>
+        <div id="qcNotice" class="qc-notice">修改后仍需重新运行对应 Timeline/QC 门禁。</div>
+      </aside>
+
+      <section class="timeline-panel" aria-labelledby="timeline-title">
+        <div class="panel-heading timeline-heading">
+          <div><span class="panel-index">03</span><h2 id="timeline-title">Timeline Projection</h2></div>
+          <div class="transport">
+            <span id="timecode" class="mono">00:00:00.000</span>
+            <label>缩放 <input id="zoom" type="range" min="1" max="8" step="0.5" value="1"></label>
+          </div>
+        </div>
+        <div id="timelineViewport" class="timeline-viewport">
+          <div id="ruler" class="ruler"></div>
+          <div id="tracks" class="tracks"></div>
+          <div id="playhead" class="playhead" aria-hidden="true"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script type="module" src="/editor.js"></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1.0",
+  "reviewId": "opencut-informed-editor-plan-review-2026-08-26",
+  "producer": "codex-primary",
+  "reviewer": "codex-plan-critic",
+  "observedAt": "2026-08-26T04:24:59Z",
+  "input": "docs/EDITOR_PLAN_V1_2026-08-26.md",
+  "decision": "revise",
+  "findings": [
+    {
+      "id": "PR-001",
+      "severity": "high",
+      "dimension": "data-api-integration",
+      "problem": "V1 does not define which legacy seconds remain authoritative during mixed V1/V2 input.",
+      "resolution": "Final plan makes ticks authoritative when present, validates seconds within half a frame, and keeps seconds as derived compatibility fields."
+    },
+    {
+      "id": "PR-002",
+      "severity": "high",
+      "dimension": "boundary-failure",
+      "problem": "A file-backed editor could accidentally modify an unrelated absolute JSON path.",
+      "resolution": "Final plan requires an in-memory editor session bound to a validated Timeline file identity; commands only accept session IDs and allowlisted pointers."
+    },
+    {
+      "id": "PR-003",
+      "severity": "high",
+      "dimension": "code-architecture-maintainability",
+      "problem": "Adding a second mutation implementation inside Command Journal would drift from kacha_delta.",
+      "resolution": "Extract shared mutation primitives and make delta CLI and Command Journal consume the same implementation."
+    },
+    {
+      "id": "PR-004",
+      "severity": "medium",
+      "dimension": "performance-reliability",
+      "problem": "V1 mentions WGPU but lacks an evidence set and introduces a new toolchain prematurely.",
+      "resolution": "Rust/WGPU is explicitly deferred. This iteration delivers a provider contract and a fail-closed final-eligibility gate only."
+    },
+    {
+      "id": "PR-005",
+      "severity": "medium",
+      "dimension": "interaction-navigation",
+      "problem": "Inspector scope is too broad and could expose fields that require semantic or QC recalculation.",
+      "resolution": "Final plan restricts the first editable allowlist to timing and safe overlay geometry/opacity; text, media identity, effects, audio routing and release fields remain read-only."
+    },
+    {
+      "id": "PR-006",
+      "severity": "medium",
+      "dimension": "test-observability-operations",
+      "problem": "The plan lacks an explicit journal tamper and crash recovery test matrix.",
+      "resolution": "Final acceptance adds digest-chain validation, truncated-journal recovery, concurrent edit rejection and snapshot restoration tests."
+    },
+    {
+      "id": "PR-007",
+      "severity": "medium",
+      "dimension": "product",
+      "problem": "A visual workbench could be misread as a replacement for the Agent-first workflow.",
+      "resolution": "Final plan defines it as a correction and approval surface; Agent remains the default production entry."
+    }
+  ],
+  "status": "completed"
+}

@@ -1,45 +1,30 @@
 {
   "schemaVersion": "1.0",
-  "planId": "openmontage-inspired-kacha-optimization-2026-08-26",
+  "planId": "opencut-informed-editor-core-2026-08-26",
   "status": "approved",
   "approvedBy": "product-owner:user",
-  "approvedAt": "2026-08-26T09:30:07+08:00",
-  "objective": "Preserve Kacha's deterministic local production kernel while adding governed capability breadth, reference-first intelligence, cost control, observability and reusable production packs.",
-  "inScope": [
-    "Capability Broker and provider registry",
-    "Cost estimate/reserve/approve/reconcile/refund ledger",
-    "Rights-aware reference-video intelligence",
-    "Production flight recorder and deterministic replay",
-    "Clip-level media corpus search with diversity and truthful fallback",
-    "Series/hero composition routing",
-    "Validated high-value workflow packs",
-    "CLI, README, SKILL, architecture, tests and local install sync"
-  ],
-  "outOfScope": [
-    "Copying OpenMontage AGPL source or assets",
-    "Paid provider calls or automatic external uploads",
-    "Production deployment, public release, commit or push",
-    "Claiming real creator growth, audience outcome or device evidence",
-    "Replacing Kacha V7/V8 orchestration, Timeline IR, Studio or existing media index"
-  ],
+  "approvedAt": "2026-08-26T04:24:59Z",
+  "objective": "Add precise media time, a typed editable Timeline projection, recoverable commands, a local professional adjustment workbench and a fail-closed preview provider boundary without creating a second production state machine.",
+  "inScope": ["Timebase V2 and legacy Timeline migration", "Typed Timeline Projection and edit allowlists", "Atomic Command Journal with recovery", "Shared Editor CLI API and loopback Studio API", "Studio /editor workbench and responsive browser journey", "Preview provider final eligibility gate", "Documentation tests review remediation and dual-agent install sync", "Commit the reviewed change set and push main to the configured GitHub origin"],
+  "outOfScope": ["Rust or WGPU renderer implementation", "Browser final export", "A general-purpose nonlinear editor", "Bulk migration of every legacy seconds field outside the Timeline Editor boundary", "GitHub Release package or other external publication", "Paid calls", "Claims of production quality or creator growth without real-project evidence"],
   "architectureDecisions": [
-    {"id": "AD-01", "decision": "Capability decisions are code-enforced artifacts, not Markdown-only orchestration."},
-    {"id": "AD-02", "decision": "Hard privacy, license, availability, mode and cost gates run before ranking."},
-    {"id": "AD-03", "decision": "Unknown cost is never treated as free when a budget is enforced."},
-    {"id": "AD-04", "decision": "The flight recorder is a read-only observer and cannot mutate production state."},
-    {"id": "AD-05", "decision": "Reference analysis records source and rights boundaries and derives concepts, never a shot-for-shot copy plan."},
-    {"id": "AD-06", "decision": "Embedding unavailability must be labeled keyword_fallback; semantic quality cannot be implied."},
-    {"id": "AD-07", "decision": "Composition routing records chosen engine, exclusions and alternatives; it does not silently switch engines."}
+    {"id": "AD-ED-01", "decision": "Timeline IR remains the only source of truth; projection and journal are derived control artifacts."},
+    {"id": "AD-ED-02", "decision": "Integer ticks and rational frame rates are canonical; legacy seconds remain a validated compatibility representation."},
+    {"id": "AD-ED-03", "decision": "Every editor mutation is allowlisted, base-hash protected, journaled and followed by explicit QC requirements."},
+    {"id": "AD-ED-04", "decision": "Studio Canvas is approximate only and FFmpeg Render Graph remains the canonical final renderer."},
+    {"id": "AD-ED-05", "decision": "WebGPU remains not_implemented until a real runtime and current parity evidence exist."}
   ],
   "verticalSlices": [
-    {"id": "CAP", "findingIds": ["F-OM-001"], "deliverables": ["config/capabilities/provider-registry.json", "scripts/capability_broker.mjs"], "acceptance": ["Registry validates", "Rank excludes incompatible providers", "Decision includes score breakdown and evidence freshness"]},
-    {"id": "COST", "findingIds": ["F-OM-002"], "deliverables": ["scripts/cost_ledger.mjs"], "acceptance": ["Atomic locked ledger updates", "Budget overrun is blocked", "Reserve/approve/reconcile/refund transitions are validated"]},
-    {"id": "REF", "findingIds": ["F-OM-003"], "deliverables": ["scripts/reference_intelligence.mjs"], "acceptance": ["Local reference technical analysis", "Explicit rights and source boundary", "keep/change/doNotCopy handoff validates"]},
-    {"id": "FLIGHT", "findingIds": ["F-OM-004"], "deliverables": ["scripts/production_flight_recorder.mjs", "Studio read-only endpoint"], "acceptance": ["Aggregates known event sources", "Stable ordering", "No mutation endpoint"]},
-    {"id": "CORPUS", "findingIds": ["F-OM-005"], "deliverables": ["scripts/media_corpus.mjs"], "acceptance": ["Clip records have source identity and time ranges", "MMR diversity", "Retrieval mode and limitations exposed"]},
-    {"id": "COMPOSITION", "findingIds": ["F-OM-006"], "deliverables": ["scripts/composition_router.mjs"], "acceptance": ["series and hero validate", "Hard capability gates", "Alternatives recorded"]},
-    {"id": "PACKS", "findingIds": ["F-OM-007"], "deliverables": ["config/workflow-packs.json", "scripts/workflow_packs.mjs"], "acceptance": ["Four packs validate", "Stages map to existing Kacha commands", "No alternate orchestrator"]},
-    {"id": "UXDOC", "findingIds": ["F-OM-008"], "deliverables": ["scripts/kacha.mjs", "README.md", "SKILL.md", "docs/ARCHITECTURE.md", "tests/run_tests.mjs"], "acceptance": ["CLI discoverable", "Docs match behavior", "Focused and full regression pass"]}
+    {"id": "TB", "findingIds": ["PR-001"], "deliverables": ["scripts/media_time.mjs", "scripts/timeline_ir.mjs", "config/schemas/timeline-timebase-v2.schema.json"], "acceptance": ["Fractional and integer frame rates round-trip exactly at frame boundaries", "Legacy Timeline migration writes a new canonical file", "Conflicting seconds and ticks fail closed"]},
+    {"id": "PROJ", "findingIds": ["PR-002", "PR-003"], "deliverables": ["scripts/timeline_projection.mjs"], "acceptance": ["Projection exposes typed tracks stable unique item IDs and source pointers", "Only explicit per-item fields are editable", "Invalid timing and out-of-canvas geometry fail closed"]},
+    {"id": "CMD", "findingIds": ["PR-004"], "deliverables": ["scripts/editor_command_journal.mjs", "scripts/json_mutation.mjs", "config/schemas/editor-command.schema.json"], "acceptance": ["Apply undo and redo are atomic and hash protected", "Journal digest-chain tamper and truncation are detected", "External drift duplicate IDs and duplicate commands fail closed"]},
+    {"id": "API", "findingIds": ["PR-005"], "deliverables": ["scripts/kacha_editor.mjs", "scripts/kacha_studio_server.mjs"], "acceptance": ["CLI and Studio share the same editor kernel", "Browser sessions bind one Timeline and expire", "Forged sessions cannot select arbitrary write paths"]},
+    {"id": "UI", "findingIds": ["PR-006"], "deliverables": ["studio/editor.html", "studio/editor.css", "studio/editor.js"], "acceptance": ["Workbench opens a Timeline and renders source projection tracks and Inspector", "Apply undo and redo complete in a real browser", "Empty loading error desktop and narrow layouts remain legible with no console errors"]},
+    {"id": "PREVIEW", "findingIds": ["PR-007"], "deliverables": ["scripts/preview_provider.mjs", "config/editor/preview-providers.json"], "acceptance": ["Approximate preview is visibly labeled", "Unknown approximate and unimplemented providers cannot produce final", "FFmpeg remains the only current final-eligible provider"]},
+    {"id": "GOV", "findingIds": [], "deliverables": ["docs/EDITOR_FINAL_PLAN_2026-08-26.md", "quality/opencut-editor-execution-log-2026-08-26.md", "tests/run_tests.mjs"], "acceptance": ["Focused and full regressions pass", "Static secret installer and diff gates pass", "Product documentation and Codex Claude installs reflect the implementation"]}
   ],
-  "completionBoundary": "Complete means all locally executable deliverables and tests pass. Independent final review, external provider evidence, release/deploy and production outcomes remain separately gated."
+  "adjustments": [
+    {"id": "ADJ-ED-001", "impact": "major", "status": "approved", "observedAt": "2026-08-26T06:15:00Z", "approvedBy": "product-owner:user", "reason": "The user explicitly extended the previously local-only delivery scope to include commit and push after a fresh review and remediation cycle.", "changes": ["Commit the exact reviewed tree", "Push main to origin", "Keep GitHub Release and production publication out of scope"]}
+  ],
+  "completionBoundary": "Implementation delivery is complete only after focused and full regression, real-browser journey, static and installer gates, review remediation, dual-agent install sync, exact-tree commit, successful push and remote commit readback. Independent final review, GitHub Release, real-project final render review and production outcomes remain separate boundaries."
 }

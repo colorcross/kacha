@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kacha.local/schemas/editor-command.schema.json",
+  "title": "Kacha Editor Command",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "kind", "itemId", "changes"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "kind": { "const": "kacha-editor-command" },
+    "commandId": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\u0000-\\u001f\\u007f]+$" },
+    "baseSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "itemId": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\u0000-\\u001f\\u007f]+$" },
+    "changes": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 32,
+      "additionalProperties": { "type": "number" }
+    },
+    "actor": { "type": "string", "minLength": 1, "maxLength": 500, "pattern": "^[^\\u0000-\\u001f\\u007f]+$" },
+    "reason": { "type": "string", "minLength": 1, "maxLength": 500, "pattern": "^[^\\u0000-\\u001f\\u007f]+$" }
+  }
+}

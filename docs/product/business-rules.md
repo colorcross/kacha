@@ -1,6 +1,6 @@
 # Business rules
 
-> 对账修订：`openmontage-optimization-2026-08-26`。
+> 对账修订：`opencut-informed-editor-core-2026-08-26`。
 
 ## 角色、权限与权益
 
@@ -22,3 +22,14 @@
 执行状态；变量只接受单行标量，命令只允许已登记 Kacha 子命令。飞行记录拒绝
 项目外 realpath 和符号链接源，并对敏感字段脱敏。OpenMontage 仅作 clean-room
 架构参考，不复制 AGPL 实现。
+
+Timeline 时间以整数 tick 和有理帧率为 canonical；兼容 seconds 与 tick 相差超过半帧
+即拒绝。Editor Command 只能命中 projection 给出的字段 allowlist，并同时校验 session
+SHA、调用方 base SHA、唯一 command ID、画布/时序合同和 journal 摘要链。undo/redo
+同样进入 journal。`studio-canvas` 只能预览，任何 final 请求只允许明确登记且
+`finalEligible=true` 的 provider。
+
+Editor 文件身份绑定 realpath；浏览器 session 不能把写入路径带回服务端。恢复和
+重开都必须命中调用时的当前 SHA，恢复只信任 snapshots 目录内摘要匹配的快照，
+重开只接受可通过 Projection 合同的当前 Timeline。FFmpeg 的静态登记不等于本机
+可用，final eligibility 还必须通过当前 runtime probe。

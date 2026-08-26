@@ -10,6 +10,7 @@
 | 异步任务与 Placeholder | 生成、分离、渲染阻塞当前对话 | 可恢复 `@job` 与 ready 产物证明 |
 | 对象级 `@` 引用 | “那个卡片/刚才素材”容易歧义 | 绑定文件 SHA 与 JSON Pointer 的短引用 |
 | 安装同步状态 | 源码改了但 Agent 仍用旧 Skill | Codex/Claude 的 current/out-of-sync 状态 |
+| 精确时间与 Command Journal | 浮点漂移、人工修改无法撤销或追溯 | Timebase V2、Timeline Projection、apply/undo/redo 与恢复证据 |
 
 生产不变量：
 
@@ -20,6 +21,8 @@
 - 失败任务恢复前隔离部分产物；
 - Timeline IR 只接受 `ready + 当前产物 SHA-256` 的 Placeholder；
 - 重复对象 ID 必须全部使用确定性后缀，不能因索引顺序改变引用指向。
+- Editor 修改只允许命中 projection allowlist 和当前 base SHA；Studio Canvas 永远
+  是 approximate preview，不能替代 FFmpeg final。
 
 用户不需要学习这些命令。Agent 根据自然语言自动调用；只有需要复现或调试时
 才查看下面的接口。
@@ -49,6 +52,12 @@ node scripts/kacha.mjs refs resolve @overlay:card-1 \
 
 # 只读检查双端安装
 node scripts/kacha.mjs install status --agent both
+
+# 安全迁移时间基并进入可撤销的精调会话
+node scripts/kacha.mjs timeline migrate-timebase \
+  --plan timeline.json --output timeline.v2.json
+node scripts/kacha.mjs editor project --timeline timeline.v2.json
+node scripts/kacha.mjs editor command undo --timeline timeline.v2.json
 ```
 
 完整协议、失败边界和 Agent 编排见

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kacha.local/schemas/timeline-timebase-v2.schema.json",
+  "title": "Kacha Timeline Timebase V2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "ticksPerSecond", "frameRate", "ticksPerFrame"],
+  "properties": {
+    "schemaVersion": { "const": "2.0" },
+    "ticksPerSecond": { "type": "integer", "minimum": 1 },
+    "ticksPerFrame": { "type": "integer", "minimum": 1 },
+    "frameRate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["numerator", "denominator"],
+      "properties": {
+        "numerator": { "type": "integer", "minimum": 1 },
+        "denominator": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

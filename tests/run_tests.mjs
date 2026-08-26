@@ -28,6 +28,25 @@ import {
   validateAssetInbox,
 } from "../scripts/asset_inbox.mjs";
 import { loadProductionPack } from "../scripts/production_pack.mjs";
+import {
+  framesToTicks,
+  normalizeTimebase,
+  ticksToFrames,
+} from "../scripts/media_time.mjs";
+import {
+  applyEditorCommand,
+  editorHistory,
+  openEditorProject,
+  recoverEditorProject,
+  reopenEditorProject,
+  redoEditorCommand,
+  undoEditorCommand,
+} from "../scripts/editor_command_journal.mjs";
+import { applyJsonOperations } from "../scripts/json_mutation.mjs";
+import {
+  assertPreviewProviderEligibility,
+  listPreviewProviders,
+} from "../scripts/preview_provider.mjs";
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillDirectory = path.dirname(testDirectory);
@@ -65,6 +84,7 @@ const knownSuites = new Set([
   "sfx",
   "qc",
   "incremental",
+  "editor",
 ]);
 for (const suite of requestedSuites) {
   if (!knownSuites.has(suite)) {
@@ -76,6 +96,9 @@ for (const suite of requestedSuites) {
 }
 
 function inferSuite(name) {
+  if (/editor|timebase|command journal|timeline projection|preview provider/i.test(name)) {
+    return "editor";
+  }
   if (/incremental|version delta|artifact index|project context/i.test(name)) {
     return "incremental";
   }
@@ -10551,6 +10574,409 @@ await test("V6 review workbench is local-only and exposes the new review assets"
     ]);
   }
 }, "core");
+
+await test("Timebase V2 preserves exact fractional-frame boundaries and migrates legacy Timeline IR", () => {
+  for (const frameRate of [
+    { numerator: 24000, denominator: 1001 },
+    { numerator: 30000, denominator: 1001 },
+    { numerator: 60000, denominator: 1001 },
+    { numerator: 25, denominator: 1 },
+  ]) {
+    const timebase = normalizeTimebase({ ticksPerSecond: 120000, frameRate });
+    const frame = 1_000_000;
+    const tick = framesToTicks(frame, timebase);
+    if (ticksToFrames(tick, timebase) !== frame) {
+      throw new Error(`fractional frame drifted at ${frameRate.numerator}/${frameRate.denominator}`);
+    }
+  }
+  const root = path.join(temporary, "timebase-v2");
+  fs.mkdirSync(root, { recursive: true });
+  const legacy = path.join(root, "legacy.json");
+  const migrated = path.join(root, "migrated.json");
+  writeJson(legacy, {
+    schemaVersion: "1.0",
+    projectId: "timebase-migration",
+    mode: "preview",
+    source: { path: "missing-source.mp4" },
+    edl: [{ id: "clip", sourceStart: 1.001, sourceEnd: 5.005 }],
+    visual: { overlays: [] },
+    audio: { sfx: [] },
+    output: { path: "preview.mp4", width: 1920, height: 1080, fps: 24000 / 1001 },
+  });
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "timeline", "migrate-timebase",
+    "--plan", legacy, "--output", migrated,
+  ]);
+  const value = readJson(migrated);
+  if (
+    value.timebase?.frameRate?.numerator !== 24000
+    || value.timebase?.frameRate?.denominator !== 1001
+    || !Number.isSafeInteger(value.edl[0].sourceStartTick)
+    || readJson(legacy).timebase
+  ) throw new Error("legacy timeline migration was not exact or overwrote its source");
+  const conflict = path.join(root, "conflict.json");
+  writeJson(conflict, {
+    ...value,
+    edl: [{ ...value.edl[0], sourceStart: 9 }],
+  });
+  const failed = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "timeline", "migrate-timebase",
+    "--plan", conflict, "--output", path.join(root, "must-not-exist.json"),
+  ]);
+  if (!failed.stderr.includes("超过半帧")) throw new Error("timebase conflict did not fail closed");
+}, "editor");
+
+await test("Editor mutation inverses restore array inserts and object adds exactly", () => {
+  const original = { tracks: [{ id: "a" }, { id: "b" }], metadata: { title: "demo" } };
+  for (const operation of [
+    { op: "add", path: "/tracks/1", value: { id: "inserted" } },
+    { op: "add", path: "/tracks/-", value: { id: "tail" } },
+    { op: "add", path: "/metadata/status", value: "draft" },
+  ]) {
+    const applied = applyJsonOperations(original, [operation], { captureInverse: true });
+    const restored = applyJsonOperations(applied.value, applied.inverseOperations);
+    if (JSON.stringify(restored) !== JSON.stringify(original)) {
+      throw new Error(`mutation inverse did not restore ${operation.path}`);
+    }
+  }
+}, "editor");
+
+await test("Timeline Projection and Command Journal apply undo redo and detect tamper or truncation", () => {
+  const root = path.join(temporary, "editor-command-journal");
+  fs.mkdirSync(root, { recursive: true });
+  const timeline = path.join(root, "timeline.json");
+  writeJson(timeline, {
+    schemaVersion: "1.0",
+    projectId: "editor-command-journal",
+    mode: "preview",
+    source: { path: "missing-source.mp4" },
+    edl: [{ id: "main", sourceStart: 0, sourceEnd: 10 }],
+    visual: {
+      breathing: [],
+      overlays: [{
+        id: "card-1", kind: "image", path: "missing-card.png",
+        start: 1, end: 4, x: 20, y: 30, width: 320, height: 180, opacity: 1,
+      }],
+    },
+    audio: {
+      bgm: { segments: [{ id: "music-1", path: "missing.wav", start: 0, end: 10 }] },
+      sfx: [{ id: "tick", path: "missing.wav", time: 2, timingReference: "file_start" }],
+    },
+    output: { path: "preview.mp4", width: 1920, height: 1080, fps: 30000 / 1001 },
+  });
+  const opened = openEditorProject(timeline);
+  const timelineAlias = path.join(root, "timeline-alias.json");
+  fs.symlinkSync(timeline, timelineAlias);
+  if (openEditorProject(timelineAlias).session.timelinePath !== fs.realpathSync(timeline)) {
+    throw new Error("editor session was not bound to the Timeline realpath");
+  }
+  const overlay = opened.projection.items.find((item) => item.id === "overlay:card-1");
+  const sfx = opened.projection.items.find((item) => item.id === "sfx:tick");
+  if (!overlay || !overlay.editableFields.includes("x") || !overlay.editableFields.includes("startTick")) {
+    throw new Error("projection did not expose a traceable overlay allowlist");
+  }
+  if (opened.session.synchronized !== true || opened.session.timebase?.ticksPerSecond !== 120000) {
+    throw new Error("editor session did not bind the canonical Timeline timebase");
+  }
+  if (!sfx?.editableFields.includes("timeTick") || !Number.isSafeInteger(sfx.metadata.timeTick)) {
+    throw new Error("projection did not expose the actual editable SFX timing field");
+  }
+  const originalSha = opened.session.currentSha256;
+  const alignedStartTick = opened.session.timebase.ticksPerFrame * 30;
+  const applied = applyEditorCommand(timeline, {
+    schemaVersion: "1.0",
+    kind: "kacha-editor-command",
+    baseSha256: originalSha,
+    commandId: "cmd-test-1",
+    itemId: overlay.id,
+    changes: { x: 240, startTick: alignedStartTick },
+    actor: "test",
+    reason: "test geometry",
+  });
+  const changed = readJson(timeline);
+  if (changed.visual.overlays[0].x !== 240 || changed.visual.overlays[0].startTick !== alignedStartTick) {
+    throw new Error("editor command did not write scalar and canonical time together");
+  }
+  let duplicateCommandBlocked = false;
+  try {
+    applyEditorCommand(timeline, {
+      schemaVersion: "1.0", kind: "kacha-editor-command",
+      commandId: "cmd-test-1", baseSha256: applied.timelineSha256,
+      itemId: overlay.id, changes: { x: 241 },
+    });
+  } catch (error) {
+    duplicateCommandBlocked = /commandId 已存在/.test(error.message);
+  }
+  if (!duplicateCommandBlocked) throw new Error("duplicate commandId was accepted into the journal");
+  let emptyCommandBlocked = false;
+  try {
+    applyEditorCommand(timeline, {
+      schemaVersion: "1.0", kind: "kacha-editor-command",
+      baseSha256: applied.timelineSha256, itemId: overlay.id, changes: {},
+    });
+  } catch (error) {
+    emptyCommandBlocked = /不能为空/.test(error.message);
+  }
+  if (!emptyCommandBlocked) throw new Error("empty editor command was accepted");
+  for (const invalidCommand of [
+    {
+      schemaVersion: "1.0", kind: "kacha-editor-command",
+      baseSha256: applied.timelineSha256, itemId: overlay.id, changes: { x: "241" },
+    },
+    {
+      schemaVersion: "1.0", kind: "kacha-editor-command",
+      baseSha256: applied.timelineSha256, itemId: overlay.id, changes: { toString: 1 },
+    },
+    {
+      schemaVersion: "1.0", kind: "kacha-editor-command",
+      baseSha256: applied.timelineSha256, itemId: overlay.id, changes: { x: 241 }, arbitraryPath: "/tmp",
+    },
+    {
+      schemaVersion: "1.0", kind: "kacha-editor-command",
+      baseSha256: applied.timelineSha256, itemId: overlay.id, changes: { startTick: 1 },
+    },
+  ]) {
+    let invalidBlocked = false;
+    try { applyEditorCommand(timeline, invalidCommand); } catch (error) {
+      invalidBlocked = /有限数值|allowlist|未知字段|整帧边界/.test(error.message);
+    }
+    if (!invalidBlocked) throw new Error("editor accepted a command outside its strict contract");
+  }
+  let staleBlocked = false;
+  try {
+    applyEditorCommand(timeline, {
+      schemaVersion: "1.0",
+      kind: "kacha-editor-command",
+      baseSha256: originalSha,
+      itemId: overlay.id,
+      changes: { x: 300 },
+    });
+  } catch (error) {
+    staleBlocked = /expected|过期|其他进程/.test(error.message);
+  }
+  if (!staleBlocked) throw new Error("stale editor base SHA was not blocked");
+  const undone = undoEditorCommand(timeline);
+  if (readJson(timeline).visual.overlays[0].x !== 20 || !undone.project.session.canRedo) {
+    throw new Error("undo did not restore the snapshot-backed inverse command");
+  }
+  const redone = redoEditorCommand(timeline);
+  if (readJson(timeline).visual.overlays[0].x !== 240 || !redone.project.session.canUndo) {
+    throw new Error("redo did not replay the original command");
+  }
+  const beforeInvalidSha = sha256File(timeline);
+  let geometryBlocked = false;
+  try {
+    applyEditorCommand(timeline, {
+      schemaVersion: "1.0",
+      kind: "kacha-editor-command",
+      baseSha256: beforeInvalidSha,
+      itemId: overlay.id,
+      changes: { x: 1800 },
+    });
+  } catch (error) {
+    geometryBlocked = /已恢复|输出画布/.test(error.message);
+  }
+  if (!geometryBlocked || sha256File(timeline) !== beforeInvalidSha) {
+    throw new Error("out-of-canvas command was not atomically rolled back");
+  }
+  const driftTimeline = path.join(root, "external-drift.json");
+  fs.copyFileSync(timeline, driftTimeline);
+  const driftOpened = openEditorProject(driftTimeline);
+  const driftValue = readJson(driftTimeline);
+  driftValue.visual.overlays[0].x = 260;
+  writeJson(driftTimeline, driftValue);
+  const driftSha = sha256File(driftTimeline);
+  let externalDriftBlocked = false;
+  try {
+    applyEditorCommand(driftTimeline, {
+      schemaVersion: "1.0", kind: "kacha-editor-command",
+      baseSha256: driftSha, itemId: "overlay:card-1", changes: { x: 280 },
+    });
+  } catch (error) {
+    externalDriftBlocked = /其他进程修改/.test(error.message);
+  }
+  if (!externalDriftBlocked || sha256File(driftTimeline) !== driftSha || driftOpened.status !== "pass") {
+    throw new Error("caller-supplied current SHA bypassed editor session conflict detection");
+  }
+  const reopened = reopenEditorProject(driftTimeline, {
+    expectedCurrentSha256: driftSha,
+    actor: "test",
+    reason: "accept intentional external edit",
+  });
+  if (reopened.status !== "pass" || reopened.project.session.currentSha256 !== driftSha) {
+    throw new Error("explicit editor reopen did not accept the current external Timeline state");
+  }
+  const duplicateIdTimeline = path.join(root, "duplicate-id.json");
+  const duplicateValue = readJson(timeline);
+  duplicateValue.visual.overlays.push({ ...duplicateValue.visual.overlays[0] });
+  writeJson(duplicateIdTimeline, duplicateValue);
+  let duplicateIdBlocked = false;
+  try { openEditorProject(duplicateIdTimeline); } catch (error) {
+    duplicateIdBlocked = /重复 item id/.test(error.message);
+  }
+  if (!duplicateIdBlocked) throw new Error("duplicate projection item ids were accepted");
+  const history = editorHistory(timeline);
+  if (history.status !== "pass" || history.records.length !== 3 || !history.records.every((entry) => entry.recordDigest)) {
+    throw new Error("valid command journal was not accepted");
+  }
+  const journal = applied.project.journal;
+  const originalJournal = fs.readFileSync(journal, "utf8");
+  const tampered = originalJournal.split("\n").filter(Boolean).map((line, index) => {
+    const record = JSON.parse(line);
+    if (index === 0) record.reason = "tampered";
+    return JSON.stringify(record);
+  }).join("\n") + "\n";
+  fs.writeFileSync(journal, tampered);
+  if (editorHistory(timeline).chainStatus !== "invalid") throw new Error("journal tamper was not detected");
+  const beforeTamperedApply = sha256File(timeline);
+  let tamperedApplyBlocked = false;
+  try {
+    applyEditorCommand(timeline, {
+      schemaVersion: "1.0",
+      kind: "kacha-editor-command",
+      baseSha256: beforeTamperedApply,
+      itemId: overlay.id,
+      changes: { x: 260 },
+    });
+  } catch (error) {
+    tamperedApplyBlocked = /recordDigest/.test(error.message);
+  }
+  if (!tamperedApplyBlocked || sha256File(timeline) !== beforeTamperedApply) {
+    throw new Error("tampered journal allowed a timeline write before failing");
+  }
+  fs.writeFileSync(journal, `${originalJournal}{truncated\n`);
+  const recovery = editorHistory(timeline);
+  if (recovery.status !== "recovery_required" || recovery.truncated !== true) {
+    throw new Error("truncated journal did not produce a recovery contract");
+  }
+  const recovered = recoverEditorProject(timeline, {
+    expectedCurrentSha256: sha256File(timeline),
+    actor: "test",
+    reason: "recover trailing partial journal write",
+  });
+  if (
+    recovered.status !== "pass"
+    || !fs.existsSync(recovered.archive)
+    || readJson(timeline).visual.overlays[0].x !== 240
+    || editorHistory(timeline).status !== "pass"
+  ) throw new Error("editor recovery did not restore and re-chain the last valid snapshot");
+}, "editor");
+
+await test("Preview Provider gate keeps approximate Canvas and unimplemented WebGPU out of final", () => {
+  const providers = listPreviewProviders();
+  if (
+    providers.providers.find((item) => item.id === "ffmpeg-render-graph")?.finalEligible !== true
+    || providers.providers.find((item) => item.id === "studio-canvas")?.finalEligible !== false
+    || providers.providers.find((item) => item.id === "webgpu")?.status !== "not_implemented"
+  ) throw new Error("preview provider registry overclaimed implementation or parity");
+  const canonical = assertPreviewProviderEligibility("ffmpeg-render-graph", { purpose: "final" });
+  if (canonical.runtime?.status !== "available") throw new Error("canonical provider skipped its runtime probe");
+  assertPreviewProviderEligibility("studio-canvas", { purpose: "preview" });
+  let finalBlocked = false;
+  try {
+    assertPreviewProviderEligibility("studio-canvas", { purpose: "final" });
+  } catch (error) {
+    finalBlocked = /禁止用于 final/.test(error.message);
+  }
+  if (!finalBlocked) throw new Error("approximate provider was accepted for final");
+  let invalidPurposeBlocked = false;
+  try { assertPreviewProviderEligibility("ffmpeg-render-graph", { purpose: "publish" }); } catch (error) {
+    invalidPurposeBlocked = /未知 preview purpose/.test(error.message);
+  }
+  if (!invalidPurposeBlocked) throw new Error("unknown preview purpose was accepted");
+}, "editor");
+
+await test("Studio editor session supports open apply undo redo without arbitrary write paths", async () => {
+  const root = path.join(temporary, "studio-editor-api");
+  fs.mkdirSync(root, { recursive: true });
+  const timeline = path.join(root, "timeline.json");
+  const sourceMedia = path.join(root, "source.mp4");
+  fs.writeFileSync(sourceMedia, Buffer.from("kacha-editor-media-range-test"));
+  writeJson(timeline, {
+    schemaVersion: "1.0",
+    projectId: "studio-editor-api",
+    mode: "preview",
+    source: { path: "source.mp4" },
+    edl: [{ id: "main", sourceStart: 0, sourceEnd: 8 }],
+    visual: { overlays: [{ id: "card", kind: "image", path: "missing.png", start: 1, end: 3, x: 10, y: 10, width: 100, height: 80, opacity: 1 }] },
+    audio: { sfx: [] },
+    output: { path: "preview.mp4", width: 1280, height: 720, fps: 25 },
+  });
+  const port = 48000 + (process.pid % 1000);
+  const origin = `http://127.0.0.1:${port}`;
+  const child = spawn(process.execPath, [
+    path.join(scripts, "kacha_studio_server.mjs"), "--port", String(port), "--no-open",
+  ], { cwd: skillDirectory, stdio: ["ignore", "pipe", "pipe"] });
+  let stderr = "";
+  child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
+  try {
+    let ready = false;
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      try { ready = (await fetch(`${origin}/api/health`)).ok; } catch {}
+      if (ready) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!ready) throw new Error(`studio editor server did not start\n${stderr}`);
+    const page = await fetch(`${origin}/editor`);
+    const html = await page.text();
+    if (!page.ok || !html.includes("APPROXIMATE PREVIEW") || !html.includes("Timeline Projection")) {
+      throw new Error("editor surface is missing its preview boundary or timeline UI");
+    }
+    const headers = { "content-type": "application/json", "x-kacha-studio": "1", origin };
+    const openedResponse = await fetch(`${origin}/api/editor/open`, {
+      method: "POST", headers, body: JSON.stringify({ timelinePath: timeline }),
+    });
+    const opened = await openedResponse.json();
+    const item = opened.projection?.items?.find((candidate) => candidate.id === "overlay:card");
+    if (!openedResponse.ok || !opened.browserSessionId || !item) throw new Error(`editor open failed: ${JSON.stringify(opened)}`);
+    if (
+      opened.projection.timeline.sourceSha256 !== null
+      || opened.projection.timeline.sourceIdentity?.sha256 !== undefined
+    ) throw new Error("interactive projection hashed the complete source media by default");
+    const mediaResponse = await fetch(
+      `${origin}/api/editor/media?session=${encodeURIComponent(opened.browserSessionId)}`,
+      { headers: { range: "bytes=0-4" } },
+    );
+    if (mediaResponse.status !== 206 || Buffer.from(await mediaResponse.arrayBuffer()).toString() !== "kacha") {
+      throw new Error("editor source media session did not stream the identity-bound byte range");
+    }
+    const commandResponse = await fetch(`${origin}/api/editor/command`, {
+      method: "POST", headers, body: JSON.stringify({
+        sessionId: opened.browserSessionId,
+        command: {
+          schemaVersion: "1.0", kind: "kacha-editor-command",
+          baseSha256: opened.session.currentSha256, itemId: item.id,
+          changes: { x: 88 }, actor: "studio-test", reason: "journey",
+        },
+      }),
+    });
+    const command = await commandResponse.json();
+    if (!commandResponse.ok || readJson(timeline).visual.overlays[0].x !== 88) {
+      throw new Error(`editor command API failed: ${JSON.stringify(command)}`);
+    }
+    for (const action of ["undo", "redo"]) {
+      const response = await fetch(`${origin}/api/editor/${action}`, {
+        method: "POST", headers, body: JSON.stringify({ sessionId: opened.browserSessionId }),
+      });
+      if (!response.ok || (await response.json()).status !== "pass") throw new Error(`editor ${action} API failed`);
+    }
+    if (readJson(timeline).visual.overlays[0].x !== 88) throw new Error("editor HTTP redo did not restore command");
+    const forged = await fetch(`${origin}/api/editor/command`, {
+      method: "POST", headers, body: JSON.stringify({
+        sessionId: "forged-session",
+        timelinePath: path.join(root, "other.json"),
+        command: { schemaVersion: "1.0", kind: "kacha-editor-command", itemId: item.id, changes: { x: 1 } },
+      }),
+    });
+    if (forged.ok || fs.existsSync(path.join(root, "other.json"))) throw new Error("forged editor session escaped its bound timeline");
+  } finally {
+    child.kill("SIGTERM");
+    await Promise.race([
+      new Promise((resolve) => child.once("exit", resolve)),
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ]);
+  }
+}, "editor");
 
 await test("capability broker enforces hard exclusions before explainable ranking", () => {
   const validated = JSON.parse(execute(process.execPath, [

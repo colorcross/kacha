@@ -146,6 +146,15 @@ const MODULE_REFERENCES = {
   ],
   agent_control: ["references/agent-chat-control-plane.md"],
   mutation_delta: ["references/agent-chat-control-plane.md"],
+  editor: [
+    "references/agent-chat-control-plane.md",
+    "references/production-studio.md",
+    "docs/PERFORMANCE_TOKEN_STABILITY_V5.md",
+  ],
+  timebase: [
+    "references/agent-chat-control-plane.md",
+    "docs/PERFORMANCE_TOKEN_STABILITY_V5.md",
+  ],
   media_search: ["references/agent-chat-control-plane.md"],
   async_jobs: ["references/agent-chat-control-plane.md"],
   object_refs: ["references/agent-chat-control-plane.md"],

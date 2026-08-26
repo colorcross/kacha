@@ -44,7 +44,7 @@ node scripts/kacha.mjs studio serve --port 4187 --no-open
 文件、SHA-256 与授权状态校验；缺失或变化会停止，不会静默退回旧替代字体。
 字体文件和授权记录不得进入公开仓库。
 
-## 页面能力与三个工作台
+## 页面能力与四个工作台
 
 页面按五个连续步骤组织：
 
@@ -84,6 +84,16 @@ BGM、美颜、开场、效果数量和输出目标。步骤状态表示当前�
 - `/project`：显示方案确认、首剪确认、成片审阅、交付与返工四个里程碑，
   十三阶段证据、运行版本、输入身份、素材收件箱和唯一下一步；
 - `/review`：统一展示语义决策和十一项发布检查。
+
+现在另有第四个专业调整入口 `/editor`：它把 Timeline IR 投影为主画面、叠加、
+字幕、效果、dialogue、BGM 和 SFX 轨，提供播放头、Inspector、基础时序/几何
+调整、撤销和重做。它只适合 AI 成片后的校正与批准，不取代 Agent 默认入口。
+所有修改通过受 SHA 保护的 Command Journal 写回同一 Timeline IR；不能修改
+媒体身份、字幕正文、音频路由、发布字段或 allowlist 之外的 JSON Pointer。
+
+画面区始终显示 `APPROXIMATE PREVIEW`。浏览器只组合源视频与可视化投影，不
+代表 FFmpeg 正式效果；修改后页面只报告需要重跑的 Timeline/QC 项，不会把
+工作台状态写成候选或可发布。
 
 `/review` 不是第六个配置表单，而是候选片阶段的正常速度决策界面：按高影响
 语义拍显示视频、剪辑理由、置信度、最简回退和接受/调整/拒绝结果。审片台只
@@ -178,6 +188,12 @@ node scripts/kacha.mjs studio probe --video /absolute/path/source.mov
 node scripts/kacha.mjs studio preview --request production-request.json
 node scripts/kacha.mjs studio save-style --input custom-style.json
 node scripts/kacha.mjs studio compile --request production-request.json
+node scripts/kacha.mjs editor project --timeline /absolute/path/timeline.json
+node scripts/kacha.mjs editor history --timeline /absolute/path/timeline.json
+node scripts/kacha.mjs editor recover --timeline /absolute/path/timeline.json \
+  --expected-sha CURRENT_SHA
+node scripts/kacha.mjs editor reopen --timeline /absolute/path/timeline.json \
+  --expected-sha CURRENT_SHA
 node scripts/kacha.mjs start --script /absolute/path/script.md \
   --task content_generation --project-root /absolute/path/content-project
 node scripts/kacha.mjs status /absolute/path/project

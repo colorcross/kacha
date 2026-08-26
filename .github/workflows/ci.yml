@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [core, proposal, cleanup, generated, visual, audio, sfx, qc, incremental]
+        suite: [core, proposal, cleanup, generated, visual, audio, sfx, qc, incremental, editor]
     steps:
       - uses: actions/checkout@v7
 

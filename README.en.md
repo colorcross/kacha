@@ -77,6 +77,10 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
   lookup, terminal-state-safe background jobs with verified placeholders,
   deterministic object-level `@` references,
   and Codex/Claude installation status.
+- Adds an exact 120,000-tick timebase with rational frame rates, a typed
+  Timeline Projection, and a snapshot-backed Command Journal for allowlisted
+  apply/undo/redo operations. The localhost `/editor` surface remains a
+  correction workbench, not a second timeline source.
 - Compiles an episode-level director plan with a narrative spine, exactly one
   opening, content priority, high-impact budget, deliberate quiet, five style
   grammars, fallbacks, and explicit evidence gaps.
@@ -339,10 +343,23 @@ node scripts/kacha.mjs gate-render /path/to/project-manifest.json
 node scripts/kacha.mjs render /path/to/project-manifest.json
 node scripts/kacha.mjs qc /path/to/project-manifest.json
 node scripts/kacha.mjs gate-release /path/to/project-manifest.json
+
+node scripts/kacha.mjs timeline migrate-timebase \
+  --plan /path/to/timeline.json --output /path/to/timeline.v2.json
+node scripts/kacha.mjs editor project --timeline /path/to/timeline.v2.json
+node scripts/kacha.mjs editor recover --timeline /path/to/timeline.v2.json --expected-sha CURRENT_SHA
+node scripts/kacha.mjs editor reopen --timeline /path/to/timeline.v2.json --expected-sha CURRENT_SHA
 ```
 
 `gate-render` checks readiness; it does **not** render a timeline.
 `render` executes a registered unified Timeline IR when the project has one.
+The Studio Canvas view is always an approximate preview; only the canonical
+FFmpeg Render Graph is final-eligible. WebGPU remains explicitly unimplemented
+until a current golden parity corpus passes.
+The approximate player maps output playhead time through the EDL to source time,
+but it does not composite overlapping transitions. `recover` restores the last
+verified snapshot after journal corruption; `reopen` explicitly accepts a valid
+external Timeline change. Both archive the prior state and require the current SHA.
 `qc` performs automated technical analysis; it does **not** create human-review
 evidence. See [Quick start](docs/en/QUICKSTART.md),
 [Architecture and boundaries](docs/en/ARCHITECTURE.md), and

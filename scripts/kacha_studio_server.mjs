@@ -4,6 +4,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import {
   compileProductionRequest,
@@ -28,12 +29,23 @@ import {
   openReleaseReview,
   recordReleaseCheck,
 } from "./release_review.mjs";
+import {
+  applyEditorCommand,
+  editorHistory,
+  openEditorProject,
+  redoEditorCommand,
+  undoEditorCommand,
+} from "./editor_command_journal.mjs";
+import { listPreviewProviders } from "./preview_provider.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(scriptDirectory, "..");
 const studioRoot = path.join(skillRoot, "studio");
 const brandLogo = path.join(skillRoot, "website", "public", "brand", "kacha-logo.png");
 const MAX_BODY_BYTES = 1024 * 1024;
+const editorSessions = new Map();
+const EDITOR_SESSION_LIMIT = 32;
+const EDITOR_SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 const SECURITY_HEADERS = {
   "Content-Security-Policy":
     "default-src 'self'; base-uri 'none'; connect-src 'self'; "
@@ -134,6 +146,16 @@ function requireLocalMutation(request, port) {
 function requireLocalRead(request, port) {
   if (!sameOrigin(request, port)) throw new Error("拒绝跨站读取");
   if (request.headers["x-kacha-studio"] !== "1") throw new Error("缺少本地生产台读取标记");
+}
+
+function activeEditorSession(sessionId) {
+  const session = editorSessions.get(sessionId);
+  if (!session) throw new Error("Editor browser session 已失效，请重新打开 Timeline");
+  if (Date.now() - session.openedAtMs > EDITOR_SESSION_MAX_AGE_MS) {
+    editorSessions.delete(sessionId);
+    throw new Error("Editor browser session 已过期，请重新打开 Timeline");
+  }
+  return session;
 }
 
 function nativePick(kind) {
@@ -275,6 +297,10 @@ function safeStaticFile(urlPath) {
     "/content.html": path.join(studioRoot, "content.html"),
     "/content.css": path.join(studioRoot, "content.css"),
     "/content.js": path.join(studioRoot, "content.js"),
+    "/editor": path.join(studioRoot, "editor.html"),
+    "/editor.html": path.join(studioRoot, "editor.html"),
+    "/editor.css": path.join(studioRoot, "editor.css"),
+    "/editor.js": path.join(studioRoot, "editor.js"),
     "/brand/kacha-logo.png": brandLogo,
   };
   return routes[urlPath] ?? null;
@@ -323,6 +349,12 @@ async function handleApi(request, response, url, port) {
       url.searchParams.get("variant") ?? "after",
     );
     serveMedia(request, response, media);
+    return;
+  }
+  if (["GET", "HEAD"].includes(request.method) && pathname === "/api/editor/media") {
+    const session = activeEditorSession(url.searchParams.get("session"));
+    if (!session?.source) throw new Error("Editor session 或源视频不存在");
+    serveMedia(request, response, session.source);
     return;
   }
   if (request.method !== "POST") {
@@ -457,6 +489,63 @@ async function handleApi(request, response, url, port) {
   if (pathname === "/api/observe") {
     json(response, 200, { status: "pass", ...observeProject(body.projectRoot) });
     return;
+  }
+  if (pathname === "/api/editor/open") {
+    if (!body.timelinePath || !path.isAbsolute(body.timelinePath)) {
+      throw new Error("Timeline 路径必须是绝对路径");
+    }
+    const currentTime = Date.now();
+    for (const [id, session] of editorSessions.entries()) {
+      if (currentTime - session.openedAtMs > EDITOR_SESSION_MAX_AGE_MS) editorSessions.delete(id);
+    }
+    while (editorSessions.size >= EDITOR_SESSION_LIMIT) {
+      editorSessions.delete(editorSessions.keys().next().value);
+    }
+    const project = openEditorProject(body.timelinePath);
+    if (project.status !== "pass") {
+      throw new Error("Timeline 与既有 editor session 冲突；请先检查 editor history/recovery，再继续写入");
+    }
+    const sessionId = randomUUID();
+    editorSessions.set(sessionId, {
+      timelinePath: project.session.timelinePath,
+      source: project.projection.timeline.sourceIdentity
+        ? {
+            path: project.projection.timeline.sourceIdentity.path,
+            identity: project.projection.timeline.sourceIdentity,
+          }
+        : null,
+      openedAt: new Date().toISOString(),
+      openedAtMs: currentTime,
+    });
+    json(response, 200, {
+      ...project,
+      browserSessionId: sessionId,
+      previewProviders: listPreviewProviders(),
+    });
+    return;
+  }
+  if (pathname.startsWith("/api/editor/")) {
+    const session = activeEditorSession(body.sessionId);
+    if (pathname === "/api/editor/project") {
+      json(response, 200, openEditorProject(session.timelinePath));
+      return;
+    }
+    if (pathname === "/api/editor/command") {
+      json(response, 200, applyEditorCommand(session.timelinePath, body.command));
+      return;
+    }
+    if (pathname === "/api/editor/undo") {
+      json(response, 200, undoEditorCommand(session.timelinePath));
+      return;
+    }
+    if (pathname === "/api/editor/redo") {
+      json(response, 200, redoEditorCommand(session.timelinePath));
+      return;
+    }
+    if (pathname === "/api/editor/history") {
+      json(response, 200, editorHistory(session.timelinePath));
+      return;
+    }
   }
   json(response, 404, { status: "blocked", error: "Unknown API route" });
 }

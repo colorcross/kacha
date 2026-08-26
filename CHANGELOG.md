@@ -46,6 +46,20 @@
 
 ### Added
 
+- 增加 Timebase V2：Timeline IR 编辑边界使用 120000 tick/s 与有理帧率，旧版
+  seconds 保持兼容；tick/seconds 冲突超过半帧时失败关闭，并提供只写新文件的
+  `timeline migrate-timebase`。
+- 增加类型化 Timeline Projection、稳定 Editor API 和本地 `/editor` 专业调整
+  工作台；主画面、叠加、字幕、效果、dialogue、BGM 与 SFX 保留 source pointer
+  和可编辑 allowlist，浏览器状态不成为第二份时间线。
+- 增加内容寻址 Command Journal：apply/undo/redo 绑定 base SHA、forward/inverse
+  mutation、原子 snapshot、影响轨道、所需 QC 和摘要链；并发修改、日志篡改和
+  截断均失败关闭；`recover` 与 `reopen` 要求当前 SHA、保留旧状态归档，并分别
+  恢复最后有效快照或接受合法外部修改。
+- Studio Canvas 按 EDL 把成片播放头映射到源片，并明确不合成转场 overlap；源片
+  默认只建立快速身份，避免交互命令重复哈希整段大视频。FFmpeg final eligibility
+  增加当前 runtime probe，WebGPU 未实现且不能用于 final。
+
 - 增加治理式生产控制面：Capability Broker 以真实本机探测、隐私/许可/模式/
   费用硬门禁和逐维证据排名选择引擎；项目费用账本用原子状态机管理估算、预占、
   审批、对账和退款，未知费用不再默认为免费。

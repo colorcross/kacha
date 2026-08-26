@@ -177,6 +177,28 @@ node scripts/kacha.mjs render \
 EDL、画面呼吸、叠加层、字幕、dialogue、BGM 和 SFX 会在一个 Render Graph
 中完成，正式视觉版本最多一次完整视频编码。
 
+旧版 Timeline 可先安全迁移到整数 tick 时间基，再打开专业调整工作台：
+
+```bash
+node scripts/kacha.mjs timeline migrate-timebase \
+  --plan my-video-project/contracts/timeline.json \
+  --output my-video-project/contracts/timeline.v2.json
+node scripts/kacha.mjs editor project \
+  --timeline my-video-project/contracts/timeline.v2.json
+node scripts/kacha.mjs studio serve
+```
+
+`/editor` 的源视频加图层投影属于近似预览。每次修改都有 Command Journal、
+撤销/重做、base SHA 和恢复快照，但修改后仍需重新运行 Timeline、QC 和人工审片。
+播放器显示源时间，Timeline 显示成片时间并按 EDL 映射；转场重叠不做合成。
+若 history 返回 `recovery_required`，先核对当前 SHA，再选择恢复最后有效快照或
+接受合法外部修改：
+
+```bash
+node scripts/kacha.mjs editor recover --timeline timeline.v2.json --expected-sha CURRENT_SHA
+node scripts/kacha.mjs editor reopen --timeline timeline.v2.json --expected-sha CURRENT_SHA
+```
+
 在进入 `final_mix` 前，先从最终语义 cues 建立并验证自适应配乐计划：
 
 ```bash

@@ -248,6 +248,27 @@ node scripts/kacha.mjs refs resolve @overlay:ID --index .kacha/object-index.json
 node scripts/kacha.mjs install status --agent both
 ```
 
+需要对 AI 成片做精确、可撤销的人工校正时，Agent 使用 Editor API 或打开本机
+`/editor` 工作台。Timeline 内部时间优先使用 120000 tick/s 与有理帧率；旧版秒数
+只在兼容边界保留。工作台是同一 Timeline IR 的 projection，不拥有第二份状态：
+
+```bash
+node scripts/kacha.mjs editor inspect --timeline TIMELINE.json
+node scripts/kacha.mjs editor project --timeline TIMELINE.json
+node scripts/kacha.mjs editor command apply --timeline TIMELINE.json \
+  --command COMMAND.json
+node scripts/kacha.mjs editor command undo --timeline TIMELINE.json
+node scripts/kacha.mjs editor command redo --timeline TIMELINE.json
+node scripts/kacha.mjs editor recover --timeline TIMELINE.json --expected-sha CURRENT_SHA
+node scripts/kacha.mjs editor reopen --timeline TIMELINE.json --expected-sha CURRENT_SHA
+```
+
+每次写入必须命中 item allowlist、当前 base SHA 和 Command Journal；journal 保存
+forward/inverse mutation、快照、影响轨道与所需 QC。`recover` 只恢复最后有效
+快照，`reopen` 只接受合法外部修改；两者都要求当前 SHA 并归档旧状态。浏览器按
+EDL 映射源时间但不合成转场 overlap，只提供 `approximate_preview`，不能替代
+FFmpeg Render Graph 或发布审片。
+
 这些命令默认由 Agent 自动调用；不要把内部命令选择、索引建立或对象标注工作
 推给用户。mutation delta 是单次操作证据，v3 version delta 仍负责版本级
 失效、渲染和 QC，两者不能混用。

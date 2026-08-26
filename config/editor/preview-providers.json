@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1.0",
+  "providers": [
+    {
+      "id": "ffmpeg-render-graph",
+      "kind": "canonical",
+      "status": "available",
+      "finalEligible": true,
+      "deterministic": true,
+      "runtimeProbe": "ffmpeg-version",
+      "capabilities": ["picture", "overlay", "caption", "audio", "transition", "effect", "export"],
+      "limitations": []
+    },
+    {
+      "id": "studio-canvas",
+      "kind": "approximate",
+      "status": "available",
+      "finalEligible": false,
+      "deterministic": false,
+      "runtimeProbe": null,
+      "capabilities": ["picture", "overlay-geometry", "timeline-scrub"],
+      "limitations": ["no_final_export", "no_audio_mix", "no_shader_parity", "source_video_plus_projection_only"]
+    },
+    {
+      "id": "webgpu",
+      "kind": "experimental",
+      "status": "not_implemented",
+      "finalEligible": false,
+      "deterministic": false,
+      "runtimeProbe": null,
+      "capabilities": [],
+      "limitations": ["no_runtime", "no_current_golden_parity", "no_release_qualification"]
+    }
+  ],
+  "finalEligibilityPolicy": {
+    "requiredStatus": "available",
+    "requiredFinalEligible": true,
+    "unknownProvider": "blocked",
+    "missingParityEvidence": "blocked"
+  }
+}

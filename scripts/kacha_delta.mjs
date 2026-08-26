@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
 import path from "node:path";
 import {
   compactValue,
@@ -10,17 +9,14 @@ import {
   getAtPointer,
   inferObjectType,
   jsonIdentity,
-  mergeAtPointer,
   now,
-  objectSummary,
   option,
-  removeAtPointer,
-  setAtPointer,
   shortDigest,
   stableObjectId,
   writeJson,
 } from "./agent_workspace_utils.mjs";
 import { readJson, sha256File, sha256Value } from "./kacha_utils.mjs";
+import { applyJsonOperations, collectJsonDiff } from "./json_mutation.mjs";
 
 const args = process.argv.slice(2);
 const action = args[0];
@@ -33,80 +29,6 @@ function usage() {
       + "--write RESULT.json [--output delta.json] [--in-place]",
     2,
   );
-}
-
-function collectDiff(before, after, pointer = "", changes = []) {
-  if (Object.is(before, after)) return changes;
-  const beforeObject = before !== null && typeof before === "object";
-  const afterObject = after !== null && typeof after === "object";
-  if (
-    !beforeObject
-    || !afterObject
-    || Array.isArray(before) !== Array.isArray(after)
-  ) {
-    changes.push({ op: "replace", pointer, before, after });
-    return changes;
-  }
-  if (Array.isArray(before)) {
-    const beforeIds = before.map((item) => item?.id);
-    const afterIds = after.map((item) => item?.id);
-    const idAware = [...beforeIds, ...afterIds].every(
-      (id) => typeof id === "string" && id.trim() !== "",
-    ) && new Set(beforeIds).size === beforeIds.length
-      && new Set(afterIds).size === afterIds.length;
-    if (idAware) {
-      const beforeById = new Map(beforeIds.map((id, index) => [id, index]));
-      const afterById = new Map(afterIds.map((id, index) => [id, index]));
-      for (const [id, index] of [...beforeById.entries()].reverse()) {
-        if (!afterById.has(id)) {
-          changes.push({
-            op: "remove",
-            pointer: `${pointer}/${index}`,
-            before: before[index],
-          });
-        }
-      }
-      for (const [id, index] of afterById.entries()) {
-        if (!beforeById.has(id)) {
-          changes.push({
-            op: "add",
-            pointer: `${pointer}/${index}`,
-            after: after[index],
-          });
-          continue;
-        }
-        const beforeIndex = beforeById.get(id);
-        if (beforeIndex !== index) {
-          changes.push({
-            op: "move",
-            pointer: `${pointer}/${index}`,
-            fromPointer: `${pointer}/${beforeIndex}`,
-            before: before[beforeIndex],
-            after: after[index],
-          });
-        }
-        collectDiff(before[beforeIndex], after[index], `${pointer}/${index}`, changes);
-      }
-      return changes;
-    }
-    const max = Math.max(before.length, after.length);
-    for (let index = 0; index < max; index += 1) {
-      const child = `${pointer}/${index}`;
-      if (index >= before.length) changes.push({ op: "add", pointer: child, after: after[index] });
-      else if (index >= after.length) changes.push({ op: "remove", pointer: child, before: before[index] });
-      else collectDiff(before[index], after[index], child, changes);
-    }
-    return changes;
-  }
-  const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])].sort();
-  for (const key of keys) {
-    const escaped = key.replace(/~/g, "~0").replace(/\//g, "~1");
-    const child = `${pointer}/${escaped}`;
-    if (!Object.hasOwn(before, key)) changes.push({ op: "add", pointer: child, after: after[key] });
-    else if (!Object.hasOwn(after, key)) changes.push({ op: "remove", pointer: child, before: before[key] });
-    else collectDiff(before[key], after[key], child, changes);
-  }
-  return changes;
 }
 
 function affectedLayer(pointer) {
@@ -233,7 +155,7 @@ if (action === "diff") {
     afterFile,
     before,
     after,
-    collectDiff(before, after),
+    collectJsonDiff(before, after),
   );
   const requestedOutput = option(args, "--output");
   const consoleLimit = 20;
@@ -282,25 +204,9 @@ const beforeIdentity = jsonIdentity(targetFile);
 if (mutation.baseSha256 && mutation.baseSha256 !== actualBase) {
   fail("KACHA-E110", `mutation.baseSha256 与当前目标不一致：${actualBase}`);
 }
-let next = structuredClone(target);
+let next;
 try {
-  for (const [index, operation] of mutation.operations.entries()) {
-    if (!["add", "replace", "remove", "merge"].includes(operation.op)) {
-      throw new Error(`operations[${index}].op 不支持：${operation.op}`);
-    }
-    if (typeof operation.path !== "string") {
-      throw new Error(`operations[${index}].path 缺失`);
-    }
-    if (operation.op === "add") {
-      next = setAtPointer(next, operation.path, operation.value, { add: true });
-    } else if (operation.op === "replace") {
-      next = setAtPointer(next, operation.path, operation.value);
-    } else if (operation.op === "remove") {
-      next = removeAtPointer(next, operation.path);
-    } else {
-      next = mergeAtPointer(next, operation.path, operation.value);
-    }
-  }
+  next = applyJsonOperations(target, mutation.operations);
 } catch (error) {
   fail("KACHA-E140", `mutation 无法安全应用：${error.message}`);
 }
@@ -309,7 +215,7 @@ if (!inPlace && resolvedWrite === targetFile) {
   fail("KACHA-E120", "覆盖目标必须显式使用 --in-place");
 }
 writeJson(resolvedWrite, next);
-const changes = collectDiff(target, next);
+const changes = collectJsonDiff(target, next);
 const report = deltaReport(
   targetFile,
   resolvedWrite,

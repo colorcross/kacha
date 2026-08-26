@@ -61,6 +61,7 @@ AI 负责组织证据、编译计划、执行获批修改并把技术结果留�
 | 高成本复用 | ASR、人声分离、蒙版、Beauty、样式帧和生成素材按模型/实现强指纹缓存 |
 | 弱模型稳定生产 | 五种紧凑 packet + 十三阶段文件证据状态机，减少上下文与临场猜测 |
 | Agent 对话控制面 | 自然语言仍是主入口；Mutation Delta、确定性对象 `@` 引用、本地句向量素材搜索和终态受保护的异步任务在后台运行 |
+| 精确时间与调整工作台 | 120000 tick/s、有理帧率、类型化 Timeline Projection、Command Journal、撤销/重做和本地 `/editor` 校正界面 |
 | 治理式能力路由 | 先按可用性、模式、隐私、许可和费用做硬排除，再输出带探测证据的逐维排名；不让总分绕过红线 |
 | 费用账本 | 估算、预占、超阈值审批、对账和退款使用项目级原子状态机；未知费用不等于免费 |
 | 参考片到原创方案 | 冻结本地参考文件身份和版权状态，把可借鉴原则、必须改造项与禁止复制项交给既有 Kacha 计划门禁 |
@@ -197,6 +198,23 @@ node scripts/kacha.mjs workflows list
 决定、理由、置信度、最简回退和接受/调整/拒绝结果，并对当前最终视频完成
 十一项发布检查；不把表单或静态效果图冒充审片。
 
+AI 首剪之后需要精调时，从顶部进入“调整”或打开
+`http://127.0.0.1:4179/editor`。工作台读取同一份 Timeline IR，支持轨道浏览、
+播放头、Inspector、基础时序/几何修改和撤销/重做。页面中的画面是
+`APPROXIMATE PREVIEW`：Timeline 播放头按 EDL 映射到源片时间，但转场重叠仍只
+显示一个主画面；正式成片仍需重新运行 FFmpeg Render Graph、技术 QC 和正常速度
+人工审片。日志截断/损坏使用 `recover` 恢复最后有效快照；确认外部修改有效时使用
+`reopen` 建立新 session，两者都要求显式提供当前 SHA 并保留旧状态归档。
+
+```bash
+node scripts/kacha.mjs timeline migrate-timebase \
+  --plan timeline.json --output timeline.v2.json
+node scripts/kacha.mjs editor project --timeline timeline.v2.json
+node scripts/kacha.mjs editor recover --timeline timeline.v2.json --expected-sha CURRENT_SHA
+node scripts/kacha.mjs editor reopen --timeline timeline.v2.json --expected-sha CURRENT_SHA
+node scripts/kacha.mjs studio serve
+```
+
 <p align="center">
   <a href="https://www.figma.com/design/uXfiviOI5rgi56awnD3Iut?node-id=1-2">
     <img src="docs/assets/kacha-production-studio.png" alt="咔嚓本地视频生产台" width="100%">
@@ -331,6 +349,7 @@ node scripts/kacha.mjs doctor --profile core
 | --- | --- |
 | [快速开始](docs/QUICKSTART.md) | 从模板到门禁的完整示例 |
 | [本地视频生产台](references/production-studio.md) | 五步配置、预检、项目生成与信任边界 |
+| [精确时间与专业调整](docs/EDITOR_FINAL_PLAN_2026-08-26.md) | Timebase V2、Projection、Command Journal、Editor API 与预览资格门禁 |
 | [生产台深度 review](docs/STUDIO_REVIEW.md) | 功能、流程、UI、安全与验证结论 |
 | [安装与依赖](docs/INSTALLATION.md) | 环境、平台与可选能力 |
 | [配置说明](docs/CONFIGURATION.md) | 用户、项目、本机和密钥配置 |

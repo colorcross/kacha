@@ -191,6 +191,45 @@ bundle hash。项目配置、用户配置、私有素材和密钥不进入安装
 `~/.kacha-install.lock` 互斥；第二个并发同步必须失败，不能让两个备份/替换流程
 交错后留下来源 ref 与 bundle 不一致的安装。
 
+## 6. 精确时间、Command Journal 与调整工作台
+
+Timeline IR 的编辑边界使用 `Timebase V2`：默认每秒 120000 个整数 tick，帧率
+使用分子/分母。旧版秒数字段继续兼容；同一字段同时存在 tick 和 seconds 时，
+tick 权威，二者相差超过半帧会失败关闭。迁移默认写入新文件：
+
+```bash
+node scripts/kacha.mjs timeline migrate-timebase \
+  --plan timeline.json --output timeline.v2.json
+```
+
+需要人工精调时可打开本地 `/editor`，或由 Agent 使用稳定 Editor API：
+
+```bash
+node scripts/kacha.mjs editor inspect --timeline timeline.json
+node scripts/kacha.mjs editor project --timeline timeline.json
+node scripts/kacha.mjs editor query --timeline timeline.json --track overlays
+node scripts/kacha.mjs editor command apply --timeline timeline.json \
+  --command command.json
+node scripts/kacha.mjs editor command undo --timeline timeline.json
+node scripts/kacha.mjs editor command redo --timeline timeline.json
+node scripts/kacha.mjs editor recover --timeline timeline.json --expected-sha CURRENT_SHA
+node scripts/kacha.mjs editor reopen --timeline timeline.json --expected-sha CURRENT_SHA
+```
+
+工作台只读取 Timeline Projection；它没有第二份时间线模型。每个可编辑条目都
+保留 source JSON Pointer 和字段 allowlist。写操作绑定当前 Timeline SHA，编译
+为共享 Mutation 原语，写前保存内容寻址 snapshot，并把 forward/inverse
+operation、影响轨道、所需 QC 和摘要链写入 `.kacha/editor/`。外部修改导致 SHA
+变化时立即阻断。journal 被篡改或截断时先输出 recovery contract；只有显式
+`recover + expected-sha` 才恢复最后有效 snapshot 并归档原状态。合法外部修改使用
+`reopen + expected-sha` 建立新 session，不能让调用者传入当前 SHA 绕过旧 session。
+
+Studio Canvas 按 EDL 把成片播放头映射到源片，并显示图层投影；转场 overlap 只
+选一个主画面，固定为 `approximate_preview`，不能导出正式成片。
+`ffmpeg-render-graph` 仍是 canonical final provider，但 final eligibility 还要
+通过当前 FFmpeg runtime probe。WebGPU 在没有 current golden parity 之前保持
+`not_implemented/finalEligible=false`。
+
 ## Agent 默认编排
 
 一次典型对话任务按需执行：
@@ -201,6 +240,7 @@ bundle hash。项目配置、用户配置、私有素材和密钥不进入安装
   → refs index / parse（已有项目）
   → media search（需要本机素材时）
   → mutation → delta apply（小合同修改）
+  → editor command journal（需要可撤销的 Timeline 调整时）
   → jobs submit（耗时任务）
   → 继续处理无依赖步骤
   → jobs status → placeholder ready

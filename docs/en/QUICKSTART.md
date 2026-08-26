@@ -151,6 +151,27 @@ into one Render Graph. A final visual version uses at most one full video
 encode. For parameter exploration, render a separate local proxy range:
 
 ```bash
+node scripts/kacha.mjs timeline migrate-timebase \
+  --plan my-video-project/contracts/timeline.json \
+  --output my-video-project/contracts/timeline.v2.json
+node scripts/kacha.mjs editor project \
+  --timeline my-video-project/contracts/timeline.v2.json
+node scripts/kacha.mjs studio serve
+```
+
+The `/editor` source-video-plus-projection view is approximate. Its
+snapshot-backed Command Journal supports allowlisted apply/undo/redo, but every
+change still requires the normal Timeline, QC, and human-review gates. Output
+playhead time is mapped through the EDL to source time, while transition overlaps
+remain single-picture approximations. If history requires recovery, explicitly
+choose between the last verified snapshot and an intentional external edit:
+
+```bash
+node scripts/kacha.mjs editor recover --timeline timeline.v2.json --expected-sha CURRENT_SHA
+node scripts/kacha.mjs editor reopen --timeline timeline.v2.json --expected-sha CURRENT_SHA
+```
+
+```bash
 node scripts/kacha.mjs timeline render \
   --plan my-video-project/contracts/timeline.json \
   --mode preview --range-start 42 --range-end 50 \

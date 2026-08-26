@@ -1,17 +1,18 @@
 {
   "schemaVersion": "1.0",
-  "planId": "openmontage-inspired-kacha-optimization-2026-08-26",
+  "planId": "opencut-informed-editor-core-2026-08-26",
   "status": "passed_with_external_boundaries",
   "checks": [
-    {"id": "V-CAP-01", "slice": "CAP", "command": "node scripts/kacha.mjs capabilities validate", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
-    {"id": "V-COST-01", "slice": "COST", "command": "node tests/run_tests.mjs --match 'cost ledger'", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
-    {"id": "V-REF-01", "slice": "REF", "command": "node tests/run_tests.mjs --match 'reference intelligence'", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
-    {"id": "V-FLIGHT-01", "slice": "FLIGHT", "command": "node tests/run_tests.mjs --match 'production flight recorder'", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
-    {"id": "V-CORPUS-01", "slice": "CORPUS", "command": "node tests/run_tests.mjs --match 'media corpus'", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
-    {"id": "V-COMP-01", "slice": "COMPOSITION", "command": "node tests/run_tests.mjs --match 'composition router'", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
-    {"id": "V-PACK-01", "slice": "PACKS", "command": "node scripts/kacha.mjs workflows validate", "expected": "pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
-    {"id": "V-REG-01", "slice": "UXDOC", "command": "node tests/run_tests.mjs", "expected": "154/154 pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
-    {"id": "V-PRIV-01", "slice": "UXDOC", "command": "make check-static", "expected": "syntax and secret scan pass", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json"},
-    {"id": "V-INSTALL-01", "slice": "UXDOC", "command": "node scripts/kacha.mjs install status --agent both", "expected": "source and installs synchronized", "status": "passed", "evidence": "quality/evidence/openmontage-local-verification.json", "bundleDigest": "9079e2e34469531e75ee234387a7d9653ccd450f141b4d3a130df69040291407"}
-  ]
+    {"id": "V-TB-01", "slice": "TB", "command": "node tests/run_tests.mjs --suite editor", "expected": "exact fractional timebase and conflict rejection", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
+    {"id": "V-PROJ-01", "slice": "PROJ", "command": "node tests/run_tests.mjs --suite editor", "expected": "typed projection allowlist uniqueness timing and geometry gates", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
+    {"id": "V-CMD-01", "slice": "CMD", "command": "node tests/run_tests.mjs --suite editor", "expected": "apply undo redo drift strict-command inverse-array tamper trailing-truncation recover reopen and rollback gates", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
+    {"id": "V-API-01", "slice": "API", "command": "node tests/run_tests.mjs --suite editor", "expected": "realpath/session-bound local HTTP journey, identity-bound media range and forged-session rejection", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
+    {"id": "V-UI-01", "slice": "UI", "command": "Playwright CLI real browser journey", "expected": "open EDL output-to-source mapping apply undo redo desktop narrow no console errors", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
+    {"id": "V-PREVIEW-01", "slice": "PREVIEW", "command": "kacha editor preview-capabilities and preview-eligibility", "expected": "FFmpeg runtime probe passes while approximate and unimplemented providers are rejected for final", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
+    {"id": "V-GOV-01", "slice": "GOV", "command": "node tests/run_tests.mjs", "expected": "159/159 pass", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
+    {"id": "V-GOV-02", "slice": "GOV", "command": "make check-static and git diff --check", "expected": "syntax secret privacy and diff checks pass", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
+    {"id": "V-GOV-03", "slice": "GOV", "command": "bash tests/test_installer.sh", "expected": "installer regression pass", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
+    {"id": "V-GOV-04", "slice": "GOV", "command": "node scripts/kacha.mjs install status --agent both", "expected": "Codex and Claude current", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json", "bundleDigest": "738121d4af1fe2754b33dcf189745e62ad4b15119a28f436d705e960fa03842d"}
+  ],
+  "externalBoundaries": ["independent final review", "real-project final render and human review", "candidate release", "production outcomes"]
 }

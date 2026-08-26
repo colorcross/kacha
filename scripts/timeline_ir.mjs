@@ -21,6 +21,10 @@ import {
 } from "./kacha_config.mjs";
 import { acquireResourceLeases } from "./resource_pool.mjs";
 import { alignSfxPeak } from "./sfx_peak_alignment.mjs";
+import {
+  canonicalizeTimelineTime,
+  timebaseSummary,
+} from "./media_time.mjs";
 
 const args = process.argv.slice(2);
 const action = firstPositional(args, [
@@ -517,6 +521,12 @@ function validatePlan(planFile) {
       errors.push(`源视频无法探测：${error.message}`);
     }
   }
+  const fallbackFps = finite(plan.output?.fps)
+    ? Number(plan.output.fps)
+    : (summary?.averageFps || summary?.declaredFps || summary?.fps || 25);
+  const canonicalTime = canonicalizeTimelineTime(plan, fallbackFps);
+  errors.push(...canonicalTime.errors);
+  plan = canonicalTime.plan;
   let edl = [];
   let transitions = [];
   if (summary) {
@@ -1022,6 +1032,7 @@ function compileGraph(validated, loadedConfig) {
     schemaVersion: "1.0",
     projectId: plan.projectId,
     mode,
+    timebase: plan.timebase,
     contracts: Object.fromEntries(
       Object.entries(plan.contracts ?? {}).map(([name, entry]) => {
         const file = existingFile(validated.planFile, entry);
@@ -1705,9 +1716,9 @@ function render(validated, graph, graphFile, loadedConfig) {
   }
 }
 
-if (!["validate", "compile", "render"].includes(action)) {
+if (!["validate", "compile", "render", "migrate-timebase"].includes(action)) {
   fail(
-    "用法：kacha.mjs timeline validate|compile|render --plan TIMELINE.json "
+    "用法：kacha.mjs timeline validate|compile|render|migrate-timebase --plan TIMELINE.json "
       + "[--graph RENDER-GRAPH.json] [--output VIDEO] [--mode preview|final] "
       + "[--range-start SEC --range-end SEC（仅 preview）]",
     2,
@@ -1716,6 +1727,32 @@ if (!["validate", "compile", "render"].includes(action)) {
 const planInput = option("--plan");
 if (!planInput) fail("--plan 不能为空", 2);
 const planFile = path.resolve(planInput);
+if (action === "migrate-timebase") {
+  const migrationOutput = option("--output");
+  if (!migrationOutput) fail("migrate-timebase 必须使用 --output 写入新文件", 2);
+  const resolvedOutput = path.resolve(migrationOutput);
+  if (resolvedOutput === planFile) fail("migrate-timebase 不得覆盖输入文件", 2);
+  let input;
+  try {
+    input = readJson(planFile);
+  } catch (error) {
+    fail(`时间线 JSON 无法解析：${error.message}`, 2);
+  }
+  const migrated = canonicalizeTimelineTime(input, input.output?.fps ?? 25);
+  if (migrated.errors.length > 0) {
+    fail(`Timebase V2 迁移失败：${migrated.errors.join("；")}`, 2);
+  }
+  writeJsonAtomic(resolvedOutput, migrated.plan);
+  console.log(JSON.stringify({
+    schemaVersion: "2.0",
+    status: "pass",
+    input: planFile,
+    output: resolvedOutput,
+    timebase: timebaseSummary(migrated.timebase),
+    outputSha256: sha256File(resolvedOutput),
+  }, null, 2));
+  process.exit(0);
+}
 const validated = validatePlan(planFile);
 validated.planFile = planFile;
 if (validated.errors.length > 0) {
@@ -1744,6 +1781,7 @@ if (action === "validate") {
     durationSeconds: validated.duration,
     renderDurationSeconds: graph.durationSeconds,
     previewRange: graph.previewRange,
+    timebase: timebaseSummary(validated.plan.timebase),
     events: {
       edl: validated.edl.length,
       breathing: validated.plan.visual?.breathing?.length ?? 0,

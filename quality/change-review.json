@@ -1,49 +1,26 @@
 {
   "schemaVersion": "1.0",
-  "reviewId": "openmontage-gap-review-2026-08-26",
-  "status": "completed",
-  "observedAt": "2026-08-26T09:30:07+08:00",
-  "baseline": {
-    "revision": "0e4cda8f6615d186caa25e382ff620e182472369",
-    "trackedDirtyDiffSha256": "f9f808ce0275923b89f83aeac887f0a6108a6cd889f731dd5c8415d12c164448",
-    "preExistingUntrackedArtifacts": [
-      {"path": "docs/CINEMATIC_TEXT_SCENES_V1.md", "sha256": "6a43d2153d88f1a8b8cf7f80a700283cb015d5b73120edf6c8c152673763044c"},
-      {"path": "docs/CINEMATIC_TEXT_SCENES_V1_IMPLEMENTATION_2026-08-24.md", "sha256": "3829320b8f7f145ce1a2cc5a15d20f8639d71f59faa83e87073703f91f4a3029"},
-      {"path": "examples/cinematic-text-scene-cues.json", "sha256": "20188c1439fe9ab8ded7f81f5c3a45e88cfdd1a5baf44f1b40cff1b295745072"}
-    ],
-    "preservationRule": "Do not revert or overwrite pre-existing cinematic text-scene work; merge overlapping README, SKILL and test changes deliberately.",
-    "postReviewNormalizations": [
-      {
-        "path": "docs/CINEMATIC_TEXT_SCENES_V1_IMPLEMENTATION_2026-08-24.md",
-        "reason": "Remove one trailing-whitespace-only Markdown line break before commit.",
-        "beforeSha256": "3829320b8f7f145ce1a2cc5a15d20f8639d71f59faa83e87073703f91f4a3029",
-        "afterSha256": "a5124a70fc0494aa54db1ecc3061ee6c6daf12a976c746e86467b6c311ce4f34",
-        "semanticImpact": "none"
-      }
-    ]
-  },
-  "comparisonBoundary": {
-    "reference": "OpenMontage architectural patterns",
-    "licenseBoundary": "Clean-room implementation only; do not copy AGPL source code or protected assets.",
-    "productBoundary": "Kacha remains a deterministic local production kernel; agent/provider breadth is added through governed adapters."
-  },
+  "reviewId": "editor-core-deep-review-2026-08-26",
+  "status": "producer_findings_verified",
+  "observedAt": "2026-08-26T06:15:00Z",
+  "baseline": "432809035127e0aae6926a496964f89fca28c797",
+  "comparisonBoundary": "Working tree implementation of opencut-informed-editor-core-2026-08-26",
+  "reviewDimensions": ["product", "architecture", "data-contract", "implementation", "security", "reliability", "test", "accessibility", "responsive-design", "operations"],
   "findings": [
-    {"id": "F-OM-001", "severity": "high", "status": "accepted", "area": "capability-routing", "problem": "No unified, machine-enforced capability broker with discovery, hard exclusions and explainable ranking.", "recommendation": "Add a versioned provider registry and deterministic probe/rank/decision contract."},
-    {"id": "F-OM-002", "severity": "high", "status": "accepted", "area": "cost-governance", "problem": "Paid or metered providers do not share one reserve/approve/reconcile ledger.", "recommendation": "Enforce budget and unknown-cost blocking at the executor boundary."},
-    {"id": "F-OM-003", "severity": "high", "status": "accepted", "area": "reference-intelligence", "problem": "Reference-video analysis is not a first-class, rights-aware workflow artifact.", "recommendation": "Produce technical, structural and creative keep/change/do-not-copy handoff artifacts."},
-    {"id": "F-OM-004", "severity": "medium", "status": "accepted", "area": "observability", "problem": "Project events, telemetry, jobs, decisions and cost evidence are fragmented.", "recommendation": "Add a deterministic, read-only production flight recorder and replay."},
-    {"id": "F-OM-005", "severity": "medium", "status": "accepted", "area": "media-retrieval", "problem": "Current media search is asset-level and does not expose clip diversity, motion evidence or semantic fallback truthfully.", "recommendation": "Add clip corpus build/search with MMR diversity and explicit retrieval mode."},
-    {"id": "F-OM-006", "severity": "medium", "status": "accepted", "area": "composition", "problem": "Series/hero production intent and composition-engine selection are not a first-class decision artifact.", "recommendation": "Route through capability evidence with hard requirements and recorded alternatives."},
-    {"id": "F-OM-007", "severity": "medium", "status": "accepted", "area": "workflows", "problem": "High-value workflows are documented as generic paths rather than validated packs.", "recommendation": "Add versioned workflow packs mapped to existing Kacha stages and gates."},
-    {"id": "F-OM-008", "severity": "low", "status": "accepted", "area": "discoverability", "problem": "New production capabilities need coherent CLI, README, SKILL and onboarding surfaces.", "recommendation": "Expose one command family per contract and keep the Studio observer read-only."}
+    {"id": "R-ED-001", "severity": "high", "status": "verified", "problem": "A caller could submit the externally modified current SHA and bypass the persisted editor session SHA.", "rootCause": "The current-file check chose caller baseSha instead of independently checking both session and caller bases.", "fix": "Require disk SHA to equal session SHA and caller base SHA to equal session SHA; added external-drift regression."},
+    {"id": "R-ED-002", "severity": "high", "status": "verified", "problem": "Journal append could succeed before session persistence, leaving timeline journal and stacks inconsistent if session write failed.", "rootCause": "The mutation was atomic per file but not compensating across the three state files.", "fix": "Append records are fsynced without rewriting prior history; partial writes and session-write failures truncate to the prior byte offset while Timeline rollback restores the before snapshot."},
+    {"id": "R-ED-003", "severity": "high", "status": "verified", "problem": "Empty commands and duplicate caller-supplied command IDs could create ambiguous or no-op history.", "rootCause": "The JSON schema constraints were not duplicated at the runtime trust boundary.", "fix": "Runtime rejects empty changes and command IDs already present in the digest-validated journal."},
+    {"id": "R-ED-004", "severity": "medium", "status": "verified", "problem": "SFX projection always exposed timeTick even when the source contract used targetLandingTick, and omitted the Inspector value.", "rootCause": "The display field was hard-coded instead of following the chosen timing reference.", "fix": "Projection now exposes and populates the real tick field dynamically; regression asserts the mapping."},
+    {"id": "R-ED-005", "severity": "medium", "status": "verified", "problem": "Sanitized source IDs could collide and make item selection target the wrong Timeline object.", "rootCause": "Stable IDs were generated but uniqueness was not enforced.", "fix": "Projection rejects duplicate item IDs and requires unique source IDs."},
+    {"id": "R-ED-006", "severity": "medium", "status": "verified", "problem": "Browser editor sessions were expired only during a later open and could otherwise live beyond twelve hours.", "rootCause": "Expiry cleanup and session lookup were separate paths.", "fix": "All editor media and mutation requests now resolve through one expiry-enforcing session lookup."},
+    {"id": "R-ED-007", "severity": "low", "status": "verified", "problem": "Initial hidden workspace state, missing favicon and narrow-screen panel headings produced misleading or broken presentation.", "rootCause": "Hidden-state CSS and small-screen heading constraints were missing.", "fix": "Added authoritative hidden styling, data favicon, responsive heading wrapping and verified desktop/mobile screenshots with zero console errors."},
+    {"id": "R-ED-008", "severity": "medium", "status": "verified", "problem": "The preview provider runtime trusted purpose and several registry field shapes when called outside the CLI wrapper.", "rootCause": "Validation was split between CLI argument handling and the provider module.", "fix": "The module now rejects unknown purposes, malformed provider contracts and final providers missing the complete canonical capability set."},
+    {"id": "R-ED-009", "severity": "high", "status": "verified", "problem": "Studio stored a bare file identity while the range server required {path, identity}, so a real source video request failed although missing-source API tests passed.", "rootCause": "The integration test never exercised /api/editor/media with an existing source file.", "fix": "Bind source media as the server contract shape and add an identity-checked HTTP byte-range regression."},
+    {"id": "R-ED-010", "severity": "high", "status": "verified", "problem": "The plan promised snapshot recovery, but history only recommended recovery; a truncated final record followed by a newline was not even recognized as a recoverable tail.", "rootCause": "Recovery reporting and recovery execution were conflated, and truncation compared against the raw split-line index.", "fix": "Add explicit expected-SHA recover and reopen commands, archive prior state, restore only the last verified snapshot, re-chain history, and parse the last non-empty journal line."},
+    {"id": "R-ED-011", "severity": "high", "status": "verified", "problem": "Inverse capture for JSON array add replaced an existing element or tried to remove the '-' pseudo-index, so undo could leave shifted or extra entries.", "rootCause": "Object-add inversion rules were reused for array insertion and append.", "fix": "Resolve parent type and concrete append index before mutation; array add always inverts to remove the inserted index, with focused regressions."},
+    {"id": "R-ED-012", "severity": "high", "status": "verified", "problem": "Timeline sessions used path.resolve rather than realpath and runtime command validation accepted numeric strings, unknown fields and inherited property names.", "rootCause": "The documented schema was not fully enforced at the kernel boundary and symlink identity was not canonicalized.", "fix": "Bind projection/journal/session to fs.realpath, reject extra/control/oversized fields and non-number changes, use own-property allowlists, and require visual edit ticks on frame boundaries."},
+    {"id": "R-ED-013", "severity": "medium", "status": "verified", "problem": "The browser playhead treated output time as raw source time, producing the wrong frame after cuts or reordering; CLI projection also hashed the full source on every new process.", "rootCause": "Approximate preview lacked an EDL-to-source mapping and projection mixed interactive identity with final content hashing.", "fix": "Map output ticks through picture segments, disclose single-picture overlap behavior, and use fast source identity by default while retaining opt-in source hashing."},
+    {"id": "R-ED-014", "severity": "medium", "status": "verified", "problem": "FFmpeg was declared final-eligible without confirming that the current runtime existed.", "rootCause": "Registry availability represented implementation state but was read as runtime state.", "fix": "Require and expose a current ffmpeg -version runtime probe before final eligibility succeeds."}
   ],
-  "reviewDimensions": [
-    {"id": "product-direction", "status": "passed", "findingIds": ["F-OM-003", "F-OM-007"]},
-    {"id": "code-architecture", "status": "passed_with_findings", "findingIds": ["F-OM-001", "F-OM-004", "F-OM-006"]},
-    {"id": "business-logic", "status": "passed_with_findings", "findingIds": ["F-OM-002"]},
-    {"id": "data-api", "status": "passed_with_findings", "findingIds": ["F-OM-004", "F-OM-005"]},
-    {"id": "security-privacy-compliance", "status": "passed", "findingIds": ["F-OM-002", "F-OM-003"]},
-    {"id": "test-quality", "status": "passed_with_findings", "findingIds": ["F-OM-001", "F-OM-007"]}
-  ],
-  "decision": "implement_all_accepted_findings_with_local_evidence"
+  "decision": "All fourteen producer-review findings are fixed and verified by focused regression, 159-test full regression, real-browser EDL/apply/undo/redo journeys, static/privacy checks, installer regression and dual-agent install readback. Independent final review remains a separate completion boundary."
 }

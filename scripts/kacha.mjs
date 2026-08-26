@@ -51,6 +51,7 @@ function usage() {
       + "  kacha.mjs metrics run|summarize [options]\n"
       + "  kacha.mjs resources status|run [options]\n"
       + "  kacha.mjs delta diff|apply [options]\n"
+      + "  kacha.mjs editor inspect|project|query|history|command|preview-capabilities [options]\n"
       + "  kacha.mjs media index|search [options]\n"
       + "  kacha.mjs capabilities validate|list|probe|rank [options]\n"
       + "  kacha.mjs cost init|estimate|reserve|approve|consume|reconcile|refund|status|validate [options]\n"
@@ -80,7 +81,7 @@ function usage() {
       + "  kacha.mjs golden real --video VIDEO --output-dir DIR [options]\n"
       + "  kacha.mjs optimization-audit run --golden-report FILE --test-report FILE "
         + "--asr-report FILE --install-report FILE\n"
-      + "  kacha.mjs timeline validate|compile|render --plan TIMELINE.json [options]\n"
+      + "  kacha.mjs timeline validate|compile|render|migrate-timebase --plan TIMELINE.json [options]\n"
       + "  kacha.mjs render <project-manifest.json> [--mode preview|final]\n"
       + "  kacha.mjs gate-plan <project-manifest.json>\n"
       + "  kacha.mjs gate-render <project-manifest.json>\n"
@@ -172,6 +173,7 @@ const delegatedCommands = {
   metrics: "run_telemetry.mjs",
   resources: "resource_scheduler.mjs",
   delta: "kacha_delta.mjs",
+  editor: "kacha_editor.mjs",
   media: "kacha_media.mjs",
   capabilities: "capability_broker.mjs",
   cost: "cost_ledger.mjs",

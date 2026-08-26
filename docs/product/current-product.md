@@ -1,6 +1,6 @@
 # Current product
 
-> 对账修订：`openmontage-optimization-2026-08-26`。事实源为当前代码、README、
+> 对账修订：`opencut-informed-editor-core-2026-08-26`。事实源为当前代码、README、
 > SKILL、架构文档和本轮本地回归；不代表发布或生产结果。
 
 ## 当前目标用户与场景
@@ -22,5 +22,13 @@
 其中付费执行采用一次性预占消费和事后对账；参考片与 corpus 在使用时重验当前
 权利、用途、索引和源文件身份；飞行记录只输出限量脱敏的本地观察数据。
 
+本轮新增 Timebase V2、类型化 Timeline Projection、可校验 Command Journal、Editor
+CLI/API 与本地 `/editor` 专业调整工作台。用户可以在不建立第二套工程状态的前提下，
+查看轨道、调整 allowlist 内的时序和画面几何、撤销/重做并获得必须重跑的 QC 清单。
+浏览器按 EDL 把成片播放头映射到源片，但转场 overlap 仍为单画面近似；正式成片
+唯一由通过当前 runtime probe 的 FFmpeg Render Graph 生成。日志损坏可显式恢复
+最后有效快照，合法外部修改可显式重开 session，两者都要求当前 SHA 并归档旧状态。
+
 非目标：自动发布、无授权外传或付费、替代人工正常速度审片、承诺真实流量增长，
-以及复制第三方项目源码或参考片的独特表达。
+以及复制第三方项目源码或参考片的独特表达。Rust/WGPU 渲染仍只是明确标记为
+`not_implemented` 的 provider 边界，当前不属于可用能力或正式成片能力。

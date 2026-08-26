@@ -1,14 +1,16 @@
 {
   "schemaVersion": "1.0",
-  "status": "completed",
+  "status": "completed_locally",
   "surfaces": [
-    {"id": "cli-capability-governance", "kind": "cli", "states": ["valid", "excluded", "ranked", "blocked"], "status": "completed", "evidenceRefs": ["quality/evidence/openmontage-local-verification.json"]},
-    {"id": "cli-production-intelligence", "kind": "cli", "states": ["empty", "analyzed", "validated", "limited"], "status": "completed", "evidenceRefs": ["quality/evidence/openmontage-local-verification.json"]},
-    {"id": "studio-production-flight", "kind": "local-web-read-only", "states": ["empty", "loading", "ready", "error"], "status": "completed", "evidenceRefs": ["quality/evidence/openmontage-local-verification.json"]}
+    {"id": "editor-cli", "kind": "cli", "states": ["inspect", "project", "query", "apply", "undo", "redo", "history", "conflict", "recovery_required", "recover", "reopen"], "status": "completed", "evidenceRefs": ["quality/evidence/opencut-editor-local-verification.json"]},
+    {"id": "studio-editor", "kind": "local-web", "states": ["empty", "opening", "ready", "editable", "readonly", "error", "conflict", "required_qc"], "status": "completed", "evidenceRefs": ["quality/evidence/opencut-editor-local-verification.json"]},
+    {"id": "preview-provider-gate", "kind": "runtime-contract", "states": ["canonical", "approximate", "not_implemented", "blocked_final"], "status": "completed", "evidenceRefs": ["quality/evidence/opencut-editor-local-verification.json"]}
   ],
   "journeys": [
-    {"id": "reference-to-original-plan", "steps": ["analyze reference", "validate rights boundary", "derive original constraints", "handoff to Kacha plan"], "status": "completed"},
-    {"id": "provider-to-reconciled-cost", "steps": ["rank provider", "estimate", "reserve", "approve if required", "execute externally only when explicitly authorized", "reconcile"], "status": "completed_locally_without_paid_call"},
-    {"id": "project-to-flight-replay", "steps": ["discover evidence sources", "normalize", "sort", "snapshot", "replay/read in Studio"], "status": "completed"}
-  ]
+    {"id": "timeline-to-adjustment", "steps": ["open Timeline", "select projected item", "edit allowlisted field", "apply command", "see required QC"], "status": "completed_in_real_browser"},
+    {"id": "adjustment-recovery", "steps": ["apply", "undo", "redo", "detect truncated journal", "restore last valid snapshot with expected SHA", "verify re-chained history and archive"], "status": "completed_in_tests"},
+    {"id": "external-edit-reopen", "steps": ["detect external drift", "block caller current-SHA bypass", "explicitly reopen with expected current SHA", "archive prior session"], "status": "completed_in_tests"},
+    {"id": "preview-to-final-boundary", "steps": ["inspect providers", "allow approximate preview", "reject approximate final", "retain FFmpeg canonical final"], "status": "completed_locally"}
+  ],
+  "limitations": ["No real creator project was modified", "No formal final render or normal-speed human review was performed", "Independent final review is open"]
 }

@@ -62,6 +62,29 @@ edit plan、overlay、字幕、dialogue、BGM、SFX 与字体目录的真实内�
 所有输入身份、输出及全部声明 stem 同时匹配时才复用。同路径素材原地替换会
 改变 graph digest；已有正式输出不会被失效 graph 静默覆盖。
 
+### `Timebase V2 + Timeline Projection + Command Journal`
+
+Timeline IR 的编辑边界使用每秒 120000 tick 的整数时间和有理帧率。旧版 seconds
+继续作为兼容输入；存在 tick 时 tick 权威，seconds 必须在半帧误差内一致。
+`timeline migrate-timebase` 只写新文件，避免迁移覆盖生产基线。
+
+`timeline_projection.mjs` 从 Timeline IR 派生主画面、叠加、字幕、效果、
+dialogue、BGM 和 SFX 轨。每个 item 保留 source pointer、稳定 ID、可编辑字段
+allowlist 和只读原因；projection 不保存第二份工程状态。
+
+`editor_command_journal.mjs` 把工作台或 Agent 修改编译为共享 JSON Mutation，
+记录 forward/inverse operation、before/after SHA、内容寻址 snapshot、影响轨道、
+所需 QC 和 append-only 摘要链。apply/undo/redo 都使用同一乐观锁和原子写路径；
+并发修改、日志篡改或截断会失败关闭并生成 recovery contract。`recover` 只在
+调用者提供当前 SHA 后恢复摘要链最后一个可验证 snapshot，并归档恢复前 Timeline、
+session 和 journal；`reopen` 用于显式接受合法外部修改并建立新 session。操作级
+journal 不替代 V3 version delta、V7 orchestration 或 release 状态。
+
+Studio `/editor` 是校正与批准 surface。浏览器 Canvas provider 固定为近似预览，
+按 EDL 将成片播放头映射到源片区间，但不合成转场 overlap；`finalEligible=false`。
+正式成片仍由通过当前 runtime probe 的 `ffmpeg-render-graph` 生成。未来 WebGPU
+只有通过 current golden parity 和完整能力覆盖后才可能获得 final 资格。
+
 ### `.kacha/metrics + cache + project-state`
 
 - `metrics/events.jsonl`：逐阶段墙钟时间、真实/估算 Token 来源、缓存、编码
@@ -236,6 +259,8 @@ start ──► 方案确认 ──► 首剪确认 ──► 成片审阅 ─�
 - `delta / media / jobs / refs / install`：Agent 对话控制面，分别处理操作级
   变化、本地语义素材、后台任务与 placeholder、对象短引用和双端同步状态；
   不改变既有项目状态机或授权边界。
+- `editor`：读取 Timebase V2 Timeline Projection，并通过 Command Journal 完成
+  受 allowlist 和 SHA 保护的 apply/undo/redo；不拥有渲染、QC 或发布授权。
 
 `nextAction.owner` 把 `agent`、`render_engine` 和 `human` 分开，防止验证命令
 冒充渲染、自动 QC 冒充审片。详细合同见
