@@ -1,27 +1,146 @@
 {
   "schemaVersion": 1,
   "productRef": "product-platforms.json",
-  "currentProductRevision": "working-tree:opencut-informed-editor-core-2026-08-26",
-  "currentIterationId": "opencut-informed-editor-core-2026-08-26",
+  "currentProductRevision": "working-tree:kacha-product-optimization-2026-08-30",
+  "currentIterationId": "kacha-product-optimization-2026-08-30",
   "candidateRevision": null,
   "status": "in_sync",
   "breakingProductChange": false,
   "changeImpact": {
-    "dimensions": ["scope-and-capabilities", "information-architecture-and-journeys", "ui-and-interaction", "business-rules-and-permissions", "data-and-integrations", "metrics-and-market-learning", "operations-and-service-model"],
-    "summary": "在既有确定性生产内核上新增精确时间基、类型化 Timeline 投影、可恢复 Command Journal、专业调整工作台和正式预览资格门禁；最终自审补齐真实媒体读取、快照恢复/显式重开、数组逆操作、realpath/命令合同、EDL 预览映射、交互性能与 FFmpeg runtime probe。",
-    "changeRefs": ["quality/implementation-plan.json", "quality/change-review.json", "docs/EDITOR_FINAL_PLAN_2026-08-26.md"],
-    "affectedDocumentIds": ["current-product", "product-experience", "business-rules", "metrics-and-learning", "roadmap-and-decisions"]
+    "dimensions": [
+      "product-direction",
+      "target-users-and-problems",
+      "scope-and-capabilities",
+      "information-architecture-and-journeys",
+      "ui-and-interaction",
+      "business-rules-and-permissions",
+      "data-and-integrations",
+      "metrics-and-market-learning",
+      "operations-and-service-model"
+    ],
+    "summary": "修复公开安装、macOS smoke、Studio 启动与 HTTP 边界；建立机器可检产品事实、明确发布渠道、正确双语文档语言和本地优先采用度量，并保持 Timeline IR、FFmpeg final 与人工审片边界不变。",
+    "changeRefs": [
+      "quality/product-audit-2026-08-30.json",
+      "quality/implementation-plan.json",
+      "quality/product-optimization-plan-review-2026-08-30.json",
+      "quality/product-optimization-execution-log-2026-08-30.md"
+    ],
+    "affectedDocumentIds": [
+      "current-product",
+      "product-experience",
+      "business-rules",
+      "metrics-and-learning",
+      "roadmap-and-decisions"
+    ]
   },
   "documents": [
-    {"id": "current-product", "path": "docs/product/current-product.md", "required": true, "owner": "product-owner:user", "status": "current", "previousContentDigest": "sha256:e41437e628952e464d3007ef09a665f853000ce8a14ba1a61dfb25f7f55cca89", "contentDigest": "sha256:5d3900b6b6a678b15870fdeedbe227cba555ffd8b285ba4bf836728a0c796c7e", "reflectsProductRevision": "working-tree:opencut-informed-editor-core-2026-08-26", "lastUpdatedAt": "2026-08-26T06:16:00Z", "reviewedBy": "codex-primary", "reviewedAt": "2026-08-26T06:16:00Z", "changeRefs": ["quality/implementation-plan.json"], "evidenceRefs": ["docs/EDITOR_FINAL_PLAN_2026-08-26.md", "quality/change-review.json"]},
-    {"id": "product-experience", "path": "docs/product/product-experience.md", "required": true, "owner": "product-owner:user", "status": "current", "previousContentDigest": "sha256:36b022b8c9b681cfe1b680bc8b70d6d0c1fe39970b87feef5d6f07dd00abafb7", "contentDigest": "sha256:4885f9bd7a134af47430659c3d2844561c2d2f0f59377e4c00fd816d8b51be8f", "reflectsProductRevision": "working-tree:opencut-informed-editor-core-2026-08-26", "lastUpdatedAt": "2026-08-26T06:16:00Z", "reviewedBy": "codex-primary", "reviewedAt": "2026-08-26T06:16:00Z", "changeRefs": ["quality/implementation-plan.json"], "evidenceRefs": ["studio/editor.html", "quality/change-review.json"]},
-    {"id": "business-rules", "path": "docs/product/business-rules.md", "required": true, "owner": "product-owner:user", "status": "current", "previousContentDigest": "sha256:3543c8c21709e70e8c016a34e9ecbecd405db93e57b5de7a52183f0fc859577f", "contentDigest": "sha256:d2357da2bdf99f1dafb51b9cfabffacc9e3bda6b06b6fcc540f86ad683748df7", "reflectsProductRevision": "working-tree:opencut-informed-editor-core-2026-08-26", "lastUpdatedAt": "2026-08-26T06:16:00Z", "reviewedBy": "codex-primary", "reviewedAt": "2026-08-26T06:16:00Z", "changeRefs": ["quality/implementation-plan.json"], "evidenceRefs": ["scripts/editor_command_journal.mjs", "scripts/preview_provider.mjs", "quality/change-review.json"]},
-    {"id": "metrics-and-learning", "path": "docs/product/metrics-and-learning.md", "required": true, "owner": "product-owner:user", "status": "current", "previousContentDigest": "sha256:0cd70223c483c1098d24de034cab1d9dff9efa5652f5488bd62693eb5f16cae7", "contentDigest": "sha256:69533e6d6c3df9d0b41a18a63431310df2d08dfe61dfb670be7d1524f005dfc7", "reflectsProductRevision": "working-tree:opencut-informed-editor-core-2026-08-26", "lastUpdatedAt": "2026-08-26T06:16:00Z", "reviewedBy": "codex-primary", "reviewedAt": "2026-08-26T06:16:00Z", "changeRefs": ["quality/implementation-plan.json", "quality/verification-matrix.json"], "evidenceRefs": ["tests/run_tests.mjs", "quality/change-review.json"]},
-    {"id": "roadmap-and-decisions", "path": "docs/product/roadmap-and-decisions.md", "required": true, "owner": "product-owner:user", "status": "current", "previousContentDigest": "sha256:3fc367742c41e7bcecd2adde19984f12eeac0a0e808eef83028579d616794915", "contentDigest": "sha256:8e77555f911b0baad78d662d3934f3fba1ce728a08b2bf781bf440d312b5e0d6", "reflectsProductRevision": "working-tree:opencut-informed-editor-core-2026-08-26", "lastUpdatedAt": "2026-08-26T06:16:00Z", "reviewedBy": "codex-primary", "reviewedAt": "2026-08-26T06:16:00Z", "changeRefs": ["quality/implementation-plan.json"], "evidenceRefs": ["quality/change-review.json", "docs/EDITOR_FINAL_PLAN_2026-08-26.md"]}
+    {
+      "id": "current-product",
+      "path": "docs/product/current-product.md",
+      "required": true,
+      "owner": "product-owner:user",
+      "status": "current",
+      "previousContentDigest": "sha256:5d3900b6b6a678b15870fdeedbe227cba555ffd8b285ba4bf836728a0c796c7e",
+      "contentDigest": "sha256:8f6c9f5a7fad5eea69d07bbc9eab8952e5bb7efff352231892776f35d5849349",
+      "reflectsProductRevision": "working-tree:kacha-product-optimization-2026-08-30",
+      "lastUpdatedAt": "2026-08-30T13:50:00Z",
+      "reviewedBy": "codex-primary",
+      "reviewedAt": "2026-08-30T13:50:00Z",
+      "changeRefs": ["quality/implementation-plan.json"],
+      "evidenceRefs": ["quality/product-audit-2026-08-30.json", "quality/product-optimization-execution-log-2026-08-30.md"]
+    },
+    {
+      "id": "product-experience",
+      "path": "docs/product/product-experience.md",
+      "required": true,
+      "owner": "product-owner:user",
+      "status": "current",
+      "previousContentDigest": "sha256:4885f9bd7a134af47430659c3d2844561c2d2f0f59377e4c00fd816d8b51be8f",
+      "contentDigest": "sha256:b69d3cb4f02158cafd4bade43d92057b4822082bf8402747e47cefd2c56e66a6",
+      "reflectsProductRevision": "working-tree:kacha-product-optimization-2026-08-30",
+      "lastUpdatedAt": "2026-08-30T13:50:00Z",
+      "reviewedBy": "codex-primary",
+      "reviewedAt": "2026-08-30T13:50:00Z",
+      "changeRefs": ["quality/implementation-plan.json"],
+      "evidenceRefs": ["quality/product-audit-2026-08-30.json", "quality/product-optimization-execution-log-2026-08-30.md"]
+    },
+    {
+      "id": "business-rules",
+      "path": "docs/product/business-rules.md",
+      "required": true,
+      "owner": "product-owner:user",
+      "status": "current",
+      "previousContentDigest": "sha256:d2357da2bdf99f1dafb51b9cfabffacc9e3bda6b06b6fcc540f86ad683748df7",
+      "contentDigest": "sha256:49a6e615706c22e868db5d3e0db39a32cfcd0d5255f26eb652b2607b3c416b31",
+      "reflectsProductRevision": "working-tree:kacha-product-optimization-2026-08-30",
+      "lastUpdatedAt": "2026-08-30T13:50:00Z",
+      "reviewedBy": "codex-primary",
+      "reviewedAt": "2026-08-30T13:50:00Z",
+      "changeRefs": ["quality/implementation-plan.json"],
+      "evidenceRefs": ["scripts/install.sh", "scripts/kacha_studio_server.mjs", "quality/product-optimization-execution-log-2026-08-30.md"]
+    },
+    {
+      "id": "metrics-and-learning",
+      "path": "docs/product/metrics-and-learning.md",
+      "required": true,
+      "owner": "product-owner:user",
+      "status": "current",
+      "previousContentDigest": "sha256:69533e6d6c3df9d0b41a18a63431310df2d08dfe61dfb670be7d1524f005dfc7",
+      "contentDigest": "sha256:1eeda8a45d6017de35289fe951399608e4d4904bf5b0fdf44da097fefd8d758f",
+      "reflectsProductRevision": "working-tree:kacha-product-optimization-2026-08-30",
+      "lastUpdatedAt": "2026-08-30T13:50:00Z",
+      "reviewedBy": "codex-primary",
+      "reviewedAt": "2026-08-30T13:50:00Z",
+      "changeRefs": ["quality/implementation-plan.json", "docs/product/adoption-measurement.md"],
+      "evidenceRefs": ["scripts/verify_product_truth.mjs", "quality/product-optimization-execution-log-2026-08-30.md"]
+    },
+    {
+      "id": "roadmap-and-decisions",
+      "path": "docs/product/roadmap-and-decisions.md",
+      "required": true,
+      "owner": "product-owner:user",
+      "status": "current",
+      "previousContentDigest": "sha256:8e77555f911b0baad78d662d3934f3fba1ce728a08b2bf781bf440d312b5e0d6",
+      "contentDigest": "sha256:4b9cb28d62292cd4483eb07708f6bb4f84db2ab2a44abd46a191b2ce8648a33e",
+      "reflectsProductRevision": "working-tree:kacha-product-optimization-2026-08-30",
+      "lastUpdatedAt": "2026-08-30T13:50:00Z",
+      "reviewedBy": "codex-primary",
+      "reviewedAt": "2026-08-30T13:50:00Z",
+      "changeRefs": ["quality/implementation-plan.json"],
+      "evidenceRefs": ["quality/product-audit-roadmap-2026-08-30.json", "quality/product-optimization-execution-log-2026-08-30.md"]
+    }
   ],
   "iterationHistory": [
-    {"iterationId": "openmontage-optimization-2026-08-26", "productRevision": "working-tree:openmontage-optimization-2026-08-26", "changedDimensions": ["scope-and-capabilities", "information-architecture-and-journeys", "ui-and-interaction", "business-rules-and-permissions", "data-and-integrations", "metrics-and-market-learning", "operations-and-service-model"], "affectedDocumentIds": ["current-product", "product-experience", "business-rules", "metrics-and-learning", "roadmap-and-decisions"], "updatedDocumentIds": ["current-product", "product-experience", "business-rules", "metrics-and-learning", "roadmap-and-decisions"], "reviewedBy": "codex-primary", "reviewedAt": "2026-08-26T02:35:59Z", "evidenceRefs": ["docs/OPENMONTAGE_OPTIMIZATION_IMPLEMENTATION_2026-08-26.md", "quality/verification-matrix.json", "quality/deep-multidisciplinary-review-2026-08-26.md"]},
-    {"iterationId": "opencut-informed-editor-core-2026-08-26", "productRevision": "working-tree:opencut-informed-editor-core-2026-08-26", "changedDimensions": ["scope-and-capabilities", "information-architecture-and-journeys", "ui-and-interaction", "business-rules-and-permissions", "data-and-integrations", "metrics-and-market-learning", "operations-and-service-model"], "affectedDocumentIds": ["current-product", "product-experience", "business-rules", "metrics-and-learning", "roadmap-and-decisions"], "updatedDocumentIds": ["current-product", "product-experience", "business-rules", "metrics-and-learning", "roadmap-and-decisions"], "reviewedBy": "codex-primary", "reviewedAt": "2026-08-26T06:16:00Z", "evidenceRefs": ["docs/EDITOR_FINAL_PLAN_2026-08-26.md", "quality/change-review.json", "quality/verification-matrix.json"]}
+    {
+      "iterationId": "openmontage-optimization-2026-08-26",
+      "productRevision": "working-tree:openmontage-optimization-2026-08-26",
+      "changedDimensions": ["scope-and-capabilities", "information-architecture-and-journeys", "ui-and-interaction", "business-rules-and-permissions", "data-and-integrations", "metrics-and-market-learning", "operations-and-service-model"],
+      "affectedDocumentIds": ["current-product", "product-experience", "business-rules", "metrics-and-learning", "roadmap-and-decisions"],
+      "updatedDocumentIds": ["current-product", "product-experience", "business-rules", "metrics-and-learning", "roadmap-and-decisions"],
+      "reviewedBy": "codex-primary",
+      "reviewedAt": "2026-08-26T02:35:59Z",
+      "evidenceRefs": ["docs/OPENMONTAGE_OPTIMIZATION_IMPLEMENTATION_2026-08-26.md", "quality/verification-matrix.json", "quality/deep-multidisciplinary-review-2026-08-26.md"]
+    },
+    {
+      "iterationId": "opencut-informed-editor-core-2026-08-26",
+      "productRevision": "working-tree:opencut-informed-editor-core-2026-08-26",
+      "changedDimensions": ["scope-and-capabilities", "information-architecture-and-journeys", "ui-and-interaction", "business-rules-and-permissions", "data-and-integrations", "metrics-and-market-learning", "operations-and-service-model"],
+      "affectedDocumentIds": ["current-product", "product-experience", "business-rules", "metrics-and-learning", "roadmap-and-decisions"],
+      "updatedDocumentIds": ["current-product", "product-experience", "business-rules", "metrics-and-learning", "roadmap-and-decisions"],
+      "reviewedBy": "codex-primary",
+      "reviewedAt": "2026-08-26T06:16:00Z",
+      "evidenceRefs": ["docs/EDITOR_FINAL_PLAN_2026-08-26.md", "quality/evidence/opencut-editor-local-verification.json", "quality/deep-multidisciplinary-review-2026-08-26.md"]
+    },
+    {
+      "iterationId": "kacha-product-optimization-2026-08-30",
+      "productRevision": "working-tree:kacha-product-optimization-2026-08-30",
+      "changedDimensions": ["product-direction", "target-users-and-problems", "scope-and-capabilities", "information-architecture-and-journeys", "ui-and-interaction", "business-rules-and-permissions", "data-and-integrations", "metrics-and-market-learning", "operations-and-service-model"],
+      "affectedDocumentIds": ["current-product", "product-experience", "business-rules", "metrics-and-learning", "roadmap-and-decisions"],
+      "updatedDocumentIds": ["current-product", "product-experience", "business-rules", "metrics-and-learning", "roadmap-and-decisions"],
+      "reviewedBy": "codex-primary",
+      "reviewedAt": "2026-08-30T13:50:00Z",
+      "evidenceRefs": ["quality/product-audit-2026-08-30.json", "quality/implementation-plan.json", "quality/product-optimization-execution-log-2026-08-30.md"]
+    }
   ],
   "supersededProductDefinitions": []
 }

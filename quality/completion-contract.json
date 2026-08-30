@@ -2,185 +2,51 @@
   "$schema": "appcreate://schemas/completion-contract.schema.json",
   "schemaVersion": 1,
   "scope": {
-    "id": "opencut-informed-editor-core",
-    "revision": "scope-2026-08-26-editor-r2",
-    "status": "changed",
-    "baselineRef": "432809035127e0aae6926a496964f89fca28c797",
+    "id": "kacha-product-optimization-2026-08-30",
+    "revision": "scope-2026-08-30-product-optimization-r1",
+    "status": "frozen",
+    "baselineRef": "51e0e782ec2554e0e070a3d3c779a58f55cb48a3",
     "candidateRef": null,
     "inScopeTaskIds": [
-      "TB",
-      "PROJ",
-      "CMD",
-      "API",
-      "UI",
-      "PREVIEW",
-      "GOV"
+      "INSTALL",
+      "STUDIO-RUNTIME",
+      "STUDIO-BOUNDARY",
+      "MACOS-CI",
+      "PRODUCT-TRUTH",
+      "LOCALE-ACCESSIBILITY",
+      "VERIFY-DEPLOY"
     ],
     "outOfScope": [
-      "Rust WGPU implementation",
-      "browser final export",
-      "general NLE",
-      "external publication",
-      "GitHub Release",
-      "real-project outcome claims"
+      "GitHub Release or tag",
+      "third-party analytics",
+      "vinext major-beta migration",
+      "general NLE scope",
+      "real creator and business outcome claims",
+      "producer self-approval as independent final review"
     ],
     "planSource": "quality/implementation-plan.json",
-    "frozenAt": "2026-08-26T04:24:59Z",
+    "frozenAt": "2026-08-30T12:28:00Z",
     "approvedBy": "product-owner:user"
   },
   "claimedStatus": "partial",
   "tasks": [
     {
-      "id": "TB",
-      "title": "Timebase V2",
-      "workType": "code",
-      "risk": "medium",
-      "required": true,
-      "planRefs": [
-        "vertical-slice:TB"
-      ],
-      "status": "completed",
-      "startedAt": "2026-08-26T04:24:59Z",
-      "finishedAt": "2026-08-26T05:20:00Z",
-      "implementationActor": "codex-primary",
-      "implementationRefs": [
-        "scripts/media_time.mjs",
-        "scripts/timeline_ir.mjs",
-        "config/schemas/timeline-timebase-v2.schema.json"
-      ],
-      "testRefs": [
-        "E-LOCAL"
-      ],
-      "evidenceRefs": [
-        "E-LOCAL"
-      ],
-      "acceptanceCriteria": [
-        {
-          "id": "exact",
-          "description": "Fractional and integer frame rates round-trip exactly at frame boundaries",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        },
-        {
-          "id": "migration",
-          "description": "Legacy Timeline migration writes a new canonical file",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        },
-        {
-          "id": "conflict",
-          "description": "Conflicting seconds and ticks fail closed",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        }
-      ],
-      "deliverables": [
-        {
-          "path": "scripts/media_time.mjs",
-          "status": "present",
-          "sha256": "sha256:6aeefaa5ead251f0c00957237cd842cd3698585290dbf74ca847bd47b247d048",
-          "minBytes": 1000
-        }
-      ],
-      "blocker": null,
-      "completionReview": {
-        "decision": "passed",
-        "reviewer": "codex-primary",
-        "reviewedAt": "2026-08-26T05:20:00Z",
-        "evidenceRefs": [
-          "E-LOCAL"
-        ]
-      }
-    },
-    {
-      "id": "PROJ",
-      "title": "Typed Timeline Projection",
-      "workType": "code",
-      "risk": "medium",
-      "required": true,
-      "planRefs": [
-        "vertical-slice:PROJ"
-      ],
-      "status": "completed",
-      "startedAt": "2026-08-26T04:24:59Z",
-      "finishedAt": "2026-08-26T05:20:00Z",
-      "implementationActor": "codex-primary",
-      "implementationRefs": [
-        "scripts/timeline_projection.mjs"
-      ],
-      "testRefs": [
-        "E-LOCAL"
-      ],
-      "evidenceRefs": [
-        "E-LOCAL"
-      ],
-      "acceptanceCriteria": [
-        {
-          "id": "typed",
-          "description": "Projection exposes typed tracks stable unique item IDs and source pointers",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        },
-        {
-          "id": "allowlist",
-          "description": "Only explicit per-item fields are editable",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        },
-        {
-          "id": "validation",
-          "description": "Invalid timing and out-of-canvas geometry fail closed",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        }
-      ],
-      "deliverables": [
-        {
-          "path": "scripts/timeline_projection.mjs",
-          "status": "present",
-          "sha256": "sha256:778369fd536e2b7771a769243b583a75b4057b9fc93ea66f67d34e2c372d350c",
-          "minBytes": 1000
-        }
-      ],
-      "blocker": null,
-      "completionReview": {
-        "decision": "passed",
-        "reviewer": "codex-primary",
-        "reviewedAt": "2026-08-26T05:20:00Z",
-        "evidenceRefs": [
-          "E-LOCAL"
-        ]
-      }
-    },
-    {
-      "id": "CMD",
-      "title": "Atomic Command Journal",
+      "id": "INSTALL",
+      "title": "Secure public installer and explicit channel choice",
       "workType": "code",
       "risk": "high",
       "required": true,
       "planRefs": [
-        "vertical-slice:CMD"
+        "vertical-slice:INSTALL"
       ],
       "status": "partial",
-      "startedAt": "2026-08-26T04:24:59Z",
+      "startedAt": "2026-08-30T12:30:00Z",
       "finishedAt": null,
       "implementationActor": "codex-primary",
       "implementationRefs": [
-        "scripts/editor_command_journal.mjs",
-        "scripts/json_mutation.mjs",
-        "config/schemas/editor-command.schema.json"
+        "scripts/install.sh",
+        "tests/test_installer.sh",
+        "website/app/site-content.ts"
       ],
       "testRefs": [
         "E-LOCAL"
@@ -190,24 +56,38 @@
       ],
       "acceptanceCriteria": [
         {
-          "id": "atomic",
-          "description": "Apply undo and redo are atomic and hash protected",
+          "id": "checkout-channels",
+          "description": "checkout stable and canary dry-runs pass",
           "status": "passed",
           "evidenceRefs": [
             "E-LOCAL"
           ]
         },
         {
-          "id": "integrity",
-          "description": "Journal digest-chain tamper and truncation are detected",
+          "id": "mocked-pipe",
+          "description": "piped execution works with a mocked authoritative config fetch before push",
           "status": "passed",
           "evidenceRefs": [
             "E-LOCAL"
           ]
         },
         {
-          "id": "drift",
-          "description": "External drift duplicate IDs and duplicate commands fail closed",
+          "id": "official-remote-pipe",
+          "description": "the official remote piped dry-run succeeds from the pushed commit",
+          "status": "pending",
+          "evidenceRefs": []
+        },
+        {
+          "id": "fail-closed",
+          "description": "invalid config and fetch failure fail closed",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "channel-copy",
+          "description": "website names canary and documents stable",
           "status": "passed",
           "evidenceRefs": [
             "E-LOCAL"
@@ -216,243 +96,37 @@
       ],
       "deliverables": [
         {
-          "path": "scripts/editor_command_journal.mjs",
+          "path": "scripts/install.sh",
           "status": "present",
-          "sha256": "sha256:8c453f7f1a0a1fb66edb35b60f216db11c55083ddc3a214a5eb38798417a8fe4",
+          "sha256": "sha256:f952c5394cf809916bcfb54c50dcbd691b4ba57dd23b41e381af71d683252bdc",
           "minBytes": 1000
         }
       ],
       "blocker": null,
       "completionReview": {
-        "decision": "passed",
-        "reviewer": "codex-primary",
-        "reviewedAt": "2026-08-26T05:20:00Z",
-        "evidenceRefs": [
-          "E-LOCAL"
-        ],
-        "limitation": "Independent high-risk review remains open."
+        "decision": "pending_independent_review",
+        "reviewer": null,
+        "reviewedAt": null,
+        "evidenceRefs": []
       }
     },
     {
-      "id": "API",
-      "title": "Shared Editor API",
+      "id": "STUDIO-RUNTIME",
+      "title": "Warmed immutable Studio catalog with live custom styles",
       "workType": "code",
-      "risk": "high",
-      "required": true,
-      "planRefs": [
-        "vertical-slice:API"
-      ],
-      "status": "partial",
-      "startedAt": "2026-08-26T04:24:59Z",
-      "finishedAt": null,
-      "implementationActor": "codex-primary",
-      "implementationRefs": [
-        "scripts/kacha_editor.mjs",
-        "scripts/kacha_studio_server.mjs"
-      ],
-      "testRefs": [
-        "E-LOCAL"
-      ],
-      "evidenceRefs": [
-        "E-LOCAL"
-      ],
-      "acceptanceCriteria": [
-        {
-          "id": "shared",
-          "description": "CLI and Studio share the same editor kernel",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        },
-        {
-          "id": "session",
-          "description": "Browser sessions bind one Timeline and expire",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        },
-        {
-          "id": "forgery",
-          "description": "Forged sessions cannot select arbitrary write paths",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        }
-      ],
-      "deliverables": [
-        {
-          "path": "scripts/kacha_editor.mjs",
-          "status": "present",
-          "sha256": "sha256:89c4acc4805e61f5ea31c805f3938ad2bb6177a7badf87049ccfb92623eb6e3c",
-          "minBytes": 1000
-        }
-      ],
-      "blocker": null,
-      "completionReview": {
-        "decision": "passed",
-        "reviewer": "codex-primary",
-        "reviewedAt": "2026-08-26T05:20:00Z",
-        "evidenceRefs": [
-          "E-LOCAL"
-        ],
-        "limitation": "Independent high-risk review remains open."
-      }
-    },
-    {
-      "id": "UI",
-      "title": "Studio professional adjustment workbench",
-      "workType": "ui",
       "risk": "medium",
       "required": true,
       "planRefs": [
-        "vertical-slice:UI"
+        "vertical-slice:STUDIO-RUNTIME"
       ],
       "status": "completed",
-      "startedAt": "2026-08-26T04:24:59Z",
-      "finishedAt": "2026-08-26T05:20:00Z",
+      "startedAt": "2026-08-30T12:30:00Z",
+      "finishedAt": "2026-08-30T14:05:00Z",
       "implementationActor": "codex-primary",
       "implementationRefs": [
-        "studio/editor.html",
-        "studio/editor.css",
-        "studio/editor.js"
-      ],
-      "testRefs": [
-        "E-LOCAL"
-      ],
-      "evidenceRefs": [
-        "E-LOCAL"
-      ],
-      "acceptanceCriteria": [
-        {
-          "id": "surface",
-          "description": "Workbench opens a Timeline and renders source projection tracks and Inspector",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        },
-        {
-          "id": "journey",
-          "description": "Apply undo and redo complete in a real browser",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        },
-        {
-          "id": "responsive",
-          "description": "Empty loading error desktop and narrow layouts remain legible with no console errors",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        }
-      ],
-      "deliverables": [
-        {
-          "path": "studio/editor.html",
-          "status": "present",
-          "sha256": "sha256:5e0ca14e6d8622f6b4cffe2b17bf32d96cc7685e8fad56d56c8517f2cfb669c4",
-          "minBytes": 1000
-        }
-      ],
-      "blocker": null,
-      "completionReview": {
-        "decision": "passed",
-        "reviewer": "codex-primary",
-        "reviewedAt": "2026-08-26T05:20:00Z",
-        "evidenceRefs": [
-          "E-LOCAL"
-        ]
-      }
-    },
-    {
-      "id": "PREVIEW",
-      "title": "Preview provider final gate",
-      "workType": "config",
-      "risk": "high",
-      "required": true,
-      "planRefs": [
-        "vertical-slice:PREVIEW"
-      ],
-      "status": "partial",
-      "startedAt": "2026-08-26T04:24:59Z",
-      "finishedAt": null,
-      "implementationActor": "codex-primary",
-      "implementationRefs": [
-        "scripts/preview_provider.mjs",
-        "config/editor/preview-providers.json"
-      ],
-      "testRefs": [
-        "E-LOCAL"
-      ],
-      "evidenceRefs": [
-        "E-LOCAL"
-      ],
-      "acceptanceCriteria": [
-        {
-          "id": "label",
-          "description": "Approximate preview is visibly labeled",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        },
-        {
-          "id": "final-block",
-          "description": "Unknown approximate and unimplemented providers cannot produce final",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        },
-        {
-          "id": "canonical",
-          "description": "FFmpeg remains the only current final-eligible provider",
-          "status": "passed",
-          "evidenceRefs": [
-            "E-LOCAL"
-          ]
-        }
-      ],
-      "deliverables": [
-        {
-          "path": "scripts/preview_provider.mjs",
-          "status": "present",
-          "sha256": "sha256:613b74428f53b9d8da2f3440107c60dd2db35feb5b62b0d8b7c1c9fc479f7bde",
-          "minBytes": 1000
-        }
-      ],
-      "blocker": null,
-      "completionReview": {
-        "decision": "passed",
-        "reviewer": "codex-primary",
-        "reviewedAt": "2026-08-26T05:20:00Z",
-        "evidenceRefs": [
-          "E-LOCAL"
-        ],
-        "limitation": "Independent high-risk review remains open."
-      }
-    },
-    {
-      "id": "GOV",
-      "title": "Governance documentation verification and install",
-      "workType": "docs",
-      "risk": "medium",
-      "required": true,
-      "planRefs": [
-        "vertical-slice:GOV"
-      ],
-      "status": "completed",
-      "startedAt": "2026-08-26T04:24:59Z",
-      "finishedAt": "2026-08-26T05:20:00Z",
-      "implementationActor": "codex-primary",
-      "implementationRefs": [
-        "docs/EDITOR_FINAL_PLAN_2026-08-26.md",
-        "quality/opencut-editor-execution-log-2026-08-26.md",
+        "scripts/kacha_studio.mjs",
+        "scripts/kacha_studio_server.mjs",
+        "scripts/design_system.mjs",
         "tests/run_tests.mjs"
       ],
       "testRefs": [
@@ -463,24 +137,32 @@
       ],
       "acceptanceCriteria": [
         {
-          "id": "tests",
-          "description": "Focused and full regressions pass",
+          "id": "immutable-once",
+          "description": "immutable validation runs once per process",
           "status": "passed",
           "evidenceRefs": [
             "E-LOCAL"
           ]
         },
         {
-          "id": "gates",
-          "description": "Static secret installer and diff gates pass",
+          "id": "clone-isolation",
+          "description": "returned catalog objects cannot mutate the cache",
           "status": "passed",
           "evidenceRefs": [
             "E-LOCAL"
           ]
         },
         {
-          "id": "sync",
-          "description": "Product documentation and Codex Claude installs reflect the implementation",
+          "id": "custom-live",
+          "description": "new custom styles appear after warmup",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "bootstrap-performance",
+          "description": "three post-ready bootstrap samples are sub-second on the audit host and are reported as host-specific evidence",
           "status": "passed",
           "evidenceRefs": [
             "E-LOCAL"
@@ -489,9 +171,9 @@
       ],
       "deliverables": [
         {
-          "path": "docs/EDITOR_FINAL_PLAN_2026-08-26.md",
+          "path": "scripts/kacha_studio.mjs",
           "status": "present",
-          "sha256": "sha256:aeef8e0a2c6625352cbc50dd6fd8ce0ba065f23d3583b12cad60bf9b5884ef69",
+          "sha256": "sha256:8c3262dfa77e088a48b3b4644ff3bd9d38e440c9f64e77ed1c817560fd419fa9",
           "minBytes": 1000
         }
       ],
@@ -499,501 +181,929 @@
       "completionReview": {
         "decision": "passed",
         "reviewer": "codex-primary",
-        "reviewedAt": "2026-08-26T05:20:00Z",
+        "reviewedAt": "2026-08-30T14:10:00Z",
         "evidenceRefs": [
           "E-LOCAL"
         ]
+      }
+    },
+    {
+      "id": "STUDIO-BOUNDARY",
+      "title": "Typed recoverable Studio request boundary",
+      "workType": "code",
+      "risk": "high",
+      "required": true,
+      "planRefs": [
+        "vertical-slice:STUDIO-BOUNDARY"
+      ],
+      "status": "partial",
+      "startedAt": "2026-08-30T12:30:00Z",
+      "finishedAt": null,
+      "implementationActor": "codex-primary",
+      "implementationRefs": [
+        "scripts/kacha_studio_server.mjs",
+        "tests/run_tests.mjs"
+      ],
+      "testRefs": [
+        "E-LOCAL"
+      ],
+      "evidenceRefs": [
+        "E-LOCAL"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "object-root",
+          "description": "null and array roots return 400",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "body-limit",
+          "description": "declared and streamed bodies above 1 MB return 413",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "post-error-health",
+          "description": "a health request succeeds after each failure",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "finite-timeouts",
+          "description": "timeouts are finite and compatible with current local operations",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        }
+      ],
+      "deliverables": [
+        {
+          "path": "scripts/kacha_studio_server.mjs",
+          "status": "present",
+          "sha256": "sha256:03230a61ff747e32a50da9426174c011a4b6f5cf51a4db067059e28222233cde",
+          "minBytes": 1000
+        }
+      ],
+      "blocker": null,
+      "completionReview": {
+        "decision": "pending_independent_review",
+        "reviewer": null,
+        "reviewedAt": null,
+        "evidenceRefs": []
+      }
+    },
+    {
+      "id": "MACOS-CI",
+      "title": "macOS native smoke environment repair",
+      "workType": "config",
+      "risk": "high",
+      "required": true,
+      "planRefs": [
+        "vertical-slice:MACOS-CI"
+      ],
+      "status": "partial",
+      "startedAt": "2026-08-30T12:30:00Z",
+      "finishedAt": null,
+      "implementationActor": "codex-primary",
+      "implementationRefs": [
+        ".github/workflows/macos-smoke.yml"
+      ],
+      "testRefs": [
+        "E-LOCAL"
+      ],
+      "evidenceRefs": [
+        "E-LOCAL"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "temp-venv",
+          "description": "Python packages install in a runner-temp venv",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "path-propagation",
+          "description": "later scripts resolve the venv python3",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "remote-dispatch",
+          "description": "a post-push manual dispatch reaches all smoke steps",
+          "status": "pending",
+          "evidenceRefs": []
+        }
+      ],
+      "deliverables": [
+        {
+          "path": ".github/workflows/macos-smoke.yml",
+          "status": "present",
+          "sha256": "sha256:8b053a3843a325474a4e86ffd56db8bc2dccc3ea0574b65e3023d56fef4a6dde",
+          "minBytes": 500
+        }
+      ],
+      "blocker": null,
+      "completionReview": {
+        "decision": "pending_target_and_independent_review",
+        "reviewer": null,
+        "reviewedAt": null,
+        "evidenceRefs": []
+      }
+    },
+    {
+      "id": "PRODUCT-TRUTH",
+      "title": "Machine-checked current product truth and adoption contract",
+      "workType": "code",
+      "risk": "medium",
+      "required": true,
+      "planRefs": [
+        "vertical-slice:PRODUCT-TRUTH"
+      ],
+      "status": "completed",
+      "startedAt": "2026-08-30T12:30:00Z",
+      "finishedAt": "2026-08-30T14:05:00Z",
+      "implementationActor": "codex-primary",
+      "implementationRefs": [
+        "scripts/verify_product_truth.mjs",
+        "Makefile",
+        "README.md",
+        "README.en.md",
+        "docs/product/adoption-measurement.md"
+      ],
+      "testRefs": [
+        "E-LOCAL"
+      ],
+      "evidenceRefs": [
+        "E-LOCAL"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "derived-counts",
+          "description": "checker derives 159 tests, 65 templates, 69 design entries and 23 core resources",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "canonical-agreement",
+          "description": "canonical current surfaces agree",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "negative-mutation",
+          "description": "a negative mutation is rejected",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "metric-separation",
+          "description": "measurement docs separate engineering, activation and human outcomes",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        }
+      ],
+      "deliverables": [
+        {
+          "path": "scripts/verify_product_truth.mjs",
+          "status": "present",
+          "sha256": "sha256:183a847abcacfd822f38acba44e2d8a10f748a157f703bd4fe4c813dfd06c127",
+          "minBytes": 1000
+        }
+      ],
+      "blocker": null,
+      "completionReview": {
+        "decision": "passed",
+        "reviewer": "codex-primary",
+        "reviewedAt": "2026-08-30T14:10:00Z",
+        "evidenceRefs": [
+          "E-LOCAL"
+        ]
+      }
+    },
+    {
+      "id": "LOCALE-ACCESSIBILITY",
+      "title": "Locale-correct and responsive public pages",
+      "workType": "ui",
+      "risk": "medium",
+      "required": true,
+      "planRefs": [
+        "vertical-slice:LOCALE-ACCESSIBILITY"
+      ],
+      "status": "completed",
+      "startedAt": "2026-08-30T12:30:00Z",
+      "finishedAt": "2026-08-30T14:05:00Z",
+      "implementationActor": "codex-primary",
+      "implementationRefs": [
+        "website/app/(en)/layout.tsx",
+        "website/app/(zh)/layout.tsx",
+        "website/app/components/CopyInstall.tsx",
+        "website/tests/rendered-html.test.mjs",
+        "website/tests/github-pages.test.mjs"
+      ],
+      "testRefs": [
+        "E-LOCAL"
+      ],
+      "evidenceRefs": [
+        "E-LOCAL"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "document-language",
+          "description": "root html is zh-CN at / and en at /en/",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "metadata",
+          "description": "canonical URLs and metadata stay correct",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "packaged-routes",
+          "description": "normal and GitHub Pages packaged builds contain both locale routes",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "responsive-browser",
+          "description": "desktop and 390 px routes have no overflow or console errors",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        }
+      ],
+      "deliverables": [
+        {
+          "path": "website/app/(en)/layout.tsx",
+          "status": "present",
+          "sha256": "sha256:1fcb0596b50552b7e144c4ceb49fa299fc613333ac9e42cfd2e907f68addea04",
+          "minBytes": 200
+        }
+      ],
+      "blocker": null,
+      "completionReview": {
+        "decision": "passed",
+        "reviewer": "codex-primary",
+        "reviewedAt": "2026-08-30T14:10:00Z",
+        "evidenceRefs": [
+          "E-LOCAL"
+        ]
+      }
+    },
+    {
+      "id": "VERIFY-DEPLOY",
+      "title": "Exact-tree verification, push and dual-agent deployment",
+      "workType": "operations",
+      "risk": "high",
+      "required": true,
+      "planRefs": [
+        "vertical-slice:VERIFY-DEPLOY"
+      ],
+      "status": "partial",
+      "startedAt": "2026-08-30T12:30:00Z",
+      "finishedAt": null,
+      "implementationActor": "codex-primary",
+      "implementationRefs": [
+        "quality/verification-matrix.json",
+        "quality/post-iteration-review.json",
+        "quality/deep-multidisciplinary-review-2026-08-30.md"
+      ],
+      "testRefs": [
+        "E-LOCAL"
+      ],
+      "evidenceRefs": [
+        "E-LOCAL"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "checks",
+          "description": "focused and full checks pass",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "security",
+          "description": "secret/privacy scan passes",
+          "status": "passed",
+          "evidenceRefs": [
+            "E-LOCAL"
+          ]
+        },
+        {
+          "id": "remote-main",
+          "description": "remote main equals the local commit",
+          "status": "pending",
+          "evidenceRefs": []
+        },
+        {
+          "id": "pages",
+          "description": "Pages deploys the pushed website commit or is explicitly reported as failed",
+          "status": "pending",
+          "evidenceRefs": []
+        },
+        {
+          "id": "macos",
+          "description": "macOS smoke reaches all gates or is explicitly reported as failed",
+          "status": "pending",
+          "evidenceRefs": []
+        },
+        {
+          "id": "dual-agent",
+          "description": "Codex and Claude installs report the same source revision and bundle digest",
+          "status": "pending",
+          "evidenceRefs": []
+        }
+      ],
+      "deliverables": [
+        {
+          "path": "quality/verification-matrix.json",
+          "status": "present",
+          "sha256": "sha256:8de4b058392dcfc3e48bdee9971c6f2eafe8e18ab41bb14ce4352359dfb07c73",
+          "minBytes": 1000
+        }
+      ],
+      "blocker": null,
+      "completionReview": {
+        "decision": "pending_delivery_and_independent_review",
+        "reviewer": null,
+        "reviewedAt": null,
+        "evidenceRefs": []
       }
     }
   ],
   "changeSet": [
     {
-      "path": ".github/workflows/ci.yml",
+      "path": ".github/workflows/macos-smoke.yml",
       "changeType": "modified",
-      "beforeDigest": "sha256:1b3dee13296460ecc052ea9a367823cbc100fadf9d81d9813c0cc4d2cbd5d9eb",
-      "afterDigest": "sha256:e9e44d7f928f886846a81dff46efd13bd520ffb05548b1d5ae28cdb8039daf4f",
+      "beforeDigest": "sha256:7b46f699a5c9ce65e705679d338b643dab6855ecfb57cfe1994b34137d2862c7",
+      "afterDigest": "sha256:8b053a3843a325474a4e86ffd56db8bc2dccc3ea0574b65e3023d56fef4a6dde",
       "taskRefs": [
-        "GOV"
+        "MACOS-CI"
       ],
       "scanForPlaceholders": true
     },
     {
-      "path": "CHANGELOG.md",
+      "path": "Makefile",
       "changeType": "modified",
-      "beforeDigest": "sha256:5d052bf21810365b1e3925196fb16eadeeef9fb0e4717b3951d544a5955b6cbb",
-      "afterDigest": "sha256:f98a4b0b8289433bdd12e88f4c58a6204be31035c63c173a1a7c94309dc68974",
+      "beforeDigest": "sha256:6fc0fd6985109fb8109c68b5fc63c90a953fedca38b1dbd4f514c0cf8596ea31",
+      "afterDigest": "sha256:e6b245ed2851dc0695ee6e3f179f889bb60aa12011509b41e6063ddc32cdac05",
       "taskRefs": [
-        "GOV"
+        "PRODUCT-TRUTH"
       ],
       "scanForPlaceholders": true
     },
     {
       "path": "README.en.md",
       "changeType": "modified",
-      "beforeDigest": "sha256:d305753e3651f71a4e191458b798892728432848e5e2ad4be130b23520db96ea",
-      "afterDigest": "sha256:023f7bfb8702e27b8881ee27869d0348f9ccf167eb8d6754ebfaa4dd57e10240",
+      "beforeDigest": "sha256:023f7bfb8702e27b8881ee27869d0348f9ccf167eb8d6754ebfaa4dd57e10240",
+      "afterDigest": "sha256:bfa1576e990f192259850588d8befb167ef4a6e3158d958f43a5b5b2c3dc5cc4",
       "taskRefs": [
-        "GOV"
+        "INSTALL",
+        "PRODUCT-TRUTH"
       ],
       "scanForPlaceholders": true
     },
     {
       "path": "README.md",
       "changeType": "modified",
-      "beforeDigest": "sha256:3e78c6fc7180c629876a049015a796930d8b6e8d96f99d282f6d731176688a09",
-      "afterDigest": "sha256:8591a0c7bd17d3cdcbd760721aa90dbd8d0f1bf8cf0691aaee00ed4181126117",
+      "beforeDigest": "sha256:8591a0c7bd17d3cdcbd760721aa90dbd8d0f1bf8cf0691aaee00ed4181126117",
+      "afterDigest": "sha256:5cde733b7fe798b768ba2099993dd3711c8865c6ebacd6da112d83a4b17d3712",
       "taskRefs": [
-        "GOV"
+        "INSTALL",
+        "PRODUCT-TRUTH"
       ],
       "scanForPlaceholders": true
     },
     {
-      "path": "SKILL.md",
+      "path": "docs/product/README.md",
       "changeType": "modified",
-      "beforeDigest": "sha256:c6b6d546c679a1dfbd4a546572f4af3ca3d32db5bec20851e4c2894de8dea28b",
-      "afterDigest": "sha256:9e20ed3349510ab9ad89d2826a154d99d2df4cba0d8ac350c771a196c1c08efe",
+      "beforeDigest": "sha256:bcadcbdff0f358c9bbce5ec3ec4c58e7f358d42b9a336155e8b49b020b9187bd",
+      "afterDigest": "sha256:5e15a79f9b0b10010cf50cec36c3c1030d9f560bed2ee7405b0adcf82042daa2",
       "taskRefs": [
-        "GOV"
+        "PRODUCT-TRUTH"
       ],
       "scanForPlaceholders": true
     },
     {
-      "path": "config/editor/preview-providers.json",
+      "path": "docs/product/adoption-measurement.md",
       "changeType": "created",
       "beforeDigest": null,
-      "afterDigest": "sha256:08a68dfcec848336582413b2be8f1a3998e756f12f1c56795fd62a5d858d74a8",
+      "afterDigest": "sha256:18dadaa691928b163145384c403cb6c5d29f680349bcf856e13b09a60968e719",
       "taskRefs": [
-        "PREVIEW"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "config/schemas/editor-command.schema.json",
-      "changeType": "created",
-      "beforeDigest": null,
-      "afterDigest": "sha256:f1270fb4dc6008d9ff881092e15ca1ecb5944ff234bc75f1aa305052be2b5c36",
-      "taskRefs": [
-        "CMD"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "config/schemas/timeline-timebase-v2.schema.json",
-      "changeType": "created",
-      "beforeDigest": null,
-      "afterDigest": "sha256:186d4c7805db361e973be232b79cf90c96d696aa80048f8779f05d6b324bb3a0",
-      "taskRefs": [
-        "TB"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "docs/AGENT_CHAT_CONTROL_PLANE.md",
-      "changeType": "modified",
-      "beforeDigest": "sha256:ab540bf065fc03a475d291d7c6b051674e9f48de70301a8343e79785a27c22ee",
-      "afterDigest": "sha256:cd646d59f60e20fffe035977b33417c871a31fb7c13eedd451f33f0dfc2924c8",
-      "taskRefs": [
-        "GOV"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "docs/ARCHITECTURE.md",
-      "changeType": "modified",
-      "beforeDigest": "sha256:274c388249da7ff0fd51e80bcc0e8a3ddfcdad738bb191bf19397a1b04ae814b",
-      "afterDigest": "sha256:5fcc727af2bc71a14f87a65eccb80d07746a02f5fa9751f1f03a89e5e56a7bb1",
-      "taskRefs": [
-        "GOV"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "docs/EDITOR_FINAL_PLAN_2026-08-26.md",
-      "changeType": "created",
-      "beforeDigest": null,
-      "afterDigest": "sha256:aeef8e0a2c6625352cbc50dd6fd8ce0ba065f23d3583b12cad60bf9b5884ef69",
-      "taskRefs": [
-        "GOV"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "docs/EDITOR_PLAN_V1_2026-08-26.md",
-      "changeType": "created",
-      "beforeDigest": null,
-      "afterDigest": "sha256:d54b9c3c890a512f58045c62638ac4c4eb51e497f92243beaea83b77ed5d4dfb",
-      "taskRefs": [
-        "GOV"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "docs/QUICKSTART.md",
-      "changeType": "modified",
-      "beforeDigest": "sha256:915d3403a1748f3fd93ccacb7414df679592dbe0abf209baf6573b0c91634b20",
-      "afterDigest": "sha256:1613638b38732334888569bc8331c426c669904396c0f09497f270f718696380",
-      "taskRefs": [
-        "GOV"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "docs/en/ARCHITECTURE.md",
-      "changeType": "modified",
-      "beforeDigest": "sha256:4b96ed3c69f88f3f6ef92fe0988a07db96378eb56bc193602e3da6b8f6fab719",
-      "afterDigest": "sha256:36d8aa1b7ca6b47b49b5a8a27c62df674151267f2c750e70d198137e6b6285ab",
-      "taskRefs": [
-        "GOV"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "docs/en/QUICKSTART.md",
-      "changeType": "modified",
-      "beforeDigest": "sha256:6fc22c6f6871bf39424430fad771fc0bbf26217181b30108bad47c114d9dab7b",
-      "afterDigest": "sha256:dabab614ef10c504c574dd506e55a0b8b6eeec2b0023508f16cd01782289cf36",
-      "taskRefs": [
-        "GOV"
+        "PRODUCT-TRUTH"
       ],
       "scanForPlaceholders": true
     },
     {
       "path": "docs/product/business-rules.md",
       "changeType": "modified",
-      "beforeDigest": "sha256:3543c8c21709e70e8c016a34e9ecbecd405db93e57b5de7a52183f0fc859577f",
-      "afterDigest": "sha256:d2357da2bdf99f1dafb51b9cfabffacc9e3bda6b06b6fcc540f86ad683748df7",
+      "beforeDigest": "sha256:d2357da2bdf99f1dafb51b9cfabffacc9e3bda6b06b6fcc540f86ad683748df7",
+      "afterDigest": "sha256:49a6e615706c22e868db5d3e0db39a32cfcd0d5255f26eb652b2607b3c416b31",
       "taskRefs": [
-        "GOV"
+        "PRODUCT-TRUTH"
       ],
       "scanForPlaceholders": true
     },
     {
       "path": "docs/product/current-product.md",
       "changeType": "modified",
-      "beforeDigest": "sha256:e41437e628952e464d3007ef09a665f853000ce8a14ba1a61dfb25f7f55cca89",
-      "afterDigest": "sha256:5d3900b6b6a678b15870fdeedbe227cba555ffd8b285ba4bf836728a0c796c7e",
+      "beforeDigest": "sha256:5d3900b6b6a678b15870fdeedbe227cba555ffd8b285ba4bf836728a0c796c7e",
+      "afterDigest": "sha256:8f6c9f5a7fad5eea69d07bbc9eab8952e5bb7efff352231892776f35d5849349",
       "taskRefs": [
-        "GOV"
+        "PRODUCT-TRUTH"
       ],
       "scanForPlaceholders": true
     },
     {
       "path": "docs/product/metrics-and-learning.md",
       "changeType": "modified",
-      "beforeDigest": "sha256:0cd70223c483c1098d24de034cab1d9dff9efa5652f5488bd62693eb5f16cae7",
-      "afterDigest": "sha256:69533e6d6c3df9d0b41a18a63431310df2d08dfe61dfb670be7d1524f005dfc7",
+      "beforeDigest": "sha256:69533e6d6c3df9d0b41a18a63431310df2d08dfe61dfb670be7d1524f005dfc7",
+      "afterDigest": "sha256:1eeda8a45d6017de35289fe951399608e4d4904bf5b0fdf44da097fefd8d758f",
       "taskRefs": [
-        "GOV"
+        "PRODUCT-TRUTH"
       ],
       "scanForPlaceholders": true
     },
     {
       "path": "docs/product/product-experience.md",
       "changeType": "modified",
-      "beforeDigest": "sha256:36b022b8c9b681cfe1b680bc8b70d6d0c1fe39970b87feef5d6f07dd00abafb7",
-      "afterDigest": "sha256:4885f9bd7a134af47430659c3d2844561c2d2f0f59377e4c00fd816d8b51be8f",
+      "beforeDigest": "sha256:4885f9bd7a134af47430659c3d2844561c2d2f0f59377e4c00fd816d8b51be8f",
+      "afterDigest": "sha256:b69d3cb4f02158cafd4bade43d92057b4822082bf8402747e47cefd2c56e66a6",
       "taskRefs": [
-        "GOV"
+        "PRODUCT-TRUTH"
       ],
       "scanForPlaceholders": true
     },
     {
       "path": "docs/product/roadmap-and-decisions.md",
       "changeType": "modified",
-      "beforeDigest": "sha256:3fc367742c41e7bcecd2adde19984f12eeac0a0e808eef83028579d616794915",
-      "afterDigest": "sha256:8e77555f911b0baad78d662d3934f3fba1ce728a08b2bf781bf440d312b5e0d6",
+      "beforeDigest": "sha256:8e77555f911b0baad78d662d3934f3fba1ce728a08b2bf781bf440d312b5e0d6",
+      "afterDigest": "sha256:4b9cb28d62292cd4483eb07708f6bb4f84db2ab2a44abd46a191b2ce8648a33e",
       "taskRefs": [
-        "GOV"
+        "PRODUCT-TRUTH"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "examples/design/text-behind/approved-styleframes.manifest.json",
+      "changeType": "modified",
+      "beforeDigest": "sha256:a47f33341f759fe31efe67f6001606d3ceb596094c3dccdf73af6819f259f346",
+      "afterDigest": "sha256:4901c1e2ad45f4467aa5a6ba143a0e47fcb9885fa190829f28b7cec5c5964d8c",
+      "taskRefs": [
+        "STUDIO-RUNTIME"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "examples/design/text-behind/approved-styleframes.svg",
+      "changeType": "modified",
+      "beforeDigest": "sha256:66c88575fca549b5d2f637b255fdc8441cfd5f60d4d113cd6a6c0f8f59ea9b59",
+      "afterDigest": "sha256:081503005ccea0901dcded069940185bebc9dffd55c9e5672c95adb53ecf822a",
+      "taskRefs": [
+        "STUDIO-RUNTIME"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "examples/edit-plan.json",
+      "changeType": "modified",
+      "beforeDigest": "sha256:5d9c567cd9325756fcfc94570a681727848790f482ab98df17a61eece3074ddf",
+      "afterDigest": "sha256:41d58feea74911896b5182cea77a51231ba807d62ea0acc876fc33e8d38dcdfc",
+      "taskRefs": [
+        "STUDIO-RUNTIME"
       ],
       "scanForPlaceholders": true
     },
     {
       "path": "quality/change-review.json",
       "changeType": "modified",
-      "beforeDigest": "sha256:346cfc8745db7de96a0e9b92764978e3b998fd45b3186c8958b31b81d65440ce",
-      "afterDigest": "sha256:dacc5e17a21c98fb67787f23c4d461baa7e0c090a327afcbfdc993041de183c6",
+      "beforeDigest": "sha256:dacc5e17a21c98fb67787f23c4d461baa7e0c090a327afcbfdc993041de183c6",
+      "afterDigest": "sha256:be7335c63908ceb7975f2cc0b710706f1e2b6d19bf94122397a978ecf2049c65",
       "taskRefs": [
-        "GOV"
+        "VERIFY-DEPLOY"
       ],
-      "scanForPlaceholders": true
+      "scanForPlaceholders": false
+    },
+    {
+      "path": "quality/deep-multidisciplinary-review-2026-08-30.md",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:d53d31cc3152310eced701d426ca01f43791c6d65aca601c0e3d78fbad7672cc",
+      "taskRefs": [
+        "VERIFY-DEPLOY"
+      ],
+      "scanForPlaceholders": false
+    },
+    {
+      "path": "quality/evidence/product-audit-baseline-2026-08-30.json",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:e0216849896b80e3ec8b0b71bbf840fb227add8d1495ab570570dc2e13d1bdca",
+      "taskRefs": [
+        "VERIFY-DEPLOY"
+      ],
+      "scanForPlaceholders": false
+    },
+    {
+      "path": "quality/evidence/product-audit-browser-2026-08-30.json",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:bb616950f71eb2268f128cefefb40cb4527b75a259138bcd67ca7e30f65952ea",
+      "taskRefs": [
+        "VERIFY-DEPLOY"
+      ],
+      "scanForPlaceholders": false
+    },
+    {
+      "path": "quality/evidence/product-audit-market-2026-08-30.json",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:a5be1f50756669e91a567a388e0ac617c469fa5a4122ef8a69d2962d37ba1736",
+      "taskRefs": [
+        "VERIFY-DEPLOY"
+      ],
+      "scanForPlaceholders": false
+    },
+    {
+      "path": "quality/evidence/product-optimization-full-tests-2026-08-30.json",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:09d7ad413d9f11d7c4c718d782109dc4b64c1141e8ee75b85c94727e5b2fb162",
+      "taskRefs": [
+        "VERIFY-DEPLOY"
+      ],
+      "scanForPlaceholders": false
+    },
+    {
+      "path": "quality/implementation-plan-context.json",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:2b9bd0b53e97d33560cb827b3adb02da6e16c4c68ba42e84d019d362f77debcd",
+      "taskRefs": [
+        "VERIFY-DEPLOY"
+      ],
+      "scanForPlaceholders": false
     },
     {
       "path": "quality/implementation-plan.json",
       "changeType": "modified",
-      "beforeDigest": "sha256:78d6952d90d2fbd2181355e363b605ae289ff3fc21668c960feed8b2df6936ea",
-      "afterDigest": "sha256:0f674cf744c172aa2e258bceb8e4dfe7c86b3b32a97c6bf079ede2d043b12933",
+      "beforeDigest": "sha256:0f674cf744c172aa2e258bceb8e4dfe7c86b3b32a97c6bf079ede2d043b12933",
+      "afterDigest": "sha256:b40944fdb34736233e4183b5dd4d36c79922fef83368ee44be76f97889f0e97a",
       "taskRefs": [
-        "GOV"
+        "VERIFY-DEPLOY"
       ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "quality/opencut-editor-execution-log-2026-08-26.md",
-      "changeType": "created",
-      "beforeDigest": null,
-      "afterDigest": "sha256:3995d8f145569f83b4b39a0d4312c4f1d352c9b6c747233f56aef916306c2310",
-      "taskRefs": [
-        "GOV"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "quality/opencut-plan-review-2026-08-26.json",
-      "changeType": "created",
-      "beforeDigest": null,
-      "afterDigest": "sha256:4b145e71ce2107c666472e725b7a453c42d99e4b32b1b1350bbb7fba83b4d2d1",
-      "taskRefs": [
-        "GOV"
-      ],
-      "scanForPlaceholders": true
+      "scanForPlaceholders": false
     },
     {
       "path": "quality/page-delivery.json",
       "changeType": "modified",
-      "beforeDigest": "sha256:294f81f22606d970397b6f86dc66753ee808d5cbdce6da38d0aca904fed2126c",
-      "afterDigest": "sha256:175db012e3032cc1bf4377f12192e602675e7b993c29c5203dfa3189a6c568cb",
+      "beforeDigest": "sha256:175db012e3032cc1bf4377f12192e602675e7b993c29c5203dfa3189a6c568cb",
+      "afterDigest": "sha256:ecfdfb74e933e5f7b219ea244407ba617e35bb3331e01539d883d6752f09d4a4",
       "taskRefs": [
-        "GOV"
+        "VERIFY-DEPLOY"
       ],
-      "scanForPlaceholders": true
+      "scanForPlaceholders": false
     },
     {
       "path": "quality/post-iteration-review.json",
       "changeType": "modified",
-      "beforeDigest": "sha256:415ff03fd8e6905512fd40dc93996713832983f848bf422a9a084a7db35d5a37",
-      "afterDigest": "sha256:10cd607216f1ce9f68e5c6a5b5e95f4f7b66366381f5484699c6a81098cffb11",
+      "beforeDigest": "sha256:10cd607216f1ce9f68e5c6a5b5e95f4f7b66366381f5484699c6a81098cffb11",
+      "afterDigest": "sha256:8382d76f3eab469bfde27ebe0f9353add530c6fadeb59b6128f2630aa1c37ed1",
       "taskRefs": [
-        "GOV"
+        "VERIFY-DEPLOY"
       ],
-      "scanForPlaceholders": true
+      "scanForPlaceholders": false
+    },
+    {
+      "path": "quality/product-audit-2026-08-30.json",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:01c9f7db9f9f2857c47396441afca3159e995652706e812c69246baf5ee1b391",
+      "taskRefs": [
+        "VERIFY-DEPLOY"
+      ],
+      "scanForPlaceholders": false
+    },
+    {
+      "path": "quality/product-audit-roadmap-2026-08-30.json",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:927ebf80b049f7f26da86a817b676464135e5e14dfa926345e89fbb46868d7ea",
+      "taskRefs": [
+        "VERIFY-DEPLOY"
+      ],
+      "scanForPlaceholders": false
     },
     {
       "path": "quality/product-documentation-state.json",
       "changeType": "modified",
-      "beforeDigest": "sha256:5e8f9d9f2599a32c1f72ec4a124654bf7ca27a50acfdea8664e83a7a7f2e364b",
-      "afterDigest": "sha256:3e29cf5cd79a1186c51a8695aab0e37308b14bf2bae9ae445aaf0770951b741c",
+      "beforeDigest": "sha256:3e29cf5cd79a1186c51a8695aab0e37308b14bf2bae9ae445aaf0770951b741c",
+      "afterDigest": "sha256:6702641058f57c7adc3d94f970a88f7ddf473f7f10d204a6c9b1e47ed248fb5a",
       "taskRefs": [
-        "GOV"
+        "VERIFY-DEPLOY"
       ],
-      "scanForPlaceholders": true
+      "scanForPlaceholders": false
+    },
+    {
+      "path": "quality/product-optimization-execution-log-2026-08-30.md",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:cc005937129e2ffe804f1af9423ae27c81ffaf2e8aae237a8edb64d9da14ca3b",
+      "taskRefs": [
+        "VERIFY-DEPLOY"
+      ],
+      "scanForPlaceholders": false
+    },
+    {
+      "path": "quality/product-optimization-plan-review-2026-08-30.json",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:aa9a4bf1b4d3d48badaa50649e7f559ace9cd0ddb15c4c806756ba163bb3c391",
+      "taskRefs": [
+        "VERIFY-DEPLOY"
+      ],
+      "scanForPlaceholders": false
     },
     {
       "path": "quality/verification-matrix.json",
       "changeType": "modified",
-      "beforeDigest": "sha256:bb30dcb95712e7cad77c2809a7c4e4bf05a35b4b262e96ffa2ccaf078b654f27",
-      "afterDigest": "sha256:964e6ac869b73f8ade8070441b15744a6800a32918aaf60ec78111c35bd77fc8",
+      "beforeDigest": "sha256:964e6ac869b73f8ade8070441b15744a6800a32918aaf60ec78111c35bd77fc8",
+      "afterDigest": "sha256:8de4b058392dcfc3e48bdee9971c6f2eafe8e18ab41bb14ce4352359dfb07c73",
       "taskRefs": [
-        "GOV"
+        "VERIFY-DEPLOY"
       ],
-      "scanForPlaceholders": true
+      "scanForPlaceholders": false
     },
     {
-      "path": "references/agent-chat-control-plane.md",
+      "path": "scripts/design_system.mjs",
       "changeType": "modified",
-      "beforeDigest": "sha256:77f894328150dae79643b5c700630ce09714ff33e2a94c5a49c138f0a08e17bb",
-      "afterDigest": "sha256:0c31a83efe638237d54d3ff29f805647fe1d2569506b5e3c9180e65eb93c5307",
+      "beforeDigest": "sha256:d4257745912c144614e00e5c399b16b83860e0a7a516f1c338512c5fe2fd817c",
+      "afterDigest": "sha256:5cd943f7c9f0747272ef5d6671e51eefa76955af41be38abbd864b3ded9fd7d3",
       "taskRefs": [
-        "GOV"
+        "STUDIO-RUNTIME"
       ],
       "scanForPlaceholders": true
     },
     {
-      "path": "references/production-studio.md",
+      "path": "scripts/install.sh",
       "changeType": "modified",
-      "beforeDigest": "sha256:4ea3d4937f9b6cce9e0edd3981ecc3462ff39706a2ae0ac0d621e96a8e075ac0",
-      "afterDigest": "sha256:6a7ae1db71250c0db7ae5a155ee847a9686fb745bf62f8680c6238c4c2381e96",
+      "beforeDigest": "sha256:37dba3a6ff5869ef1900ff7250378d225a68d2b7b9fb58130eaef85262e77291",
+      "afterDigest": "sha256:f952c5394cf809916bcfb54c50dcbd691b4ba57dd23b41e381af71d683252bdc",
       "taskRefs": [
-        "GOV"
+        "INSTALL"
       ],
       "scanForPlaceholders": true
     },
     {
-      "path": "scripts/editor_command_journal.mjs",
-      "changeType": "created",
-      "beforeDigest": null,
-      "afterDigest": "sha256:8c453f7f1a0a1fb66edb35b60f216db11c55083ddc3a214a5eb38798417a8fe4",
-      "taskRefs": [
-        "CMD"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "scripts/json_mutation.mjs",
-      "changeType": "created",
-      "beforeDigest": null,
-      "afterDigest": "sha256:384d603c6ef576e760a4a89d2f8e39f95efcf64349defcc5b67f02662bc6cc71",
-      "taskRefs": [
-        "CMD"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "scripts/kacha.mjs",
+      "path": "scripts/kacha_studio.mjs",
       "changeType": "modified",
-      "beforeDigest": "sha256:7b02d33980fb3473846af93c3f271b2d46e9bd4d52e1df9c254c3368b1b5a1ce",
-      "afterDigest": "sha256:2f9bd510d3888313d60cf3bc2095d99dde5065913e8326ce19e1d44e7e612c00",
+      "beforeDigest": "sha256:f452ef137e9943f3895523402393daf7bd4a7aef0c8044c6a0faac507a81c3b8",
+      "afterDigest": "sha256:8c3262dfa77e088a48b3b4644ff3bd9d38e440c9f64e77ed1c817560fd419fa9",
       "taskRefs": [
-        "GOV"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "scripts/kacha_delta.mjs",
-      "changeType": "modified",
-      "beforeDigest": "sha256:8463f45748fc4fb0e5edb0aedd386c89a0996c1c83f36a855d624f409bbdb61b",
-      "afterDigest": "sha256:4111d84a380bad34dcc35e22fbeb07d1b82952c49858fe983593b762ea0f61db",
-      "taskRefs": [
-        "GOV"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "scripts/kacha_editor.mjs",
-      "changeType": "created",
-      "beforeDigest": null,
-      "afterDigest": "sha256:89c4acc4805e61f5ea31c805f3938ad2bb6177a7badf87049ccfb92623eb6e3c",
-      "taskRefs": [
-        "API"
+        "STUDIO-RUNTIME"
       ],
       "scanForPlaceholders": true
     },
     {
       "path": "scripts/kacha_studio_server.mjs",
       "changeType": "modified",
-      "beforeDigest": "sha256:c6d23406911e3f7aa21e545c88a77ef8536ba7141d49e67542e8443d6e09b12e",
-      "afterDigest": "sha256:59f4ff628b515892ad4a733f36f10b36e76555bba872e59ddf2ea38e35ef28d2",
+      "beforeDigest": "sha256:59f4ff628b515892ad4a733f36f10b36e76555bba872e59ddf2ea38e35ef28d2",
+      "afterDigest": "sha256:03230a61ff747e32a50da9426174c011a4b6f5cf51a4db067059e28222233cde",
       "taskRefs": [
-        "API"
+        "STUDIO-RUNTIME",
+        "STUDIO-BOUNDARY"
       ],
       "scanForPlaceholders": true
     },
     {
-      "path": "scripts/media_time.mjs",
+      "path": "scripts/verify_product_truth.mjs",
       "changeType": "created",
       "beforeDigest": null,
-      "afterDigest": "sha256:6aeefaa5ead251f0c00957237cd842cd3698585290dbf74ca847bd47b247d048",
+      "afterDigest": "sha256:183a847abcacfd822f38acba44e2d8a10f748a157f703bd4fe4c813dfd06c127",
       "taskRefs": [
-        "TB"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "scripts/preview_provider.mjs",
-      "changeType": "created",
-      "beforeDigest": null,
-      "afterDigest": "sha256:613b74428f53b9d8da2f3440107c60dd2db35feb5b62b0d8b7c1c9fc479f7bde",
-      "taskRefs": [
-        "PREVIEW"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "scripts/route_references.mjs",
-      "changeType": "modified",
-      "beforeDigest": "sha256:9eeda77453cef758ee3d74f6c362297842e84d76a1d27a80ca21fe35c8a18be8",
-      "afterDigest": "sha256:42af586d1727d581ba08d951208bf715ba3317e3a4873aa18780ba3eb750c1b5",
-      "taskRefs": [
-        "GOV"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "scripts/timeline_ir.mjs",
-      "changeType": "modified",
-      "beforeDigest": "sha256:b508e9541eba9ce0047c8bd7dc4734a87a0a8b011c6685332c0e8616f433e6b7",
-      "afterDigest": "sha256:2355543fffbe0b8f7a375105c2356c7972b7b4853840bbb0bc306156dd46fa82",
-      "taskRefs": [
-        "TB"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "scripts/timeline_projection.mjs",
-      "changeType": "created",
-      "beforeDigest": null,
-      "afterDigest": "sha256:778369fd536e2b7771a769243b583a75b4057b9fc93ea66f67d34e2c372d350c",
-      "taskRefs": [
-        "PROJ"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "studio/content.html",
-      "changeType": "modified",
-      "beforeDigest": "sha256:50c7b07303b1a6f112a39774f72e716a1374150915dfd0ebc18374abe0b49848",
-      "afterDigest": "sha256:e12b9c6af7249347f94867668b484cf985ab5d7e823c99a262a3f0610903d35d",
-      "taskRefs": [
-        "UI"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "studio/editor.css",
-      "changeType": "created",
-      "beforeDigest": null,
-      "afterDigest": "sha256:506fe6ac96f008a931d0c356db2eaf6ae9b26bc92e792a4b72edb1f0d3e45ec7",
-      "taskRefs": [
-        "UI"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "studio/editor.html",
-      "changeType": "created",
-      "beforeDigest": null,
-      "afterDigest": "sha256:5e0ca14e6d8622f6b4cffe2b17bf32d96cc7685e8fad56d56c8517f2cfb669c4",
-      "taskRefs": [
-        "UI"
+        "PRODUCT-TRUTH"
       ],
       "scanForPlaceholders": true
     },
     {
       "path": "studio/editor.js",
+      "changeType": "modified",
+      "beforeDigest": "sha256:d1f0a0b460e432e3f7761c323b1b268ba37d039a11deb28367f4a2cf031070bf",
+      "afterDigest": "sha256:cf7be17b36adac3384f84334896ffd683f8bcc69491ed3cbf62fc990a6d4073c",
+      "taskRefs": [
+        "STUDIO-RUNTIME"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "tests/fixtures/invalid-release-channels.json",
       "changeType": "created",
       "beforeDigest": null,
-      "afterDigest": "sha256:d1f0a0b460e432e3f7761c323b1b268ba37d039a11deb28367f4a2cf031070bf",
+      "afterDigest": "sha256:6e6c06e027719251cfc05f765488483f80539f70ab772efec47298a229fabc79",
       "taskRefs": [
-        "UI"
+        "INSTALL"
       ],
       "scanForPlaceholders": true
     },
     {
-      "path": "studio/index.html",
-      "changeType": "modified",
-      "beforeDigest": "sha256:0b6c251b2e80460c946c2b5f6a4f06b0b2e84605feb1a04ab0f2c523d8b1eed2",
-      "afterDigest": "sha256:fe10e0741d161a53e9dae7c227dbb669027252fdefbcd60232dcbf474bfb2dba",
+      "path": "tests/fixtures/mock_installer_curl.sh",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:7c5e7d7f4d04f0d567702f498e70646b36c95adfa6912a910b2f6e5cab053f61",
       "taskRefs": [
-        "UI"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "studio/project.html",
-      "changeType": "modified",
-      "beforeDigest": "sha256:1742b8b57f0470ce41e06ac982491a327d3f3327a7e914dd484efde4a4b76a9e",
-      "afterDigest": "sha256:6547cc3d473506fdb32c49ff64dfcfa975cd3efeaa101f5e09051d57bb6c273f",
-      "taskRefs": [
-        "UI"
-      ],
-      "scanForPlaceholders": true
-    },
-    {
-      "path": "studio/review.html",
-      "changeType": "modified",
-      "beforeDigest": "sha256:a013e070287a9817f74a8809f92ed57753c94decf97ea96bd47cb21f98650ad3",
-      "afterDigest": "sha256:c575263f7a5d1807b697e05f97686f4400d7d968afcbb75761b52e6b0a3d97c3",
-      "taskRefs": [
-        "UI"
+        "INSTALL"
       ],
       "scanForPlaceholders": true
     },
     {
       "path": "tests/run_tests.mjs",
       "changeType": "modified",
-      "beforeDigest": "sha256:1fc4ff3badb8e1fe9af8e0ad9a2e45224ac1596232d9ea1285500c264cc3e344",
-      "afterDigest": "sha256:a78259753e7dfb6783c4cd3969154c55c3ca164ae7dd479fab8983116ac03dbe",
+      "beforeDigest": "sha256:a78259753e7dfb6783c4cd3969154c55c3ca164ae7dd479fab8983116ac03dbe",
+      "afterDigest": "sha256:56deb3ca4ce10350822249fefa5471915c7614317582ead4018251a4c1243355",
       "taskRefs": [
-        "GOV"
+        "STUDIO-RUNTIME",
+        "STUDIO-BOUNDARY"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "tests/test_installer.sh",
+      "changeType": "modified",
+      "beforeDigest": "sha256:b19ddc6756ca496a7a6115cca33ea8a86488faa97d4d58af5abe4c4ad61aec40",
+      "afterDigest": "sha256:688797b20ebb663370f601377b13b8c728e373f106ad0136cae02956df54b8fb",
+      "taskRefs": [
+        "INSTALL"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/app/(en)/en/page.tsx",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:7a4ff7153a300e7327b247fa048b7e1e3b8721d0ad7d8e8b9d739fafb521fa7d",
+      "taskRefs": [
+        "LOCALE-ACCESSIBILITY"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/app/(en)/layout.tsx",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:1fcb0596b50552b7e144c4ceb49fa299fc613333ac9e42cfd2e907f68addea04",
+      "taskRefs": [
+        "LOCALE-ACCESSIBILITY"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/app/(zh)/layout.tsx",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:267c40a3324a15cbe09655ae998e1f99f6262b0e0c23a2be7b42f90de50f9bb5",
+      "taskRefs": [
+        "LOCALE-ACCESSIBILITY"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/app/(zh)/page.tsx",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:9451fba58dfc57a8a3315f2964ca0ff528a315c9424e87debfc85f32d830afd1",
+      "taskRefs": [
+        "LOCALE-ACCESSIBILITY"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/app/components/CopyInstall.tsx",
+      "changeType": "modified",
+      "beforeDigest": "sha256:bff961d85b8f58e4b5d1cbdda96a0116a4eaf841f3f5d75a6692a796d3a27355",
+      "afterDigest": "sha256:c9b63c5450f18e66fda1d5bea971c7ad2338bfa8636923bfa49800a9c11f4fe1",
+      "taskRefs": [
+        "LOCALE-ACCESSIBILITY"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/app/components/SiteShell.tsx",
+      "changeType": "modified",
+      "beforeDigest": "sha256:b2b92617f496ffc45174e0adea37aec001882811bc1d78f9b9e5ac4fe82d05a1",
+      "afterDigest": "sha256:3ec249ce67cb06e0608ff4047cd0f3cdc3ac5bef271f32c9fc97f22a8d3b98b5",
+      "taskRefs": [
+        "LOCALE-ACCESSIBILITY"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/app/en/page.tsx",
+      "changeType": "deleted",
+      "beforeDigest": "sha256:ba9d02d67e2c14d98ead5aa609e13378da9ac3f85ecec033cfb8638a493ed4d7",
+      "afterDigest": null,
+      "taskRefs": [
+        "LOCALE-ACCESSIBILITY"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/app/layout.tsx",
+      "changeType": "deleted",
+      "beforeDigest": "sha256:02f5e1d1a3f4792e86c3fbe58c41843b288bf1b3e44645171e423de2cdc85226",
+      "afterDigest": null,
+      "taskRefs": [
+        "LOCALE-ACCESSIBILITY"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/app/page.tsx",
+      "changeType": "deleted",
+      "beforeDigest": "sha256:25287f3189b92c6980edc2e84930894e3e9a4a836000a0dad2ab38667a14da48",
+      "afterDigest": null,
+      "taskRefs": [
+        "LOCALE-ACCESSIBILITY"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/app/product-truth.json",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:5b5d49ccdd220c1a33afb5a5f0d2a5e25c73fee07a9c661b84d8718384618a83",
+      "taskRefs": [
+        "PRODUCT-TRUTH"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/app/site-content.ts",
+      "changeType": "modified",
+      "beforeDigest": "sha256:994f9a1fb79d3d6e0104e47e3d2cdddea8ac62842d6e9906a47070cfeac569ec",
+      "afterDigest": "sha256:5a4dec5fc06d38591ef711b63b0e205623a3f196884baed5a95de50ef6a1b154",
+      "taskRefs": [
+        "INSTALL",
+        "PRODUCT-TRUTH"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/app/site-metadata.ts",
+      "changeType": "created",
+      "beforeDigest": null,
+      "afterDigest": "sha256:9c92d64021b04a5c295db622901b67d1046e2f32acfa7a2e503726dc50baa70e",
+      "taskRefs": [
+        "LOCALE-ACCESSIBILITY"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/tests/github-pages.test.mjs",
+      "changeType": "modified",
+      "beforeDigest": "sha256:6eca9a9ab3749f85226721a895536861f5d7f62471a36dece53f2c62fd363423",
+      "afterDigest": "sha256:e18ed011e703be132d0c5354ebcead7d11382fe89f5afb6cff315b747657459c",
+      "taskRefs": [
+        "LOCALE-ACCESSIBILITY"
+      ],
+      "scanForPlaceholders": true
+    },
+    {
+      "path": "website/tests/rendered-html.test.mjs",
+      "changeType": "modified",
+      "beforeDigest": "sha256:e9281a382dd32cc2a4dfe350db8bea89650fee532c0f7b0b5e08b9f4ec152643",
+      "afterDigest": "sha256:9fb9f116a2e22af5e134d30dc6663e540657a97a57134f62f397ead32de5387a",
+      "taskRefs": [
+        "LOCALE-ACCESSIBILITY"
       ],
       "scanForPlaceholders": true
     }
@@ -1002,218 +1112,80 @@
     {
       "id": "E-LOCAL",
       "kind": "test",
-      "path": "quality/evidence/opencut-editor-local-verification.json",
-      "sha256": "sha256:dc9748e8cf6118765fe7f84d383320a222fe3f7fa9d3353b159428f45db92900",
+      "path": "quality/evidence/product-optimization-local-verification-2026-08-30.json",
+      "sha256": "sha256:99e69a0918a2242b7700b1eba837d5c1deb4e37d3d0e5703c3db13d6e8f028b0",
       "subjectRefs": [
-        "task:TB",
-        "acceptance:TB:exact",
-        "acceptance:TB:migration",
-        "acceptance:TB:conflict",
-        "review:task:TB",
-        "task:PROJ",
-        "acceptance:PROJ:typed",
-        "acceptance:PROJ:allowlist",
-        "acceptance:PROJ:validation",
-        "review:task:PROJ",
-        "task:CMD",
-        "acceptance:CMD:atomic",
-        "acceptance:CMD:integrity",
-        "acceptance:CMD:drift",
-        "review:task:CMD",
-        "task:API",
-        "acceptance:API:shared",
-        "acceptance:API:session",
-        "acceptance:API:forgery",
-        "review:task:API",
-        "task:UI",
-        "acceptance:UI:surface",
-        "acceptance:UI:journey",
-        "acceptance:UI:responsive",
-        "review:task:UI",
-        "task:PREVIEW",
-        "acceptance:PREVIEW:label",
-        "acceptance:PREVIEW:final-block",
-        "acceptance:PREVIEW:canonical",
-        "review:task:PREVIEW",
-        "task:GOV",
-        "acceptance:GOV:tests",
-        "acceptance:GOV:gates",
-        "acceptance:GOV:sync",
-        "review:task:GOV"
+        "task:INSTALL",
+        "acceptance:INSTALL:checkout-channels",
+        "acceptance:INSTALL:mocked-pipe",
+        "acceptance:INSTALL:fail-closed",
+        "acceptance:INSTALL:channel-copy",
+        "task:STUDIO-RUNTIME",
+        "acceptance:STUDIO-RUNTIME:immutable-once",
+        "acceptance:STUDIO-RUNTIME:clone-isolation",
+        "acceptance:STUDIO-RUNTIME:custom-live",
+        "acceptance:STUDIO-RUNTIME:bootstrap-performance",
+        "review:task:STUDIO-RUNTIME",
+        "task:STUDIO-BOUNDARY",
+        "acceptance:STUDIO-BOUNDARY:object-root",
+        "acceptance:STUDIO-BOUNDARY:body-limit",
+        "acceptance:STUDIO-BOUNDARY:post-error-health",
+        "acceptance:STUDIO-BOUNDARY:finite-timeouts",
+        "task:MACOS-CI",
+        "acceptance:MACOS-CI:temp-venv",
+        "acceptance:MACOS-CI:path-propagation",
+        "task:PRODUCT-TRUTH",
+        "acceptance:PRODUCT-TRUTH:derived-counts",
+        "acceptance:PRODUCT-TRUTH:canonical-agreement",
+        "acceptance:PRODUCT-TRUTH:negative-mutation",
+        "acceptance:PRODUCT-TRUTH:metric-separation",
+        "review:task:PRODUCT-TRUTH",
+        "task:LOCALE-ACCESSIBILITY",
+        "acceptance:LOCALE-ACCESSIBILITY:document-language",
+        "acceptance:LOCALE-ACCESSIBILITY:metadata",
+        "acceptance:LOCALE-ACCESSIBILITY:packaged-routes",
+        "acceptance:LOCALE-ACCESSIBILITY:responsive-browser",
+        "review:task:LOCALE-ACCESSIBILITY",
+        "task:VERIFY-DEPLOY",
+        "acceptance:VERIFY-DEPLOY:checks",
+        "acceptance:VERIFY-DEPLOY:security"
       ],
-      "scopeRevision": "scope-2026-08-26-editor-r2",
+      "scopeRevision": "scope-2026-08-30-product-optimization-r1",
       "result": "passed",
-      "observedAt": "2026-08-26T05:20:00Z",
+      "observedAt": "2026-08-30T14:05:00Z",
       "producer": "codex-primary",
       "limitations": [
-        "No independent final review",
-        "No real-project final render",
-        "No release or production outcome"
+        "producer-generated",
+        "no independent final review",
+        "no public or target-environment deployment evidence",
+        "no real creator outcome"
       ]
     }
   ],
   "placeholderScan": {
     "exceptions": [
       {
-        "path": "docs/AGENT_CHAT_CONTROL_PLANE.md",
-        "patternId": "placeholder-copy",
-        "taskRefs": [
-          "GOV"
-        ],
-        "reason": "Placeholder is the intentional name of the existing verified async-job artifact contract.",
-        "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
-      },
-      {
         "path": "README.md",
         "patternId": "placeholder-copy",
         "taskRefs": [
-          "GOV"
+          "INSTALL",
+          "PRODUCT-TRUTH"
         ],
-        "reason": "Placeholder documents the existing verified async-job artifact contract.",
+        "reason": "README documents Kacha's real asynchronous placeholder contract; this is product terminology, not incomplete copy.",
         "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
+        "expiresAt": "2027-08-30T00:00:00Z"
       },
       {
-        "path": "README.en.md",
+        "path": "examples/design/text-behind/approved-styleframes.svg",
         "patternId": "placeholder-copy",
         "taskRefs": [
-          "GOV"
+          "STUDIO-RUNTIME"
         ],
-        "reason": "Placeholder documents the existing verified async-job artifact contract.",
+        "reason": "subject-placeholder is a stable SVG data-role in the approved generated design artifact, not unfinished content.",
         "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
-      },
-      {
-        "path": "SKILL.md",
-        "patternId": "placeholder-copy",
-        "taskRefs": [
-          "GOV"
-        ],
-        "reason": "Placeholder is an implemented control-plane object rather than unfinished copy.",
-        "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
-      },
-      {
-        "path": "CHANGELOG.md",
-        "patternId": "placeholder-copy",
-        "taskRefs": [
-          "GOV"
-        ],
-        "reason": "Placeholder records an implemented historical feature.",
-        "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
-      },
-      {
-        "path": "SKILL.md",
-        "patternId": "placeholder-copy-zh",
-        "taskRefs": [
-          "GOV"
-        ],
-        "reason": "The Chinese term refers to a forbidden evidence anti-pattern, not unfinished product work.",
-        "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
-      },
-      {
-        "path": "docs/ARCHITECTURE.md",
-        "patternId": "placeholder-copy",
-        "taskRefs": [
-          "GOV"
-        ],
-        "reason": "Placeholder names an implemented architecture component.",
-        "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
-      },
-      {
-        "path": "docs/en/QUICKSTART.md",
-        "patternId": "placeholder-copy",
-        "taskRefs": [
-          "GOV"
-        ],
-        "reason": "The quickstart explicitly instructs users to replace fictional template values.",
-        "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
-      },
-      {
-        "path": "references/agent-chat-control-plane.md",
-        "patternId": "placeholder-copy",
-        "taskRefs": [
-          "GOV"
-        ],
-        "reason": "Placeholder is the intentional verified async-job artifact contract.",
-        "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
-      },
-      {
-        "path": "studio/editor.html",
-        "patternId": "placeholder-copy",
-        "taskRefs": [
-          "UI"
-        ],
-        "reason": "HTML placeholder attributes are accessible input hints, not incomplete product copy.",
-        "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
-      },
-      {
-        "path": "studio/content.html",
-        "patternId": "placeholder-copy",
-        "taskRefs": [
-          "UI"
-        ],
-        "reason": "HTML placeholder attributes are accessible input hints.",
-        "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
-      },
-      {
-        "path": "studio/project.html",
-        "patternId": "placeholder-copy",
-        "taskRefs": [
-          "UI"
-        ],
-        "reason": "HTML placeholder attributes are accessible input hints.",
-        "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
-      },
-      {
-        "path": "studio/review.html",
-        "patternId": "placeholder-copy",
-        "taskRefs": [
-          "UI"
-        ],
-        "reason": "HTML placeholder attributes are accessible input hints.",
-        "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
-      },
-      {
-        "path": "studio/index.html",
-        "patternId": "placeholder-copy",
-        "taskRefs": [
-          "UI"
-        ],
-        "reason": "HTML placeholder attributes are accessible input hints.",
-        "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
-      },
-      {
-        "path": "scripts/timeline_ir.mjs",
-        "patternId": "placeholder-copy",
-        "taskRefs": [
-          "TB"
-        ],
-        "reason": "Placeholder is an implemented ready-artifact validation subsystem.",
-        "approvedBy": "product-owner:user",
-        "expiresAt": "2027-08-26T00:00:00Z"
+        "expiresAt": "2027-08-30T00:00:00Z"
       }
     ]
   },
-  "changeHistory": [
-    {
-      "fromRevision": "scope-2026-08-26-editor-r1",
-      "toRevision": "scope-2026-08-26-editor-r2",
-      "reason": "The product owner explicitly authorized committing and pushing the reviewed implementation to origin/main.",
-      "impact": "Commit and push move into the current delivery boundary; GitHub Release and external publication remain out of scope.",
-      "approvedBy": "product-owner:user",
-      "observedAt": "2026-08-26T06:45:00Z"
-    }
-  ]
+  "changeHistory": []
 }

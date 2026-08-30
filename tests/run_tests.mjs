@@ -2912,7 +2912,7 @@ await test("local production studio compiles an auditable project with verified 
   ]);
 }, "visual");
 
-await test("production studio exposes five visual-language choices and live contract state", () => {
+await test("production studio exposes five visual-language choices and live contract state", async () => {
   const html = fs.readFileSync(path.join(skillDirectory, "studio", "index.html"), "utf8");
   const contentHtml = fs.readFileSync(
     path.join(skillDirectory, "studio", "content.html"),
@@ -2950,6 +2950,28 @@ await test("production studio exposes five visual-language choices and live cont
     ))
   ) {
     throw new Error("production studio visual-language controls are incomplete");
+  }
+  const { loadProductionCatalog, saveCustomStyle } = await import(
+    pathToFileURL(path.join(scripts, "kacha_studio.mjs")).href
+  );
+  const cacheEnvironment = {
+    ...process.env,
+    KACHA_CONFIG_HOME: path.join(temporary, "studio-catalog-cache-config"),
+  };
+  const warmCatalog = loadProductionCatalog({ environment: cacheEnvironment });
+  warmCatalog.styles[0].name = "caller-mutation";
+  const isolatedCatalog = loadProductionCatalog({ environment: cacheEnvironment });
+  if (isolatedCatalog.styles[0].name === "caller-mutation") {
+    throw new Error("production catalog cache leaked a caller mutation");
+  }
+  saveCustomStyle({
+    id: "custom-cache-freshness",
+    name: "缓存后新风格",
+    baseStyleId: "xingzhe",
+  }, { environment: cacheEnvironment });
+  const refreshedCatalog = loadProductionCatalog({ environment: cacheEnvironment });
+  if (!refreshedCatalog.styles.some((style) => style.id === "custom-cache-freshness")) {
+    throw new Error("production catalog cache hid a custom style created after warmup");
   }
 }, "visual");
 
@@ -10354,6 +10376,7 @@ await test("V6 review workbench is local-only and exposes the new review assets"
   const projectHtml = fs.readFileSync(path.join(skillDirectory, "studio", "project.html"), "utf8");
   const projectJs = fs.readFileSync(path.join(skillDirectory, "studio", "project.js"), "utf8");
   const contentHtml = fs.readFileSync(path.join(skillDirectory, "studio", "content.html"), "utf8");
+  const editorJs = fs.readFileSync(path.join(skillDirectory, "studio", "editor.js"), "utf8");
   if (
     !server.includes("/api/review/media")
     || !server.includes("/api/project/status")
@@ -10369,6 +10392,7 @@ await test("V6 review workbench is local-only and exposes the new review assets"
     || !projectJs.includes("/api/project/run")
     || !projectJs.includes("renderEfficiency")
     || !contentHtml.includes("还没有视频")
+    || !editorJs.includes("if (!projection) return;")
     || !css.includes("--signal: #ff6b1a")
   ) throw new Error("V7 local project and unified review workbench contract is incomplete");
   const root = path.join(temporary, "v6-review-workbench");
@@ -10432,7 +10456,7 @@ await test("V6 review workbench is local-only and exposes the new review assets"
   child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
   try {
     let ready = false;
-    for (let attempt = 0; attempt < 50; attempt += 1) {
+    for (let attempt = 0; attempt < 200; attempt += 1) {
       try {
         const response = await fetch(`${origin}/api/health`);
         ready = response.ok;
@@ -10465,6 +10489,58 @@ await test("V6 review workbench is local-only and exposes the new review assets"
       origin,
       referer: `${origin}/review`,
     };
+    const nonObjectResponse = await fetch(`${origin}/api/review/open`, {
+      method: "POST",
+      headers: mutationHeaders,
+      body: "null",
+    });
+    const nonObject = await nonObjectResponse.json();
+    if (
+      nonObjectResponse.status !== 400
+      || nonObject.status !== "blocked"
+      || !nonObject.error.includes("根节点必须是 object")
+    ) throw new Error("studio server accepted a non-object JSON root");
+    const declaredOverflowResponse = await fetch(`${origin}/api/review/open`, {
+      method: "POST",
+      headers: mutationHeaders,
+      body: JSON.stringify({ padding: "x".repeat(1024 * 1024) }),
+    });
+    const declaredOverflow = await declaredOverflowResponse.json();
+    if (
+      declaredOverflowResponse.status !== 413
+      || declaredOverflow.status !== "blocked"
+      || !declaredOverflow.error.includes("超过 1 MB")
+    ) throw new Error("studio server did not return structured 413 for Content-Length overflow");
+    const chunkedOverflow = await new Promise((resolve, reject) => {
+      const request = http.request({
+        hostname: "127.0.0.1",
+        port,
+        path: "/api/review/open",
+        method: "POST",
+        headers: mutationHeaders,
+      }, (response) => {
+        const chunks = [];
+        response.on("data", (chunk) => chunks.push(chunk));
+        response.once("end", () => {
+          resolve({
+            status: response.statusCode,
+            body: JSON.parse(Buffer.concat(chunks).toString("utf8")),
+          });
+        });
+      });
+      request.once("error", reject);
+      request.write(`{"padding":"${"x".repeat(700 * 1024)}`);
+      request.end(`${"x".repeat(400 * 1024)}"}`);
+    });
+    if (
+      chunkedOverflow.status !== 413
+      || chunkedOverflow.body.status !== "blocked"
+      || !chunkedOverflow.body.error.includes("超过 1 MB")
+    ) throw new Error("studio server did not return structured 413 for chunked overflow");
+    const healthyAfterBoundaryFailures = await fetch(`${origin}/api/health`);
+    if (!healthyAfterBoundaryFailures.ok) {
+      throw new Error("studio server was not healthy after request-body failures");
+    }
     const openedResponse = await fetch(`${origin}/api/review/open`, {
       method: "POST",
       headers: mutationHeaders,
@@ -10911,7 +10987,7 @@ await test("Studio editor session supports open apply undo redo without arbitrar
   child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
   try {
     let ready = false;
-    for (let attempt = 0; attempt < 50; attempt += 1) {
+    for (let attempt = 0; attempt < 200; attempt += 1) {
       try { ready = (await fetch(`${origin}/api/health`)).ok; } catch {}
       if (ready) break;
       await new Promise((resolve) => setTimeout(resolve, 100));

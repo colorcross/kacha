@@ -1,26 +1,131 @@
 {
   "schemaVersion": "1.0",
-  "reviewId": "editor-core-deep-review-2026-08-26",
-  "status": "producer_findings_verified",
-  "observedAt": "2026-08-26T06:15:00Z",
-  "baseline": "432809035127e0aae6926a496964f89fca28c797",
-  "comparisonBoundary": "Working tree implementation of opencut-informed-editor-core-2026-08-26",
-  "reviewDimensions": ["product", "architecture", "data-contract", "implementation", "security", "reliability", "test", "accessibility", "responsive-design", "operations"],
-  "findings": [
-    {"id": "R-ED-001", "severity": "high", "status": "verified", "problem": "A caller could submit the externally modified current SHA and bypass the persisted editor session SHA.", "rootCause": "The current-file check chose caller baseSha instead of independently checking both session and caller bases.", "fix": "Require disk SHA to equal session SHA and caller base SHA to equal session SHA; added external-drift regression."},
-    {"id": "R-ED-002", "severity": "high", "status": "verified", "problem": "Journal append could succeed before session persistence, leaving timeline journal and stacks inconsistent if session write failed.", "rootCause": "The mutation was atomic per file but not compensating across the three state files.", "fix": "Append records are fsynced without rewriting prior history; partial writes and session-write failures truncate to the prior byte offset while Timeline rollback restores the before snapshot."},
-    {"id": "R-ED-003", "severity": "high", "status": "verified", "problem": "Empty commands and duplicate caller-supplied command IDs could create ambiguous or no-op history.", "rootCause": "The JSON schema constraints were not duplicated at the runtime trust boundary.", "fix": "Runtime rejects empty changes and command IDs already present in the digest-validated journal."},
-    {"id": "R-ED-004", "severity": "medium", "status": "verified", "problem": "SFX projection always exposed timeTick even when the source contract used targetLandingTick, and omitted the Inspector value.", "rootCause": "The display field was hard-coded instead of following the chosen timing reference.", "fix": "Projection now exposes and populates the real tick field dynamically; regression asserts the mapping."},
-    {"id": "R-ED-005", "severity": "medium", "status": "verified", "problem": "Sanitized source IDs could collide and make item selection target the wrong Timeline object.", "rootCause": "Stable IDs were generated but uniqueness was not enforced.", "fix": "Projection rejects duplicate item IDs and requires unique source IDs."},
-    {"id": "R-ED-006", "severity": "medium", "status": "verified", "problem": "Browser editor sessions were expired only during a later open and could otherwise live beyond twelve hours.", "rootCause": "Expiry cleanup and session lookup were separate paths.", "fix": "All editor media and mutation requests now resolve through one expiry-enforcing session lookup."},
-    {"id": "R-ED-007", "severity": "low", "status": "verified", "problem": "Initial hidden workspace state, missing favicon and narrow-screen panel headings produced misleading or broken presentation.", "rootCause": "Hidden-state CSS and small-screen heading constraints were missing.", "fix": "Added authoritative hidden styling, data favicon, responsive heading wrapping and verified desktop/mobile screenshots with zero console errors."},
-    {"id": "R-ED-008", "severity": "medium", "status": "verified", "problem": "The preview provider runtime trusted purpose and several registry field shapes when called outside the CLI wrapper.", "rootCause": "Validation was split between CLI argument handling and the provider module.", "fix": "The module now rejects unknown purposes, malformed provider contracts and final providers missing the complete canonical capability set."},
-    {"id": "R-ED-009", "severity": "high", "status": "verified", "problem": "Studio stored a bare file identity while the range server required {path, identity}, so a real source video request failed although missing-source API tests passed.", "rootCause": "The integration test never exercised /api/editor/media with an existing source file.", "fix": "Bind source media as the server contract shape and add an identity-checked HTTP byte-range regression."},
-    {"id": "R-ED-010", "severity": "high", "status": "verified", "problem": "The plan promised snapshot recovery, but history only recommended recovery; a truncated final record followed by a newline was not even recognized as a recoverable tail.", "rootCause": "Recovery reporting and recovery execution were conflated, and truncation compared against the raw split-line index.", "fix": "Add explicit expected-SHA recover and reopen commands, archive prior state, restore only the last verified snapshot, re-chain history, and parse the last non-empty journal line."},
-    {"id": "R-ED-011", "severity": "high", "status": "verified", "problem": "Inverse capture for JSON array add replaced an existing element or tried to remove the '-' pseudo-index, so undo could leave shifted or extra entries.", "rootCause": "Object-add inversion rules were reused for array insertion and append.", "fix": "Resolve parent type and concrete append index before mutation; array add always inverts to remove the inserted index, with focused regressions."},
-    {"id": "R-ED-012", "severity": "high", "status": "verified", "problem": "Timeline sessions used path.resolve rather than realpath and runtime command validation accepted numeric strings, unknown fields and inherited property names.", "rootCause": "The documented schema was not fully enforced at the kernel boundary and symlink identity was not canonicalized.", "fix": "Bind projection/journal/session to fs.realpath, reject extra/control/oversized fields and non-number changes, use own-property allowlists, and require visual edit ticks on frame boundaries."},
-    {"id": "R-ED-013", "severity": "medium", "status": "verified", "problem": "The browser playhead treated output time as raw source time, producing the wrong frame after cuts or reordering; CLI projection also hashed the full source on every new process.", "rootCause": "Approximate preview lacked an EDL-to-source mapping and projection mixed interactive identity with final content hashing.", "fix": "Map output ticks through picture segments, disclose single-picture overlap behavior, and use fast source identity by default while retaining opt-in source hashing."},
-    {"id": "R-ED-014", "severity": "medium", "status": "verified", "problem": "FFmpeg was declared final-eligible without confirming that the current runtime existed.", "rootCause": "Registry availability represented implementation state but was read as runtime state.", "fix": "Require and expose a current ffmpeg -version runtime probe before final eligibility succeeds."}
+  "reviewId": "kacha-product-optimization-producer-review-2026-08-30",
+  "status": "producer_review_completed_with_external_boundaries",
+  "observedAt": "2026-08-30T14:00:00Z",
+  "baseline": "51e0e782ec2554e0e070a3d3c779a58f55cb48a3",
+  "comparisonBoundary": "Working tree implementation of kacha-product-optimization-final-r1",
+  "reviewDimensions": [
+    "product-direction",
+    "product-design",
+    "ui-design",
+    "interaction-journeys",
+    "business-logic",
+    "data-api",
+    "code-architecture",
+    "code-implementation",
+    "security-privacy-compliance",
+    "accessibility-inclusion",
+    "performance-reliability",
+    "test-quality",
+    "deployment-operations",
+    "market-operations"
   ],
-  "decision": "All fourteen producer-review findings are fixed and verified by focused regression, 159-test full regression, real-browser EDL/apply/undo/redo journeys, static/privacy checks, installer regression and dual-agent install readback. Independent final review remains a separate completion boundary."
+  "findings": [
+    {
+      "id": "R-OPT-001",
+      "severity": "high",
+      "status": "fixed_producer_verified",
+      "problem": "The public stdin installer could not resolve its repository channel contract and exited before dry-run.",
+      "rootCause": "BASH_SOURCE and a checkout-relative file were treated as available in piped execution.",
+      "fix": "Use a fixed HTTPS channel-contract bootstrap only when a local contract is unavailable; validate schema and refs, clean temporary files, and cover success and failure paths."
+    },
+    {
+      "id": "R-OPT-002",
+      "severity": "high",
+      "status": "fixed_target_verification_pending",
+      "problem": "The scheduled macOS workflow failed at pip --user before any Kacha check.",
+      "rootCause": "The runner uses externally managed Homebrew Python.",
+      "fix": "Install Python tools into RUNNER_TEMP venv and publish its bin path to later steps; local YAML and gate checks pass, post-push macOS execution remains separate evidence."
+    },
+    {
+      "id": "R-OPT-003",
+      "severity": "high",
+      "status": "fixed_producer_verified",
+      "problem": "Every Studio bootstrap rebuilt immutable registries and took 8.5 to 11.6 seconds.",
+      "rootCause": "Catalog and font discovery had no process-level reuse and readiness preceded warmup.",
+      "fix": "Prewarm before listen, cache immutable catalog/font discovery, clone returned data, retain live custom styles and bind project-font invalidation to file metadata."
+    },
+    {
+      "id": "R-OPT-004",
+      "severity": "medium",
+      "status": "fixed_producer_verified",
+      "problem": "Oversized JSON destroyed the socket and non-object roots crossed the HTTP parser boundary.",
+      "rootCause": "Byte limits, parsing and HTTP status semantics were coupled to request.destroy().",
+      "fix": "Introduce typed 400/413 errors, byte-safe buffering, object-root validation and finite server timeouts; integration regression proves post-error health."
+    },
+    {
+      "id": "R-OPT-005",
+      "severity": "medium",
+      "status": "fixed_producer_verified",
+      "problem": "README, site and actual regression/catalog counts disagreed.",
+      "rootCause": "Current product facts were duplicated manually.",
+      "fix": "Derive 159 tests, 65 templates, 69 design entries, 23 core resources and 132 effects, then fail check-static when canonical surfaces drift."
+    },
+    {
+      "id": "R-OPT-006",
+      "severity": "low",
+      "status": "fixed_producer_verified",
+      "problem": "The English page document root declared zh-CN.",
+      "rootCause": "One shared root layout owned both locales.",
+      "fix": "Use two static route-group root layouts and verify normal and GitHub Pages output."
+    },
+    {
+      "id": "R-OPT-007",
+      "severity": "medium",
+      "status": "fixed_producer_verified",
+      "problem": "The acquisition command silently selected canary while stable remained v1.1.0.",
+      "rootCause": "Channel selection was implicit in installer defaults and absent from public copy.",
+      "fix": "Pass --channel canary explicitly and document stable/canary semantics in Chinese and English."
+    },
+    {
+      "id": "R-OPT-008",
+      "severity": "medium",
+      "status": "contract_closed_outcomes_open",
+      "problem": "Engineering checks and GitHub traffic could be mistaken for activation, value or retention.",
+      "rootCause": "No privacy-conscious adoption and outcome measurement contract existed.",
+      "fix": "Define separate engineering, activation, candidate, human-quality, efficiency, retention and economics metrics without adding third-party tracking; all real outcome values remain unknown."
+    },
+    {
+      "id": "R-OPT-009",
+      "severity": "medium",
+      "status": "fixed_producer_verified",
+      "problem": "The install copy action had no completion or failure state when Clipboard API remained pending.",
+      "rootCause": "The click handler awaited one browser API without a timeout or fallback.",
+      "fix": "Add bounded Clipboard API use, legacy local fallback and localized live success/failure feedback; verify the timeout fallback in Chromium."
+    },
+    {
+      "id": "R-OPT-010",
+      "severity": "medium",
+      "status": "fixed_producer_verified",
+      "problem": "Editor resize before opening a Timeline read projection.output from an empty state.",
+      "rootCause": "The overlay renderer assumed a loaded project while a global resize listener can run at any time.",
+      "fix": "Size and clear the layer, then return when projection is absent; add the guard to the workbench regression and repeat console-clean browser checks."
+    },
+    {
+      "id": "R-OPT-011",
+      "severity": "medium",
+      "status": "fixed_producer_verified",
+      "problem": "Changing design-system implementation code correctly invalidated the approved example styleframe and four positive regressions.",
+      "rootCause": "The approved artifact intentionally binds design and implementation digests, but the implementation change had not regenerated it.",
+      "fix": "Regenerate the styleframe and manifest with current code and rebind the edit-plan artifact SHA values."
+    },
+    {
+      "id": "R-OPT-012",
+      "severity": "medium",
+      "status": "fixed_producer_verified",
+      "problem": "A directory-only font-cache key could miss replacement of an existing font file.",
+      "rootCause": "Directory mtime is not guaranteed to change for in-place file content replacement.",
+      "fix": "Include sorted font filename, size, mtime and ctime metadata and bound retained cache keys to eight."
+    },
+    {
+      "id": "R-OPT-013",
+      "severity": "low",
+      "status": "deferred_with_exact_gate",
+      "problem": "vinext 0.0.50 carries a development-only image-size advisory chain.",
+      "rootCause": "The available fix is vinext 1.0.0-beta.8 with a semver-major and peer-dependency migration.",
+      "fix": "Keep production vulnerability count at zero and fail on any exception drift; schedule the beta compatibility migration as a separate reviewed iteration."
+    }
+  ],
+  "decision": "All locally solvable findings in the frozen plan are implemented and producer-reviewed, and the second full regression is recorded separately. Remote installer, macOS workflow, Pages readback and dual-agent deployment remain post-push delivery gates. Independent final review and real creator outcomes remain open and are not self-approved."
 }

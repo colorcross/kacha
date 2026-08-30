@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "result": "passed",
+  "observedAt": "2026-08-30T12:10:00Z",
+  "baselineRevision": "51e0e782ec2554e0e070a3d3c779a58f55cb48a3",
+  "repository": {
+    "branch": "main",
+    "originMatchesHead": true,
+    "trackedFiles": 737,
+    "workingTreeAtDiscovery": "clean"
+  },
+  "productContracts": {
+    "canonicalTimeline": "Timeline IR",
+    "canonicalFinalRenderer": "FFmpeg Render Graph",
+    "studioPreview": "approximate and not final eligible",
+    "operatingBoundary": "local-first, recoverable, auditable and fail-closed",
+    "catalogs": {
+      "templates": 65,
+      "designEntries": 69,
+      "coreResources": 23,
+      "builtInStyles": 5,
+      "visualLanguages": 5,
+      "openings": 10,
+      "assignableEffects": 132
+    }
+  },
+  "baselineVerification": {
+    "command": "node tests/run_tests.mjs --report <temporary-report>",
+    "discovered": 159,
+    "passed": 159,
+    "failed": 0,
+    "linuxCi": {
+      "runId": 32940303766,
+      "headSha": "51e0e782ec2554e0e070a3d3c779a58f55cb48a3",
+      "conclusion": "success"
+    }
+  },
+  "reproducedFindings": [
+    {
+      "id": "PIPE-INSTALL",
+      "command": "curl -fsSL <official-install-script> | bash -s -- --agent codex --channel stable --dry-run",
+      "exitCode": 2,
+      "result": "BASH_SOURCE is unavailable and config/release-channels.json cannot be found when the script is executed from stdin"
+    },
+    {
+      "id": "MACOS-SMOKE",
+      "runId": 32688630776,
+      "conclusion": "failure",
+      "failedStep": "Install native media dependencies",
+      "rootCause": "pip --user is rejected by the externally-managed Homebrew Python environment before tests start"
+    },
+    {
+      "id": "STUDIO-CATALOG-LATENCY",
+      "endpoint": "/api/bootstrap",
+      "samplesSeconds": [8.524136, 11.584552, 10.570604],
+      "staticSamplesSeconds": [0.001649, 0.001026, 0.000919],
+      "rootCause": "each request rereads, parses and validates the immutable 18 MB motion contract registry"
+    },
+    {
+      "id": "REQUEST-BODY-BOUNDARY",
+      "result": "the current 1 MB overflow branch destroys the request socket and all parsed JSON roots are accepted before route logic"
+    },
+    {
+      "id": "PRODUCT-TRUTH-DRIFT",
+      "result": "the current suite discovers 159 checks while README and public-site current claims report 154 or 146"
+    }
+  ],
+  "security": {
+    "productionDependencyVulnerabilities": 0,
+    "developmentDependencyVulnerabilities": 2,
+    "developmentFinding": "vinext 0.0.50 transitively uses image-size; the offered fix is a semver-major beta",
+    "localStudioControls": [
+      "loopback bind",
+      "loopback Host validation",
+      "same-origin mutation checks",
+      "explicit local request header",
+      "CSP, COOP, CORP, referrer and frame protections",
+      "identity-bound media range reads"
+    ]
+  },
+  "limitations": [
+    "baseline regression does not prove real-project output quality",
+    "local measurements do not prove other hardware performance",
+    "GitHub CI history does not prove unreleased changes"
+  ]
+}

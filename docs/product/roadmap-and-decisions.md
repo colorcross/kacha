@@ -1,12 +1,14 @@
 # Roadmap and decisions
 
-> 对账修订：`opencut-informed-editor-core-2026-08-26`。
+> 对账修订：`kacha-product-optimization-2026-08-30`。
 
 ## 当前路线与优先级
 
-当前优先级依次为：完成 Editor 本地回归与双 Agent 同步；在真实但不付费的项目中
-试运行专业调整、参考片、clip factory 和飞行记录；独立复核中高风险改动；最后才
-决定候选发布、外部提供者接入和真实运营实验。
+当前优先级依次为：修复官方安装、macOS smoke、Studio 启动性能和 HTTP 边界；
+建立机器可检的产品事实与真实 channel 文案；完成双语可访问性、完整回归、远程
+工作流回读和双 Agent 同步；随后才在用户授权的小规模真实项目中建立激活、首次
+候选、人工质量与返工时间基线。候选 Release、外部分析 SDK、付费提供者和广义 NLE
+扩张仍需新的明确决定。
 
 ## 重要产品决定
 
@@ -21,6 +23,13 @@
 9. Studio Canvas 永不进入 final；Rust/WGPU 在 current parity 与发布资格成立前保持不可用。
 10. Journal recovery 与接受外部修改是两个显式动作；前者恢复最后有效快照，后者重开
     session，均要求当前 SHA、保留旧状态归档，不做静默 rebase。
+11. checkout 与 stdin 安装共用一份 release-channel 合同；官网命令显式选择 canary，
+    stable 在新 tag/Release 完成前保持 `v1.1.0`。
+12. 内置 Studio 目录按进程缓存并在 ready 前预热；自定义风格保持动态读取，不能用
+    缓存换取陈旧的用户配置。
+13. 当前产品数字由静态门禁推导；采用指标遵循本地优先、最小化、显式同意和证据分层。
+14. 对 OpenCut/OpenMontage 继续只借鉴任务编排、可恢复性和可解释交互原则，不追求
+    全功能 NLE 同质化，也不复制 AGPL 实现。
 
 ## 被替代的产品定义
 
@@ -31,3 +40,6 @@
 - “项目状态仅显示阶段结果”扩展为可回看多个证据源的只读制作飞行记录。
 - “必须依赖外部 NLE 才能做基础精调”扩展为本地类型化轨道、Inspector 和可恢复
   Command Journal；复杂 NLE 功能和正式渲染边界不变。
+- “官网默认命令无需说明渠道”被显式 canary/stable 选择替代。
+- “手工同步当前能力数字”被可执行 product-truth gate 替代。
+- “GitHub 流量可以代表采用”被工程、激活、价值、质量、留存和经营分层替代。

@@ -1,6 +1,6 @@
 # Current product
 
-> 对账修订：`opencut-informed-editor-core-2026-08-26`。事实源为当前代码、README、
+> 对账修订：`kacha-product-optimization-2026-08-30`。事实源为当前代码、README、
 > SKILL、架构文档和本轮本地回归；不代表发布或生产结果。
 
 ## 当前目标用户与场景
@@ -29,6 +29,15 @@ CLI/API 与本地 `/editor` 专业调整工作台。用户可以在不建立第�
 唯一由通过当前 runtime probe 的 FFmpeg Render Graph 生成。日志损坏可显式恢复
 最后有效快照，合法外部修改可显式重开 session，两者都要求当前 SHA 并归档旧状态。
 
+2026-08-30 全产品审计后，当前交付面进一步补齐：官方 stdin 安装器可从固定 HTTPS
+地址取得并校验唯一 release-channel 合同；Studio 在进程启动时预热不可变生产目录，
+后续请求只动态合并本地自定义风格；本地 HTTP 对非 object JSON 和超过 1 MB 的请求
+返回稳定的 400/413；macOS smoke 使用隔离 Python venv。当前产品事实由静态门禁
+推导并核对：完整回归 159 项、65 个模板、69 个设计条目、23 个公共核心资源和
+132 个可分配效果。中英文官网各自拥有正确的文档语言根节点。
+
 非目标：自动发布、无授权外传或付费、替代人工正常速度审片、承诺真实流量增长，
 以及复制第三方项目源码或参考片的独特表达。Rust/WGPU 渲染仍只是明确标记为
 `not_implemented` 的 provider 边界，当前不属于可用能力或正式成片能力。
+OpenCut/OpenMontage 的广义 NLE 与提供者广度也不是当前追赶目标；咔嚓优先优化
+安装到首个可验证候选的时间、恢复性、证据链和真人内容质量。

@@ -1,79 +1,184 @@
 {
   "$schema": "appcreate://schemas/post-iteration-review.schema.json",
   "schemaVersion": 2,
-  "applicability": {"status": "applicable", "reason": "Precise time, persistent mutation history, local APIs, a new editor surface and final-render eligibility changed executable product behavior.", "approvedBy": "product-owner:user", "evidenceRefs": ["E-LOCAL"]},
-  "product": {"ref": ".", "auditRef": "quality/change-review.json", "iterationId": "opencut-informed-editor-core-2026-08-26", "baselineRevision": "432809035127e0aae6926a496964f89fca28c797", "candidateRevision": "working-tree-pre-commit", "observedAt": "2026-08-26T06:45:00Z"},
+  "applicability": {
+    "status": "applicable",
+    "reason": "The iteration changes the public installer, Studio runtime and HTTP boundary, website locale roots, CI, product claims and adoption contract.",
+    "approvedBy": "product-owner:user",
+    "evidenceRefs": ["E-LOCAL"]
+  },
+  "product": {
+    "ref": ".",
+    "auditRef": "quality/product-audit-2026-08-30.json",
+    "iterationId": "kacha-product-optimization-2026-08-30",
+    "baselineRevision": "51e0e782ec2554e0e070a3d3c779a58f55cb48a3",
+    "candidateRevision": "working-tree-pre-commit",
+    "observedAt": "2026-08-30T14:10:00Z"
+  },
   "scope": {
     "status": "completed",
-    "selectedRecommendationIds": ["REC-OPENCUT-EDITOR-CORE"],
-    "inScope": ["Timebase V2", "Timeline Projection", "Command Journal", "Editor CLI and Studio API", "Studio adjustment workbench", "Preview provider gate", "tests docs and dual-agent install"],
-    "outOfScope": ["Rust WGPU runtime", "browser final export", "GitHub Release and external publication", "real-project quality and production outcomes"],
-    "changedPages": ["studio/editor.html", "studio/editor.css", "studio/editor.js", "studio/index.html", "studio/content.html", "studio/project.html", "studio/review.html"],
-    "changedModules": ["scripts/media_time.mjs", "scripts/timeline_projection.mjs", "scripts/editor_command_journal.mjs", "scripts/json_mutation.mjs", "scripts/kacha_editor.mjs", "scripts/kacha_studio_server.mjs", "scripts/preview_provider.mjs", "scripts/timeline_ir.mjs"],
-    "changedJourneys": ["timeline-to-adjustment", "adjustment-undo-redo-recovery", "approximate-preview-to-canonical-final-boundary"],
-    "changedServices": ["Studio POST /api/editor/open", "Studio POST /api/editor/command", "Studio POST /api/editor/undo", "Studio POST /api/editor/redo", "Studio GET /api/editor/media"],
-    "knownRisks": ["Independent final review was not performed.", "Commit and remote readback were pending when this review artifact was recorded.", "No real-project final render and normal-speed human review exists.", "WebGPU is intentionally unavailable."]
+    "selectedRecommendationIds": [
+      "KACHA-REC-001", "KACHA-REC-002", "KACHA-REC-003", "KACHA-REC-004",
+      "KACHA-REC-005", "KACHA-REC-006", "KACHA-REC-007", "KACHA-REC-008"
+    ],
+    "inScope": [
+      "secure standalone installer and explicit release channels",
+      "Studio immutable catalog prewarm and bounded font cache",
+      "typed Studio request boundaries and finite timeouts",
+      "macOS runner venv",
+      "machine-checked current product truth",
+      "locale-correct public pages and copy feedback",
+      "privacy-conscious adoption measurement",
+      "full local verification, push and dual-agent deployment"
+    ],
+    "outOfScope": [
+      "GitHub Release or tag",
+      "third-party analytics",
+      "vinext major-beta migration",
+      "general NLE scope",
+      "real creator and business outcome claims",
+      "producer self-approval as independent final review"
+    ],
+    "changedPages": [
+      "website /",
+      "website /en/",
+      "studio /editor"
+    ],
+    "changedModules": [
+      "scripts/install.sh",
+      "scripts/design_system.mjs",
+      "scripts/kacha_studio.mjs",
+      "scripts/kacha_studio_server.mjs",
+      "scripts/verify_product_truth.mjs",
+      "website/app/components/CopyInstall.tsx",
+      "website/app/site-content.ts"
+    ],
+    "changedJourneys": [
+      "official-site-to-channel-install",
+      "locale-entry-and-copy-feedback",
+      "Studio-startup-and-empty-editor-resize"
+    ],
+    "changedServices": [
+      "Studio GET /api/bootstrap",
+      "Studio POST JSON endpoints",
+      "raw-GitHub release-channel bootstrap",
+      "GitHub macOS smoke and Pages delivery"
+    ],
+    "knownRisks": [
+      "Independent final review has not been performed.",
+      "Public remote, macOS, Pages and dual-agent evidence require the final pushed commit.",
+      "New system fonts may require a Studio restart.",
+      "The development-only vinext advisory is deferred to a separate beta compatibility iteration.",
+      "No real creator project or outcome cohort was observed."
+    ]
   },
   "evidence": [
     {
-      "id": "E-LOCAL", "level": "E2-source-or-local-check", "sourceRef": "quality/evidence/opencut-editor-local-verification.json", "sha256": "sha256:dc9748e8cf6118765fe7f84d383320a222fe3f7fa9d3353b159428f45db92900", "result": "passed", "producer": "codex-primary",
-      "subjectRefs": ["recommendation:REC-OPENCUT-EDITOR-CORE", "finding:R-ED-001", "finding:R-ED-002", "finding:R-ED-003", "finding:R-ED-004", "finding:R-ED-005", "finding:R-ED-006", "finding:R-ED-007", "finding:R-ED-008"],
-      "observedAt": "2026-08-26T06:45:00Z", "scope": ["local source regression", "real loopback browser", "Codex install", "Claude install"], "limitations": ["Producer-generated evidence", "No independent final review", "No release or production outcome"]
+      "id": "E-LOCAL",
+      "level": "E2-source-or-local-check",
+      "sourceRef": "quality/evidence/product-optimization-local-verification-2026-08-30.json",
+      "sha256": "sha256:99e69a0918a2242b7700b1eba837d5c1deb4e37d3d0e5703c3db13d6e8f028b0",
+      "result": "passed",
+      "producer": "codex-primary",
+      "subjectRefs": [
+        "recommendation:KACHA-REC-001", "recommendation:KACHA-REC-002",
+        "recommendation:KACHA-REC-003", "recommendation:KACHA-REC-004",
+        "recommendation:KACHA-REC-005", "recommendation:KACHA-REC-006",
+        "recommendation:KACHA-REC-007", "recommendation:KACHA-REC-008",
+        "finding:R-OPT-001", "finding:R-OPT-002", "finding:R-OPT-003",
+        "finding:R-OPT-004", "finding:R-OPT-005", "finding:R-OPT-006",
+        "finding:R-OPT-007", "finding:R-OPT-008", "finding:R-OPT-009",
+        "finding:R-OPT-010", "finding:R-OPT-011", "finding:R-OPT-012",
+        "finding:R-OPT-013"
+      ],
+      "observedAt": "2026-08-30T14:05:00Z",
+      "scope": ["local source", "159-test regression", "installer", "website builds", "real loopback browser", "host-specific performance"],
+      "limitations": ["Producer-generated", "No pushed target environment", "No independent final review", "No creator or business outcome"]
     }
   ],
   "domains": [
-    {"id": "product-direction", "status": "in_progress", "scope": ["Agent-first editor boundary"], "findingIds": [], "evidenceRefs": [], "reviewer": "codex-primary", "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "product-design", "status": "in_progress", "scope": ["Workbench scope and truth labels"], "findingIds": ["R-ED-007"], "evidenceRefs": [], "reviewer": "codex-primary", "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "ui-design", "status": "in_progress", "scope": ["Desktop and narrow layouts"], "findingIds": ["R-ED-007"], "evidenceRefs": [], "reviewer": "codex-primary", "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "interaction-journeys", "status": "in_progress", "scope": ["Open apply undo redo"], "findingIds": ["R-ED-004", "R-ED-006", "R-ED-007"], "evidenceRefs": [], "reviewer": "codex-primary", "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "business-logic", "status": "in_progress", "scope": ["Command and preview invariants"], "findingIds": ["R-ED-001", "R-ED-003", "R-ED-008"], "evidenceRefs": [], "reviewer": "codex-primary", "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "data-api", "status": "in_progress", "scope": ["Timeline projection and journal"], "findingIds": ["R-ED-001", "R-ED-002", "R-ED-003", "R-ED-004", "R-ED-005", "R-ED-006"], "evidenceRefs": [], "reviewer": "codex-primary", "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "code-architecture", "status": "in_progress", "scope": ["Single source of truth and adapter boundaries"], "findingIds": ["R-ED-001", "R-ED-002", "R-ED-005", "R-ED-008"], "evidenceRefs": [], "reviewer": "codex-primary", "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "code-implementation", "status": "in_progress", "scope": ["All changed editor modules"], "findingIds": ["R-ED-001", "R-ED-002", "R-ED-003", "R-ED-004", "R-ED-005", "R-ED-006", "R-ED-007", "R-ED-008"], "evidenceRefs": [], "reviewer": "codex-primary", "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "security-privacy-compliance", "status": "in_progress", "scope": ["Loopback session and arbitrary path boundaries"], "findingIds": ["R-ED-001", "R-ED-003", "R-ED-006", "R-ED-008"], "evidenceRefs": [], "reviewer": "codex-primary", "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "accessibility-inclusion", "status": "in_progress", "scope": ["Keyboard focus status and narrow layout"], "findingIds": ["R-ED-007"], "evidenceRefs": [], "reviewer": "codex-primary", "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "performance-reliability", "status": "in_progress", "scope": ["Atomic writes conflicts and recovery"], "findingIds": ["R-ED-001", "R-ED-002", "R-ED-005", "R-ED-006"], "evidenceRefs": [], "reviewer": "codex-primary", "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "test-quality", "status": "in_progress", "scope": ["Focused full browser and installer verification"], "findingIds": ["R-ED-001", "R-ED-003", "R-ED-004", "R-ED-005", "R-ED-006", "R-ED-008"], "evidenceRefs": [], "reviewer": "codex-primary", "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "deployment-operations", "status": "in_progress", "scope": ["Codex and Claude local install"], "findingIds": [], "evidenceRefs": [], "reviewer": "codex-primary", "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "market-operations", "status": "not_started", "scope": ["Real creator outcomes"], "findingIds": [], "evidenceRefs": [], "reviewer": null, "reviewedAt": null}
+    {"id":"product-direction","status":"in_progress","scope":["positioning and current product truth"],"findingIds":["R-OPT-005"],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"product-design","status":"in_progress","scope":["public activation journey"],"findingIds":["R-OPT-001"],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"ui-design","status":"in_progress","scope":["Studio empty and responsive state"],"findingIds":["R-OPT-010"],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"interaction-journeys","status":"in_progress","scope":["copy completion feedback"],"findingIds":["R-OPT-009"],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"business-logic","status":"in_progress","scope":["release and renderer truth boundaries"],"findingIds":[],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"data-api","status":"in_progress","scope":["Studio JSON contract"],"findingIds":["R-OPT-004"],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"code-architecture","status":"in_progress","scope":["catalog and font cache boundaries"],"findingIds":["R-OPT-012"],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"code-implementation","status":"in_progress","scope":["design artifact invalidation"],"findingIds":["R-OPT-011"],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"security-privacy-compliance","status":"in_progress","scope":["installer refs, dependencies and local HTTP"],"findingIds":["R-OPT-013"],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"accessibility-inclusion","status":"in_progress","scope":["document language and live feedback"],"findingIds":["R-OPT-006"],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"performance-reliability","status":"in_progress","scope":["Studio startup and cache isolation"],"findingIds":["R-OPT-003"],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"test-quality","status":"in_progress","scope":["159 regressions and negative boundaries"],"findingIds":[],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"deployment-operations","status":"in_progress","scope":["macOS, Pages and dual-agent delivery"],"findingIds":["R-OPT-002"],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"market-operations","status":"in_progress","scope":["channel messaging and adoption measurement"],"findingIds":["R-OPT-007","R-OPT-008"],"evidenceRefs":[],"reviewer":"codex-primary","reviewedAt":"2026-08-30T14:10:00Z"}
   ],
   "perspectives": [
-    {"id": "product", "status": "in_progress", "reviewer": "codex-primary", "reviewRunRef": null, "independentFromProducer": false, "scope": ["product boundary"], "findingIds": ["R-ED-007", "R-ED-008"], "evidenceRefs": [], "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "design", "status": "in_progress", "reviewer": "codex-primary", "reviewRunRef": null, "independentFromProducer": false, "scope": ["workbench design"], "findingIds": ["R-ED-007"], "evidenceRefs": [], "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "engineering", "status": "in_progress", "reviewer": "codex-primary", "reviewRunRef": null, "independentFromProducer": false, "scope": ["architecture and implementation"], "findingIds": ["R-ED-001", "R-ED-002", "R-ED-003", "R-ED-004", "R-ED-005", "R-ED-006", "R-ED-008"], "evidenceRefs": [], "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "quality", "status": "in_progress", "reviewer": "codex-primary", "reviewRunRef": null, "independentFromProducer": false, "scope": ["regression and browser gates"], "findingIds": ["R-ED-001", "R-ED-003", "R-ED-004", "R-ED-005", "R-ED-007", "R-ED-008"], "evidenceRefs": [], "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "security-privacy", "status": "in_progress", "reviewer": "codex-primary", "reviewRunRef": null, "independentFromProducer": false, "scope": ["local trust boundaries"], "findingIds": ["R-ED-001", "R-ED-003", "R-ED-006", "R-ED-008"], "evidenceRefs": [], "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "sre-operations", "status": "in_progress", "reviewer": "codex-primary", "reviewRunRef": null, "independentFromProducer": false, "scope": ["recovery and install"], "findingIds": ["R-ED-002", "R-ED-006"], "evidenceRefs": [], "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "data-analytics", "status": "in_progress", "reviewer": "codex-primary", "reviewRunRef": null, "independentFromProducer": false, "scope": ["time and projection contracts"], "findingIds": ["R-ED-004", "R-ED-005"], "evidenceRefs": [], "reviewedAt": "2026-08-26T05:20:00Z"},
-    {"id": "market-growth", "status": "not_started", "reviewer": null, "reviewRunRef": null, "independentFromProducer": false, "scope": ["creator outcomes"], "findingIds": [], "evidenceRefs": [], "reviewedAt": null},
-    {"id": "independent-final-review", "status": "not_started", "reviewer": null, "reviewRunRef": null, "independentFromProducer": true, "scope": ["whole iteration"], "findingIds": [], "evidenceRefs": [], "reviewedAt": null}
+    {"id":"product","status":"in_progress","reviewer":"codex-primary","reviewRunRef":null,"independentFromProducer":false,"scope":["product truth"],"findingIds":["R-OPT-005"],"evidenceRefs":[],"reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"design","status":"in_progress","reviewer":"codex-primary","reviewRunRef":null,"independentFromProducer":false,"scope":["locale structure"],"findingIds":["R-OPT-006"],"evidenceRefs":[],"reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"engineering","status":"in_progress","reviewer":"codex-primary","reviewRunRef":null,"independentFromProducer":false,"scope":["installer and runtime"],"findingIds":["R-OPT-001","R-OPT-003","R-OPT-012"],"evidenceRefs":[],"reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"quality","status":"in_progress","reviewer":"codex-primary","reviewRunRef":null,"independentFromProducer":false,"scope":["browser and artifact regressions"],"findingIds":["R-OPT-009","R-OPT-010","R-OPT-011"],"evidenceRefs":[],"reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"security-privacy","status":"in_progress","reviewer":"codex-primary","reviewRunRef":null,"independentFromProducer":false,"scope":["HTTP and dependency boundaries"],"findingIds":["R-OPT-004","R-OPT-013"],"evidenceRefs":[],"reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"sre-operations","status":"in_progress","reviewer":"codex-primary","reviewRunRef":null,"independentFromProducer":false,"scope":["macOS and local deployment"],"findingIds":["R-OPT-002"],"evidenceRefs":[],"reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"data-analytics","status":"in_progress","reviewer":"codex-primary","reviewRunRef":null,"independentFromProducer":false,"scope":["adoption contract"],"findingIds":["R-OPT-008"],"evidenceRefs":[],"reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"market-growth","status":"in_progress","reviewer":"codex-primary","reviewRunRef":null,"independentFromProducer":false,"scope":["acquisition channel"],"findingIds":["R-OPT-007"],"evidenceRefs":[],"reviewedAt":"2026-08-30T14:10:00Z"},
+    {"id":"independent-final-review","status":"not_started","reviewer":null,"reviewRunRef":null,"independentFromProducer":true,"scope":["whole iteration"],"findingIds":[],"evidenceRefs":[],"reviewedAt":null}
   ],
   "levels": [
-    {"id": "artifact", "status": "in_progress", "itemsExpected": ["source and evidence artifacts"], "itemsReviewed": ["source and evidence artifacts"], "findingIds": ["R-ED-001", "R-ED-002", "R-ED-003", "R-ED-004", "R-ED-005", "R-ED-006", "R-ED-007", "R-ED-008"], "evidenceRefs": []},
-    {"id": "component-module", "status": "in_progress", "itemsExpected": ["scripts/media_time.mjs", "scripts/timeline_projection.mjs", "scripts/editor_command_journal.mjs", "scripts/json_mutation.mjs", "scripts/kacha_editor.mjs", "scripts/kacha_studio_server.mjs", "scripts/preview_provider.mjs", "scripts/timeline_ir.mjs"], "itemsReviewed": ["scripts/media_time.mjs", "scripts/timeline_projection.mjs", "scripts/editor_command_journal.mjs", "scripts/json_mutation.mjs", "scripts/kacha_editor.mjs", "scripts/kacha_studio_server.mjs", "scripts/preview_provider.mjs", "scripts/timeline_ir.mjs"], "findingIds": ["R-ED-001", "R-ED-002", "R-ED-003", "R-ED-004", "R-ED-005", "R-ED-006", "R-ED-008"], "evidenceRefs": []},
-    {"id": "page-surface", "status": "in_progress", "itemsExpected": ["studio/editor.html", "studio/editor.css", "studio/editor.js", "studio/index.html", "studio/content.html", "studio/project.html", "studio/review.html"], "itemsReviewed": ["studio/editor.html", "studio/editor.css", "studio/editor.js", "studio/index.html", "studio/content.html", "studio/project.html", "studio/review.html"], "findingIds": ["R-ED-004", "R-ED-007"], "evidenceRefs": []},
-    {"id": "cross-page-journey", "status": "in_progress", "itemsExpected": ["timeline-to-adjustment", "adjustment-undo-redo-recovery", "approximate-preview-to-canonical-final-boundary"], "itemsReviewed": ["timeline-to-adjustment", "adjustment-undo-redo-recovery", "approximate-preview-to-canonical-final-boundary"], "findingIds": ["R-ED-001", "R-ED-004", "R-ED-006", "R-ED-007", "R-ED-008"], "evidenceRefs": []},
-    {"id": "service-integration", "status": "in_progress", "itemsExpected": ["Studio POST /api/editor/open", "Studio POST /api/editor/command", "Studio POST /api/editor/undo", "Studio POST /api/editor/redo", "Studio GET /api/editor/media"], "itemsReviewed": ["Studio POST /api/editor/open", "Studio POST /api/editor/command", "Studio POST /api/editor/undo", "Studio POST /api/editor/redo", "Studio GET /api/editor/media"], "findingIds": ["R-ED-001", "R-ED-002", "R-ED-003", "R-ED-006"], "evidenceRefs": []},
-    {"id": "system-data", "status": "in_progress", "itemsExpected": ["Timeline IR session journal snapshots provider registry"], "itemsReviewed": ["Timeline IR session journal snapshots provider registry"], "findingIds": ["R-ED-001", "R-ED-002", "R-ED-003", "R-ED-004", "R-ED-005", "R-ED-006", "R-ED-008"], "evidenceRefs": []},
-    {"id": "target-environment-device", "status": "in_progress", "itemsExpected": ["Codex local skill", "Claude local skill", "Chromium loopback Studio"], "itemsReviewed": ["Codex local skill", "Claude local skill", "Chromium loopback Studio"], "findingIds": ["R-ED-007"], "evidenceRefs": []},
-    {"id": "candidate-release", "status": "deferred", "itemsExpected": [], "itemsReviewed": [], "findingIds": [], "evidenceRefs": [], "deferredUntil": "after commit candidate authorization"},
-    {"id": "production-outcome", "status": "deferred", "itemsExpected": [], "itemsReviewed": [], "findingIds": [], "evidenceRefs": [], "deferredUntil": "after real-project observation window"}
+    {"id":"artifact","status":"in_progress","itemsExpected":["source and evidence artifacts"],"itemsReviewed":["source and evidence artifacts"],"findingIds":["R-OPT-005","R-OPT-011"],"evidenceRefs":[]},
+    {"id":"component-module","status":"in_progress","itemsExpected":["scripts/install.sh","scripts/design_system.mjs","scripts/kacha_studio.mjs","scripts/kacha_studio_server.mjs","scripts/verify_product_truth.mjs","website/app/components/CopyInstall.tsx","website/app/site-content.ts"],"itemsReviewed":["scripts/install.sh","scripts/design_system.mjs","scripts/kacha_studio.mjs","scripts/kacha_studio_server.mjs","scripts/verify_product_truth.mjs","website/app/components/CopyInstall.tsx","website/app/site-content.ts"],"findingIds":["R-OPT-003","R-OPT-012","R-OPT-013"],"evidenceRefs":[]},
+    {"id":"page-surface","status":"in_progress","itemsExpected":["website /","website /en/","studio /editor"],"itemsReviewed":["website /","website /en/","studio /editor"],"findingIds":["R-OPT-006","R-OPT-009","R-OPT-010"],"evidenceRefs":[]},
+    {"id":"cross-page-journey","status":"in_progress","itemsExpected":["official-site-to-channel-install","locale-entry-and-copy-feedback","Studio-startup-and-empty-editor-resize"],"itemsReviewed":["official-site-to-channel-install","locale-entry-and-copy-feedback","Studio-startup-and-empty-editor-resize"],"findingIds":["R-OPT-007"],"evidenceRefs":[]},
+    {"id":"service-integration","status":"in_progress","itemsExpected":["Studio GET /api/bootstrap","Studio POST JSON endpoints","raw-GitHub release-channel bootstrap","GitHub macOS smoke and Pages delivery"],"itemsReviewed":["Studio GET /api/bootstrap","Studio POST JSON endpoints","raw-GitHub release-channel bootstrap","GitHub macOS smoke and Pages delivery"],"findingIds":["R-OPT-001","R-OPT-004"],"evidenceRefs":[]},
+    {"id":"system-data","status":"in_progress","itemsExpected":["catalog cache, product truth and adoption metric contracts"],"itemsReviewed":["catalog cache, product truth and adoption metric contracts"],"findingIds":["R-OPT-008"],"evidenceRefs":[]},
+    {"id":"target-environment-device","status":"not_started","itemsExpected":["macOS GitHub runner","GitHub Pages","Codex local skill","Claude Code local skill"],"itemsReviewed":[],"findingIds":["R-OPT-002"],"evidenceRefs":[]},
+    {"id":"candidate-release","status":"deferred","itemsExpected":[],"itemsReviewed":[],"findingIds":[],"evidenceRefs":[],"deferredUntil":"after a pushed candidate and independent final review"},
+    {"id":"production-outcome","status":"deferred","itemsExpected":[],"itemsReviewed":[],"findingIds":[],"evidenceRefs":[],"deferredUntil":"after a real creator cohort observation window"}
   ],
   "traceability": [
-    {"recommendationId": "REC-OPENCUT-EDITOR-CORE", "auditFindingIds": ["PR-001", "PR-002", "PR-003", "PR-004", "PR-005", "PR-006", "PR-007"], "planRefs": ["quality/implementation-plan.json", "docs/EDITOR_FINAL_PLAN_2026-08-26.md"], "implementationRefs": ["scripts/media_time.mjs", "scripts/timeline_projection.mjs", "scripts/editor_command_journal.mjs", "scripts/kacha_editor.mjs", "studio/editor.html", "scripts/preview_provider.mjs"], "verificationRefs": ["E-LOCAL"], "reviewFindingIds": ["R-ED-001", "R-ED-002", "R-ED-003", "R-ED-004", "R-ED-005", "R-ED-006", "R-ED-007", "R-ED-008"]}
+    {"recommendationId":"KACHA-REC-001","auditFindingIds":["KACHA-AUD-001"],"planRefs":["quality/implementation-plan.json#INSTALL"],"implementationRefs":["scripts/install.sh","tests/test_installer.sh"],"verificationRefs":["E-LOCAL"],"reviewFindingIds":["R-OPT-001"]},
+    {"recommendationId":"KACHA-REC-002","auditFindingIds":["KACHA-AUD-002"],"planRefs":["quality/implementation-plan.json#MACOS-CI"],"implementationRefs":[".github/workflows/macos-smoke.yml"],"verificationRefs":["E-LOCAL"],"reviewFindingIds":["R-OPT-002"]},
+    {"recommendationId":"KACHA-REC-003","auditFindingIds":["KACHA-AUD-003"],"planRefs":["quality/implementation-plan.json#STUDIO-RUNTIME"],"implementationRefs":["scripts/kacha_studio.mjs","scripts/design_system.mjs"],"verificationRefs":["E-LOCAL"],"reviewFindingIds":["R-OPT-003","R-OPT-012"]},
+    {"recommendationId":"KACHA-REC-004","auditFindingIds":["KACHA-AUD-004"],"planRefs":["quality/implementation-plan.json#STUDIO-BOUNDARY"],"implementationRefs":["scripts/kacha_studio_server.mjs"],"verificationRefs":["E-LOCAL"],"reviewFindingIds":["R-OPT-004"]},
+    {"recommendationId":"KACHA-REC-005","auditFindingIds":["KACHA-AUD-005"],"planRefs":["quality/implementation-plan.json#PRODUCT-TRUTH"],"implementationRefs":["scripts/verify_product_truth.mjs","README.md"],"verificationRefs":["E-LOCAL"],"reviewFindingIds":["R-OPT-005","R-OPT-011"]},
+    {"recommendationId":"KACHA-REC-006","auditFindingIds":["KACHA-AUD-006"],"planRefs":["quality/implementation-plan.json#LOCALE-ACCESSIBILITY"],"implementationRefs":["website/app/(zh)/layout.tsx","website/app/(en)/layout.tsx"],"verificationRefs":["E-LOCAL"],"reviewFindingIds":["R-OPT-006","R-OPT-010"]},
+    {"recommendationId":"KACHA-REC-007","auditFindingIds":["KACHA-AUD-007"],"planRefs":["quality/implementation-plan.json#INSTALL"],"implementationRefs":["website/app/site-content.ts","README.en.md"],"verificationRefs":["E-LOCAL"],"reviewFindingIds":["R-OPT-007","R-OPT-009"]},
+    {"recommendationId":"KACHA-REC-008","auditFindingIds":["KACHA-AUD-008"],"planRefs":["quality/implementation-plan.json#PRODUCT-TRUTH"],"implementationRefs":["docs/product/adoption-measurement.md","docs/product/metrics-and-learning.md"],"verificationRefs":["E-LOCAL"],"reviewFindingIds":["R-OPT-008"]}
   ],
   "findings": [
-    {"id": "R-ED-001", "domains": ["business-logic", "data-api", "code-architecture", "code-implementation", "security-privacy-compliance", "performance-reliability", "test-quality"], "perspectives": ["engineering", "quality", "security-privacy"], "levels": ["artifact", "component-module", "cross-page-journey", "service-integration", "system-data"], "severity": "high", "status": "fixed_unverified", "statement": "Caller current SHA could bypass persisted session conflict.", "rootCause": "Session and caller bases were not checked independently.", "impact": "External Timeline changes could enter an existing journal.", "owner": "codex-primary", "remediationRefs": ["scripts/editor_command_journal.mjs", "tests/run_tests.mjs"], "regressionEvidenceRefs": ["E-LOCAL"], "residualRisk": "Independent review remains open.", "independentReviewer": null},
-    {"id": "R-ED-002", "domains": ["data-api", "code-architecture", "code-implementation", "performance-reliability"], "perspectives": ["engineering", "sre-operations"], "levels": ["artifact", "component-module", "service-integration", "system-data"], "severity": "high", "status": "fixed_unverified", "statement": "Session persistence failure could leave journal and Timeline inconsistent.", "rootCause": "Atomicity covered individual files rather than the grouped transition.", "impact": "Undo stacks could diverge from recorded mutations.", "owner": "codex-primary", "remediationRefs": ["scripts/editor_command_journal.mjs"], "regressionEvidenceRefs": ["E-LOCAL"], "residualRisk": "Fault injection under real filesystem failure remains independent-review work.", "independentReviewer": null},
-    {"id": "R-ED-003", "domains": ["business-logic", "data-api", "code-implementation", "security-privacy-compliance", "test-quality"], "perspectives": ["engineering", "quality", "security-privacy"], "levels": ["artifact", "component-module", "service-integration", "system-data"], "severity": "high", "status": "fixed_unverified", "statement": "Empty or duplicate commands could create ambiguous history.", "rootCause": "Schema constraints were not repeated at the runtime trust boundary.", "impact": "History replay could target the wrong application record.", "owner": "codex-primary", "remediationRefs": ["scripts/editor_command_journal.mjs", "scripts/timeline_projection.mjs", "tests/run_tests.mjs"], "regressionEvidenceRefs": ["E-LOCAL"], "residualRisk": "Independent review remains open.", "independentReviewer": null},
-    {"id": "R-ED-004", "domains": ["interaction-journeys", "data-api", "code-implementation", "test-quality"], "perspectives": ["engineering", "quality", "data-analytics"], "levels": ["artifact", "component-module", "page-surface", "cross-page-journey", "system-data"], "severity": "medium", "status": "fixed_unverified", "statement": "SFX Inspector field did not follow the source timing reference.", "rootCause": "timeTick was hard-coded.", "impact": "targetLandingTick could render as an empty or wrong editable field.", "owner": "codex-primary", "remediationRefs": ["scripts/timeline_projection.mjs", "tests/run_tests.mjs"], "regressionEvidenceRefs": ["E-LOCAL"], "residualRisk": "Real-project audio review remains open.", "independentReviewer": null},
-    {"id": "R-ED-005", "domains": ["data-api", "code-architecture", "code-implementation", "performance-reliability", "test-quality"], "perspectives": ["engineering", "quality", "data-analytics"], "levels": ["artifact", "component-module", "system-data"], "severity": "medium", "status": "fixed_unverified", "statement": "Sanitized item IDs could collide.", "rootCause": "Projection did not enforce uniqueness.", "impact": "Selection could address the wrong source object.", "owner": "codex-primary", "remediationRefs": ["scripts/timeline_projection.mjs", "tests/run_tests.mjs"], "regressionEvidenceRefs": ["E-LOCAL"], "residualRisk": "None known beyond independent review.", "independentReviewer": null},
-    {"id": "R-ED-006", "domains": ["interaction-journeys", "data-api", "code-implementation", "security-privacy-compliance", "performance-reliability", "test-quality"], "perspectives": ["engineering", "security-privacy", "sre-operations"], "levels": ["artifact", "component-module", "cross-page-journey", "service-integration", "system-data"], "severity": "medium", "status": "fixed_unverified", "statement": "Expired browser sessions remained usable until another open.", "rootCause": "Expiry cleanup and lookup were separate paths.", "impact": "A local session could outlive its documented lifetime.", "owner": "codex-primary", "remediationRefs": ["scripts/kacha_studio_server.mjs", "tests/run_tests.mjs"], "regressionEvidenceRefs": ["E-LOCAL"], "residualRisk": "Local-only exposure remains bounded by loopback and session entropy.", "independentReviewer": null},
-    {"id": "R-ED-007", "domains": ["product-design", "ui-design", "interaction-journeys", "code-implementation", "accessibility-inclusion"], "perspectives": ["product", "design", "quality"], "levels": ["artifact", "page-surface", "cross-page-journey", "target-environment-device"], "severity": "low", "status": "fixed_unverified", "statement": "Initial and narrow layouts exposed hidden content or compressed the panel title.", "rootCause": "Hidden and mobile heading rules were incomplete.", "impact": "The UI could misrepresent readiness or lose legibility.", "owner": "codex-primary", "remediationRefs": ["studio/editor.html", "studio/editor.css"], "regressionEvidenceRefs": ["E-LOCAL"], "residualRisk": "Assistive-technology review remains open.", "independentReviewer": null},
-    {"id": "R-ED-008", "domains": ["business-logic", "code-architecture", "code-implementation", "security-privacy-compliance", "test-quality"], "perspectives": ["product", "engineering", "quality", "security-privacy"], "levels": ["artifact", "component-module", "cross-page-journey", "system-data"], "severity": "medium", "status": "fixed_unverified", "statement": "Provider runtime trusted CLI-only purpose and field validation.", "rootCause": "Trust-boundary validation was split between wrapper and module.", "impact": "Direct callers could request an unknown purpose or load a malformed final provider.", "owner": "codex-primary", "remediationRefs": ["scripts/preview_provider.mjs", "tests/run_tests.mjs"], "regressionEvidenceRefs": ["E-LOCAL"], "residualRisk": "A future provider still requires independent parity review.", "independentReviewer": null}
+    {"id":"R-OPT-001","domains":["product-design"],"perspectives":["engineering"],"levels":["service-integration"],"severity":"high","status":"fixed_unverified","statement":"The public stdin installer could not resolve its channel contract.","rootCause":"Piped execution assumed checkout-local BASH_SOURCE and config.","impact":"Primary public activation failed before dry-run.","owner":"codex-primary","remediationRefs":["scripts/install.sh","tests/test_installer.sh"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Official remote pipe needs pushed-source readback and independent review.","independentReviewer":null},
+    {"id":"R-OPT-002","domains":["deployment-operations"],"perspectives":["sre-operations"],"levels":["target-environment-device"],"severity":"high","status":"fixed_unverified","statement":"The macOS smoke stopped in dependency setup.","rootCause":"Homebrew Python rejected pip --user.","impact":"Native compatibility gates never ran.","owner":"codex-primary","remediationRefs":[".github/workflows/macos-smoke.yml"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"A post-push macos-latest run and independent review remain open.","independentReviewer":null},
+    {"id":"R-OPT-003","domains":["performance-reliability"],"perspectives":["engineering"],"levels":["component-module"],"severity":"high","status":"fixed_unverified","statement":"Studio rebuilt immutable catalogs on every bootstrap.","rootCause":"Catalog and font discovery had no process reuse and readiness preceded warmup.","impact":"Entry and refresh took 8.5 to 11.6 seconds on the audit host.","owner":"codex-primary","remediationRefs":["scripts/kacha_studio.mjs","scripts/kacha_studio_server.mjs","scripts/design_system.mjs"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Measurements are host-specific and independent review remains open.","independentReviewer":null},
+    {"id":"R-OPT-004","domains":["data-api"],"perspectives":["security-privacy"],"levels":["service-integration"],"severity":"medium","status":"verified_closed","statement":"Malformed or oversized Studio bodies produced an unstable boundary.","rootCause":"Parsing, byte limits and socket destruction were coupled.","impact":"Clients could receive resets and handlers lacked a plain-object guarantee.","owner":"codex-primary","remediationRefs":["scripts/kacha_studio_server.mjs","tests/run_tests.mjs"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Loopback-only service; no known remaining local defect.","independentReviewer":null},
+    {"id":"R-OPT-005","domains":["product-direction"],"perspectives":["product"],"levels":["artifact"],"severity":"medium","status":"verified_closed","statement":"Current product counts drifted across README, website and regression reality.","rootCause":"Derived facts were manually duplicated.","impact":"Capability claims were unreliable.","owner":"codex-primary","remediationRefs":["scripts/verify_product_truth.mjs","Makefile","website/app/product-truth.json"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Future canonical surfaces must be added to the checker.","independentReviewer":null},
+    {"id":"R-OPT-006","domains":["accessibility-inclusion"],"perspectives":["design"],"levels":["page-surface"],"severity":"low","status":"verified_closed","statement":"The English page declared zh-CN at document root.","rootCause":"One shared root layout hard-coded the Chinese language.","impact":"Language-aware tools received the wrong default.","owner":"codex-primary","remediationRefs":["website/app/(en)/layout.tsx","website/app/(zh)/layout.tsx"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Assistive-technology certification is not claimed.","independentReviewer":null},
+    {"id":"R-OPT-007","domains":["market-operations"],"perspectives":["market-growth"],"levels":["cross-page-journey"],"severity":"medium","status":"verified_closed","statement":"The official acquisition command silently selected canary.","rootCause":"Channel choice was implicit and adjacent copy omitted the stable boundary.","impact":"Users could not make an informed stability choice.","owner":"codex-primary","remediationRefs":["README.md","README.en.md","website/app/site-content.ts"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Public Pages readback remains a delivery gate.","independentReviewer":null},
+    {"id":"R-OPT-008","domains":["market-operations"],"perspectives":["data-analytics"],"levels":["system-data"],"severity":"medium","status":"verified_closed","statement":"Engineering checks could be mistaken for adoption or creator value.","rootCause":"No privacy-conscious outcome metric dictionary existed.","impact":"Roadmap claims could exceed evidence.","owner":"codex-primary","remediationRefs":["docs/product/adoption-measurement.md","docs/product/metrics-and-learning.md"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"All actual activation, retention and business values remain unknown.","independentReviewer":null},
+    {"id":"R-OPT-009","domains":["interaction-journeys"],"perspectives":["quality"],"levels":["page-surface"],"severity":"medium","status":"verified_closed","statement":"A pending Clipboard API left install copy without feedback.","rootCause":"The handler awaited one browser API without a bound or fallback.","impact":"Users could not tell whether the command was copied.","owner":"codex-primary","remediationRefs":["website/app/components/CopyInstall.tsx"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Legacy browser fallback depends on document.execCommand availability.","independentReviewer":null},
+    {"id":"R-OPT-010","domains":["ui-design"],"perspectives":["quality"],"levels":["page-surface"],"severity":"medium","status":"verified_closed","statement":"Editor resize before Timeline open read projection.output from empty state.","rootCause":"The overlay renderer assumed a loaded project.","impact":"The empty editor emitted a browser exception.","owner":"codex-primary","remediationRefs":["studio/editor.js","tests/run_tests.mjs"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"No known remaining empty-state crash.","independentReviewer":null},
+    {"id":"R-OPT-011","domains":["code-implementation"],"perspectives":["quality"],"levels":["artifact"],"severity":"medium","status":"verified_closed","statement":"Design-system implementation changes invalidated approved styleframe digests.","rootCause":"The approved artifact intentionally binds design and implementation code.","impact":"Positive regressions correctly rejected the stale artifact.","owner":"codex-primary","remediationRefs":["examples/design/text-behind/approved-styleframes.svg","examples/design/text-behind/approved-styleframes.manifest.json","examples/edit-plan.json"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Future implementation changes must regenerate approval artifacts deliberately.","independentReviewer":null},
+    {"id":"R-OPT-012","domains":["code-architecture"],"perspectives":["engineering"],"levels":["component-module"],"severity":"medium","status":"verified_closed","statement":"A directory-only font cache key could miss in-place file replacement.","rootCause":"Directory mtime is not a complete replacement signal.","impact":"A live project font could remain stale.","owner":"codex-primary","remediationRefs":["scripts/design_system.mjs","tests/run_tests.mjs"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"New system fonts outside the watched project directory require Studio restart.","independentReviewer":null},
+    {"id":"R-OPT-013","domains":["security-privacy-compliance"],"perspectives":["security-privacy"],"levels":["component-module"],"severity":"low","status":"open","statement":"vinext 0.0.50 retains a development-only image-size advisory chain.","rootCause":"The offered fix is a semver-major beta with peer-dependency changes.","impact":"Malicious development-only image input can expose a parser denial-of-service path; production audit is zero.","owner":"product-owner","remediationRefs":["website/package.json"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Run a separate vinext beta compatibility iteration or adopt the first stable fixed line.","independentReviewer":null}
   ],
-  "finalReview": {"producer": "codex-primary", "finalReviewer": "pending-independent-reviewer", "reviewRunRef": null, "decision": "not_reviewed", "evidenceRefs": [], "observedAt": "2026-08-26T06:45:00Z"},
-  "releaseReadiness": {"status": "in_progress", "candidateRef": "working-tree-pre-commit", "targetEnvironmentEvidenceRefs": ["E-LOCAL"], "rollbackEvidenceRefs": [], "decision": "Commit and push were authorized; GitHub Release remains out of scope."},
-  "productionObservation": {"status": "not_started", "window": "", "evidenceRefs": [], "metrics": []},
+  "finalReview": {
+    "producer": "codex-primary",
+    "finalReviewer": "pending-independent-reviewer",
+    "reviewRunRef": null,
+    "decision": "not_reviewed",
+    "evidenceRefs": [],
+    "observedAt": "2026-08-30T14:10:00Z"
+  },
+  "releaseReadiness": {
+    "status": "in_progress",
+    "candidateRef": "working-tree-pre-commit",
+    "targetEnvironmentEvidenceRefs": [],
+    "rollbackEvidenceRefs": [],
+    "decision": "Producer verification passed locally; push, public readback, macOS, Pages and dual-agent deployment remain delivery gates."
+  },
+  "productionObservation": {
+    "status": "not_started",
+    "window": "",
+    "evidenceRefs": [],
+    "metrics": []
+  },
   "claim": "review-structured"
 }

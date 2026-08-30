@@ -21,6 +21,7 @@ const FONT_ROLES = [
   "body",
   "coverTitle",
 ];
+const installedFontFamiliesCache = new Map();
 
 function isObject(value) {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -119,7 +120,55 @@ function normalizeFontName(value) {
     .toLowerCase();
 }
 
+function installedFontCacheKey() {
+  const directories = [
+    process.env.KACHA_FONTS_DIR,
+    path.resolve(scriptDirectory, "..", "..", "Fonts"),
+  ].filter(Boolean).map((directory) => {
+    const resolvedDirectory = path.resolve(directory);
+    try {
+      const stat = fs.statSync(resolvedDirectory);
+      const files = fs.readdirSync(resolvedDirectory, { withFileTypes: true })
+        .filter((entry) => entry.isFile() && /\.(?:ttf|otf|ttc)$/i.test(entry.name))
+        .map((entry) => {
+          const fileStat = fs.statSync(path.join(resolvedDirectory, entry.name));
+          return [entry.name, fileStat.size, fileStat.mtimeMs, fileStat.ctimeMs];
+        })
+        .sort(([left], [right]) => left.localeCompare(right));
+      return [resolvedDirectory, stat.mtimeMs, stat.size, files];
+    } catch {
+      return [resolvedDirectory, null, null, []];
+    }
+  });
+  return JSON.stringify({
+    platform: process.platform,
+    path: process.env.PATH ?? "",
+    directories,
+  });
+}
+
+function cacheInstalledFonts(key, result) {
+  if (!installedFontFamiliesCache.has(key) && installedFontFamiliesCache.size >= 8) {
+    installedFontFamiliesCache.delete(installedFontFamiliesCache.keys().next().value);
+  }
+  installedFontFamiliesCache.set(key, {
+    probe: result.probe,
+    error: result.error,
+    families: [...result.families.entries()],
+  });
+  return result;
+}
+
 function installedFontFamilies() {
+  const cacheKey = installedFontCacheKey();
+  const cached = installedFontFamiliesCache.get(cacheKey);
+  if (cached) {
+    return {
+      probe: cached.probe,
+      error: cached.error,
+      families: new Map(cached.families),
+    };
+  }
   const addProjectFonts = (families) => {
     const scanCommand = [
       "/opt/homebrew/bin/fc-scan",
@@ -160,7 +209,10 @@ function installedFontFamilies() {
       }
     }
     addProjectFonts(families);
-    return { probe: "fc-list+project-fonts", families, error: null };
+    return cacheInstalledFonts(
+      cacheKey,
+      { probe: "fc-list+project-fonts", families, error: null },
+    );
   }
   if (process.platform === "darwin") {
     const profiler = spawnSync(
@@ -188,23 +240,26 @@ function installedFontFamilies() {
       visit(JSON.parse(profiler.stdout));
       if (families.size > 0) {
         addProjectFonts(families);
-        return { probe: "system_profiler", families, error: null };
+        return cacheInstalledFonts(
+          cacheKey,
+          { probe: "system_profiler", families, error: null },
+        );
       }
     }
-    return {
+    return cacheInstalledFonts(cacheKey, {
       probe: "unavailable",
       families: new Map(),
       error: [
         String(result.stderr || "fc-list unavailable").trim(),
         String(profiler.stderr || "system_profiler returned no font families").trim(),
       ].filter(Boolean).join("; "),
-    };
+    });
   }
-  return {
+  return cacheInstalledFonts(cacheKey, {
     probe: "unavailable",
     families: new Map(),
     error: String(result.stderr || "fc-list unavailable").trim(),
-  };
+  });
 }
 
 export function resolveDesignFonts(style) {

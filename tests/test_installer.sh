@@ -10,6 +10,46 @@ source_clone="$temporary/source"
 archive="$temporary/kacha.tar.gz"
 mkdir -p "$test_home"
 
+mock_bin="$temporary/mock-bin"
+mkdir -p "$mock_bin"
+cp "$root/tests/fixtures/mock_installer_curl.sh" "$mock_bin/curl"
+chmod +x "$mock_bin/curl"
+
+piped_stable_plan=$(PATH="$mock_bin:$PATH" \
+  KACHA_TEST_RELEASE_CHANNELS_FILE="$root/config/release-channels.json" \
+  HOME="$test_home" \
+  bash -s -- --agent codex --channel stable --dry-run < "$root/scripts/install.sh")
+[[ "$piped_stable_plan" == *"from ref v1.1.0"* ]]
+
+piped_canary_plan=$(PATH="$mock_bin:$PATH" \
+  KACHA_TEST_RELEASE_CHANNELS_FILE="$root/config/release-channels.json" \
+  HOME="$test_home" \
+  bash -s -- --agent codex --channel canary --dry-run < "$root/scripts/install.sh")
+[[ "$piped_canary_plan" == *"from ref main"* ]]
+
+if PATH="$mock_bin:$PATH" KACHA_TEST_CURL_FAIL=true \
+  KACHA_TEST_RELEASE_CHANNELS_FILE="$root/config/release-channels.json" \
+  HOME="$test_home" \
+  bash -s -- --agent codex --channel stable --dry-run < "$root/scripts/install.sh" \
+  >/dev/null 2>&1; then
+  printf '%s\n' "piped installer ignored a release channel fetch failure" >&2
+  exit 1
+fi
+
+piped_custom_plan=$(PATH="$mock_bin:$PATH" KACHA_TEST_CURL_FAIL=true \
+  HOME="$test_home" \
+  bash -s -- --agent codex --ref feature/test --dry-run < "$root/scripts/install.sh")
+[[ "$piped_custom_plan" == *"Channel: custom; ref: feature/test"* ]]
+
+if PATH="$mock_bin:$PATH" \
+  KACHA_TEST_RELEASE_CHANNELS_FILE="$root/tests/fixtures/invalid-release-channels.json" \
+  HOME="$test_home" \
+  bash -s -- --agent codex --channel stable --dry-run < "$root/scripts/install.sh" \
+  >/dev/null 2>&1; then
+  printf '%s\n' "piped installer accepted an invalid release channel contract" >&2
+  exit 1
+fi
+
 stable_plan=$(HOME="$test_home" "$root/scripts/install.sh" \
   --agent codex \
   --channel stable \
@@ -37,6 +77,12 @@ fi
 custom_plan=$(HOME="$test_home" KACHA_CHANNEL=stable KACHA_REF=main \
   "$root/scripts/install.sh" --agent codex --dry-run)
 [[ "$custom_plan" == *"Channel: custom; ref: main"* ]]
+
+if HOME="$test_home" "$root/scripts/install.sh" \
+  --agent codex --ref ../main --dry-run >/dev/null 2>&1; then
+  printf '%s\n' "installer accepted a path-normalizing ref" >&2
+  exit 1
+fi
 
 archive_paths() {
   if git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { SiteShell } from "./components/SiteShell";
-import { zhContent } from "./site-content";
+import { SiteShell } from "../components/SiteShell";
+import { zhContent } from "../site-content";
 
 export const metadata: Metadata = {
   title: "从脚本或素材到可发布候选的本地 AI 视频工作流",

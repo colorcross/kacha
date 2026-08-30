@@ -146,11 +146,11 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Provides local Beauty v2 for skin smoothing, whitening, tone evening, and
   restrained nasolabial-fold softening. Beauty is disabled by default and does
   not use GPUPixel, cloud beautification, or generative face repair.
-- Resolves 62 production effect templates across openings, transitions,
+- Resolves 65 production effect templates across openings, transitions,
   semantic visuals, gaze guidance, spatial depth, keyframes, parallel
   typography, captions, and visual breathing, backed by original visual
   resources and license-aware query-time media slots.
-- Ships 22 public core resources, including original margin-note, spatial-route,
+- Ships 23 public core resources, including original margin-note, spatial-route,
   comic-beat, and pixel-state visual primitives. Private fonts and project media
   remain outside the public repository.
 - Integrates a loopback FaceFusion candidate pipeline for consent-gated face
@@ -172,6 +172,7 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Provides two-stage intermediate cleanup: routine cleanup only for user-unneeded, fast-regenerating caches, and final cleanup only after explicit no-more-edits confirmation.
 - Records AI-generated shot plans with provider, model, capability snapshot, paid-call authorization, and QC targets.
 - Runs automated media checks and requires separate human-review evidence before local release.
+  The current full regression discovers 159 checks.
 - Keeps uploads, publishing, purchases, and paid generation outside the default authorization boundary.
 
 <p align="center">
@@ -196,17 +197,20 @@ Codex:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
-  | bash -s -- --agent codex
+  | bash -s -- --agent codex --channel canary
 ```
 
 Claude Code:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh \
-  | bash -s -- --agent claude
+  | bash -s -- --agent claude --channel canary
 ```
 
-The installer refuses to overwrite an existing target. The default locations are:
+The website command explicitly chooses `canary`, which tracks `main`. Replace it
+with `stable` for the last formally tagged line; stable remains `v1.1.0` until a
+new release is completed. The installer refuses to overwrite an existing target.
+The default locations are:
 
 | Agent | User-level skill directory |
 | --- | --- |
@@ -229,7 +233,7 @@ node scripts/kacha.mjs studio serve
 
 It listens on `127.0.0.1`, reads explicit local paths, and generates a new
 project directory. Its five-step flow covers source, style, sound, effects,
-and delivery. All 129 registered effects are searchable, and project
+and delivery. All 132 assignable effects are searchable, and project
 generation is blocked until source media, the output directory, licensed font,
 design system, and selected effects pass preflight. It does not upload,
 overwrite, render, or publish by itself.

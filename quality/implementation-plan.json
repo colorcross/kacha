@@ -1,30 +1,324 @@
 {
-  "schemaVersion": "1.0",
-  "planId": "opencut-informed-editor-core-2026-08-26",
+  "$schema": "appcreate://schemas/implementation-plan.schema.json",
+  "schemaVersion": 3,
   "status": "approved",
-  "approvedBy": "product-owner:user",
-  "approvedAt": "2026-08-26T04:24:59Z",
-  "objective": "Add precise media time, a typed editable Timeline projection, recoverable commands, a local professional adjustment workbench and a fail-closed preview provider boundary without creating a second production state machine.",
-  "inScope": ["Timebase V2 and legacy Timeline migration", "Typed Timeline Projection and edit allowlists", "Atomic Command Journal with recovery", "Shared Editor CLI API and loopback Studio API", "Studio /editor workbench and responsive browser journey", "Preview provider final eligibility gate", "Documentation tests review remediation and dual-agent install sync", "Commit the reviewed change set and push main to the configured GitHub origin"],
-  "outOfScope": ["Rust or WGPU renderer implementation", "Browser final export", "A general-purpose nonlinear editor", "Bulk migration of every legacy seconds field outside the Timeline Editor boundary", "GitHub Release package or other external publication", "Paid calls", "Claims of production quality or creator growth without real-project evidence"],
+  "draftRevision": "kacha-product-optimization-draft-r1",
+  "objective": "Fix every locally solvable finding from the 2026-08-30 comprehensive Kacha audit, prove the exact change set across code, browser, installer, macOS CI and product-truth layers, push it to main, and install the reviewed bundle to Codex and Claude Code without expanding Kacha into a general NLE.",
+  "scopeIn": [
+    "secure standalone and checkout installer channel resolution",
+    "Studio immutable catalog cache and startup prewarm",
+    "typed Studio JSON body limits and error responses",
+    "macOS smoke Python venv repair",
+    "machine-checked current product counts and synchronized canonical copy",
+    "explicit stable/canary acquisition messaging",
+    "correct Chinese and English document languages",
+    "privacy-conscious adoption measurement contract",
+    "focused, full, browser, security, deployment and dual-agent install verification",
+    "commit and push the reviewed exact tree to origin/main"
+  ],
+  "scopeOut": [
+    "GitHub Release or tag creation",
+    "third-party analytics installation",
+    "forced vinext major-beta migration",
+    "paid model calls or external media upload",
+    "general-purpose nonlinear editor scope",
+    "claims of real creator value, retention or output quality without external evidence",
+    "independent final approval performed by the same producer"
+  ],
+  "constraints": [
+    "Timeline IR remains canonical and FFmpeg remains the only current final renderer",
+    "Studio Canvas remains visibly approximate",
+    "source media, private fonts, SFX and user assets remain outside the public change set",
+    "installation never overwrites an existing skill",
+    "all public-current claims must be derived or checked while historical snapshots remain unchanged",
+    "all expected request failures remain JSON, local-only and fail-closed",
+    "the exact reviewed source tree must be installed after tests and before local deployment is claimed"
+  ],
+  "assumptions": [
+    "built-in catalog files are immutable during one Studio process while custom styles may change",
+    "raw GitHub remains the authoritative standalone source for config/release-channels.json",
+    "GitHub Pages continues to deploy website changes through the existing workflow",
+    "GitHub macos-latest provides python3 venv and Homebrew",
+    "multiple Next-compatible root layouts are supported by the current vinext build"
+  ],
   "architectureDecisions": [
-    {"id": "AD-ED-01", "decision": "Timeline IR remains the only source of truth; projection and journal are derived control artifacts."},
-    {"id": "AD-ED-02", "decision": "Integer ticks and rational frame rates are canonical; legacy seconds remain a validated compatibility representation."},
-    {"id": "AD-ED-03", "decision": "Every editor mutation is allowlisted, base-hash protected, journaled and followed by explicit QC requirements."},
-    {"id": "AD-ED-04", "decision": "Studio Canvas is approximate only and FFmpeg Render Graph remains the canonical final renderer."},
-    {"id": "AD-ED-05", "decision": "WebGPU remains not_implemented until a real runtime and current parity evidence exist."}
+    {
+      "id": "AD-OPT-01",
+      "decision": "Release refs remain single-sourced in config/release-channels.json; a standalone installer fetches and validates that file instead of duplicating refs."
+    },
+    {
+      "id": "AD-OPT-02",
+      "decision": "Only the immutable production catalog base is cached per process; custom style files are reread and merged on every public load."
+    },
+    {
+      "id": "AD-OPT-03",
+      "decision": "Studio request parsing produces a plain-object contract and typed 400/413 errors without destroying the loopback server connection."
+    },
+    {
+      "id": "AD-OPT-04",
+      "decision": "Current product counts are executable truth checked by the static gate; historical evidence files are not rewritten."
+    },
+    {
+      "id": "AD-OPT-05",
+      "decision": "Locale-specific route groups own html lang while shared metadata and SiteShell preserve one visual implementation."
+    },
+    {
+      "id": "AD-OPT-06",
+      "decision": "Adoption measurement is local-first and opt-in; no tracker or business outcome is invented in this iteration."
+    }
   ],
   "verticalSlices": [
-    {"id": "TB", "findingIds": ["PR-001"], "deliverables": ["scripts/media_time.mjs", "scripts/timeline_ir.mjs", "config/schemas/timeline-timebase-v2.schema.json"], "acceptance": ["Fractional and integer frame rates round-trip exactly at frame boundaries", "Legacy Timeline migration writes a new canonical file", "Conflicting seconds and ticks fail closed"]},
-    {"id": "PROJ", "findingIds": ["PR-002", "PR-003"], "deliverables": ["scripts/timeline_projection.mjs"], "acceptance": ["Projection exposes typed tracks stable unique item IDs and source pointers", "Only explicit per-item fields are editable", "Invalid timing and out-of-canvas geometry fail closed"]},
-    {"id": "CMD", "findingIds": ["PR-004"], "deliverables": ["scripts/editor_command_journal.mjs", "scripts/json_mutation.mjs", "config/schemas/editor-command.schema.json"], "acceptance": ["Apply undo and redo are atomic and hash protected", "Journal digest-chain tamper and truncation are detected", "External drift duplicate IDs and duplicate commands fail closed"]},
-    {"id": "API", "findingIds": ["PR-005"], "deliverables": ["scripts/kacha_editor.mjs", "scripts/kacha_studio_server.mjs"], "acceptance": ["CLI and Studio share the same editor kernel", "Browser sessions bind one Timeline and expire", "Forged sessions cannot select arbitrary write paths"]},
-    {"id": "UI", "findingIds": ["PR-006"], "deliverables": ["studio/editor.html", "studio/editor.css", "studio/editor.js"], "acceptance": ["Workbench opens a Timeline and renders source projection tracks and Inspector", "Apply undo and redo complete in a real browser", "Empty loading error desktop and narrow layouts remain legible with no console errors"]},
-    {"id": "PREVIEW", "findingIds": ["PR-007"], "deliverables": ["scripts/preview_provider.mjs", "config/editor/preview-providers.json"], "acceptance": ["Approximate preview is visibly labeled", "Unknown approximate and unimplemented providers cannot produce final", "FFmpeg remains the only current final-eligible provider"]},
-    {"id": "GOV", "findingIds": [], "deliverables": ["docs/EDITOR_FINAL_PLAN_2026-08-26.md", "quality/opencut-editor-execution-log-2026-08-26.md", "tests/run_tests.mjs"], "acceptance": ["Focused and full regressions pass", "Static secret installer and diff gates pass", "Product documentation and Codex Claude installs reflect the implementation"]}
+    {
+      "id": "INSTALL",
+      "outcome": "The primary public install path works securely and exposes an explicit channel choice.",
+      "scope": [
+        "scripts/install.sh",
+        "tests/test_installer.sh",
+        "README files",
+        "website install copy"
+      ],
+      "acceptance": [
+        "checkout stable and canary dry-runs pass",
+        "piped execution works with a mocked authoritative config fetch before push",
+        "the official remote piped dry-run succeeds from the pushed commit",
+        "invalid config and fetch failure fail closed",
+        "website names canary and documents stable"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "STUDIO-RUNTIME",
+      "outcome": "Studio starts with a warmed immutable catalog and keeps custom styles live.",
+      "scope": [
+        "scripts/kacha_studio.mjs",
+        "scripts/kacha_studio_server.mjs",
+        "tests/run_tests.mjs"
+      ],
+      "acceptance": [
+        "immutable validation runs once per process",
+        "returned catalog objects cannot mutate the cache",
+        "new custom styles appear after warmup",
+        "three post-ready bootstrap samples are sub-second on the audit host and are reported as host-specific evidence"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "STUDIO-BOUNDARY",
+      "outcome": "Malformed and oversized Studio requests return deterministic JSON failures and leave the server healthy.",
+      "scope": [
+        "scripts/kacha_studio_server.mjs",
+        "tests/run_tests.mjs"
+      ],
+      "acceptance": [
+        "null and array roots return 400",
+        "declared and streamed bodies above 1 MB return 413",
+        "a health request succeeds after each failure",
+        "timeouts are finite and compatible with current local operations"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "MACOS-CI",
+      "outcome": "The native smoke reaches static, core and installer gates on macos-latest.",
+      "scope": [
+        ".github/workflows/macos-smoke.yml"
+      ],
+      "acceptance": [
+        "Python packages install in a runner-temp venv",
+        "later scripts resolve the venv python3",
+        "a post-push manual dispatch reaches all smoke steps"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "PRODUCT-TRUTH",
+      "outcome": "Current counts, positioning, channel truth and adoption metrics stay synchronized.",
+      "scope": [
+        "scripts/verify_product_truth.mjs",
+        "Makefile",
+        "README files",
+        "website",
+        "docs/product"
+      ],
+      "acceptance": [
+        "checker derives 159 tests, 65 templates, 69 design entries and 23 core resources",
+        "canonical current surfaces agree",
+        "a negative mutation is rejected",
+        "measurement docs separate engineering, activation and human outcomes"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "LOCALE-ACCESSIBILITY",
+      "outcome": "Chinese and English public pages render the correct document-level language without route or design regression.",
+      "scope": [
+        "website/app route layouts",
+        "website rendered tests"
+      ],
+      "acceptance": [
+        "root html is zh-CN at / and en at /en/",
+        "canonical URLs and metadata stay correct",
+        "normal and GitHub Pages packaged builds contain both locale routes",
+        "desktop and 390 px routes have no overflow or console errors"
+      ],
+      "status": "planned"
+    },
+    {
+      "id": "VERIFY-DEPLOY",
+      "outcome": "The exact reviewed tree is pushed, publicly/readably deployed where authorized, and installed locally to both agents.",
+      "scope": [
+        "full test suite",
+        "website build",
+        "browser journeys",
+        "security review",
+        "Git diff",
+        "GitHub Actions",
+        "Codex and Claude Code skill directories"
+      ],
+      "acceptance": [
+        "focused and full checks pass",
+        "secret/privacy scan passes",
+        "remote main equals the local commit",
+        "Pages deploys the pushed website commit or is explicitly reported as failed",
+        "macOS smoke reaches all gates or is explicitly reported as failed",
+        "Codex and Claude installs report the same source revision and bundle digest"
+      ],
+      "status": "planned"
+    }
   ],
+  "pageIds": [
+    "studio-home",
+    "studio-content",
+    "studio-project",
+    "studio-editor",
+    "studio-review",
+    "website-zh",
+    "website-en"
+  ],
+  "acceptanceCriteria": [
+    "all eight selected audit recommendations have implementation or documentation evidence",
+    "the one deferred dependency recommendation remains exact, bounded and production-zero",
+    "159 baseline tests remain 159 and pass without weakening assertions",
+    "the official remote pipe installer dry-run succeeds before completion is claimed",
+    "first post-ready Studio bootstrap is sub-second on the audit host and custom styles stay live",
+    "all public and canonical current-product values pass the product-truth gate",
+    "website routes pass lint, types, rendered tests, Pages packaging and real-browser review",
+    "no private paths, credentials, project SFX or source media are committed",
+    "main is pushed and read back, then the exact reviewed bundle is installed to both local agents",
+    "independent final review and real-project outcome evidence remain explicitly open"
+  ],
+  "risks": [
+    "installer config bootstrap depends on raw GitHub availability",
+    "catalog caching could leak shared mutation or hide in-process built-in file edits",
+    "request streaming code could double-settle or leave listeners active",
+    "multiple root layouts may expose vinext compatibility differences",
+    "product-truth matching could become too broad and rewrite historical evidence",
+    "post-push Pages or macOS workflows may fail for infrastructure reasons",
+    "small future adoption cohorts may produce noisy signals"
+  ],
+  "rollback": "Revert the single scoped commit, verify origin/main and local skill targets separately, restore checkout-only install guidance if the remote bootstrap fails, and never delete user project data or existing skill directories.",
+  "projectContext": {
+    "ref": "quality/implementation-plan-context.json",
+    "digest": "sha256:a0287d52537fb954be45d0b35cf47c63d2fdd8a101b44cc15db46cecc9672753"
+  },
+  "planReview": {
+    "status": "completed",
+    "reviewer": "codex-plan-review",
+    "reviewedAt": "2026-08-30T12:28:00Z",
+    "scope": [
+      "project fit",
+      "architecture boundaries",
+      "security",
+      "performance evidence",
+      "deployment truth",
+      "rollback and completion integrity"
+    ],
+    "evidenceRefs": [
+      "quality/product-audit-roadmap-2026-08-30.json",
+      "quality/implementation-plan-context.json",
+      "quality/product-optimization-plan-review-2026-08-30.json"
+    ],
+    "reviewedDraftDigest": "sha256:52bc61d5f77f112f9653d767938daa8585037f5519964a6c20a6844755c70aa7",
+    "acceptedFinalDigest": "sha256:87cba15b18ff14d4cf1600397314f44af26311c564e9d7d969f26c7d66f4c6a2",
+    "findings": [
+      {
+        "id": "PLAN-OPT-001",
+        "severity": "high",
+        "status": "verified_closed",
+        "statement": "The installer slice only required a mocked stdin path and could pass while the real public raw-GitHub command remained broken.",
+        "impact": "The primary activation defect could be falsely closed.",
+        "remediation": "Add an official remote pipe dry-run bound to the pushed commit before completion.",
+        "verificationRefs": [
+          "quality/product-optimization-plan-review-2026-08-30.json"
+        ]
+      },
+      {
+        "id": "PLAN-OPT-002",
+        "severity": "medium",
+        "status": "verified_closed",
+        "statement": "A generic latency target would overstate cross-hardware performance.",
+        "impact": "Performance acceptance could be flaky or misleading.",
+        "remediation": "Bind the sub-second target to three post-ready samples on the audited host and report it as host-specific evidence.",
+        "verificationRefs": [
+          "quality/product-optimization-plan-review-2026-08-30.json"
+        ]
+      },
+      {
+        "id": "PLAN-OPT-003",
+        "severity": "medium",
+        "status": "verified_closed",
+        "statement": "Locale route-group changes were not explicitly required to survive GitHub Pages packaging.",
+        "impact": "Local accessibility could be fixed while the deployed static route disappears.",
+        "remediation": "Require both normal and Pages-packaged builds to contain both locale routes.",
+        "verificationRefs": [
+          "quality/product-optimization-plan-review-2026-08-30.json"
+        ]
+      },
+      {
+        "id": "PLAN-OPT-004",
+        "severity": "medium",
+        "status": "verified_closed",
+        "statement": "Deployment wording could be read as guaranteeing external workflow success.",
+        "impact": "A pushed commit could be mislabeled fully deployed when Pages or macOS infrastructure fails.",
+        "remediation": "Require exact outcome readback and honest failure reporting for each external layer.",
+        "verificationRefs": [
+          "quality/product-optimization-plan-review-2026-08-30.json"
+        ]
+      }
+    ]
+  },
+  "finalPlan": {
+    "revision": "kacha-product-optimization-final-r1",
+    "status": "frozen",
+    "basedOnDraftRevision": "kacha-product-optimization-draft-r1",
+    "contextDigest": "sha256:a0287d52537fb954be45d0b35cf47c63d2fdd8a101b44cc15db46cecc9672753",
+    "contentDigest": "sha256:87cba15b18ff14d4cf1600397314f44af26311c564e9d7d969f26c7d66f4c6a2",
+    "reviewRef": "quality/implementation-plan.json",
+    "finalizedBy": "codex-primary",
+    "finalizedAt": "2026-08-30T12:30:00Z",
+    "approvedBy": "user-explicit-request-2026-08-30",
+    "approvedAt": "2026-08-30T12:30:00Z"
+  },
   "adjustments": [
-    {"id": "ADJ-ED-001", "impact": "major", "status": "approved", "observedAt": "2026-08-26T06:15:00Z", "approvedBy": "product-owner:user", "reason": "The user explicitly extended the previously local-only delivery scope to include commit and push after a fresh review and remediation cycle.", "changes": ["Commit the exact reviewed tree", "Push main to origin", "Keep GitHub Release and production publication out of scope"]}
-  ],
-  "completionBoundary": "Implementation delivery is complete only after focused and full regression, real-browser journey, static and installer gates, review remediation, dual-agent install sync, exact-tree commit, successful push and remote commit readback. Independent final review, GitHub Release, real-project final render review and production outcomes remain separate boundaries."
+    {
+      "id": "ADJ-OPT-001",
+      "reason": "Post-cache measurement showed that repeated system font discovery, not catalog parsing, accounted for the remaining roughly 0.8 seconds of every bootstrap request.",
+      "change": "Cache the installed-font probe per process, keyed by platform, PATH, configured font directory and local font-directory metadata; return a fresh Map to callers.",
+      "impact": "Closes the already frozen Studio performance acceptance without changing product scope, public contracts or final-render authority. New system fonts may require a Studio restart unless a watched project font directory changes.",
+      "impactLevel": "minor",
+      "status": "reviewed",
+      "approvedBy": "codex-plan-review",
+      "observedAt": "2026-08-30T13:05:00Z"
+    },
+    {
+      "id": "ADJ-OPT-002",
+      "reason": "Real-browser verification showed that a clipboard write can remain pending, leaving the public install action without success or failure feedback.",
+      "change": "Bound the Clipboard API attempt, add a local legacy-copy fallback, expose localized success/failure states, and verify both the normal and timeout paths in a real browser.",
+      "impact": "Closes the frozen public-site journey acceptance without changing the install command, product scope, data handling or external services.",
+      "impactLevel": "minor",
+      "status": "reviewed",
+      "approvedBy": "codex-plan-review",
+      "observedAt": "2026-08-30T13:35:00Z"
+    }
+  ]
 }

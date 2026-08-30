@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "1.0",
+  "status": "passed",
+  "iterationId": "kacha-product-optimization-2026-08-30",
+  "scopeRevision": "scope-2026-08-30-product-optimization-r1",
+  "baselineRef": "51e0e782ec2554e0e070a3d3c779a58f55cb48a3",
+  "observedAt": "2026-08-30T14:05:00Z",
+  "producer": "codex-primary",
+  "environment": {
+    "os": "Darwin 25.6.0 arm64",
+    "node": "v24.18.1",
+    "browser": "Chromium via Playwright MCP",
+    "studioOrigin": "http://127.0.0.1:4181",
+    "websiteOrigin": "http://localhost:4190"
+  },
+  "plan": {
+    "revision": "kacha-product-optimization-final-r1",
+    "contentDigest": "sha256:87cba15b18ff14d4cf1600397314f44af26311c564e9d7d969f26c7d66f4c6a2",
+    "implementationAuthorized": true
+  },
+  "checks": [
+    {
+      "id": "full-regression",
+      "command": "node tests/run_tests.mjs --report quality/evidence/product-optimization-full-tests-2026-08-30.json",
+      "status": "passed",
+      "result": "159 discovered, 159 run, 159 passed",
+      "artifact": "quality/evidence/product-optimization-full-tests-2026-08-30.json",
+      "artifactSha256": "sha256:09d7ad413d9f11d7c4c718d782109dc4b64c1141e8ee75b85c94727e5b2fb162"
+    },
+    {
+      "id": "installer",
+      "command": "bash tests/test_installer.sh",
+      "status": "passed",
+      "result": "checkout and piped stable/canary, explicit custom ref, fetch failure, invalid contract, unsafe ref, archive install and no-overwrite paths passed"
+    },
+    {
+      "id": "static",
+      "command": "make check-static",
+      "status": "passed",
+      "result": "syntax, Python compilation, secret/private-path scan and product-truth derivation passed"
+    },
+    {
+      "id": "website",
+      "command": "npm run lint && npm run typecheck && npm run test && npm run test:pages && npm run audit:dependencies",
+      "status": "passed",
+      "result": "lint, typecheck, server render, Pages package and exact dependency gate passed; production vulnerabilities 0"
+    },
+    {
+      "id": "product-documentation",
+      "command": "python3 tools/check_product_documentation.py --claim iteration-docs-current",
+      "status": "passed",
+      "result": "five canonical product documents match the current iteration digests"
+    },
+    {
+      "id": "implementation-plan",
+      "command": "check_implementation_plan.py --claim implementation-authorized",
+      "status": "passed",
+      "result": "context, plan review, frozen digest, authorization and two minor adjustments remain valid"
+    },
+    {
+      "id": "workflow-yaml",
+      "command": "Ruby YAML parse of .github/workflows/macos-smoke.yml",
+      "status": "passed",
+      "result": "workflow syntax parsed locally"
+    },
+    {
+      "id": "diff",
+      "command": "git diff --check",
+      "status": "passed",
+      "result": "no whitespace errors"
+    }
+  ],
+  "performance": {
+    "metric": "GET /api/bootstrap after server readiness",
+    "baselineSeconds": [8.524, 11.585, 10.571],
+    "candidateSeconds": [0.014495, 0.008265, 0.00787],
+    "target": "three samples below 1 second on the audit host",
+    "status": "passed",
+    "limitation": "host-specific process-warm evidence, not a cross-device SLO"
+  },
+  "browser": {
+    "viewports": ["1440x1000", "390x844"],
+    "websiteRoutes": ["/", "/en"],
+    "studioRoutes": ["/", "/project", "/content", "/review", "/editor"],
+    "checks": {
+      "documentLanguages": "passed: zh-CN and en",
+      "horizontalOverflow": "none",
+      "consoleErrorsAfterFix": 0,
+      "productTruth159": "visible",
+      "explicitCanaryCommand": "visible",
+      "clipboardTimeoutFallback": "passed",
+      "clipboardFailureFeedback": "passed",
+      "studioBootstrap": "status pass, five visual languages, five styles, localOnly true",
+      "editorEmptyResize": "passed without console error"
+    }
+  },
+  "security": {
+    "sourceSecretScan": "passed",
+    "productionDependencyVulnerabilities": 0,
+    "developmentException": "vinext@0.0.50 -> image-size@2.0.2 advisories remain exact and development-only; beta migration is out of frozen scope",
+    "httpBoundary": "null/array 400; declared/streamed overflow 413; health remains pass",
+    "installerBoundary": "fixed HTTPS contract source, strict schema/ref validation, no overwrite"
+  },
+  "limitations": [
+    "producer-generated evidence does not replace independent final review",
+    "macOS GitHub Actions execution, Pages public readback and official remote piped installation require the pushed commit",
+    "no real-project final render or normal-speed human outcome review was performed",
+    "activation, retention, creator-time and business metrics remain unknown"
+  ]
+}

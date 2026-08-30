@@ -1,6 +1,6 @@
 # Business rules
 
-> 对账修订：`opencut-informed-editor-core-2026-08-26`。
+> 对账修订：`kacha-product-optimization-2026-08-30`。
 
 ## 角色、权限与权益
 
@@ -33,3 +33,17 @@ Editor 文件身份绑定 realpath；浏览器 session 不能把写入路径带�
 重开都必须命中调用时的当前 SHA，恢复只信任 snapshots 目录内摘要匹配的快照，
 重开只接受可通过 Projection 合同的当前 Timeline。FFmpeg 的静态登记不等于本机
 可用，final eligibility 还必须通过当前 runtime probe。
+
+安装渠道只有 `stable`、`canary` 和显式 `custom`。stable/canary 的 ref 只由
+`config/release-channels.json` 决定，环境变量不能覆盖；stdin 安装可下载该合同，
+但 URL 固定、schema 与 ref 字符集必须通过校验。目标已存在时保持原样，不静默更新。
+
+Studio 只监听 loopback，并继续验证 Host、Origin、请求标记和 JSON Content-Type。
+POST 请求 JSON 根必须是普通 object；声明长度或实际流超过 1 MB 返回 JSON 413，
+错误后服务必须仍可用。不可变内置目录可按进程缓存；返回值必须克隆，自定义风格
+每次读取，内置合同改变后通过重启 Studio 生效。系统字体探针同样按进程与 PATH/
+字体目录指纹缓存；安装新的系统字体后应重启 Studio，项目字体目录变化会改变指纹。
+
+当前能力数字属于可执行产品事实，`check-static` 必须从测试和目录推导后与 README、
+官网及产品文档核对。工程通过、安装成功、首次候选、人工认可、留存和商业结果是
+不同证据层，不能互相替代；未获授权时不接入第三方分析工具。

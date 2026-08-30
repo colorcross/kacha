@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "contextRevision": "kacha-product-optimization-context-r1",
+  "project": "咔嚓 Kacha",
+  "sourceRevision": "51e0e782ec2554e0e070a3d3c779a58f55cb48a3",
+  "observedAt": "2026-08-30T12:20:00Z",
+  "producer": "codex-primary",
+  "facts": [
+    "Baseline full regression passes 159 of 159 tests.",
+    "The official piped installer exits 2 before dry-run.",
+    "Warm Studio bootstrap still repeats 8.5 to 11.6 seconds of immutable catalog validation."
+  ],
+  "constraints": [
+    "Preserve Timeline IR, FFmpeg final rendering, local-first privacy and fail-closed behavior.",
+    "Do not create a GitHub Release or add third-party analytics.",
+    "Commit and push the reviewed code, then deploy the exact local bundle to Codex and Claude Code."
+  ],
+  "assumptions": [
+    "Website changes continue to deploy through the existing GitHub Pages workflow after push."
+  ],
+  "unknowns": [
+    "Independent final review and real-project human output acceptance are not available inside this producer turn.",
+    "External adoption, retention and business outcomes remain unmeasured."
+  ],
+  "sources": [
+    {
+      "path": "quality/product-audit-roadmap-2026-08-30.json",
+      "role": "product",
+      "sha256": "sha256:927ebf80b049f7f26da86a817b676464135e5e14dfa926345e89fbb46868d7ea"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "role": "architecture-code",
+      "sha256": "sha256:5fcc727af2bc71a14f87a65eccb80d07746a02f5fa9751f1f03a89e5e56a7bb1"
+    },
+    {
+      "path": "Makefile",
+      "role": "verification",
+      "sha256": "sha256:6fc0fd6985109fb8109c68b5fc63c90a953fedca38b1dbd4f514c0cf8596ea31"
+    }
+  ],
+  "digest": "sha256:a0287d52537fb954be45d0b35cf47c63d2fdd8a101b44cc15db46cecc9672753"
+}

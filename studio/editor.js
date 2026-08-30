@@ -168,12 +168,13 @@ function renderOverlayProjection() {
   const video = $("#video");
   layer.innerHTML = "";
   const projection = currentProjection();
-  const outputWidth = Number(projection.output.width || video.videoWidth || 1);
-  const outputHeight = Number(projection.output.height || video.videoHeight || 1);
   const displayedWidth = video.clientWidth;
   const displayedHeight = video.clientHeight;
   layer.style.width = `${displayedWidth}px`;
   layer.style.height = `${displayedHeight}px`;
+  if (!projection) return;
+  const outputWidth = Number(projection.output.width || video.videoWidth || 1);
+  const outputHeight = Number(projection.output.height || video.videoHeight || 1);
   const currentTick = state.outputTick;
   for (const item of projection.items.filter((candidate) => candidate.type === "overlay")) {
     if (currentTick < item.startTick || currentTick >= item.endTick) continue;

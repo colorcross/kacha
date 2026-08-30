@@ -5,6 +5,7 @@ check-static:
 	find scripts -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
 	python3 -m py_compile scripts/*.py
 	python3 scripts/scan_secrets.py
+	node scripts/verify_product_truth.mjs
 
 check-targeted: check-static
 	node tests/run_tests.mjs --match 'production packs separate generic policy'

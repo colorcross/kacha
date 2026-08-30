@@ -1,18 +1,123 @@
 {
   "schemaVersion": "1.0",
-  "planId": "opencut-informed-editor-core-2026-08-26",
-  "status": "passed_with_external_boundaries",
+  "planRevision": "kacha-product-optimization-final-r1",
+  "scopeRevision": "scope-2026-08-30-product-optimization-r1",
+  "baselineRevision": "51e0e782ec2554e0e070a3d3c779a58f55cb48a3",
+  "status": "passed_locally_external_pending",
   "checks": [
-    {"id": "V-TB-01", "slice": "TB", "command": "node tests/run_tests.mjs --suite editor", "expected": "exact fractional timebase and conflict rejection", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
-    {"id": "V-PROJ-01", "slice": "PROJ", "command": "node tests/run_tests.mjs --suite editor", "expected": "typed projection allowlist uniqueness timing and geometry gates", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
-    {"id": "V-CMD-01", "slice": "CMD", "command": "node tests/run_tests.mjs --suite editor", "expected": "apply undo redo drift strict-command inverse-array tamper trailing-truncation recover reopen and rollback gates", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
-    {"id": "V-API-01", "slice": "API", "command": "node tests/run_tests.mjs --suite editor", "expected": "realpath/session-bound local HTTP journey, identity-bound media range and forged-session rejection", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
-    {"id": "V-UI-01", "slice": "UI", "command": "Playwright CLI real browser journey", "expected": "open EDL output-to-source mapping apply undo redo desktop narrow no console errors", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
-    {"id": "V-PREVIEW-01", "slice": "PREVIEW", "command": "kacha editor preview-capabilities and preview-eligibility", "expected": "FFmpeg runtime probe passes while approximate and unimplemented providers are rejected for final", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
-    {"id": "V-GOV-01", "slice": "GOV", "command": "node tests/run_tests.mjs", "expected": "159/159 pass", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
-    {"id": "V-GOV-02", "slice": "GOV", "command": "make check-static and git diff --check", "expected": "syntax secret privacy and diff checks pass", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
-    {"id": "V-GOV-03", "slice": "GOV", "command": "bash tests/test_installer.sh", "expected": "installer regression pass", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json"},
-    {"id": "V-GOV-04", "slice": "GOV", "command": "node scripts/kacha.mjs install status --agent both", "expected": "Codex and Claude current", "status": "passed", "evidence": "quality/evidence/opencut-editor-local-verification.json", "bundleDigest": "738121d4af1fe2754b33dcf189745e62ad4b15119a28f436d705e960fa03842d"}
+    {
+      "id": "V-STATIC",
+      "slice": "PRODUCT-TRUTH",
+      "level": "source-static",
+      "command": "make check-static",
+      "expected": "syntax, private-path, secret and current-product-truth gates pass",
+      "status": "passed",
+      "evidence": "quality/evidence/product-optimization-local-verification-2026-08-30.json"
+    },
+    {
+      "id": "V-FULL",
+      "slice": "VERIFY-DEPLOY",
+      "level": "full-regression",
+      "command": "node tests/run_tests.mjs --report quality/evidence/product-optimization-full-tests-2026-08-30.json",
+      "expected": "159 discovered, 159 run and 159 pass",
+      "status": "passed",
+      "evidence": "quality/evidence/product-optimization-full-tests-2026-08-30.json"
+    },
+    {
+      "id": "V-INSTALLER",
+      "slice": "INSTALL",
+      "level": "integration",
+      "command": "bash tests/test_installer.sh",
+      "expected": "checkout, piped, channel, invalid-input, fetch-failure, archive and no-overwrite paths pass",
+      "status": "passed",
+      "evidence": "quality/evidence/product-optimization-local-verification-2026-08-30.json"
+    },
+    {
+      "id": "V-STUDIO",
+      "slice": "STUDIO-RUNTIME",
+      "level": "runtime-browser",
+      "command": "Studio bootstrap sampling and Playwright desktop/narrow journeys",
+      "expected": "three post-ready bootstrap samples below one second on the audit host, live custom styles and clean five-page browser journeys",
+      "status": "passed",
+      "evidence": "quality/evidence/product-optimization-local-verification-2026-08-30.json"
+    },
+    {
+      "id": "V-STUDIO-BOUNDARY",
+      "slice": "STUDIO-BOUNDARY",
+      "level": "HTTP-integration",
+      "command": "node tests/run_tests.mjs",
+      "expected": "non-object 400, declared and streamed overflow 413, finite timeouts and post-error health",
+      "status": "passed",
+      "evidence": "quality/evidence/product-optimization-full-tests-2026-08-30.json"
+    },
+    {
+      "id": "V-WEBSITE",
+      "slice": "LOCALE-ACCESSIBILITY",
+      "level": "build-render-browser",
+      "command": "npm run lint && npm run typecheck && npm run test && npm run test:pages && npm run audit:dependencies",
+      "expected": "normal and Pages builds, zh-CN/en roots, responsive browser journeys and exact dependency policy pass",
+      "status": "passed",
+      "evidence": "quality/evidence/product-optimization-local-verification-2026-08-30.json"
+    },
+    {
+      "id": "V-DOCS-PLAN",
+      "slice": "PRODUCT-TRUTH",
+      "level": "governance",
+      "command": "product-documentation current-state and implementation-authorized checks",
+      "expected": "canonical product documents and the frozen reviewed plan remain current",
+      "status": "passed",
+      "evidence": "quality/evidence/product-optimization-local-verification-2026-08-30.json"
+    },
+    {
+      "id": "V-SECURITY",
+      "slice": "VERIFY-DEPLOY",
+      "level": "security-privacy",
+      "command": "source secret/private-path scan and npm production audit",
+      "expected": "no repository secret/private asset leakage and zero production dependency vulnerabilities",
+      "status": "passed",
+      "evidence": "quality/evidence/product-optimization-local-verification-2026-08-30.json"
+    },
+    {
+      "id": "V-MACOS",
+      "slice": "MACOS-CI",
+      "level": "target-environment",
+      "command": "GitHub Actions workflow_dispatch macos-smoke.yml on pushed main",
+      "expected": "runner-temp venv and all native smoke gates pass",
+      "status": "pending_post_push",
+      "evidence": null
+    },
+    {
+      "id": "V-REMOTE-INSTALL",
+      "slice": "INSTALL",
+      "level": "public-delivery",
+      "command": "official raw-GitHub pipe stable and canary dry-runs from pushed main",
+      "expected": "authoritative public command resolves and validates both channels",
+      "status": "pending_post_push",
+      "evidence": null
+    },
+    {
+      "id": "V-PAGES",
+      "slice": "VERIFY-DEPLOY",
+      "level": "public-environment",
+      "command": "GitHub Pages workflow and public root/en readback",
+      "expected": "the pushed website is deployed and exposes correct locale and product truth",
+      "status": "pending_post_push",
+      "evidence": null
+    },
+    {
+      "id": "V-LOCAL-DEPLOY",
+      "slice": "VERIFY-DEPLOY",
+      "level": "local-target-environment",
+      "command": "node scripts/kacha.mjs install sync --agent both --apply",
+      "expected": "Codex and Claude Code report the same clean source revision and bundle digest",
+      "status": "pending_final_commit",
+      "evidence": null
+    }
   ],
-  "externalBoundaries": ["independent final review", "real-project final render and human review", "candidate release", "production outcomes"]
+  "externalBoundaries": [
+    "independent final review",
+    "real creator project and normal-speed human review",
+    "stable release or tag",
+    "activation, retention, creator-time and business outcomes"
+  ]
 }

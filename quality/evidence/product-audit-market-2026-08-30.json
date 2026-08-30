@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "result": "passed",
+  "observedAt": "2026-08-30T12:10:00Z",
+  "publicRepository": {
+    "license": "MIT",
+    "stars": 4,
+    "forks": 2,
+    "openIssues": 0,
+    "trafficWindow": "GitHub repository traffic window returned on 2026-08-30",
+    "views": 5,
+    "uniqueViewers": 4,
+    "clones": 60,
+    "uniqueCloners": 19
+  },
+  "competitiveReferences": [
+    {
+      "name": "OpenCut",
+      "license": "MIT",
+      "stars": 87955,
+      "forks": 8674,
+      "openIssues": 377
+    },
+    {
+      "name": "OpenMontage",
+      "license": "AGPL-3.0",
+      "stars": 54400,
+      "forks": 6747,
+      "openIssues": 267
+    }
+  ],
+  "positioningAssessment": {
+    "fact": "Kacha is an agent-first local professional video workflow, not a browser general-purpose NLE",
+    "inference": "the defensible product wedge is evidence-bound talking-head and creator workflow automation rather than matching every timeline and provider feature",
+    "cleanRoomConstraint": "ideas may be learned from competitors, but AGPL implementation code is not copied into the MIT repository"
+  },
+  "activationFinding": {
+    "stableRef": "v1.1.0",
+    "canaryRef": "main",
+    "commitsSinceStable": 43,
+    "websiteCommandBeforeFix": "implicitly installs the default canary channel without naming it",
+    "result": "the public acquisition surface and stable release do not clearly explain which product generation a new user receives"
+  },
+  "unknownOutcomeEvidence": [
+    "validated target-user interviews",
+    "install-to-first-project activation",
+    "first successful candidate rate",
+    "four-week retention",
+    "creator time saved",
+    "revenue, support cost and unit economics"
+  ],
+  "limitations": [
+    "GitHub stars and traffic are acquisition signals, not retention or user-value evidence",
+    "competitor repository size does not measure product quality or fit",
+    "no external analytics SDK or tracking is authorized in this iteration"
+  ]
+}

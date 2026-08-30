@@ -1,16 +1,71 @@
 {
   "schemaVersion": "1.0",
-  "status": "completed_locally",
+  "status": "completed_locally_remote_pending",
   "surfaces": [
-    {"id": "editor-cli", "kind": "cli", "states": ["inspect", "project", "query", "apply", "undo", "redo", "history", "conflict", "recovery_required", "recover", "reopen"], "status": "completed", "evidenceRefs": ["quality/evidence/opencut-editor-local-verification.json"]},
-    {"id": "studio-editor", "kind": "local-web", "states": ["empty", "opening", "ready", "editable", "readonly", "error", "conflict", "required_qc"], "status": "completed", "evidenceRefs": ["quality/evidence/opencut-editor-local-verification.json"]},
-    {"id": "preview-provider-gate", "kind": "runtime-contract", "states": ["canonical", "approximate", "not_implemented", "blocked_final"], "status": "completed", "evidenceRefs": ["quality/evidence/opencut-editor-local-verification.json"]}
+    {
+      "id": "official-site-zh",
+      "kind": "public-static-web",
+      "routes": ["/"],
+      "states": ["desktop", "narrow", "install-idle", "install-copied", "install-failed"],
+      "status": "completed_locally",
+      "evidenceRefs": ["quality/evidence/product-optimization-local-verification-2026-08-30.json"]
+    },
+    {
+      "id": "official-site-en",
+      "kind": "public-static-web",
+      "routes": ["/en", "/en/"],
+      "states": ["desktop", "narrow", "lang-en", "pages-packaged"],
+      "status": "completed_locally",
+      "evidenceRefs": ["quality/evidence/product-optimization-local-verification-2026-08-30.json"]
+    },
+    {
+      "id": "studio",
+      "kind": "local-web",
+      "routes": ["/", "/project", "/content", "/review", "/editor"],
+      "states": ["empty", "ready", "desktop", "narrow", "request-blocked", "post-error-healthy"],
+      "status": "completed_locally",
+      "evidenceRefs": ["quality/evidence/product-optimization-local-verification-2026-08-30.json"]
+    },
+    {
+      "id": "agent-install",
+      "kind": "cli-delivery",
+      "routes": ["stable", "canary", "custom", "local archive"],
+      "states": ["dry-run", "installed", "already-installed", "fetch-failed", "contract-invalid", "ref-invalid"],
+      "status": "completed_locally_remote_pending",
+      "evidenceRefs": ["quality/evidence/product-optimization-local-verification-2026-08-30.json"]
+    }
   ],
   "journeys": [
-    {"id": "timeline-to-adjustment", "steps": ["open Timeline", "select projected item", "edit allowlisted field", "apply command", "see required QC"], "status": "completed_in_real_browser"},
-    {"id": "adjustment-recovery", "steps": ["apply", "undo", "redo", "detect truncated journal", "restore last valid snapshot with expected SHA", "verify re-chained history and archive"], "status": "completed_in_tests"},
-    {"id": "external-edit-reopen", "steps": ["detect external drift", "block caller current-SHA bypass", "explicitly reopen with expected current SHA", "archive prior session"], "status": "completed_in_tests"},
-    {"id": "preview-to-final-boundary", "steps": ["inspect providers", "allow approximate preview", "reject approximate final", "retain FFmpeg canonical final"], "status": "completed_locally"}
+    {
+      "id": "site-to-install",
+      "steps": ["read explicit canary choice", "copy command", "receive success or failure feedback", "run fixed-source channel bootstrap", "refuse overwrite"],
+      "status": "completed_locally_remote_command_pending"
+    },
+    {
+      "id": "locale-entry",
+      "steps": ["open Chinese or English URL", "receive matching html lang and metadata", "retain shared visual system", "package under GitHub Pages base path"],
+      "status": "completed_locally"
+    },
+    {
+      "id": "studio-entry",
+      "steps": ["prewarm immutable catalog", "announce ready", "bootstrap under one second on audit host", "retain live custom styles"],
+      "status": "completed_locally"
+    },
+    {
+      "id": "studio-invalid-request",
+      "steps": ["send non-object or oversized JSON", "receive structured 400/413", "repeat health request"],
+      "status": "completed_in_integration_tests"
+    },
+    {
+      "id": "editor-empty-resize",
+      "steps": ["open editor without Timeline", "resize desktop to narrow and back", "retain empty state without console error"],
+      "status": "completed_in_real_browser"
+    }
   ],
-  "limitations": ["No real creator project was modified", "No formal final render or normal-speed human review was performed", "Independent final review is open"]
+  "limitations": [
+    "GitHub Pages public output and the official remote pipe command require post-push readback",
+    "macOS native-smoke requires a post-push workflow dispatch",
+    "browser acceptance does not establish assistive-technology certification",
+    "no real creator project or final-video outcome was reviewed"
+  ]
 }

@@ -59,6 +59,14 @@ const SECURITY_HEADERS = {
   "X-Frame-Options": "DENY",
 };
 
+class HttpRequestError extends Error {
+  constructor(statusCode, message) {
+    super(message);
+    this.name = "HttpRequestError";
+    this.statusCode = statusCode;
+  }
+}
+
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -96,21 +104,52 @@ function text(response, status, body, contentType = "text/plain; charset=utf-8")
 }
 
 function readRequestBody(request) {
+  const declaredLength = request.headers["content-length"];
+  if (declaredLength !== undefined) {
+    const normalized = String(declaredLength);
+    if (!/^\d+$/.test(normalized)) {
+      request.resume();
+      return Promise.reject(new HttpRequestError(400, "Content-Length 必须是非负整数"));
+    }
+    if (Number(normalized) > MAX_BODY_BYTES) {
+      request.resume();
+      return Promise.reject(new HttpRequestError(413, "请求内容超过 1 MB"));
+    }
+  }
   return new Promise((resolve, reject) => {
-    let body = "";
-    request.setEncoding("utf8");
+    const chunks = [];
+    let receivedBytes = 0;
+    let rejectedForSize = false;
     request.on("data", (chunk) => {
-      body += chunk;
-      if (Buffer.byteLength(body) > MAX_BODY_BYTES) {
-        reject(new Error("请求内容超过 1 MB"));
-        request.destroy();
+      if (rejectedForSize) return;
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      receivedBytes += buffer.length;
+      if (receivedBytes > MAX_BODY_BYTES) {
+        rejectedForSize = true;
+        chunks.length = 0;
+        reject(new HttpRequestError(413, "请求内容超过 1 MB"));
+        return;
       }
+      chunks.push(buffer);
     });
     request.on("end", () => {
+      if (rejectedForSize) return;
       try {
-        resolve(body ? JSON.parse(body) : {});
+        const body = chunks.length > 0
+          ? JSON.parse(Buffer.concat(chunks, receivedBytes).toString("utf8"))
+          : {};
+        if (
+          body === null
+          || Array.isArray(body)
+          || typeof body !== "object"
+          || Object.getPrototypeOf(body) !== Object.prototype
+        ) {
+          reject(new HttpRequestError(400, "请求 JSON 根节点必须是 object"));
+          return;
+        }
+        resolve(body);
       } catch {
-        reject(new Error("请求必须是有效 JSON"));
+        reject(new HttpRequestError(400, "请求必须是有效 JSON"));
       }
     });
     request.on("error", reject);
@@ -576,6 +615,10 @@ export function startStudioServerFromCli(args = process.argv.slice(2)) {
   if (!fs.existsSync(path.join(studioRoot, "index.html"))) {
     throw new Error(`生产页面缺失：${studioRoot}`);
   }
+  // Validate the immutable production catalog before the server announces
+  // readiness. Later bootstrap calls reuse that private process-level base,
+  // while custom style files are still read on every request.
+  loadProductionCatalog();
   const server = http.createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", `http://127.0.0.1:${requestedPort}`);
     try {
@@ -598,13 +641,21 @@ export function startStudioServerFromCli(args = process.argv.slice(2)) {
       }
       serveFile(response, file);
     } catch (error) {
-      json(response, 400, {
+      const statusCode = Number.isInteger(error.statusCode)
+        && error.statusCode >= 400
+        && error.statusCode <= 599
+        ? error.statusCode
+        : 400;
+      json(response, statusCode, {
         schemaVersion: "1.0",
         status: "blocked",
         error: error.message,
       });
     }
   });
+  server.headersTimeout = 15_000;
+  server.requestTimeout = 30_000;
+  server.keepAliveTimeout = 5_000;
   server.listen(requestedPort, "127.0.0.1", () => {
     const url = `http://127.0.0.1:${requestedPort}`;
     console.log(JSON.stringify({

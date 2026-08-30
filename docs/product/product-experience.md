@@ -1,6 +1,6 @@
 # Product experience
 
-> 对账修订：`opencut-informed-editor-core-2026-08-26`。
+> 对账修订：`kacha-product-optimization-2026-08-30`。
 
 ## 信息架构与产品形态
 
@@ -29,3 +29,15 @@ Command → required QC → 撤销/重做 → 重新渲染与审片`。浏览器
 使用带本地来源标记的既有 POST 接口。空事件、读取中、就绪和错误状态分别呈现。
 调整页另有等待打开、近似预览、只读条目、可编辑条目、冲突和 required QC 状态；
 窄屏保持任务可读与字段可操作，但不把近似预览伪装成正式渲染。
+
+## 安装、启动与官网体验
+
+官网主命令明确选择 `canary`（跟随 `main`），稳定线需显式改为 `stable`；当前
+stable 仍是 `v1.1.0`，不能用当前 main 的能力说明冒充稳定版能力。checkout 安装
+优先读取本地 `config/release-channels.json`；stdin 安装只从固定官方 HTTPS 地址
+读取同一合同，解析或校验失败即停止，且任何路径都不覆盖已有 skill。
+
+Studio 在监听端口并输出“running”之前完成不可变目录预热，因此用户看到可用地址后
+首个 bootstrap 不再重复读取 18 MB 动效合同。自定义风格仍按请求读取，不因缓存而
+隐藏。官网 `/` 与 `/en/` 使用相同视觉组件，但分别在 `html` 根节点声明 `zh-CN`
+和 `en`，桌面与 390 px 窄屏均为正式验收视口。

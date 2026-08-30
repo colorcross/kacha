@@ -4,7 +4,7 @@ import { ScrollLink } from "./ScrollLink";
 import type { SiteContent } from "../site-content";
 
 const installCommand =
-  "curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh | bash -s -- --agent both";
+  "curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh | bash -s -- --agent both --channel canary";
 const siteBasePath = process.env.NEXT_PUBLIC_SITE_BASE_PATH ?? "";
 const contactEmail = "dodofun@126.com";
 const channelAssets = {
@@ -543,6 +543,7 @@ export function SiteShell({
           <CopyInstall
             command={installCommand}
             copiedLabel={content.install.copied}
+            failedLabel={content.install.copyFailed}
             idleLabel={content.install.copy}
           />
           <p>{content.install.note}</p>

@@ -1,0 +1,235 @@
+{
+  "$schema": "appcreate://schemas/existing-product-audit.schema.json",
+  "schemaVersion": 1,
+  "product": {
+    "ref": ".",
+    "name": "咔嚓 Kacha",
+    "baselineRevision": "51e0e782ec2554e0e070a3d3c779a58f55cb48a3",
+    "observedAt": "2026-08-30T12:10:00Z"
+  },
+  "understanding": {
+    "status": "completed",
+    "scope": [
+      "product direction and differentiation",
+      "product information architecture and creator journeys",
+      "Studio and official-site UI across desktop and narrow screens",
+      "runtime architecture, source contracts, configuration and security boundaries",
+      "implementation correctness, performance and resource use",
+      "tests, CI, installer, deployment and rollback",
+      "public acquisition signals, activation messaging and measurement gaps"
+    ],
+    "truthSources": [
+      "README.md",
+      "README.en.md",
+      "docs/ARCHITECTURE.md",
+      "docs/product/current-product.md",
+      "docs/product/metrics-and-learning.md",
+      "docs/product/product-experience.md",
+      "docs/product/roadmap-and-decisions.md",
+      "scripts/install.sh",
+      "scripts/kacha_studio.mjs",
+      "scripts/kacha_studio_server.mjs",
+      "tests/run_tests.mjs",
+      "tests/test_installer.sh",
+      ".github/workflows/ci.yml",
+      ".github/workflows/macos-smoke.yml",
+      "website/app",
+      "quality/evidence/product-audit-baseline-2026-08-30.json",
+      "quality/evidence/product-audit-browser-2026-08-30.json",
+      "quality/evidence/product-audit-market-2026-08-30.json"
+    ],
+    "unknowns": [
+      "validated target-user interview evidence",
+      "install-to-first-project activation and first-candidate success",
+      "four-week retention and creator time saved",
+      "revenue, support load and unit economics",
+      "real-project human review of the current candidate renderer"
+    ],
+    "preserveInvariants": [
+      "Timeline IR remains the canonical edit state",
+      "FFmpeg Render Graph remains the canonical final renderer",
+      "Studio preview remains explicitly approximate",
+      "source media is read-only and mutations are recoverable",
+      "external upload, paid calls and publication require explicit authorization",
+      "private fonts, SFX and user media never enter the public repository",
+      "Kacha remains an agent-first professional creator workflow rather than a general NLE clone"
+    ],
+    "summary": "The current product has a strong local-first workflow architecture, a coherent Studio and unusually broad contract coverage. The audit reproduced four delivery/runtime defects, two public-product-truth defects, one accessibility defect and two evidence gaps. All locally solvable findings are selected for this iteration; a risky beta dependency migration remains deferred and external user/business outcomes remain explicitly unknown.",
+    "discovery": {
+      "result": "passed",
+      "snapshot": {
+        "root": ".",
+        "branch": "main",
+        "head": "51e0e782ec2554e0e070a3d3c779a58f55cb48a3",
+        "status": "clean",
+        "verificationEntrypoints": ["make check-static", "make check-full", "make check-website", "bash tests/test_installer.sh"]
+      }
+    }
+  },
+  "evidence": [
+    {
+      "id": "EV-BASELINE",
+      "sourceRef": "quality/evidence/product-audit-baseline-2026-08-30.json",
+      "sha256": "sha256:e0216849896b80e3ec8b0b71bbf840fb227add8d1495ab570570dc2e13d1bdca",
+      "result": "passed",
+      "producer": "codex-primary",
+      "subjectRefs": [
+        "domain:code-architecture", "domain:code-implementation", "domain:test-operations",
+        "question:code-architecture:system-and-module-boundaries", "question:code-architecture:dependency-direction-and-coupling", "question:code-architecture:data-api-and-integration-contracts", "question:code-architecture:security-privacy-and-configuration", "question:code-architecture:scalability-reliability-and-cost", "question:code-architecture:evolution-migration-and-ownership",
+        "question:code-implementation:correctness-and-business-invariants", "question:code-implementation:readability-and-standards", "question:code-implementation:error-boundary-and-concurrency", "question:code-implementation:performance-and-resource-use", "question:code-implementation:testability-and-observability", "question:code-implementation:technical-debt-and-change-risk",
+        "question:test-operations:test-strategy-and-layer-coverage", "question:test-operations:release-and-environment-parity", "question:test-operations:monitoring-slo-alert-and-runbook", "question:test-operations:backup-recovery-and-incident", "question:test-operations:deployment-rollback-and-resource-hygiene", "question:test-operations:support-cost-capacity-and-compliance",
+        "finding:KACHA-AUD-001", "finding:KACHA-AUD-002", "finding:KACHA-AUD-003", "finding:KACHA-AUD-004", "finding:KACHA-AUD-005", "finding:KACHA-AUD-009", "finding:KACHA-AUD-010"
+      ],
+      "level": "E2-source-or-local-check",
+      "observedAt": "2026-08-30T12:10:00Z",
+      "scope": ["source contracts", "159-test baseline", "installer reproduction", "Studio latency", "CI and dependency state"],
+      "limitations": ["does not prove unreleased macOS CI", "does not prove real-project creative quality"]
+    },
+    {
+      "id": "EV-BROWSER",
+      "sourceRef": "quality/evidence/product-audit-browser-2026-08-30.json",
+      "sha256": "sha256:bb616950f71eb2268f128cefefb40cb4527b75a259138bcd67ca7e30f65952ea",
+      "result": "passed",
+      "producer": "codex-primary-playwright",
+      "subjectRefs": [
+        "domain:product-design", "domain:ui-design",
+        "question:product-design:information-architecture", "question:product-design:core-journeys-and-task-success", "question:product-design:feature-scope-and-coherence", "question:product-design:content-and-terminology", "question:product-design:states-permissions-and-service-blueprint", "question:product-design:feedback-and-learning-loop",
+        "question:ui-design:brand-and-visual-system", "question:ui-design:design-tokens-and-components", "question:ui-design:hierarchy-density-and-consistency", "question:ui-design:responsive-and-platform-fit", "question:ui-design:complete-component-states", "question:ui-design:accessibility-and-inclusion",
+        "finding:KACHA-AUD-001", "finding:KACHA-AUD-006", "finding:KACHA-AUD-010"
+      ],
+      "level": "E2-source-or-local-check",
+      "observedAt": "2026-08-30T12:06:00Z",
+      "scope": ["Studio and public-site desktop/mobile journeys", "responsive layout", "console", "document language"],
+      "limitations": ["does not replace full assistive-technology testing"]
+    },
+    {
+      "id": "EV-MARKET",
+      "sourceRef": "quality/evidence/product-audit-market-2026-08-30.json",
+      "sha256": "sha256:a5be1f50756669e91a567a388e0ac617c469fa5a4122ef8a69d2962d37ba1736",
+      "result": "passed",
+      "producer": "codex-primary",
+      "subjectRefs": [
+        "domain:product-direction", "domain:market-operations",
+        "question:product-direction:target-users-and-jobs", "question:product-direction:problem-and-value-evidence", "question:product-direction:positioning-and-differentiation", "question:product-direction:business-model-and-economics", "question:product-direction:north-star-and-strategic-focus", "question:product-direction:portfolio-and-roadmap-fit",
+        "question:market-operations:market-category-and-competitive-alternatives", "question:market-operations:acquisition-channel-and-message", "question:market-operations:activation-retention-and-lifecycle", "question:market-operations:monetization-pricing-and-unit-economics", "question:market-operations:analytics-experiment-and-attribution", "question:market-operations:community-support-brand-and-growth-risks",
+        "finding:KACHA-AUD-005", "finding:KACHA-AUD-007", "finding:KACHA-AUD-008", "finding:KACHA-AUD-011"
+      ],
+      "level": "E2-source-or-local-check",
+      "observedAt": "2026-08-30T12:10:00Z",
+      "scope": ["public repository", "GitHub traffic", "public install messaging", "competitor repository metadata"],
+      "limitations": ["public repository metrics are not user value, retention or revenue evidence"]
+    }
+  ],
+  "domains": [
+    {
+      "id": "product-direction", "status": "passed", "scope": ["target creator", "positioning", "business evidence", "roadmap focus"],
+      "questions": [
+        {"id": "target-users-and-jobs", "status": "passed", "evidenceRefs": ["EV-MARKET"], "note": "The documented primary job is an agent-assisted local path from script or footage to a reviewable candidate; external interview validation is unknown."},
+        {"id": "problem-and-value-evidence", "status": "passed", "evidenceRefs": ["EV-MARKET"], "note": "Repository capability is verified; outcome evidence remains unknown."},
+        {"id": "positioning-and-differentiation", "status": "passed", "evidenceRefs": ["EV-MARKET"], "note": "Agent-first, local, evidence-bound workflow is distinct from a browser general NLE."},
+        {"id": "business-model-and-economics", "status": "passed", "evidenceRefs": ["EV-MARKET"], "note": "No validated monetization or unit-economic evidence exists; no claim is made."},
+        {"id": "north-star-and-strategic-focus", "status": "passed", "evidenceRefs": ["EV-MARKET"], "note": "First verified candidate and creator time-to-value are proposed as measurable product outcomes."},
+        {"id": "portfolio-and-roadmap-fit", "status": "passed", "evidenceRefs": ["EV-MARKET"], "note": "The recommended scope preserves the creator-workflow wedge instead of cloning a full NLE."}
+      ],
+      "findingIds": ["KACHA-AUD-005", "KACHA-AUD-011"], "evidenceRefs": ["EV-MARKET"], "summary": "The direction is coherent, but product truth and outcome measurement must become explicit.", "reviewer": "codex-primary", "reviewedAt": "2026-08-30T12:15:00Z"
+    },
+    {
+      "id": "product-design", "status": "passed", "scope": ["information architecture", "activation", "Studio journeys", "states and feedback"],
+      "questions": [
+        {"id": "information-architecture", "status": "passed", "evidenceRefs": ["EV-BROWSER"], "note": "Studio separates create, content, project, editor and review responsibilities."},
+        {"id": "core-journeys-and-task-success", "status": "passed", "evidenceRefs": ["EV-BROWSER"], "note": "Browser journeys are coherent, but the official install entry currently fails."},
+        {"id": "feature-scope-and-coherence", "status": "passed", "evidenceRefs": ["EV-BROWSER"], "note": "Workflow surfaces share one canonical backend rather than separate state machines."},
+        {"id": "content-and-terminology", "status": "passed", "evidenceRefs": ["EV-BROWSER"], "note": "Final versus approximate preview language is clear; release channel language is not."},
+        {"id": "states-permissions-and-service-blueprint", "status": "passed", "evidenceRefs": ["EV-BROWSER"], "note": "Local-only and review boundaries are visible; installer failure state lacks protection."},
+        {"id": "feedback-and-learning-loop", "status": "passed", "evidenceRefs": ["EV-BROWSER"], "note": "Semantic review exists locally; product activation and retention feedback are not yet measured."}
+      ],
+      "findingIds": ["KACHA-AUD-001", "KACHA-AUD-010"], "evidenceRefs": ["EV-BROWSER"], "summary": "The product journey is well structured, with one critical activation break and a missing adoption feedback loop.", "reviewer": "codex-primary", "reviewedAt": "2026-08-30T12:15:00Z"
+    },
+    {
+      "id": "ui-design", "status": "passed", "scope": ["brand", "responsive system", "component states", "accessibility"],
+      "questions": [
+        {"id": "brand-and-visual-system", "status": "passed", "evidenceRefs": ["EV-BROWSER"], "note": "Studio and site use a consistent restrained technical-editorial system."},
+        {"id": "design-tokens-and-components", "status": "passed", "evidenceRefs": ["EV-BROWSER"], "note": "Shared components and tokens produce consistent surfaces."},
+        {"id": "hierarchy-density-and-consistency", "status": "passed", "evidenceRefs": ["EV-BROWSER"], "note": "Dense workbench pages remain legible and hierarchy is consistent."},
+        {"id": "responsive-and-platform-fit", "status": "passed", "evidenceRefs": ["EV-BROWSER"], "note": "No horizontal overflow was found at 390 px."},
+        {"id": "complete-component-states", "status": "passed", "evidenceRefs": ["EV-BROWSER"], "note": "Primary pages expose intentional empty/loading/error boundaries."},
+        {"id": "accessibility-and-inclusion", "status": "passed", "evidenceRefs": ["EV-BROWSER"], "note": "Landmarks and skip navigation exist; English document language is incorrect."}
+      ],
+      "findingIds": ["KACHA-AUD-006", "KACHA-AUD-010"], "evidenceRefs": ["EV-BROWSER"], "summary": "Visual and responsive quality is strong; the English route needs a correct root language contract.", "reviewer": "codex-primary", "reviewedAt": "2026-08-30T12:15:00Z"
+    },
+    {
+      "id": "code-architecture", "status": "passed", "scope": ["module boundaries", "contracts", "security", "evolution"],
+      "questions": [
+        {"id": "system-and-module-boundaries", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "CLI, Studio and editor reuse canonical kernels."},
+        {"id": "dependency-direction-and-coupling", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "Catalog layers are coherent; immutable registry validation is repeated unnecessarily."},
+        {"id": "data-api-and-integration-contracts", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "Typed contracts are broad; HTTP root/body boundary handling is incomplete."},
+        {"id": "security-privacy-and-configuration", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "Local Studio defenses and secret scanning are strong; dev-only dependency risk remains."},
+        {"id": "scalability-reliability-and-cost", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "Local runtime cost is bounded, but synchronous repeated catalog work queues requests."},
+        {"id": "evolution-migration-and-ownership", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "Versioned contracts and explicit release channels support evolution; product truth lacks one current-value gate."}
+      ],
+      "findingIds": ["KACHA-AUD-004", "KACHA-AUD-009", "KACHA-AUD-010"], "evidenceRefs": ["EV-BASELINE"], "summary": "Architecture is strong and fail-closed, with bounded HTTP and dependency-governance work remaining.", "reviewer": "codex-primary", "reviewedAt": "2026-08-30T12:15:00Z"
+    },
+    {
+      "id": "code-implementation", "status": "passed", "scope": ["correctness", "errors", "performance", "testability"],
+      "questions": [
+        {"id": "correctness-and-business-invariants", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "159 baseline tests pass; stdin installer execution violates its documented contract."},
+        {"id": "readability-and-standards", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "Modules are explicit and deterministic; current-product constants are duplicated in prose."},
+        {"id": "error-boundary-and-concurrency", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "Most paths fail closed; oversized HTTP requests destroy the socket."},
+        {"id": "performance-and-resource-use", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "Static responses are fast while every bootstrap repeats 8 to 12 seconds of immutable validation."},
+        {"id": "testability-and-observability", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "Coverage is broad but misses the official pipe installer and structured 413 behavior."},
+        {"id": "technical-debt-and-change-risk", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "The selected fixes can preserve canonical Timeline and renderer boundaries."}
+      ],
+      "findingIds": ["KACHA-AUD-001", "KACHA-AUD-003", "KACHA-AUD-005"], "evidenceRefs": ["EV-BASELINE"], "summary": "Correctness coverage is high, but missing integration boundaries allowed installer and latency regressions.", "reviewer": "codex-primary", "reviewedAt": "2026-08-30T12:15:00Z"
+    },
+    {
+      "id": "test-operations", "status": "passed", "scope": ["test layers", "CI", "installer", "deploy and rollback"],
+      "questions": [
+        {"id": "test-strategy-and-layer-coverage", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "159 tests cover major media contracts; pipe installation and request-body boundaries are missing."},
+        {"id": "release-and-environment-parity", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "Linux CI is green; scheduled macOS smoke fails before tests."},
+        {"id": "monitoring-slo-alert-and-runbook", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "CI and flight recording exist; no product activation SLO exists."},
+        {"id": "backup-recovery-and-incident", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "Editing paths are recoverable and install refuses overwrite; no production incident claim is made."},
+        {"id": "deployment-rollback-and-resource-hygiene", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "Dual-agent sync and channel rollback exist, but the public bootstrap path is broken."},
+        {"id": "support-cost-capacity-and-compliance", "status": "passed", "evidenceRefs": ["EV-BASELINE"], "note": "Local-first execution limits external cost and private-asset distribution is gated."}
+      ],
+      "findingIds": ["KACHA-AUD-001", "KACHA-AUD-002", "KACHA-AUD-010"], "evidenceRefs": ["EV-BASELINE"], "summary": "The regression base is strong, but two delivery paths were not exercised at the boundary users and macOS CI actually use.", "reviewer": "codex-primary", "reviewedAt": "2026-08-30T12:15:00Z"
+    },
+    {
+      "id": "market-operations", "status": "passed", "scope": ["category", "acquisition", "activation", "measurement", "growth risk"],
+      "questions": [
+        {"id": "market-category-and-competitive-alternatives", "status": "passed", "evidenceRefs": ["EV-MARKET"], "note": "OpenCut and OpenMontage demonstrate demand for open video tooling; Kacha should not copy their full-NLE scope."},
+        {"id": "acquisition-channel-and-message", "status": "passed", "evidenceRefs": ["EV-MARKET"], "note": "GitHub and the official site are the observed channels; the current install message hides its canary choice."},
+        {"id": "activation-retention-and-lifecycle", "status": "passed", "evidenceRefs": ["EV-MARKET"], "note": "Activation and retention are unmeasured and must remain unknown until evidence exists."},
+        {"id": "monetization-pricing-and-unit-economics", "status": "passed", "evidenceRefs": ["EV-MARKET"], "note": "No pricing or unit-economic evidence is available; no recommendation assumes one."},
+        {"id": "analytics-experiment-and-attribution", "status": "passed", "evidenceRefs": ["EV-MARKET"], "note": "Only GitHub traffic is currently observed; no external tracker is authorized."},
+        {"id": "community-support-brand-and-growth-risks", "status": "passed", "evidenceRefs": ["EV-MARKET"], "note": "Low current reach and a 43-commit stable gap create activation and expectation risks."}
+      ],
+      "findingIds": ["KACHA-AUD-007", "KACHA-AUD-008", "KACHA-AUD-011"], "evidenceRefs": ["EV-MARKET"], "summary": "The positioning wedge is credible, but activation channel truth and outcome measurement are immature.", "reviewer": "codex-primary", "reviewedAt": "2026-08-30T12:15:00Z"
+    }
+  ],
+  "findings": [
+    {"id": "KACHA-AUD-001", "domain": "product-design", "type": "issue", "claimType": "fact", "statement": "The official curl-to-bash installation command exits 2 before dry-run because a stdin script has no repository-relative release-channel file.", "evidenceRefs": ["EV-BASELINE", "EV-BROWSER"], "confidence": 1, "severity": "high", "impact": {"user": "new users cannot activate the product through the primary public path", "business": "public acquisition converts to an immediate failure"}, "rootCause": "the installer made config/release-channels.json mandatory without a standalone bootstrap path and reads BASH_SOURCE under set -u", "currentState": "checkout execution works; piped execution fails", "targetState": "checkout and piped execution resolve the same validated channel contract"},
+    {"id": "KACHA-AUD-002", "domain": "test-operations", "type": "issue", "claimType": "fact", "statement": "The scheduled macOS smoke workflow fails during dependency setup and never reaches Kacha tests.", "evidenceRefs": ["EV-BASELINE"], "confidence": 1, "severity": "high", "impact": {"operations": "native compatibility regressions are not observed", "release": "a required target-environment signal is red"}, "rootCause": "pip --user is incompatible with the current externally-managed Homebrew Python runner", "currentState": "run 32688630776 fails before checks", "targetState": "an isolated venv supplies Pillow and fonttools and the workflow reaches all smoke gates"},
+    {"id": "KACHA-AUD-003", "domain": "code-implementation", "type": "issue", "claimType": "fact", "statement": "Every Studio bootstrap request spends 8.5 to 11.6 seconds rebuilding the immutable production catalog while static responses take about 1 ms.", "evidenceRefs": ["EV-BASELINE"], "confidence": 1, "severity": "high", "impact": {"user": "Studio appears hung during entry and refresh", "engineering": "synchronous validation serializes local HTTP work"}, "rootCause": "the 18 MB motion contract registry and other immutable catalogs are reread and revalidated on every call", "currentState": "no process-level immutable catalog cache", "targetState": "immutable core is validated once, custom styles stay live, and the server prewarms before announcing readiness"},
+    {"id": "KACHA-AUD-004", "domain": "code-architecture", "type": "issue", "claimType": "fact", "statement": "Oversized Studio JSON bodies destroy the connection and arrays or null may cross the parser boundary as request bodies.", "evidenceRefs": ["EV-BASELINE"], "confidence": 0.98, "severity": "medium", "impact": {"user": "clients receive a reset instead of a stable JSON error", "security": "route handlers do not receive a guaranteed plain-object contract"}, "rootCause": "readRequestBody mixes byte enforcement, socket destruction and JSON parsing without typed HTTP errors", "currentState": "overflow rejects and destroys; expected errors map to 400", "targetState": "declared and streamed overflow return JSON 413, non-object roots return 400, and the server remains healthy"},
+    {"id": "KACHA-AUD-005", "domain": "product-direction", "type": "issue", "claimType": "fact", "statement": "Current public product surfaces disagree on regression and catalog counts.", "evidenceRefs": ["EV-BASELINE", "EV-MARKET"], "confidence": 1, "severity": "medium", "impact": {"trust": "current capability claims are unreliable", "maintenance": "manual prose updates drift silently"}, "rootCause": "derived current values are duplicated without a machine-checkable product-truth contract", "currentState": "159 discovered checks versus 154 and 146 claims; English catalog counts are also stale", "targetState": "one checker derives current values and fails static validation when canonical current surfaces drift"},
+    {"id": "KACHA-AUD-006", "domain": "ui-design", "type": "issue", "claimType": "fact", "statement": "The English official-site route renders an html root language of zh-CN.", "evidenceRefs": ["EV-BROWSER"], "confidence": 1, "severity": "low", "impact": {"accessibility": "screen readers and language-aware tools receive the wrong page-level default", "seo": "the document language does not match the route"}, "rootCause": "a shared root layout hard-codes zh-CN while only the content container overrides en", "currentState": "English subtree is marked en but the document root is zh-CN", "targetState": "each locale has a static root layout with the correct html lang"},
+    {"id": "KACHA-AUD-007", "domain": "market-operations", "type": "issue", "claimType": "fact", "statement": "The official site silently installs canary/main while stable remains 43 commits behind at v1.1.0.", "evidenceRefs": ["EV-MARKET"], "confidence": 1, "severity": "medium", "impact": {"user": "new users cannot make an informed stability choice", "support": "website capability claims may not exist in stable"}, "rootCause": "the default channel is implicit in the command and the adjacent copy does not explain the release boundary", "currentState": "primary command omits --channel", "targetState": "primary command explicitly names canary and copy offers a truthful stable alternative"},
+    {"id": "KACHA-AUD-008", "domain": "market-operations", "type": "unknown", "claimType": "unknown", "statement": "There is no current evidence for activation, first-candidate success, retention, time saved, revenue or support cost.", "evidenceRefs": ["EV-MARKET"], "confidence": 1, "severity": "opportunity", "impact": {"product": "roadmap prioritization cannot be tied to user outcomes", "operations": "improvement claims risk becoming repository-only proxies"}, "rootCause": "no privacy-conscious adoption measurement contract or cohort review cadence is documented", "currentState": "only GitHub traffic and engineering checks are observed", "targetState": "a local-first measurement dictionary and manual cohort protocol distinguish engineering, activation and human outcome evidence"},
+    {"id": "KACHA-AUD-009", "domain": "code-architecture", "type": "issue", "claimType": "fact", "statement": "The website development toolchain reports two high-severity advisories through vinext and image-size, while production dependencies report zero.", "evidenceRefs": ["EV-BASELINE"], "confidence": 1, "severity": "low", "impact": {"security": "malicious development-only image inputs could expose a denial-of-service parser path", "delivery": "the only offered upgrade is a semver-major beta"}, "rootCause": "the current vinext line pins a vulnerable transitive parser and no non-breaking fix is offered", "currentState": "exact advisory exceptions are gated and production exposure is zero", "targetState": "upgrade only after beta compatibility is proven, or when a stable fixed line is available"},
+    {"id": "KACHA-AUD-010", "domain": "product-design", "type": "strength", "claimType": "fact", "statement": "Kacha has coherent local-first workflow boundaries, consistent responsive Studio surfaces, 159 passing regression checks and strong loopback/security controls.", "evidenceRefs": ["EV-BASELINE", "EV-BROWSER"], "confidence": 0.99, "severity": "opportunity", "impact": {"product": "a credible foundation exists for focused creator workflow differentiation"}, "rootCause": "canonical IR, explicit gates, shared kernels and evidence artifacts are treated as product contracts", "currentState": "strong implementation foundation", "targetState": "preserve these invariants through optimization"},
+    {"id": "KACHA-AUD-011", "domain": "product-direction", "type": "opportunity", "claimType": "inference", "statement": "Kacha can differentiate more credibly by owning the agent-first, evidence-bound creator workflow than by matching OpenCut or OpenMontage feature breadth.", "evidenceRefs": ["EV-MARKET"], "confidence": 0.88, "severity": "opportunity", "impact": {"strategy": "focuses limited engineering on time-to-first-candidate, recoverability and creator-specific quality"}, "rootCause": "competitors already have much broader general editing scope and communities", "currentState": "the product mostly follows this wedge but does not yet measure it", "targetState": "roadmap, documentation and outcome metrics reinforce the focused wedge"}
+  ],
+  "recommendations": [
+    {"id": "KACHA-REC-001", "title": "Restore a secure standalone installer bootstrap", "domains": ["product-design", "code-implementation", "test-operations"], "findingIds": ["KACHA-AUD-001"], "classification": "risk-reduction", "status": "selected", "problemOrOpportunity": "The primary public activation path is broken.", "targetState": "Piped and checkout installs resolve the same validated release-channel source and never silently overwrite an install.", "solutionSteps": ["guard BASH_SOURCE under set -u", "prefer the repository-local channel file", "fetch the authoritative raw channel JSON only when standalone", "validate schema and refs before use", "add a mocked pipe execution regression and failure cases"], "alternatives": ["hard-code stable and canary refs inside install.sh", "replace the public command with a git clone workflow"], "tradeoffs": ["standalone dry-run now needs a small HTTPS config fetch", "the installer owns temporary-file cleanup"], "dependencies": [], "ownerRole": "release-engineering", "effort": 2, "priorityAxes": {"productValue": 5, "userImpact": 5, "riskReduction": 5, "urgency": 5, "confidence": 5, "effort": 2}, "priorityRationale": "A verified high-impact activation failure with a bounded fix.", "acceptanceCriteria": ["official pipe command dry-runs stable and canary", "checkout execution still uses local config", "invalid or unavailable config fails closed", "existing install no-overwrite behavior remains"], "verificationLayers": ["static", "integration", "target-environment"], "rollout": ["run mocked offline regression", "run official remote pipe dry-run", "install reviewed local bundle to both agents"], "rollback": ["restore the prior installer and use checkout-only installation while documenting the outage"], "metrics": ["pipe dry-run exit code", "installer regression pass", "dual-agent digest equality"], "risks": ["raw GitHub availability", "temporary file cleanup"], "assumptions": ["the official raw repository remains the channel authority"]},
+    {"id": "KACHA-REC-002", "title": "Repair the macOS native smoke environment", "domains": ["test-operations"], "findingIds": ["KACHA-AUD-002"], "classification": "risk-reduction", "status": "selected", "problemOrOpportunity": "macOS compatibility has no green scheduled signal.", "targetState": "The workflow installs Python dependencies in an isolated venv and reaches static, core and installer checks.", "solutionSteps": ["create a runner-temp Python venv", "install Pillow and fonttools inside it", "prepend its bin directory for later script invocations", "dispatch the workflow after push and record the run"], "alternatives": ["use pipx", "pin an older runner image"], "tradeoffs": ["the workflow adds venv setup time"], "dependencies": [], "ownerRole": "quality-engineering", "effort": 1, "priorityAxes": {"productValue": 4, "userImpact": 4, "riskReduction": 5, "urgency": 5, "confidence": 5, "effort": 1}, "priorityRationale": "A deterministic workflow setup failure blocks all native validation.", "acceptanceCriteria": ["dependency setup succeeds on macos-latest", "static and core checks run", "installer test runs"], "verificationLayers": ["static", "target-environment", "integration"], "rollout": ["validate YAML locally", "push", "dispatch workflow", "read back conclusion"], "rollback": ["restore workflow and mark native signal unavailable"], "metrics": ["workflow conclusion", "number of reached gates"], "risks": ["Homebrew package setup time"], "assumptions": ["GitHub macos-latest provides python3 venv"]},
+    {"id": "KACHA-REC-003", "title": "Cache and prewarm the immutable Studio catalog", "domains": ["code-architecture", "code-implementation", "product-design"], "findingIds": ["KACHA-AUD-003"], "classification": "foundation", "status": "selected", "problemOrOpportunity": "Studio entry repeatedly blocks on immutable catalog validation.", "targetState": "Immutable catalog data is validated once per process, custom styles remain live and the server announces readiness only after prewarm.", "solutionSteps": ["separate immutable catalog construction from custom-style merge", "cache a private immutable base", "clone returned data to prevent shared mutation", "prewarm before listen", "extend regression to prove custom styles remain visible"], "alternatives": ["cache the entire bootstrap response", "move validation to an asynchronous worker"], "tradeoffs": ["source catalog edits require a Studio process restart", "first process startup still pays validation once"], "dependencies": [], "ownerRole": "runtime-engineering", "effort": 3, "priorityAxes": {"productValue": 5, "userImpact": 5, "riskReduction": 3, "urgency": 4, "confidence": 5, "effort": 3}, "priorityRationale": "A repeatable 8 to 12 second core-journey delay with a safe immutable-cache boundary.", "acceptanceCriteria": ["second catalog load avoids registry revalidation", "custom style created after warmup is returned", "first HTTP bootstrap after readiness is sub-second on the audit host", "catalog digest semantics stay deterministic"], "verificationLayers": ["unit", "integration", "performance-security", "page-journey"], "rollout": ["focused catalog regression", "manual before-after timing", "full suite and browser smoke"], "rollback": ["remove cache and prewarm while retaining correctness tests"], "metrics": ["first and warm bootstrap latency", "custom-style freshness"], "risks": ["shared object mutation", "unexpected expectation of live built-in config reload"], "assumptions": ["built-in catalog files are immutable for a running Studio process"]},
+    {"id": "KACHA-REC-004", "title": "Make Studio request-body failures typed and recoverable", "domains": ["code-architecture", "code-implementation", "test-operations"], "findingIds": ["KACHA-AUD-004"], "classification": "risk-reduction", "status": "selected", "problemOrOpportunity": "Malformed and oversized requests do not have a stable HTTP contract.", "targetState": "The parser guarantees a plain object, returns JSON 400 or 413 and keeps the local server healthy.", "solutionSteps": ["introduce status-bearing request errors", "precheck Content-Length", "enforce streamed byte length without destroying the socket", "reject null and array roots", "set bounded header and request timeouts", "add integration assertions including post-error health"], "alternatives": ["rely on reverse-proxy limits", "keep socket destruction"], "tradeoffs": ["oversized bodies are drained but not stored before response completion"], "dependencies": [], "ownerRole": "security-runtime-engineering", "effort": 2, "priorityAxes": {"productValue": 4, "userImpact": 3, "riskReduction": 5, "urgency": 3, "confidence": 5, "effort": 2}, "priorityRationale": "A local-only surface still needs deterministic fail-closed boundaries.", "acceptanceCriteria": ["declared and chunked overflow return JSON 413", "null and array roots return JSON 400", "valid route still works after each rejection"], "verificationLayers": ["unit", "integration", "performance-security"], "rollout": ["extend existing Studio integration test", "run full suite"], "rollback": ["restore parser while keeping loopback controls"], "metrics": ["boundary status codes", "healthy request after rejection"], "risks": ["double resolve or listener leaks"], "assumptions": ["1 MB remains sufficient for current Studio mutations"]},
+    {"id": "KACHA-REC-005", "title": "Create a machine-checked current product truth contract", "domains": ["product-direction", "code-implementation", "test-operations", "market-operations"], "findingIds": ["KACHA-AUD-005"], "classification": "foundation", "status": "selected", "problemOrOpportunity": "Current capability values drift across public and internal surfaces.", "targetState": "Static validation derives current counts and rejects stale canonical claims.", "solutionSteps": ["add a current product-truth verifier", "derive test, template, design and resource counts", "update Chinese, English, website and canonical product docs", "wire the verifier into check-static", "limit checks to explicitly current surfaces so historical snapshots stay immutable"], "alternatives": ["manually update prose after each iteration", "remove all counts from public surfaces"], "tradeoffs": ["intentional current count changes require synchronized docs"], "dependencies": [], "ownerRole": "product-platform", "effort": 2, "priorityAxes": {"productValue": 4, "userImpact": 4, "riskReduction": 4, "urgency": 4, "confidence": 5, "effort": 2}, "priorityRationale": "Small automation prevents recurring public trust drift.", "acceptanceCriteria": ["checker derives 159, 65, 69 and 23", "all current canonical surfaces agree", "a fixture or mutation proves drift fails", "historical snapshot docs are not rewritten"], "verificationLayers": ["static", "contract", "build"], "rollout": ["run checker locally", "run website build and rendered tests", "let Pages deploy from the pushed website change"], "rollback": ["remove checker from static gate and restore prior copy"], "metrics": ["current-truth mismatches", "canonical digest currency"], "risks": ["over-broad prose matching"], "assumptions": ["current markers can be explicit and stable"]},
+    {"id": "KACHA-REC-006", "title": "Give each website locale the correct document language", "domains": ["ui-design", "product-design"], "findingIds": ["KACHA-AUD-006"], "classification": "quick-win", "status": "selected", "problemOrOpportunity": "The English page has the wrong root language.", "targetState": "Static Chinese and English route trees render zh-CN and en at the html root.", "solutionSteps": ["use locale-specific route-group root layouts", "share metadata constants without nesting html roots", "extend rendered HTML tests", "verify both routes in Chromium"], "alternatives": ["change documentElement.lang after hydration", "retain only a subtree lang override"], "tradeoffs": ["route files move into groups while public URLs stay unchanged"], "dependencies": [], "ownerRole": "frontend-engineering", "effort": 2, "priorityAxes": {"productValue": 3, "userImpact": 3, "riskReduction": 3, "urgency": 2, "confidence": 5, "effort": 2}, "priorityRationale": "A standards-level accessibility fix with a testable static result.", "acceptanceCriteria": ["Chinese rendered html is zh-CN", "English rendered html is en", "routes and canonical URLs remain unchanged", "no narrow-screen overflow or console errors"], "verificationLayers": ["build", "page-journey", "design-accessibility"], "rollout": ["build both routes", "run rendered tests", "browser verify"], "rollback": ["restore shared layout and retain subtree language override"], "metrics": ["root language assertions"], "risks": ["vinext route-group compatibility"], "assumptions": ["current Next-compatible build supports multiple root layouts"]},
+    {"id": "KACHA-REC-007", "title": "Make release-channel choice explicit at acquisition", "domains": ["market-operations", "product-design"], "findingIds": ["KACHA-AUD-007"], "classification": "quick-win", "status": "selected", "problemOrOpportunity": "New users receive canary without an explicit stability decision.", "targetState": "The primary command names canary and adjacent copy explains stable and canary truthfully.", "solutionSteps": ["add --channel canary to the primary command", "show a stable alternative in documentation", "state that stable remains v1.1.0 until a formal tag", "test rendered install copy"], "alternatives": ["change the installer default to stable", "create a new release in this iteration"], "tradeoffs": ["the primary command is slightly longer", "stable intentionally lacks recent features"], "dependencies": ["KACHA-REC-001", "KACHA-REC-005"], "ownerRole": "product-marketing-engineering", "effort": 1, "priorityAxes": {"productValue": 4, "userImpact": 5, "riskReduction": 4, "urgency": 4, "confidence": 5, "effort": 1}, "priorityRationale": "Clear channel truth prevents expectation mismatch without creating an unauthorized release.", "acceptanceCriteria": ["website command includes --channel canary", "stable alternative is documented", "no claim says stable contains current main-only features"], "verificationLayers": ["static", "build", "page-journey"], "rollout": ["update copy", "verify build", "observe Pages deployment after push"], "rollback": ["restore prior copy while retaining explicit installer CLI documentation"], "metrics": ["rendered channel assertions", "successful pipe dry-runs"], "risks": ["users may prefer stable and see a smaller feature set"], "assumptions": ["no new release/tag is authorized"]},
+    {"id": "KACHA-REC-008", "title": "Define a privacy-conscious adoption measurement loop", "domains": ["product-direction", "product-design", "market-operations"], "findingIds": ["KACHA-AUD-008", "KACHA-AUD-011"], "classification": "foundation", "status": "selected", "problemOrOpportunity": "Engineering output is not connected to user outcome evidence.", "targetState": "Canonical product docs define activation, candidate success, time saved and retention without silently adding external tracking.", "solutionSteps": ["document an event and metric dictionary", "separate local opt-in evidence from public repository traffic", "define a small human-reviewed cohort protocol", "set decision thresholds and review cadence", "keep external analytics provider selection open"], "alternatives": ["install a third-party analytics SDK now", "use GitHub stars as the north star"], "tradeoffs": ["manual cohorts scale slowly but protect privacy and evidence quality"], "dependencies": ["KACHA-REC-005"], "ownerRole": "product-operations", "effort": 2, "priorityAxes": {"productValue": 5, "userImpact": 4, "riskReduction": 3, "urgency": 3, "confidence": 4, "effort": 2}, "priorityRationale": "The product needs outcome evidence before expanding feature breadth or making efficiency claims.", "acceptanceCriteria": ["metric definitions distinguish engineering, activation and outcome layers", "no third-party tracking is added", "cohort review requires human evidence", "unknown baselines remain explicit"], "verificationLayers": ["documentation", "product-review"], "rollout": ["publish internal measurement contract", "collect only user-authorized evidence in future cohorts"], "rollback": ["retire the metric proposal without deleting historical evidence"], "metrics": ["install-to-first-project", "first verified candidate", "median active editing time", "four-week return rate", "human quality approval"], "risks": ["small cohorts are noisy"], "assumptions": ["future users can opt in to evidence collection"]},
+    {"id": "KACHA-REC-009", "title": "Re-evaluate the vinext development advisory on a stable upgrade line", "domains": ["code-architecture", "test-operations"], "findingIds": ["KACHA-AUD-009"], "classification": "risk-reduction", "status": "deferred", "problemOrOpportunity": "The current toolchain has development-only high advisories with only a major beta fix.", "targetState": "Advisories are removed without destabilizing the official-site build.", "solutionSteps": ["track a stable fixed vinext line", "test beta only in an isolated branch", "retain exact advisory gating and production-zero requirement", "upgrade after build and Pages parity pass"], "alternatives": ["force the beta upgrade now", "remove dependency auditing"], "tradeoffs": ["temporary accepted development risk remains", "avoids an unbounded build-system migration"], "dependencies": [], "ownerRole": "frontend-platform", "effort": 3, "priorityAxes": {"productValue": 2, "userImpact": 1, "riskReduction": 3, "urgency": 2, "confidence": 3, "effort": 3}, "priorityRationale": "Production exposure is zero and the available fix is a major beta, so forced migration is disproportionate.", "acceptanceCriteria": ["production audit remains zero", "exact dev exceptions do not broaden", "future fixed upgrade passes lint, types, builds and Pages tests"], "verificationLayers": ["security", "build", "staging"], "rollout": ["monitor upstream", "rehearse in isolation", "promote only after parity"], "rollback": ["restore current exact versions and advisory gate"], "metrics": ["production vulnerabilities", "development exception count"], "risks": ["advisory remains in local development tooling"], "assumptions": ["untrusted ICNS, JXL and HEIF inputs are not fed to the website build"]}
+  ],
+  "roadmap": {"status": "not_started", "waves": [], "reviewCadence": "", "decisionOwner": "", "userAdjustments": ["The user explicitly authorized full implementation, commit, push and local deployment; GitHub Release creation and third-party analytics remain out of scope."]},
+  "claim": "recommendations-ready"
+}

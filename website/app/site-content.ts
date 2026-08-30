@@ -1,3 +1,5 @@
+import productTruth from "./product-truth.json";
+
 type Feature = {
   kicker: string;
   title: string;
@@ -117,6 +119,7 @@ export type SiteContent = {
     agentLabel: string;
     copy: string;
     copied: string;
+    copyFailed: string;
     note: string;
   };
   contact: {
@@ -162,7 +165,7 @@ export const zhContent: SiteContent = {
     { value: "LOCAL", label: "默认本地处理素材" },
     { value: "HUMAN", label: "判断、审片与发布由人负责" },
     { value: "DELTA", label: "返工只改受影响层" },
-    { value: "146", label: "自动回归检查" },
+    { value: String(productTruth.regressionChecks), label: "自动回归检查" },
   ],
   problems: {
     title: "真正耗时间的，不只是拖动时间线。",
@@ -425,7 +428,8 @@ export const zhContent: SiteContent = {
     agentLabel: "支持的运行环境",
     copy: "复制安装命令",
     copied: "已复制",
-    note: "需要 Node.js 20+；完整媒体链路还需要 FFmpeg 与 FFprobe。安装器不会覆盖已有版本。",
+    copyFailed: "复制失败，请手动复制",
+    note: "页面命令明确安装 canary（跟随 main）；需要稳定线时把 canary 改为 stable，当前 stable 仍为 v1.1.0。需要 Node.js 20+；完整媒体链路还需要 FFmpeg 与 FFprobe。安装器不会覆盖已有版本。",
   },
   contact: {
     title: "看真实效果，或者直接联系我。",
@@ -475,7 +479,7 @@ export const enContent: SiteContent = {
     { value: "LOCAL", label: "local-first media handling" },
     { value: "HUMAN", label: "people own review and release" },
     { value: "DELTA", label: "affected layers only" },
-    { value: "146", label: "regression checks" },
+    { value: String(productTruth.regressionChecks), label: "regression checks" },
   ],
   problems: {
     title: "The timeline is not the only expensive part.",
@@ -738,7 +742,8 @@ export const enContent: SiteContent = {
     agentLabel: "Supported Agent environments",
     copy: "Copy install command",
     copied: "Copied",
-    note: "Requires Node.js 20+; the full media workflow also needs FFmpeg and FFprobe. The installer will not overwrite an existing version.",
+    copyFailed: "Copy failed — select the command",
+    note: "This command explicitly installs canary (tracking main). Replace canary with stable for the release line, which currently remains v1.1.0. Requires Node.js 20+; the full media workflow also needs FFmpeg and FFprobe. The installer will not overwrite an existing version.",
   },
   contact: {
     title: "See real results or contact me directly.",

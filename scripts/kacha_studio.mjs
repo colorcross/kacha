@@ -81,6 +81,7 @@ const referenceGalleryManifestFile = path.join(
   "xingzhe-v3",
   "manifest.json",
 );
+let productionCatalogBaseCache = null;
 
 const VIDEO_EXTENSIONS = new Set([
   ".mov",
@@ -736,10 +737,7 @@ function normalizeStylePreset(value, {
   };
 }
 
-export function loadProductionCatalog({
-  environment = process.env,
-  includeCustom = true,
-} = {}) {
+function buildProductionCatalogBase() {
   const registry = loadBaseRegistry();
   const visualLanguageRegistry = loadVisualLanguageRegistry();
   const styleArchitecture = validateStyleArchitecture(registry, visualLanguageRegistry);
@@ -781,29 +779,8 @@ export function loadProductionCatalog({
       throw new Error(`${style.id} 的常规字幕必须使用金陵体、无底色与 60% 阴影`);
     }
   }
-  const custom = includeCustom
-    ? readCustomStyles(environment).map((style, index) => {
-      const baseId = style.baseStyleId ?? registry.defaultStyleId;
-      const base = builtInById.get(baseId);
-      if (!base) throw new Error(`customStyles[${index}].baseStyleId 不存在：${baseId}`);
-      return normalizeStylePreset(style, {
-        label: `customStyles[${index}]`,
-        builtIn: false,
-        base,
-        openingIds,
-      });
-    })
-    : [];
-  const styles = [...builtIns, ...custom];
-  const duplicateIds = styles
-    .map((style) => style.id)
-    .filter((id, index, all) => all.indexOf(id) !== index);
-  if (duplicateIds.length > 0) throw new Error(`风格 ID 重复：${duplicateIds.join(", ")}`);
-  if (!styles.some((style) => style.id === registry.defaultStyleId)) {
-    throw new Error(`默认风格不存在：${registry.defaultStyleId}`);
-  }
   const productionMotionPolicy = readJson(productionMotionPolicyFile);
-  return {
+  const catalog = {
     schemaVersion: "1.0",
     status: "pass",
     id: registry.id,
@@ -811,7 +788,7 @@ export function loadProductionCatalog({
     defaultStyleId: registry.defaultStyleId,
     authorityBoundary: registry.authorityBoundary,
     styleArchitecture,
-    styles,
+    styles: builtIns,
     visualLanguagePolicy: {
       parentProfile: visualLanguageRegistry.parentProfile,
       defaultSelectionMode: visualLanguageRegistry.defaultSelectionMode,
@@ -832,9 +809,63 @@ export function loadProductionCatalog({
       effects,
       productionMotionPolicy,
       visualLanguageRegistry,
-      custom: custom.map(({ source: _source, ...style }) => style),
+      custom: [],
     }),
   };
+  return {
+    catalog,
+    digestInputs: {
+      registry,
+      effects,
+      productionMotionPolicy,
+      visualLanguageRegistry,
+    },
+  };
+}
+
+function productionCatalogBase() {
+  if (!productionCatalogBaseCache) {
+    productionCatalogBaseCache = buildProductionCatalogBase();
+  }
+  return productionCatalogBaseCache;
+}
+
+export function loadProductionCatalog({
+  environment = process.env,
+  includeCustom = true,
+} = {}) {
+  const cached = productionCatalogBase();
+  const builtIns = cached.catalog.styles;
+  const builtInById = new Map(builtIns.map((style) => [style.id, style]));
+  const openingIds = new Set(cached.catalog.openings.map((effect) => effect.id));
+  const custom = includeCustom
+    ? readCustomStyles(environment).map((style, index) => {
+      const baseId = style.baseStyleId ?? cached.catalog.defaultStyleId;
+      const base = builtInById.get(baseId);
+      if (!base) throw new Error(`customStyles[${index}].baseStyleId 不存在：${baseId}`);
+      return normalizeStylePreset(style, {
+        label: `customStyles[${index}]`,
+        builtIn: false,
+        base,
+        openingIds,
+      });
+    })
+    : [];
+  const styles = [...builtIns, ...custom];
+  const duplicateIds = styles
+    .map((style) => style.id)
+    .filter((id, index, all) => all.indexOf(id) !== index);
+  if (duplicateIds.length > 0) throw new Error(`风格 ID 重复：${duplicateIds.join(", ")}`);
+  if (!styles.some((style) => style.id === cached.catalog.defaultStyleId)) {
+    throw new Error(`默认风格不存在：${cached.catalog.defaultStyleId}`);
+  }
+  const catalog = clone(cached.catalog);
+  catalog.styles = clone(styles);
+  catalog.digest = sha256Value({
+    ...cached.digestInputs,
+    custom: custom.map(({ source: _source, ...style }) => style),
+  });
+  return catalog;
 }
 
 function slugify(value, fallback = "style") {

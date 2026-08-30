@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "result": "passed",
+  "observedAt": "2026-08-30T12:06:00Z",
+  "tool": "Playwright CLI with Chromium",
+  "surfaces": [
+    {
+      "name": "Kacha Studio",
+      "routes": ["/", "/content", "/project", "/editor", "/review"],
+      "viewports": ["desktop", "390x844"],
+      "horizontalOverflow": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "result": "visual hierarchy, responsive navigation, empty states and workbench labels remain coherent"
+    },
+    {
+      "name": "official website",
+      "routes": ["/", "/en/"],
+      "viewports": ["1440 desktop", "390x844"],
+      "horizontalOverflow": false,
+      "consoleErrors": 0,
+      "consoleWarnings": 0,
+      "result": "landmarks, skip link, navigation and responsive layout work; the displayed install command is affected by PIPE-INSTALL"
+    }
+  ],
+  "accessibilityFinding": {
+    "route": "/en/",
+    "documentLanguage": "zh-CN",
+    "contentContainerLanguage": "en",
+    "result": "the English content has a local language override, but the document root language is incorrect"
+  },
+  "localEvidence": [
+    "output/playwright/studio-desktop-baseline.png",
+    "output/playwright/website-desktop-baseline.png",
+    "output/playwright/website-en-mobile-baseline.png"
+  ],
+  "limitations": [
+    "screenshots are local review evidence and are intentionally not distributed in the public skill bundle",
+    "browser review does not prove assistive-technology behavior on every platform"
+  ]
+}

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { SiteShell } from "../components/SiteShell";
-import { enContent } from "../site-content";
+import { SiteShell } from "../../components/SiteShell";
+import { enContent } from "../../site-content";
 
 export const metadata: Metadata = {
   title: "A local AI workflow from script or footage to a publishable candidate",

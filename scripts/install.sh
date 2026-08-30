@@ -13,6 +13,18 @@ archive_file=""
 agent=""
 custom_target=""
 dry_run=false
+release_channels_temp=""
+work_root=""
+
+cleanup() {
+  if [[ -n "$release_channels_temp" && -f "$release_channels_temp" ]]; then
+    rm -f -- "$release_channels_temp"
+  fi
+  if [[ -n "$work_root" && -d "$work_root" ]]; then
+    rm -rf -- "$work_root"
+  fi
+}
+trap cleanup EXIT
 
 usage() {
   cat <<'EOF'
@@ -106,25 +118,6 @@ if [[ -n "${KACHA_STABLE_REF:-}" || -n "${KACHA_CANARY_REF:-}" ]]; then
   printf '%s\n' "Stable/canary refs are controlled by config/release-channels.json; use --ref for a custom source." >&2
   exit 2
 fi
-release_channels_file=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/config/release-channels.json
-[[ -f "$release_channels_file" ]] || {
-  printf 'Release channel config not found: %s\n' "$release_channels_file" >&2
-  exit 2
-}
-IFS=$'\t' read -r stable_ref canary_ref < <(python3 - "$release_channels_file" <<'PY'
-import json
-import pathlib
-import sys
-
-payload = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
-channels = payload.get("channels", {})
-stable = channels.get("stable", {}).get("ref")
-canary = channels.get("canary", {}).get("ref")
-if not isinstance(stable, str) or not stable or not isinstance(canary, str) or not canary:
-    raise SystemExit("release channel config is missing stable/canary refs")
-print(f"{stable}\t{canary}")
-PY
-)
 
 case "$channel" in
   stable|canary) ;;
@@ -137,6 +130,8 @@ if $ref_explicit && $channel_explicit; then
   printf '%s\n' "--ref cannot be combined with --channel" >&2
   exit 2
 fi
+stable_ref=""
+canary_ref=""
 if $ref_explicit; then
   channel=custom
 elif [[ -n "$archive_file" ]]; then
@@ -146,16 +141,82 @@ elif $archive_url_explicit; then
   channel=custom
   ref=custom-url
 else
+  release_channels_file=""
+  script_source=${BASH_SOURCE[0]-}
+  if [[ -n "$script_source" && -f "$script_source" ]]; then
+    local_release_channels_file=$(cd "$(dirname "$script_source")/.." && pwd)/config/release-channels.json
+    if [[ -f "$local_release_channels_file" ]]; then
+      release_channels_file=$local_release_channels_file
+    fi
+  fi
+  if [[ -z "$release_channels_file" ]]; then
+    command -v curl >/dev/null 2>&1 || {
+      printf '%s\n' "curl is required to load the release channel contract" >&2
+      exit 2
+    }
+    release_channels_temp=$(mktemp "${TMPDIR:-/tmp}/kacha-release-channels.XXXXXX")
+    release_channels_url="https://raw.githubusercontent.com/colorcross/kacha/main/config/release-channels.json"
+    curl \
+      --fail \
+      --location \
+      --silent \
+      --show-error \
+      --retry 3 \
+      --connect-timeout 10 \
+      --max-time 30 \
+      --output "$release_channels_temp" \
+      "$release_channels_url"
+    release_channels_file=$release_channels_temp
+  fi
+  IFS=$'\t' read -r stable_ref canary_ref < <(python3 - "$release_channels_file" <<'PY'
+import json
+import pathlib
+import sys
+
+try:
+    payload = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+except (OSError, json.JSONDecodeError) as exc:
+    raise SystemExit(f"release channel config is invalid: {exc}") from exc
+if not isinstance(payload, dict) or payload.get("schemaVersion") not in (1, "1.0"):
+    raise SystemExit("release channel config must be a schemaVersion 1 object")
+channels = payload.get("channels", {})
+stable = channels.get("stable", {}).get("ref")
+canary = channels.get("canary", {}).get("ref")
+def valid(value):
+    if not isinstance(value, str) or not value or value.startswith(("-", "/", ".")):
+        return False
+    if value.endswith(("/", ".", ".lock")) or ".." in value or "//" in value:
+        return False
+    if any(part.startswith(".") or part.endswith(".lock") for part in value.split("/")):
+        return False
+    return all(char.isascii() and (char.isalnum() or char in "._/-") for char in value)
+if not valid(stable) or not valid(canary):
+    raise SystemExit("release channel config is missing stable/canary refs")
+print(f"{stable}\t{canary}")
+PY
+)
   case "$channel" in
     stable) ref=$stable_ref ;;
     canary) ref=$canary_ref ;;
   esac
 fi
 
-[[ "$ref" =~ ^[A-Za-z0-9._/-]+$ && "$ref" != -* ]] || {
-  printf '%s\n' "Invalid GitHub ref" >&2
-  exit 2
-}
+python3 - "$ref" <<'PY'
+import sys
+
+value = sys.argv[1]
+valid = (
+    bool(value)
+    and not value.startswith(("-", "/", "."))
+    and not value.endswith(("/", ".", ".lock"))
+    and ".." not in value
+    and "//" not in value
+    and all(not part.startswith(".") and not part.endswith(".lock") for part in value.split("/"))
+    and all(char.isascii() and (char.isalnum() or char in "._/-") for char in value)
+)
+if not valid:
+    raise SystemExit("Invalid GitHub ref")
+PY
 [[ -n "${HOME:-}" && "$HOME" = /* && "$HOME" != "/" ]] || {
   printf '%s\n' "HOME must be an absolute, non-root directory" >&2
   exit 2
@@ -316,7 +377,6 @@ if $dry_run; then
   esac
 else
   work_root=$(mktemp -d "${TMPDIR:-/tmp}/kacha-install.XXXXXX")
-  trap 'rm -rf "${work_root:-}"' EXIT
   source=$(prepare_source "$work_root")
 
   case "$agent" in
