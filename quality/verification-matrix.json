@@ -3,7 +3,7 @@
   "planRevision": "kacha-product-optimization-final-r1",
   "scopeRevision": "scope-2026-08-30-product-optimization-r1",
   "baselineRevision": "51e0e782ec2554e0e070a3d3c779a58f55cb48a3",
-  "status": "passed_locally_external_pending",
+  "status": "passed_remote_local_deploy_pending",
   "checks": [
     {
       "id": "V-STATIC",
@@ -83,8 +83,8 @@
       "level": "target-environment",
       "command": "GitHub Actions workflow_dispatch macos-smoke.yml on pushed main",
       "expected": "runner-temp venv and all native smoke gates pass",
-      "status": "pending_post_push",
-      "evidence": null
+      "status": "passed",
+      "evidence": "quality/evidence/product-optimization-remote-delivery-2026-08-30.json"
     },
     {
       "id": "V-REMOTE-INSTALL",
@@ -92,8 +92,8 @@
       "level": "public-delivery",
       "command": "official raw-GitHub pipe stable and canary dry-runs from pushed main",
       "expected": "authoritative public command resolves and validates both channels",
-      "status": "pending_post_push",
-      "evidence": null
+      "status": "passed",
+      "evidence": "quality/evidence/product-optimization-remote-delivery-2026-08-30.json"
     },
     {
       "id": "V-PAGES",
@@ -101,8 +101,8 @@
       "level": "public-environment",
       "command": "GitHub Pages workflow and public root/en readback",
       "expected": "the pushed website is deployed and exposes correct locale and product truth",
-      "status": "pending_post_push",
-      "evidence": null
+      "status": "passed",
+      "evidence": "quality/evidence/product-optimization-remote-delivery-2026-08-30.json"
     },
     {
       "id": "V-LOCAL-DEPLOY",

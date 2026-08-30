@@ -33,7 +33,7 @@
     {
       "id": "R-OPT-002",
       "severity": "high",
-      "status": "fixed_target_verification_pending",
+      "status": "fixed_target_verified_independent_review_pending",
       "problem": "The scheduled macOS workflow failed at pip --user before any Kacha check.",
       "rootCause": "The runner uses externally managed Homebrew Python.",
       "fix": "Install Python tools into RUNNER_TEMP venv and publish its bin path to later steps; local YAML and gate checks pass, post-push macOS execution remains separate evidence."
@@ -127,5 +127,5 @@
       "fix": "Keep production vulnerability count at zero and fail on any exception drift; schedule the beta compatibility migration as a separate reviewed iteration."
     }
   ],
-  "decision": "All locally solvable findings in the frozen plan are implemented and producer-reviewed, and the second full regression is recorded separately. Remote installer, macOS workflow, Pages readback and dual-agent deployment remain post-push delivery gates. Independent final review and real creator outcomes remain open and are not self-approved."
+  "decision": "All locally solvable findings in the frozen plan are implemented and producer-reviewed, and the second full regression is recorded separately. The first pushed code candidate passed remote installer, CI, macOS smoke, Pages deployment and public readback. The evidence-only closure commit and final dual-agent deployment remain; independent final review and real creator outcomes remain open and are not self-approved."
 }

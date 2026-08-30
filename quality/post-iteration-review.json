@@ -12,7 +12,7 @@
     "auditRef": "quality/product-audit-2026-08-30.json",
     "iterationId": "kacha-product-optimization-2026-08-30",
     "baselineRevision": "51e0e782ec2554e0e070a3d3c779a58f55cb48a3",
-    "candidateRevision": "working-tree-pre-commit",
+    "candidateRevision": "aafadca8ace659b49096e505d08063481b7abb2b",
     "observedAt": "2026-08-30T14:10:00Z"
   },
   "scope": {
@@ -66,7 +66,7 @@
     ],
     "knownRisks": [
       "Independent final review has not been performed.",
-      "Public remote, macOS, Pages and dual-agent evidence require the final pushed commit.",
+      "The first pushed code candidate passed remote, macOS and Pages checks; local dual-agent deployment waits for the evidence-only closure commit.",
       "New system fonts may require a Studio restart.",
       "The development-only vinext advisory is deferred to a separate beta compatibility iteration.",
       "No real creator project or outcome cohort was observed."
@@ -93,7 +93,19 @@
       ],
       "observedAt": "2026-08-30T14:05:00Z",
       "scope": ["local source", "159-test regression", "installer", "website builds", "real loopback browser", "host-specific performance"],
-      "limitations": ["Producer-generated", "No pushed target environment", "No independent final review", "No creator or business outcome"]
+      "limitations": ["Producer-generated", "No independent final review", "No creator or business outcome"]
+    },
+    {
+      "id": "E-REMOTE",
+      "level": "E2-source-or-local-check",
+      "sourceRef": "quality/evidence/product-optimization-remote-delivery-2026-08-30.json",
+      "sha256": "sha256:4f8d9bffd40606ac8b68a9a947ca7d7fe3868d917eca283b6d394097a0944025",
+      "result": "passed",
+      "producer": "codex-primary",
+      "subjectRefs": ["level:target-environment-device"],
+      "observedAt": "2026-08-30T13:26:53Z",
+      "scope": ["remote main readback", "official installer", "GitHub CI", "macOS runner", "GitHub Pages public readback"],
+      "limitations": ["Binds the first pushed code candidate", "Local dual-agent deployment pending", "No independent final review", "No creator outcome"]
     }
   ],
   "domains": [
@@ -130,7 +142,7 @@
     {"id":"cross-page-journey","status":"in_progress","itemsExpected":["official-site-to-channel-install","locale-entry-and-copy-feedback","Studio-startup-and-empty-editor-resize"],"itemsReviewed":["official-site-to-channel-install","locale-entry-and-copy-feedback","Studio-startup-and-empty-editor-resize"],"findingIds":["R-OPT-007"],"evidenceRefs":[]},
     {"id":"service-integration","status":"in_progress","itemsExpected":["Studio GET /api/bootstrap","Studio POST JSON endpoints","raw-GitHub release-channel bootstrap","GitHub macOS smoke and Pages delivery"],"itemsReviewed":["Studio GET /api/bootstrap","Studio POST JSON endpoints","raw-GitHub release-channel bootstrap","GitHub macOS smoke and Pages delivery"],"findingIds":["R-OPT-001","R-OPT-004"],"evidenceRefs":[]},
     {"id":"system-data","status":"in_progress","itemsExpected":["catalog cache, product truth and adoption metric contracts"],"itemsReviewed":["catalog cache, product truth and adoption metric contracts"],"findingIds":["R-OPT-008"],"evidenceRefs":[]},
-    {"id":"target-environment-device","status":"not_started","itemsExpected":["macOS GitHub runner","GitHub Pages","Codex local skill","Claude Code local skill"],"itemsReviewed":[],"findingIds":["R-OPT-002"],"evidenceRefs":[]},
+    {"id":"target-environment-device","status":"in_progress","itemsExpected":["macOS GitHub runner","GitHub Pages","Codex local skill","Claude Code local skill"],"itemsReviewed":["macOS GitHub runner","GitHub Pages"],"findingIds":["R-OPT-002"],"evidenceRefs":["E-REMOTE"]},
     {"id":"candidate-release","status":"deferred","itemsExpected":[],"itemsReviewed":[],"findingIds":[],"evidenceRefs":[],"deferredUntil":"after a pushed candidate and independent final review"},
     {"id":"production-outcome","status":"deferred","itemsExpected":[],"itemsReviewed":[],"findingIds":[],"evidenceRefs":[],"deferredUntil":"after a real creator cohort observation window"}
   ],
@@ -145,13 +157,13 @@
     {"recommendationId":"KACHA-REC-008","auditFindingIds":["KACHA-AUD-008"],"planRefs":["quality/implementation-plan.json#PRODUCT-TRUTH"],"implementationRefs":["docs/product/adoption-measurement.md","docs/product/metrics-and-learning.md"],"verificationRefs":["E-LOCAL"],"reviewFindingIds":["R-OPT-008"]}
   ],
   "findings": [
-    {"id":"R-OPT-001","domains":["product-design"],"perspectives":["engineering"],"levels":["service-integration"],"severity":"high","status":"fixed_unverified","statement":"The public stdin installer could not resolve its channel contract.","rootCause":"Piped execution assumed checkout-local BASH_SOURCE and config.","impact":"Primary public activation failed before dry-run.","owner":"codex-primary","remediationRefs":["scripts/install.sh","tests/test_installer.sh"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Official remote pipe needs pushed-source readback and independent review.","independentReviewer":null},
-    {"id":"R-OPT-002","domains":["deployment-operations"],"perspectives":["sre-operations"],"levels":["target-environment-device"],"severity":"high","status":"fixed_unverified","statement":"The macOS smoke stopped in dependency setup.","rootCause":"Homebrew Python rejected pip --user.","impact":"Native compatibility gates never ran.","owner":"codex-primary","remediationRefs":[".github/workflows/macos-smoke.yml"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"A post-push macos-latest run and independent review remain open.","independentReviewer":null},
+    {"id":"R-OPT-001","domains":["product-design"],"perspectives":["engineering"],"levels":["service-integration"],"severity":"high","status":"fixed_unverified","statement":"The public stdin installer could not resolve its channel contract.","rootCause":"Piped execution assumed checkout-local BASH_SOURCE and config.","impact":"Primary public activation failed before dry-run.","owner":"codex-primary","remediationRefs":["scripts/install.sh","tests/test_installer.sh"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Official remote pipe passed; independent review remains open.","independentReviewer":null},
+    {"id":"R-OPT-002","domains":["deployment-operations"],"perspectives":["sre-operations"],"levels":["target-environment-device"],"severity":"high","status":"fixed_unverified","statement":"The macOS smoke stopped in dependency setup.","rootCause":"Homebrew Python rejected pip --user.","impact":"Native compatibility gates never ran.","owner":"codex-primary","remediationRefs":[".github/workflows/macos-smoke.yml"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"The macos-latest run passed; independent review remains open.","independentReviewer":null},
     {"id":"R-OPT-003","domains":["performance-reliability"],"perspectives":["engineering"],"levels":["component-module"],"severity":"high","status":"fixed_unverified","statement":"Studio rebuilt immutable catalogs on every bootstrap.","rootCause":"Catalog and font discovery had no process reuse and readiness preceded warmup.","impact":"Entry and refresh took 8.5 to 11.6 seconds on the audit host.","owner":"codex-primary","remediationRefs":["scripts/kacha_studio.mjs","scripts/kacha_studio_server.mjs","scripts/design_system.mjs"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Measurements are host-specific and independent review remains open.","independentReviewer":null},
     {"id":"R-OPT-004","domains":["data-api"],"perspectives":["security-privacy"],"levels":["service-integration"],"severity":"medium","status":"verified_closed","statement":"Malformed or oversized Studio bodies produced an unstable boundary.","rootCause":"Parsing, byte limits and socket destruction were coupled.","impact":"Clients could receive resets and handlers lacked a plain-object guarantee.","owner":"codex-primary","remediationRefs":["scripts/kacha_studio_server.mjs","tests/run_tests.mjs"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Loopback-only service; no known remaining local defect.","independentReviewer":null},
     {"id":"R-OPT-005","domains":["product-direction"],"perspectives":["product"],"levels":["artifact"],"severity":"medium","status":"verified_closed","statement":"Current product counts drifted across README, website and regression reality.","rootCause":"Derived facts were manually duplicated.","impact":"Capability claims were unreliable.","owner":"codex-primary","remediationRefs":["scripts/verify_product_truth.mjs","Makefile","website/app/product-truth.json"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Future canonical surfaces must be added to the checker.","independentReviewer":null},
     {"id":"R-OPT-006","domains":["accessibility-inclusion"],"perspectives":["design"],"levels":["page-surface"],"severity":"low","status":"verified_closed","statement":"The English page declared zh-CN at document root.","rootCause":"One shared root layout hard-coded the Chinese language.","impact":"Language-aware tools received the wrong default.","owner":"codex-primary","remediationRefs":["website/app/(en)/layout.tsx","website/app/(zh)/layout.tsx"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Assistive-technology certification is not claimed.","independentReviewer":null},
-    {"id":"R-OPT-007","domains":["market-operations"],"perspectives":["market-growth"],"levels":["cross-page-journey"],"severity":"medium","status":"verified_closed","statement":"The official acquisition command silently selected canary.","rootCause":"Channel choice was implicit and adjacent copy omitted the stable boundary.","impact":"Users could not make an informed stability choice.","owner":"codex-primary","remediationRefs":["README.md","README.en.md","website/app/site-content.ts"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Public Pages readback remains a delivery gate.","independentReviewer":null},
+    {"id":"R-OPT-007","domains":["market-operations"],"perspectives":["market-growth"],"levels":["cross-page-journey"],"severity":"medium","status":"verified_closed","statement":"The official acquisition command silently selected canary.","rootCause":"Channel choice was implicit and adjacent copy omitted the stable boundary.","impact":"Users could not make an informed stability choice.","owner":"codex-primary","remediationRefs":["README.md","README.en.md","website/app/site-content.ts"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Public Pages readback passed; no known remaining copy defect.","independentReviewer":null},
     {"id":"R-OPT-008","domains":["market-operations"],"perspectives":["data-analytics"],"levels":["system-data"],"severity":"medium","status":"verified_closed","statement":"Engineering checks could be mistaken for adoption or creator value.","rootCause":"No privacy-conscious outcome metric dictionary existed.","impact":"Roadmap claims could exceed evidence.","owner":"codex-primary","remediationRefs":["docs/product/adoption-measurement.md","docs/product/metrics-and-learning.md"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"All actual activation, retention and business values remain unknown.","independentReviewer":null},
     {"id":"R-OPT-009","domains":["interaction-journeys"],"perspectives":["quality"],"levels":["page-surface"],"severity":"medium","status":"verified_closed","statement":"A pending Clipboard API left install copy without feedback.","rootCause":"The handler awaited one browser API without a bound or fallback.","impact":"Users could not tell whether the command was copied.","owner":"codex-primary","remediationRefs":["website/app/components/CopyInstall.tsx"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"Legacy browser fallback depends on document.execCommand availability.","independentReviewer":null},
     {"id":"R-OPT-010","domains":["ui-design"],"perspectives":["quality"],"levels":["page-surface"],"severity":"medium","status":"verified_closed","statement":"Editor resize before Timeline open read projection.output from empty state.","rootCause":"The overlay renderer assumed a loaded project.","impact":"The empty editor emitted a browser exception.","owner":"codex-primary","remediationRefs":["studio/editor.js","tests/run_tests.mjs"],"regressionEvidenceRefs":["E-LOCAL"],"residualRisk":"No known remaining empty-state crash.","independentReviewer":null},
@@ -169,10 +181,10 @@
   },
   "releaseReadiness": {
     "status": "in_progress",
-    "candidateRef": "working-tree-pre-commit",
-    "targetEnvironmentEvidenceRefs": [],
+    "candidateRef": "aafadca8ace659b49096e505d08063481b7abb2b",
+    "targetEnvironmentEvidenceRefs": ["E-REMOTE"],
     "rollbackEvidenceRefs": [],
-    "decision": "Producer verification passed locally; push, public readback, macOS, Pages and dual-agent deployment remain delivery gates."
+    "decision": "The first pushed code candidate passed remote readback, official installer, CI, macOS and Pages; local dual-agent deployment and independent final review remain."
   },
   "productionObservation": {
     "status": "not_started",

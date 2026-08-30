@@ -1,22 +1,22 @@
 {
   "schemaVersion": "1.0",
-  "status": "completed_locally_remote_pending",
+  "status": "remote_verified_local_deploy_pending",
   "surfaces": [
     {
       "id": "official-site-zh",
       "kind": "public-static-web",
       "routes": ["/"],
       "states": ["desktop", "narrow", "install-idle", "install-copied", "install-failed"],
-      "status": "completed_locally",
-      "evidenceRefs": ["quality/evidence/product-optimization-local-verification-2026-08-30.json"]
+      "status": "completed_publicly",
+      "evidenceRefs": ["quality/evidence/product-optimization-local-verification-2026-08-30.json", "quality/evidence/product-optimization-remote-delivery-2026-08-30.json"]
     },
     {
       "id": "official-site-en",
       "kind": "public-static-web",
       "routes": ["/en", "/en/"],
       "states": ["desktop", "narrow", "lang-en", "pages-packaged"],
-      "status": "completed_locally",
-      "evidenceRefs": ["quality/evidence/product-optimization-local-verification-2026-08-30.json"]
+      "status": "completed_publicly",
+      "evidenceRefs": ["quality/evidence/product-optimization-local-verification-2026-08-30.json", "quality/evidence/product-optimization-remote-delivery-2026-08-30.json"]
     },
     {
       "id": "studio",
@@ -31,15 +31,15 @@
       "kind": "cli-delivery",
       "routes": ["stable", "canary", "custom", "local archive"],
       "states": ["dry-run", "installed", "already-installed", "fetch-failed", "contract-invalid", "ref-invalid"],
-      "status": "completed_locally_remote_pending",
-      "evidenceRefs": ["quality/evidence/product-optimization-local-verification-2026-08-30.json"]
+      "status": "remote_verified_local_deploy_pending",
+      "evidenceRefs": ["quality/evidence/product-optimization-local-verification-2026-08-30.json", "quality/evidence/product-optimization-remote-delivery-2026-08-30.json"]
     }
   ],
   "journeys": [
     {
       "id": "site-to-install",
       "steps": ["read explicit canary choice", "copy command", "receive success or failure feedback", "run fixed-source channel bootstrap", "refuse overwrite"],
-      "status": "completed_locally_remote_command_pending"
+      "status": "completed_through_public_command"
     },
     {
       "id": "locale-entry",
@@ -63,8 +63,8 @@
     }
   ],
   "limitations": [
-    "GitHub Pages public output and the official remote pipe command require post-push readback",
-    "macOS native-smoke requires a post-push workflow dispatch",
+    "The evidence-only closure commit requires its own remote and workflow readback",
+    "The exact final commit is installed to local agents only after that commit is pushed",
     "browser acceptance does not establish assistive-technology certification",
     "no real creator project or final-video outcome was reviewed"
   ]

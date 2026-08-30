@@ -60,6 +60,15 @@
 - 待提交后证据或独立复审的切片：`INSTALL`、`STUDIO-BOUNDARY`、`MACOS-CI`、`VERIFY-DEPLOY`。
 - 最后一次本地收口重跑通过：静态/密钥/产品事实、installer 全路径、product-truth 负向自测、产品文档、方案授权、审查结构、完成完整性、JSON 解析、diff 以及官网 lint/type/build/普通渲染/Pages 打包/依赖门禁。
 
+## 首个推送候选的远端交付
+
+- 代码候选 `aafadca8ace659b49096e505d08063481b7abb2b` 已推送，`git ls-remote origin refs/heads/main` 精确一致。
+- 官方 raw-GitHub 管道在 `pipefail` 下分别完成 stable/Codex 与 canary/Claude dry-run，解析为 `v1.1.0` 与 `main`。期间 raw GitHub 有瞬时超时，安装器的有界重试恢复，严格管道最终退出 0。
+- CI run `33313856384` 与 Pages run `33313856317` 成功。
+- 手动 macOS native smoke run `33313972056` 成功；原始失败点“依赖安装”已通过，后续静态/核心与 installer 步骤均通过。Homebrew 只产生了与本仓库无关的 `aws/tap` 信任提示。
+- Pages 公网回读：`/` 为 `zh-CN`，`/en/` 为 `en`，两者均显示 159 和显式 `--channel canary`。
+- 机器证据：`quality/evidence/product-optimization-remote-delivery-2026-08-30.json`。本次证据收口提交不修改产品代码；该提交推送与回读后才同步本机双 Agent。
+
 ## 证据边界
 
 生产者复审可以确认修复与回归证据，但不能冒充独立最终 Review。真实项目的正式渲染、正常速度人工通看、首次候选成功率、四周留存、创作者时间和经营结果均没有本轮证据；这些边界不会被本地测试、Pages 发布或 Agent 安装替代。

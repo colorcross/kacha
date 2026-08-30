@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0",
+  "status": "passed",
+  "scope": "remote delivery of candidate aafadca8ace659b49096e505d08063481b7abb2b",
+  "scopeRevision": "scope-2026-08-30-product-optimization-r1",
+  "observedAt": "2026-08-30T13:26:53Z",
+  "producer": "codex-primary",
+  "candidate": {
+    "revision": "aafadca8ace659b49096e505d08063481b7abb2b",
+    "remoteMain": "aafadca8ace659b49096e505d08063481b7abb2b",
+    "readback": "passed"
+  },
+  "officialInstaller": {
+    "commandSource": "https://raw.githubusercontent.com/colorcross/kacha/main/scripts/install.sh",
+    "pipefail": true,
+    "stable": {"status": "passed", "resolvedRef": "v1.1.0", "agent": "codex", "mode": "dry-run"},
+    "canary": {"status": "passed", "resolvedRef": "main", "agent": "claude", "mode": "dry-run"},
+    "observation": "The release-channel fetch encountered transient raw-GitHub timeouts and recovered through the installer's bounded retry policy; the strict pipefail command exited zero."
+  },
+  "githubActions": {
+    "ci": {
+      "status": "passed",
+      "runId": 33313856384,
+      "url": "https://github.com/colorcross/kacha/actions/runs/33313856384"
+    },
+    "pages": {
+      "status": "passed",
+      "runId": 33313856317,
+      "url": "https://github.com/colorcross/kacha/actions/runs/33313856317"
+    },
+    "macosSmoke": {
+      "status": "passed",
+      "runId": 33313972056,
+      "jobId": 99263881985,
+      "url": "https://github.com/colorcross/kacha/actions/runs/33313972056",
+      "steps": ["runner-temp Python venv", "native dependency install", "static and core checks", "installer without user-skill mutation"]
+    }
+  },
+  "publicPagesReadback": {
+    "root": {"url": "https://colorcross.github.io/kacha/", "status": "passed", "bytes": 67059, "lang": "zh-CN", "regressionChecks159": true, "explicitCanary": true},
+    "english": {"url": "https://colorcross.github.io/kacha/en/", "status": "passed", "bytes": 84511, "lang": "en", "regressionChecks159": true, "explicitCanary": true}
+  },
+  "limitations": [
+    "This evidence binds the first pushed code candidate; a following evidence-only commit still requires remote readback and workflow observation.",
+    "Local Codex and Claude Code deployment is intentionally performed only after the final evidence commit.",
+    "Producer evidence does not replace independent final review or real creator outcomes."
+  ]
+}
