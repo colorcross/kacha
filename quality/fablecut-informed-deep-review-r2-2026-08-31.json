@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0",
+  "reviewId": "kacha-fablecut-informed-deep-review-r2-2026-08-31",
+  "status": "producer_review_passed_after_fixes",
+  "startedAt": "2026-08-31T08:08:00Z",
+  "producer": "codex-primary",
+  "baselineRevision": "02c074ae9d20c20b95295bac7ba96af3de4a752f",
+  "candidateWorktreeSha256AtStart": "3b260335f48f458757ce97f63a8a703808d289d2363fb0556732d87dea966411",
+  "reviewBoundary": "Second producer deep review of the uncommitted FableCut-informed Workbench V2, typed editor operations, Project Bin, rhythm evidence, MCP control plane and local distribution changes.",
+  "dimensions": [
+    "product-boundary",
+    "editing-semantics",
+    "timeline-data-integrity",
+    "render-parity",
+    "security-privacy",
+    "interaction-accessibility",
+    "performance-reliability",
+    "protocol-compatibility",
+    "installation-rollback",
+    "tests-documentation-evidence"
+  ],
+  "findings": [
+    {"id": "DR2-001", "severity": "high", "status": "verified_closed", "area": "typed-editor-operations", "problem": "Typed commands accept undeclared top-level and operation-argument fields, weakening the advertised closed allowlist."},
+    {"id": "DR2-002", "severity": "high", "status": "verified_closed", "area": "command-journal", "problem": "Apply can omit base SHA and undo/redo do not require the caller's current Timeline SHA, allowing a stale client to mutate current history."},
+    {"id": "DR2-003", "severity": "high", "status": "verified_closed", "area": "project-bin", "problem": "Project Bin does not reject duplicate refs and exact asset replacement is routed through a bounded substring search."},
+    {"id": "DR2-004", "severity": "medium", "status": "verified_closed", "area": "waveform", "problem": "A cached waveform can be returned after the source identity changes, while FFmpeg extraction does not revalidate the opened session source."},
+    {"id": "DR2-005", "severity": "medium", "status": "verified_closed", "area": "workbench-interaction", "problem": "Dragging an overlay with position keyframes writes base x/y values that keyframe playback immediately overrides."},
+    {"id": "DR2-006", "severity": "medium", "status": "verified_closed", "area": "mcp-reliability", "problem": "The 1 MB MCP line limit is checked only after readline has buffered the complete line."},
+    {"id": "DR2-007", "severity": "high", "status": "verified_closed", "area": "mcp-distribution", "problem": "MCP registration treats every get failure as absence and reports installed without mandatory client readback."},
+    {"id": "DR2-008", "severity": "medium", "status": "verified_closed", "area": "rhythm-originality", "problem": "Rhythm evidence arrays are weakly validated and a derived plan can omit rhythm evidence carried by its approved analysis."},
+    {"id": "DR2-009", "severity": "medium", "status": "verified_closed", "area": "recovery-security", "problem": "Snapshot recovery checks lexical containment but not the snapshot realpath."},
+    {"id": "DR2-010", "severity": "low", "status": "verified_closed", "area": "workbench-state", "problem": "A pending work-area in-point and asset selection survive opening a different Timeline."},
+    {"id": "DR2-011", "severity": "low", "status": "verified_closed", "area": "timeline-contract", "problem": "Direct Timeline validation does not enforce the same bounded marker and delivery-frame strings as typed mutations."},
+    {"id": "DR2-012", "severity": "low", "status": "verified_closed", "area": "workbench-pointer-lifecycle", "problem": "Clip move and trim previews do not clean up transient DOM state when the browser emits pointercancel."}
+  ],
+  "remediations": [
+    {"findingIds": ["DR2-001", "DR2-002"], "change": "Closed every typed command shape and made current Timeline SHA mandatory for apply, undo and redo across schema, CLI, Studio and MCP."},
+    {"findingIds": ["DR2-003", "DR2-004"], "change": "Added unique Project Bin identity validation and exact-ref lookup; revalidated source identity before and after bounded waveform generation."},
+    {"findingIds": ["DR2-005", "DR2-010", "DR2-012"], "change": "Made keyframed overlay drag an atomic x/y keyframe edit, reset cross-project transient state and cleaned move/trim previews on pointer cancellation."},
+    {"findingIds": ["DR2-006", "DR2-007"], "change": "Replaced whole-line MCP buffering with a bounded streaming parser and made registration preflight/readback fail closed."},
+    {"findingIds": ["DR2-008", "DR2-009", "DR2-011"], "change": "Bound rhythm evidence into derivation, validated bounded technical arrays, resolved recovery snapshot realpaths and aligned direct Timeline metadata bounds."}
+  ],
+  "verification": {
+    "mainRegression": "160/160 pass",
+    "editorFocused": "6/6 pass after final pointer lifecycle fix",
+    "mcp": "pass including oversized-line recovery and stale-SHA rejection",
+    "distribution": "pass including fail-closed preflight and mandatory readback",
+    "website": "lint, typecheck, dual-language Pages package and dependency audit pass",
+    "browser": "desktop direct keyframe drag plus undo/redo pass; 390x844 no overflow; pointercancel removes transient transform without changing Timeline SHA; zero console errors or warnings",
+    "localInstall": "Codex and Claude current at bundle 2bda27a5a7c3f585070a58efec15ae6986c0b158b19af14d54568a10580a2140"
+  },
+  "completedAt": "2026-08-31T09:04:54Z",
+  "decision": "producer_pass_after_remediation",
+  "limitations": [
+    "This is a producer review and cannot self-approve independent final review.",
+    "Real creator normal-speed acceptance remains an external condition."
+  ]
+}

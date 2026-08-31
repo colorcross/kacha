@@ -1,6 +1,6 @@
 # Roadmap and decisions
 
-> 对账修订：`kacha-product-optimization-2026-08-30`。
+> 对账修订：`kacha-human-agent-editing-2026-08-31`。
 
 ## 当前路线与优先级
 
@@ -30,6 +30,12 @@
 13. 当前产品数字由静态门禁推导；采用指标遵循本地优先、最小化、显式同意和证据分层。
 14. 对 OpenCut/OpenMontage 继续只借鉴任务编排、可恢复性和可解释交互原则，不追求
     全功能 NLE 同质化，也不复制 AGPL 实现。
+15. FableCut 的可取方向落实为人机共编工作台、Project Bin、技术节奏证据和 MCP
+    接入；不复制第三方实现，也不把自动分析包装成创意语义。
+16. Marker/工作区/交付画幅是 editor metadata，不改变正式 Render Graph；overlay
+    `x/y` 键帧是正式画面状态，必须进入 FFmpeg 终渲染和视觉动态复核。
+17. MCP 使用根目录受限的 stdio 工具面；它复用 Timeline IR 与 Command Journal，
+    不建立第二套工程状态或权限系统。
 
 ## 被替代的产品定义
 

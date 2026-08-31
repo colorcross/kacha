@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0",
+  "reviewId": "kacha-human-agent-editing-final-review-2026-08-31",
+  "status": "producer_review_passed_after_fixes",
+  "reviewer": "codex-primary",
+  "independentFromProducer": false,
+  "reviewedAt": "2026-08-31T07:40:00Z",
+  "scope": [
+    "product fit and creator workflow",
+    "editing semantics and Timeline single source of truth",
+    "render correctness and QC boundaries",
+    "frontend interaction, accessibility and responsive layout",
+    "local HTTP, SSE, filesystem and MCP security",
+    "rights, provenance and reference originality",
+    "performance, concurrency and resource bounds",
+    "protocol compatibility and client distribution",
+    "test strategy, documentation truth and completion integrity"
+  ],
+  "findings": [
+    {"id": "REV-HAE-001", "severity": "high", "status": "verified_closed", "problem": "Window resize before opening a Timeline dereferenced a null projection.", "fix": "The overlay renderer clears transient layers and returns before accessing editor metadata.", "evidence": "real browser reload/resize with zero console errors"},
+    {"id": "REV-HAE-002", "severity": "medium", "status": "verified_closed", "problem": "At 390px the toolbar compressed Chinese labels into vertical characters.", "fix": "Tool groups no longer shrink and button labels remain on one line inside a horizontal scroller.", "evidence": "390x844 screenshot and scrollWidth 390"},
+    {"id": "REV-HAE-003", "severity": "high", "status": "verified_closed", "problem": "Waveform cache and same-key deduplication did not bound distinct concurrent FFmpeg processes.", "fix": "Added a global two-process limit with structured 429 backpressure and a parallel negative test.", "evidence": "Studio editor integration test"},
+    {"id": "REV-HAE-004", "severity": "medium", "status": "verified_closed", "problem": "Expired or evicted editor sessions did not explicitly close SSE clients.", "fix": "Centralized session disposal closes event responses, clears client sets and removes the session.", "evidence": "code review plus full regression"},
+    {"id": "REV-HAE-005", "severity": "high", "status": "verified_closed", "problem": "A valid in-project media index could point at a strong-identity asset outside the project root and return its path.", "fix": "Project Bin excludes all realpaths outside its project root and reports the excluded count; replacement cannot resolve them.", "evidence": "synthetic outside-root index item negative test"},
+    {"id": "REV-HAE-006", "severity": "high", "status": "verified_closed", "problem": "The installed runtime bundle excludes website/, while Studio loaded its logo from website/public.", "fix": "Studio now serves the byte-identical bundled assets/brand logo; distribution tests forbid the excluded path.", "evidence": "bundle filter review and distribution test"},
+    {"id": "REV-HAE-007", "severity": "medium", "status": "verified_closed", "problem": "New Workbench and MCP user-facing surfaces used an incorrect Chinese product name.", "fix": "Normalized all new titles, labels, diagnostics and metadata to 咔嚓.", "evidence": "repository search and browser title/brand review"},
+    {"id": "REV-HAE-008", "severity": "low", "status": "verified_closed", "problem": "MCP timeline query reported truncated when match count exactly equaled the requested limit.", "fix": "Compute the complete bounded match set before slicing and set truncated only when matches exceed the limit.", "evidence": "code review and MCP fixture"},
+    {"id": "REV-HAE-009", "severity": "low", "status": "verified_closed", "problem": "The secret scanner treated a long repository-relative evidence filename as a high-entropy secret.", "fix": "Exempt only known repository path prefixes from the entropy heuristic; credential pattern checks remain active.", "evidence": "secret scan pass and installer negative boundaries"},
+    {"id": "REV-HAE-010", "severity": "low", "status": "verified_closed", "problem": "A static regression asserted the previous null-guard source literal instead of the safety behavior.", "fix": "Updated the contract assertion to the new explicit null guard and reran the affected test plus full suite.", "evidence": "160/160 full regression"}
+  ],
+  "dimensionResults": [
+    {"dimension": "product", "status": "passed", "note": "High-value correction, provenance and activation paths are implemented without broad NLE parity scope."},
+    {"dimension": "editing", "status": "passed", "note": "Structural edits remain explicit and reversible; executed transitions block unsafe reorder/split."},
+    {"dimension": "render", "status": "passed", "note": "Editor metadata preserves graph digest while x/y keyframes change and successfully render through FFmpeg."},
+    {"dimension": "frontend", "status": "passed", "note": "Desktop and 390px real-browser journeys are operable, responsive and console-clean after fixes."},
+    {"dimension": "security", "status": "passed", "note": "Loopback/origin/session, closed tool schemas, root confinement, bounded body/concurrency and secret scan gates pass."},
+    {"dimension": "rights", "status": "passed", "note": "Project Bin revalidates identity/license/provenance; rhythm evidence cannot bypass reference rights or originality."},
+    {"dimension": "protocol", "status": "passed", "note": "Current discovery and legacy initialize fixtures pass over protocol-only stdio."},
+    {"dimension": "distribution", "status": "passed_local", "note": "Client helpers, offline demo, installer rehearsal and bundle composition pass; local synchronization follows this review."},
+    {"dimension": "completion", "status": "passed_with_external_conditions", "note": "Locally solvable work is complete; independent review, real creator acceptance, CI/remote delivery and registry publication remain external."}
+  ],
+  "verificationRefs": [
+    "quality/evidence/fablecut-workbench-browser-2026-08-31.json",
+    "quality/evidence/fablecut-local-verification-2026-08-31.json",
+    "quality/fablecut-informed-external-conditions-2026-08-31.json"
+  ],
+  "decision": "approved_for_local_install_and_client_registration"
+}

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1.0",
+  "reviewId": "kacha-fablecut-informed-deep-review-r4-2026-08-31",
+  "status": "complete",
+  "startedAt": "2026-08-31T10:26:08Z",
+  "completedAt": "2026-08-31T11:15:54Z",
+  "producer": "codex-primary",
+  "baselineRevision": "02c074ae9d20c20b95295bac7ba96af3de4a752f",
+  "candidateWorktreeSha256AtStart": "5fb42b936025c14664fa8454e32b79537574be8026464b878a808ddcbf0980fd",
+  "installedBundleDigestAtStart": "62124fcbd75db3e6cd176c9f1fa88d60228d7eec663780514b5a05e92fc3ab35",
+  "reviewBoundary": "Fourth producer deep review of the complete dirty candidate after R3 remediation. Prior pass/fix conclusions are treated only as historical evidence, not inherited approval.",
+  "dimensions": [
+    "product-boundary",
+    "timeline-and-command-semantics",
+    "transaction-and-recovery-integrity",
+    "studio-concurrency-and-lifecycle",
+    "media-and-project-bin-integrity",
+    "security-and-local-privacy",
+    "browser-interaction-and-accessibility",
+    "mcp-protocol-and-distribution",
+    "installation-and-rollback",
+    "tests-documentation-and-evidence-honesty"
+  ],
+  "findings": [
+    {"id": "DR4-001", "severity": "high", "status": "verified_closed", "area": "mcp-install-rollback", "problem": "If MCP add succeeds but readback fails or points at the wrong binding, install returns blocked while leaving the newly registered server behind.", "fix": "Post-add failures now remove the just-created client registration, read back proven absence, and report separately when rollback itself cannot be verified.", "verification": "Distribution tests simulate mismatched and failed post-add readback and prove the fake registration is absent afterward."},
+    {"id": "DR4-002", "severity": "medium", "status": "verified_closed", "area": "mcp-runtime-schema", "problem": "Advertised closed MCP schemas are not fully enforced at runtime for bounded strings, scalar changes, limits, enums and argument object sizes.", "fix": "Runtime validation now mirrors bounded strings, finite scalar maps, object sizes, operation enums, limits and exclusive scalar/typed branches; the advertised schema declares the same one-of contract.", "verification": "MCP tests reject oversized, wrong-type, unknown-enum and orphan-branch arguments without changing Timeline bytes."},
+    {"id": "DR4-003", "severity": "high", "status": "verified_closed", "area": "studio-source-drift", "problem": "After Studio open verifies source.sha256, an active browser session can continue apply/undo/redo when the source media changes; revision/project status only follows Timeline SHA.", "fix": "The opened source identity is now a latched session invariant. Drift emits an SSE conflict, appears in project readback and blocks apply, undo and redo with HTTP 409 until reopen.", "verification": "Editor API regression mutates the source after successful editing, observes source_identity_changed and proves command/undo/redo leave Timeline SHA unchanged."},
+    {"id": "DR4-004", "severity": "high", "status": "verified_closed", "area": "workbench-preview-mapping", "problem": "renderProject does not recompute activePictureId or source seek mapping after EDL reorder/split, so the approximate preview can show the old clip at the current output tick.", "fix": "Every project render now re-runs output-to-source seek mapping, and initial open orders video binding and playhead state before rendering.", "verification": "Chromium reordered EDL a,b to b,a at output tick zero and the media element moved from source time 0 to 1 second."},
+    {"id": "DR4-005", "severity": "medium", "status": "verified_closed", "area": "project-bin-authorization", "problem": "License/provenance risk states are compared without canonical trim/case normalization, and missing externalUpload is disclosed as false, allowing malformed index evidence to look safer than it is.", "fix": "Index audit now requires trimmed bounded text and an explicit externalUpload boolean; replacement eligibility is server-derived from canonical license/provenance states plus valid evidence.", "verification": "Negative tests reject missing disclosure and padded fields, and block uppercase UNKNOWN or mixed-case Unverified replacement attempts."},
+    {"id": "DR4-006", "severity": "medium", "status": "verified_closed", "area": "workbench-inspector-input", "problem": "Clearing a numeric Inspector field converts the empty string to zero, which can write an unintended valid value instead of rejecting incomplete input.", "fix": "Inspector numeric controls are required and submission validates non-empty finite valueAsNumber before constructing a command.", "verification": "Chromium forced an empty numeric submit, received a field-specific error and preserved the exact Timeline SHA."},
+    {"id": "DR4-007", "severity": "low", "status": "verified_closed", "area": "studio-sse-expiry", "problem": "The server expires a long-lived SSE session, but the browser treats the terminal expiry like a transient conflict and EventSource can keep reconnecting to the invalid session.", "fix": "The browser recognizes terminal session expiry, closes EventSource, clears the active handle and presents EXPIRED instead of reconnecting.", "verification": "Static distribution regression asserts the terminal close path while server session-expiry behavior remains covered by editor tests."}
+  ],
+  "findingSummary": {"total": 7, "high": 3, "medium": 3, "low": 1, "verifiedClosed": 7, "open": 0},
+  "decision": "pass_with_external_conditions",
+  "evidence": "quality/evidence/fablecut-deep-review-r4-local-verification-2026-08-31.json",
+  "limitations": [
+    "Producer review cannot self-approve independent final review.",
+    "Real creator normal-speed acceptance remains an external condition.",
+    "No commit, push, remote CI or public deployment was performed in this review turn."
+  ]
+}

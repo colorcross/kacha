@@ -14,6 +14,7 @@ import {
   compileProjectionCommand,
   resolveTimelinePath,
 } from "./timeline_projection.mjs";
+import { compileEditorOperation } from "./editor_operations.mjs";
 
 function now() {
   return new Date().toISOString();
@@ -37,10 +38,23 @@ function statePaths(timelineFile) {
   };
 }
 
+function enforcePrivateFile(file) {
+  if (process.platform === "win32" || !fs.existsSync(file)) return;
+  const stat = fs.lstatSync(file);
+  if (stat.isFile() && !stat.isSymbolicLink()) fs.chmodSync(file, 0o600);
+}
+
+function enforcePrivateState(paths) {
+  for (const file of [paths.session, paths.journal, paths.recovery]) enforcePrivateFile(file);
+  if (!fs.existsSync(paths.snapshots) || !fs.statSync(paths.snapshots).isDirectory()) return;
+  for (const name of fs.readdirSync(paths.snapshots)) enforcePrivateFile(path.join(paths.snapshots, name));
+}
+
 function writeSnapshot(paths, value) {
   const digest = sha256Value(value);
   const file = path.join(paths.snapshots, `${digest}.json`);
-  if (!fs.existsSync(file)) writeJsonAtomic(file, value);
+  if (!fs.existsSync(file)) writeJsonAtomic(file, value, { mode: 0o600 });
+  enforcePrivateFile(file);
   return { path: file, sha256: sha256File(file) };
 }
 
@@ -132,6 +146,7 @@ function appendRecord(paths, record) {
   };
   const descriptor = fs.openSync(paths.journal, "a", 0o600);
   try {
+    if (process.platform !== "win32") fs.fchmodSync(descriptor, 0o600);
     const payload = Buffer.from(`${JSON.stringify(next)}\n`);
     let offset = 0;
     while (offset < payload.length) {
@@ -189,6 +204,7 @@ function existingSession(timelineFile) {
   const resolved = resolveTimelinePath(timelineFile);
   const paths = statePaths(resolved);
   if (!fs.existsSync(paths.session)) return null;
+  enforcePrivateState(paths);
   const session = readJson(paths.session);
   validateSession(session, resolved);
   return { resolved, paths, session };
@@ -221,8 +237,11 @@ function safeSnapshot(paths, reference) {
   if (!reference?.path || !/^[a-f0-9]{64}$/.test(String(reference.sha256 ?? ""))) {
     throw new Error("恢复快照引用无效");
   }
-  const snapshot = path.resolve(reference.path);
-  const relative = path.relative(path.resolve(paths.snapshots), snapshot);
+  const requested = path.resolve(reference.path);
+  if (!fs.existsSync(requested)) throw new Error("恢复快照不存在或摘要失效");
+  const snapshotsRoot = fs.realpathSync(paths.snapshots);
+  const snapshot = fs.realpathSync(requested);
+  const relative = path.relative(snapshotsRoot, snapshot);
   if (relative.startsWith("..") || path.isAbsolute(relative)) throw new Error("恢复快照越出 snapshots 目录");
   if (!fs.existsSync(snapshot) || !fs.statSync(snapshot).isFile() || sha256File(snapshot) !== reference.sha256) {
     throw new Error("恢复快照不存在或摘要失效");
@@ -266,11 +285,12 @@ function expectedSha(value, current) {
   if (value !== current) throw new Error(`Timeline 当前 SHA 已变化：expected ${value}, current ${current}`);
 }
 
-function loadOrCreateSession(timelineFile) {
+function loadOrCreateSession(timelineFile, { includeSourceHash = false } = {}) {
   const resolved = resolveTimelinePath(timelineFile);
   const paths = statePaths(resolved);
-  const projection = buildTimelineProjection(resolved);
+  const projection = buildTimelineProjection(resolved, { includeSourceHash });
   fs.mkdirSync(paths.snapshots, { recursive: true });
+  enforcePrivateState(paths);
   let session;
   if (fs.existsSync(paths.session)) {
     session = readJson(paths.session);
@@ -290,7 +310,7 @@ function loadOrCreateSession(timelineFile) {
       redoStack: [],
     };
     session.initialSnapshot = writeSnapshot(paths, readJson(resolved));
-    writeJsonAtomic(paths.session, session);
+    writeJsonAtomic(paths.session, session, { mode: 0o600 });
   }
   return { session, paths, projection };
 }
@@ -306,6 +326,13 @@ function assertCurrent(session, timelineFile, expectedSha = null) {
   return current;
 }
 
+function requiredMutationSha(value, label = "baseSha256") {
+  if (!/^[a-f0-9]{64}$/.test(String(value ?? ""))) {
+    throw new Error(`${label} 必须是当前 Timeline 的 64 位小写 SHA-256`);
+  }
+  return value;
+}
+
 function commandRecord(records, commandId) {
   const record = records.find((entry) => entry.action === "apply" && entry.commandId === commandId);
   if (!record) throw new Error(`历史 command 不存在：${commandId}`);
@@ -313,7 +340,9 @@ function commandRecord(records, commandId) {
 }
 
 function auditText(value, fallback, label) {
-  const normalized = String(value ?? fallback).trim();
+  const candidate = value ?? fallback;
+  if (typeof candidate !== "string") throw new Error(`${label} 必须为 1–500 个无控制符字符`);
+  const normalized = candidate.trim();
   if (!normalized || normalized.length > 500 || /[\u0000-\u001f\u007f]/.test(normalized)) {
     throw new Error(`${label} 必须为 1–500 个无控制符字符`);
   }
@@ -350,18 +379,19 @@ function applyOperationsToTimeline({ timelineFile, operations, expectedSha, path
   };
 }
 
-export function openEditorProject(timelineFile) {
-  const { session, paths, projection } = loadOrCreateSession(timelineFile);
-  const currentSha256 = sha256File(session.timelinePath);
-  const synchronized = currentSha256 === session.currentSha256
-    && currentSha256 === projection.timeline.sha256;
+export function openEditorProject(timelineFile, { includeSourceHash = false } = {}) {
+  const { session, paths, projection } = loadOrCreateSession(timelineFile, { includeSourceHash });
+  const timelineSha256 = sha256File(session.timelinePath);
+  const synchronized = timelineSha256 === session.currentSha256
+    && timelineSha256 === projection.timeline.sha256;
   return {
     schemaVersion: "1.0",
     status: synchronized ? "pass" : "conflict",
     session: {
       sessionId: session.sessionId,
       timelinePath: session.timelinePath,
-      currentSha256,
+      currentSha256: session.currentSha256,
+      timelineSha256,
       synchronized,
       timebase: session.timebase ?? projection.timebase,
       canUndo: session.undoStack.length > 0,
@@ -374,13 +404,16 @@ export function openEditorProject(timelineFile) {
 
 export function applyEditorCommand(timelineFile, command) {
   const resolved = resolveTimelinePath(timelineFile);
+  const requestedBaseSha256 = requiredMutationSha(command?.baseSha256);
   const { session, paths } = loadOrCreateSession(resolved);
   const release = acquireFileLock(paths.lock, { purpose: "editor-command" });
   try {
     validateRecordChain(readJournal(paths).records);
-    const currentSha = assertCurrent(session, resolved, command?.baseSha256 ?? null);
+    const currentSha = assertCurrent(session, resolved, requestedBaseSha256);
     const projection = buildTimelineProjection(resolved);
-    const compiled = compileProjectionCommand(projection, command);
+    const compiled = command?.operation
+      ? compileEditorOperation(projection, command)
+      : compileProjectionCommand(projection, command);
     const existingRecords = readJournal(paths).records;
     if (command.commandId && existingRecords.some((entry) => entry.commandId === command.commandId)) {
       throw new Error(`commandId 已存在：${command.commandId}`);
@@ -402,7 +435,8 @@ export function applyEditorCommand(timelineFile, command) {
         at: now(),
         actor: auditText(command.actor, "agent", "actor"),
         reason: auditText(command.reason, "timeline adjustment", "reason"),
-        itemId: command.itemId,
+        itemId: command.itemId ?? null,
+        operation: command.operation ?? "set",
         beforeSha256: applied.beforeSha256,
         afterSha256: applied.afterSha256,
         forwardOperations: compiled.operations,
@@ -420,7 +454,7 @@ export function applyEditorCommand(timelineFile, command) {
     session.undoStack.push(commandId);
     session.redoStack = [];
     try {
-      writeJsonAtomic(paths.session, session);
+      writeJsonAtomic(paths.session, session, { mode: 0o600 });
     } catch (error) {
       writeJsonAtomic(resolved, readJson(applied.beforeSnapshot.path));
       restoreJournal(paths, appended.previous);
@@ -440,12 +474,13 @@ export function applyEditorCommand(timelineFile, command) {
   }
 }
 
-function replayStack(timelineFile, action) {
+function replayStack(timelineFile, action, expectedCurrentSha256) {
   const resolved = resolveTimelinePath(timelineFile);
+  const requestedBaseSha256 = requiredMutationSha(expectedCurrentSha256, "expectedCurrentSha256");
   const { session, paths } = loadOrCreateSession(resolved);
   const release = acquireFileLock(paths.lock, { purpose: `editor-${action}` });
   try {
-    const currentSha = assertCurrent(session, resolved);
+    const currentSha = assertCurrent(session, resolved, requestedBaseSha256);
     const { records } = readJournal(paths);
     validateRecordChain(records);
     const sourceStack = action === "undo" ? session.undoStack : session.redoStack;
@@ -486,7 +521,7 @@ function replayStack(timelineFile, action) {
     session.currentSha256 = applied.afterSha256;
     session.updatedAt = now();
     try {
-      writeJsonAtomic(paths.session, session);
+      writeJsonAtomic(paths.session, session, { mode: 0o600 });
     } catch (error) {
       writeJsonAtomic(resolved, readJson(applied.beforeSnapshot.path));
       restoreJournal(paths, appended.previous);
@@ -506,12 +541,12 @@ function replayStack(timelineFile, action) {
   }
 }
 
-export function undoEditorCommand(timelineFile) {
-  return replayStack(timelineFile, "undo");
+export function undoEditorCommand(timelineFile, expectedCurrentSha256) {
+  return replayStack(timelineFile, "undo", expectedCurrentSha256);
 }
 
-export function redoEditorCommand(timelineFile) {
-  return replayStack(timelineFile, "redo");
+export function redoEditorCommand(timelineFile, expectedCurrentSha256) {
+  return replayStack(timelineFile, "redo", expectedCurrentSha256);
 }
 
 export function recoverEditorProject(
@@ -578,7 +613,7 @@ export function recoverEditorProject(
       session.undoStack = stacks.undoStack;
       session.redoStack = stacks.redoStack;
       session.recoveryCount = Number(session.recoveryCount ?? 0) + 1;
-      writeJsonAtomic(paths.session, session);
+      writeJsonAtomic(paths.session, session, { mode: 0o600 });
       return {
         schemaVersion: "1.0",
         status: "pass",
@@ -631,7 +666,7 @@ export function reopenEditorProject(
         undoStack: [],
         redoStack: [],
       };
-      writeJsonAtomic(paths.session, session);
+      writeJsonAtomic(paths.session, session, { mode: 0o600 });
       return {
         schemaVersion: "1.0",
         status: "pass",
@@ -676,7 +711,7 @@ export function editorHistory(timelineFile) {
     recommendedAction: status === "pass" ? "none" : "restore_last_valid_snapshot_or_reopen",
     observedAt: now(),
   };
-  writeJsonAtomic(paths.recovery, recovery);
+  writeJsonAtomic(paths.recovery, recovery, { mode: 0o600 });
   return {
     ...recovery,
     canUndo: session.undoStack.length > 0,
@@ -691,6 +726,7 @@ export function editorHistory(timelineFile) {
       afterSha256: record.afterSha256,
       affectedTracks: record.affectedTracks,
       requiredQc: record.requiredQc,
+      operation: record.operation ?? "set",
       recordDigest: record.recordDigest,
     })),
   };

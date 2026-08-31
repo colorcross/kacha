@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "id": "io.kacha.local",
+  "name": "kacha",
+  "title": "咔嚓本地人机共编控制面",
+  "transport": "stdio",
+  "entrypoint": "scripts/kacha_mcp_server.mjs",
+  "protocolVersions": ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"],
+  "requiredConfiguration": {
+    "projectRoot": {
+      "type": "directory",
+      "secret": false,
+      "description": "当前允许咔嚓 MCP 读写的唯一项目根目录。"
+    }
+  },
+  "security": {
+    "localOnly": true,
+    "networkAccess": false,
+    "rootConfined": true,
+    "wholeProjectOverwrite": false,
+    "forceMutation": false,
+    "mutationContract": "Timeline SHA + allowlist + Command Journal + undo/redo + required QC"
+  },
+  "renderBoundary": {
+    "preview": "approximate",
+    "final": "ffmpeg-render-graph-only"
+  }
+}

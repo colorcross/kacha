@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0",
+  "status": "passed_and_installed",
+  "verifiedAt": "2026-08-31T07:40:00Z",
+  "sourceBaseline": "02c074ae9d20c20b95295bac7ba96af3de4a752f",
+  "checks": [
+    {"id": "static", "command": "make check-static", "status": "passed", "evidence": "JavaScript/shell/Python syntax, secret scan and product truth"},
+    {"id": "full-regression", "command": "node tests/run_tests.mjs", "status": "passed", "discovered": 160, "passed": 160, "failed": 0},
+    {"id": "mcp", "command": "node tests/mcp_server_tests.mjs", "status": "passed", "evidence": "modern and legacy lifecycle, SHA mutation, root and argument boundaries"},
+    {"id": "distribution", "command": "node tests/workbench_distribution_tests.mjs", "status": "passed", "evidence": "Codex/Claude configs, offline demo, MCP manifest and bundle-safe brand asset"},
+    {"id": "installer", "command": "bash tests/test_installer.sh", "status": "passed", "evidence": "isolated Codex and Claude targets plus no-overwrite behavior"},
+    {"id": "website", "command": "make check-website", "status": "passed", "evidence": "lint, typecheck, static Pages packaging and dependency policy"},
+    {"id": "browser", "command": "Playwright CLI real Chromium", "status": "passed_after_fix", "evidenceRef": "quality/evidence/fablecut-workbench-browser-2026-08-31.json"},
+    {"id": "local-install", "command": "node scripts/kacha.mjs install sync --source . --agent both --apply", "status": "passed", "evidenceRef": "quality/evidence/fablecut-local-install-2026-08-31.json"},
+    {"id": "local-mcp", "command": "node scripts/kacha.mjs mcp-config install --client <codex|claude> --apply", "status": "passed", "evidence": "Codex enabled readback and Claude connected readback"}
+  ],
+  "productTruth": {"regressionChecks": 160, "templates": 65, "designEntries": 69, "coreResources": 23, "assignableEffects": 132},
+  "limitations": [
+    "This is local producer evidence, not independent review or remote CI readback.",
+    "The browser and first-run fixtures are synthetic and do not establish real-video creator acceptance."
+  ]
+}

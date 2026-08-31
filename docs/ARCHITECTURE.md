@@ -80,6 +80,24 @@ allowlist 和只读原因；projection 不保存第二份工程状态。
 session 和 journal；`reopen` 用于显式接受合法外部修改并建立新 session。操作级
 journal 不替代 V3 version delta、V7 orchestration 或 release 状态。
 
+V2 编辑操作在同一条 journal 路径上补充批量移动、修剪、分割、EDL 显式重排、
+Marker、工作区、多交付画幅、素材替换以及 overlay `x/y` 键帧。主画面位置移动
+没有被伪装成通用拖拽；存在已执行转场时，结构编辑失败关闭。Marker、工作区和
+交付画幅属于 `timeline.editor` 的工作流元数据，不进入 Render Graph digest；
+overlay 键帧属于正式画面状态，会编译为 FFmpeg 逐帧表达式并改变 graph digest。
+Session 头 SHA 与现场 Timeline SHA 分开返回，冲突时不会用外部文件值覆盖 journal
+基线。Session、recovery、journal 和 snapshots 以 `0600` 写入，打开旧状态时也会收紧
+既有普通文件权限。
+
+Studio `/editor` 的源媒体波形由受并发、尺寸、时限和缓存上限约束的异步 FFmpeg
+端点生成；Project Bin 只显示当前 `.kacha/media-index.json` 中仍匹配强身份、许可
+与来源证据的素材。替换媒体必须重新校验索引摘要和素材身份。页面使用 session
+作用域的 loopback SSE 接收 Timeline SHA/revision；原生 EventSource 无法设置自定义
+请求头，因此该只读流改用不可猜 session、Host 与 Origin 三重边界，所有写请求仍
+保留原有本地请求标记。
+Studio 打开 Timeline 时计算源媒体 SHA-256；如果 `source.sha256` 已声明，不匹配则
+直接失败。SSE 连接同样受 12 小时 session TTL 约束，不能借长连接无限续期。
+
 Studio `/editor` 是校正与批准 surface。浏览器 Canvas provider 固定为近似预览，
 按 EDL 将成片播放头映射到源片区间，但不合成转场 overlap；`finalEligible=false`。
 正式成片仍由通过当前 runtime probe 的 `ffmpeg-render-graph` 生成。未来 WebGPU
@@ -122,6 +140,11 @@ Timeline IR、Render Graph 和发布门禁，引擎变化必须创建新决策�
 禁止逐镜、原文和源资产复制。版权未知、仅分析用途、许可缺少证据或源文件漂移时
 派生失败关闭。
 
+`kacha-technical-rhythm-evidence` 使用本地 FFmpeg 生成场景变化、音频能量、起音、
+下降和 BPM 候选，绑定源文件强身份与证据摘要。它明确声明不具备语义理解，beat
+grid 也不是权威事实；只能作为人工复核的候选生成证据。参考分析可绑定该证据，
+但只有权利合同允许原则派生时，技术节奏证据才能随原创方案进入后续计划。
+
 `kacha-media-corpus` 从现有 `kacha_media_index` 建立片段级时间范围、源 SHA、
 许可、文本证据和运动测量状态。检索使用 MMR 降低同源/同语义重复；当前没有
 兼容向量证据时必须返回 `keyword_fallback`，并披露视觉语义能力缺失。构建与校验
@@ -153,6 +176,20 @@ Timeline IR、Render Graph 和发布门禁，引擎变化必须创建新决策�
 
 控制面服务 Agent 聊天，不是第二套编辑器。它缩小模型读取和等待范围，正式
 版本仍进入 Timeline IR、Render Graph、v3 依赖失效和发布门禁。
+
+### 本地 MCP 控制面
+
+`kacha_mcp_server.mjs` 通过 newline-delimited JSON-RPC `stdio` 暴露紧凑的
+Timeline inspect/query、Project Bin、project status 与 SHA 锁定 editor
+apply/history/undo/redo。启动时必须传绝对 `--root`；所有路径先 realpath，再检查
+仍位于该根目录。tool 参数是 closed schema，未知字段拒绝，服务不能整项目覆盖、
+不能强制绕过冲突，也不拥有渲染或发布权限。
+
+实现同时支持当前 `server/discover` 协议与仍使用 `initialize` 的旧客户端，stdout
+只输出协议消息，诊断写 stderr。`mcp-config` 根据本机 Codex / Claude Code CLI
+生成或显式安装 stdio 配置；检测到同名服务时拒绝隐式覆盖。
+安装命令成功不等于完成；必须回读并精确匹配服务名、Node 可执行文件、server script、
+`--root` 和项目根目录，任一绑定不符都按安装失败处理。
 
 ### `generatedShotPlan`
 
@@ -258,6 +295,9 @@ start ──► 方案确认 ──► 首剪确认 ──► 成片审阅 ─�
   关键帧语义。
 - `delta / media / jobs / refs / install`：Agent 对话控制面，分别处理操作级
   变化、本地语义素材、后台任务与 placeholder、对象短引用和双端同步状态；
+- `mcp / mcp-config`：项目根目录受限的双协议 stdio 工具面，以及 Codex / Claude
+  Code 客户端配置生成与显式安装；
+- `rhythm`：本地生成只作为候选的节奏技术证据，不声称音乐或叙事语义；
   不改变既有项目状态机或授权边界。
 - `editor`：读取 Timebase V2 Timeline Projection，并通过 Command Journal 完成
   受 allowlist 和 SHA 保护的 apply/undo/redo；不拥有渲染、QC 或发布授权。

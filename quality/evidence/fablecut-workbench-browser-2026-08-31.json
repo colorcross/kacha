@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0",
+  "status": "passed_after_fix",
+  "verifiedAt": "2026-08-31T07:15:58Z",
+  "tool": "Playwright CLI wrapper with real Chromium",
+  "origin": "loopback test server",
+  "fixture": "examples/first-run/demo.mjs plus a synthetic owned Project Bin asset",
+  "journeys": [
+    "open Timeline IR and establish session-scoped LIVE revision stream",
+    "load bounded waveform and rights-visible Project Bin",
+    "select an overlay and expose editable fields plus FFmpeg-final keyframes",
+    "replace the overlay from the current owned indexed asset",
+    "add a marker and undo it through the Command Journal",
+    "verify responsive open workbench at 1440x1000 and 390x844"
+  ],
+  "firstPassFinding": {
+    "severity": "high",
+    "problem": "resize before opening a Timeline dereferenced null projection.editor",
+    "fix": "renderTimelineOverlays now clears layers and returns when no projection exists",
+    "verification": "reload, resize and open journeys complete with zero console errors"
+  },
+  "visualReviewFinding": {
+    "severity": "medium",
+    "problem": "mobile toolbar buttons shrank Chinese labels into vertical characters",
+    "fix": "tool groups no longer shrink and labels remain nowrap inside the horizontal scroller",
+    "verification": "390px open-workbench screenshot has horizontal labels and no document overflow"
+  },
+  "results": {
+    "desktop": {"viewport": "1440x1000", "scrollWidth": 1440, "innerWidth": 1440, "consoleErrors": 0},
+    "mobile": {"viewport": "390x844", "scrollWidth": 390, "innerWidth": 390, "consoleErrors": 0},
+    "liveState": "LIVE",
+    "approximatePreviewDisclosure": "visible",
+    "projectBin": "3 items, owned evidence visible, stale excluded count visible",
+    "undo": "passed"
+  },
+  "screenshots": [
+    {"path": "output/playwright/kacha-workbench-v2-desktop.png", "sha256": "e8d16a3ec536e7ccfba7cdef7bb7b28f2545298f32e19a3d3266a4ab385dbb32", "bytes": 198219},
+    {"path": "output/playwright/kacha-workbench-v2-mobile-fixed-open.png", "sha256": "a3abd7fe942858c6a765fe35efdce3d91c10cc5025d3b3f04c7be706ef6cc4e3", "bytes": 129504}
+  ],
+  "limitations": [
+    "The fixture is synthetic and does not establish creator-quality acceptance.",
+    "Screenshots are local ignored artifacts; their hashes preserve this review evidence but they are not release assets."
+  ]
+}

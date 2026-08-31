@@ -1,6 +1,6 @@
 # Business rules
 
-> 对账修订：`kacha-product-optimization-2026-08-30`。
+> 对账修订：`kacha-human-agent-editing-2026-08-31`。
 
 ## 角色、权限与权益
 
@@ -33,6 +33,20 @@ Editor 文件身份绑定 realpath；浏览器 session 不能把写入路径带�
 重开都必须命中调用时的当前 SHA，恢复只信任 snapshots 目录内摘要匹配的快照，
 重开只接受可通过 Projection 合同的当前 Timeline。FFmpeg 的静态登记不等于本机
 可用，final eligibility 还必须通过当前 runtime probe。
+Studio 打开时必须验证已声明的 `source.sha256`；Editor 的 session、journal、
+recovery 和 snapshot 文件必须保持 `0600`。播放头发起的 Marker、工作区和分割必须
+在进入 Timeline 合同前对齐整帧 tick。
+
+MCP 启动必须绑定绝对项目根目录，所有参数使用 closed schema，所有文件先做
+realpath 边界校验。只读工具不能泄露根目录外信息；写工具不能绕过 Timeline SHA、
+Command Journal、快照、undo/redo 或 required QC。注册 MCP 不增加上传、费用、渲染、
+发布或整项目覆盖权限。
+MCP 安装读回必须匹配 name、executable、server script 和完整 `--root` 边界；
+仅返回成功退出码不能记为已安装。
+
+节奏分析只形成技术候选，并绑定当前源文件身份；不得把 scene score、能量、起音、
+下降或 BPM 候选写成叙事/音乐事实。参考权利未知或未允许原则派生时，即使已有节奏
+证据也不得生成可执行原创方案。
 
 安装渠道只有 `stable`、`canary` 和显式 `custom`。stable/canary 的 ref 只由
 `config/release-channels.json` 决定，环境变量不能覆盖；stdin 安装可下载该合同，

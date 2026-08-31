@@ -48,11 +48,15 @@ export function readJson(file) {
   return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
-export function writeJsonAtomic(file, value) {
+export function writeJsonAtomic(file, value, { mode = null } = {}) {
   const resolved = path.resolve(file);
   fs.mkdirSync(path.dirname(resolved), { recursive: true });
   const temporary = `${resolved}.tmp-${process.pid}-${Date.now()}`;
-  fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`);
+  fs.writeFileSync(
+    temporary,
+    `${JSON.stringify(value, null, 2)}\n`,
+    mode === null ? undefined : { mode },
+  );
   fs.renameSync(temporary, resolved);
 }
 

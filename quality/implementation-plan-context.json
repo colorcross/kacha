@@ -1,43 +1,46 @@
 {
   "schemaVersion": 1,
-  "contextRevision": "kacha-product-optimization-context-r1",
+  "contextRevision": "kacha-human-agent-editing-context-r2",
   "project": "咔嚓 Kacha",
-  "sourceRevision": "51e0e782ec2554e0e070a3d3c779a58f55cb48a3",
-  "observedAt": "2026-08-30T12:20:00Z",
+  "sourceRevision": "02c074ae9d20c20b95295bac7ba96af3de4a752f",
+  "observedAt": "2026-08-31T06:39:57Z",
   "producer": "codex-primary",
   "facts": [
-    "Baseline full regression passes 159 of 159 tests.",
-    "The official piped installer exits 2 before dry-run.",
-    "Warm Studio bootstrap still repeats 8.5 to 11.6 seconds of immutable catalog validation."
+    "Timeline IR 1.0 with Timebase V2 is canonical and FFmpeg Render Graph is the only final-eligible renderer.",
+    "The Workbench projects seven track types, but direct manipulation is limited to overlay x/y and inspector numeric edits.",
+    "Mutations already use item allowlists, base SHA-256 locking, atomic writes, snapshots and a digest-chained Command Journal.",
+    "Kacha already has a local media index, provenance-aware clip corpus, reference-rights gating and clean-room derived plans.",
+    "The repository has no first-class client-neutral Kacha MCP server and Studio has no live editor event stream.",
+    "Node v24.18.1, FFmpeg 8.1.2, npx, Codex and Claude Code are present on the audit host.",
+    "Current MCP is 2026-07-28; installed hosts may still use the 2025-11-25 initialize lifecycle; stdio remains newline-delimited JSON-RPC."
   ],
   "constraints": [
-    "Preserve Timeline IR, FFmpeg final rendering, local-first privacy and fail-closed behavior.",
-    "Do not create a GitHub Release or add third-party analytics.",
-    "Commit and push the reviewed code, then deploy the exact local bundle to Codex and Claude Code."
+    "Preserve Agent-first and local-first behavior; Workbench remains an optional correction and approval surface.",
+    "Do not create a second project model, whole-project overwrite endpoint, force flag, silent download or browser-final renderer.",
+    "Every mutation must carry current Timeline SHA and enter the existing Command Journal with rollback evidence and required QC.",
+    "Reference rhythm analysis requires rights intake and feeds an original Kacha plan, never a shot-for-shot remake.",
+    "No public registry submission, paid call, external media upload, Git commit or push is authorized by this turn.",
+    "Public bundles keep excluding project media, private fonts, SFX sources, quality evidence and AppCreate tooling."
   ],
   "assumptions": [
-    "Website changes continue to deploy through the existing GitHub Pages workflow after push."
+    "Professional workbench completion means the selected high-value operations are safe and usable, not general NLE parity.",
+    "Legacy MCP clients require 2025-11-25 compatibility even when current stateless discovery is also supported.",
+    "Project Bin can use existing media-index and corpus contracts without a database."
   ],
   "unknowns": [
-    "Independent final review and real-project human output acceptance are not available inside this producer turn.",
-    "External adoption, retention and business outcomes remain unmeasured."
+    "Independent final review is unavailable inside the producer turn.",
+    "Real creator normal-speed acceptance and output-quality improvement require a user project and human review.",
+    "Official MCP Registry or MCPB publication acceptance is external and not authorized.",
+    "Every third-party MCP host's exact feature support cannot be inferred from local protocol tests."
   ],
   "sources": [
-    {
-      "path": "quality/product-audit-roadmap-2026-08-30.json",
-      "role": "product",
-      "sha256": "sha256:927ebf80b049f7f26da86a817b676464135e5e14dfa926345e89fbb46868d7ea"
-    },
-    {
-      "path": "docs/ARCHITECTURE.md",
-      "role": "architecture-code",
-      "sha256": "sha256:5fcc727af2bc71a14f87a65eccb80d07746a02f5fa9751f1f03a89e5e56a7bb1"
-    },
-    {
-      "path": "Makefile",
-      "role": "verification",
-      "sha256": "sha256:6fc0fd6985109fb8109c68b5fc63c90a953fedca38b1dbd4f514c0cf8596ea31"
-    }
+    {"path": "docs/ARCHITECTURE.md", "role": "architecture", "sha256": "sha256:5fcc727af2bc71a14f87a65eccb80d07746a02f5fa9751f1f03a89e5e56a7bb1"},
+    {"path": "references/agent-chat-control-plane.md", "role": "agent-control-plane", "sha256": "sha256:0c31a83efe638237d54d3ff29f805647fe1d2569506b5e3c9180e65eb93c5307"},
+    {"path": "references/production-studio.md", "role": "studio-product-boundary", "sha256": "sha256:6a7ae1db71250c0db7ae5a155ee847a9686fb745bf62f8680c6238c4c2381e96"},
+    {"path": "quality/evidence/opencut-editor-local-verification.json", "role": "prior-editor-baseline", "sha256": "sha256:dc9748e8cf6118765fe7f84d383320a222fe3f7fa9d3353b159428f45db92900"},
+    {"path": "https://modelcontextprotocol.io/specification/2025-11-25/basic/transports", "role": "official-mcp-stdio-contract", "observedAt": "2026-08-31T06:35:00Z"},
+    {"path": "https://blog.modelcontextprotocol.io/posts/2026-07-28/", "role": "official-current-mcp-revision", "observedAt": "2026-08-31T06:35:00Z"}
   ],
-  "digest": "sha256:a0287d52537fb954be45d0b35cf47c63d2fdd8a101b44cc15db46cecc9672753"
+  "digestAlgorithm": "sha256-canonical-json-without-digest",
+  "digest": "sha256:cdeb89ae91663b6216ec7fe5429590b61862bb4603df69ae4a71efc15fadcae2"
 }

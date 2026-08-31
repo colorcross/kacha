@@ -81,6 +81,20 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
   Timeline Projection, and a snapshot-backed Command Journal for allowlisted
   apply/undo/redo operations. The localhost `/editor` surface remains a
   correction workbench, not a second timeline source.
+- Extends that workbench with multi-select snapping, trim/split/explicit EDL
+  reorder, markers, a work area, delivery-frame guides, bounded asynchronous
+  waveforms, a license-visible Project Bin, and overlay `x/y` keyframes that
+  compile into the canonical FFmpeg final graph.
+  Studio verifies a declared source SHA-256 on open, frame-aligns playhead edits,
+  and keeps editor history/snapshots private with mode `0600`.
+- Exposes compact read and SHA-locked edit tools through a project-root-confined
+  local stdio MCP server for Codex and Claude Code. MCP registration grants no
+  upload, paid-call, final-render, publishing, or whole-project overwrite rights.
+  Explicit installation is only accepted after readback matches the executable,
+  server script, and complete confined root.
+- Generates strong-identity technical rhythm evidence for scene-change, energy,
+  onset, drop, and BPM candidates while explicitly denying semantic or
+  authoritative beat-grid claims.
 - Compiles an episode-level director plan with a narrative spine, exactly one
   opening, content priority, high-impact budget, deliberate quiet, five style
   grammars, fallbacks, and explicit evidence gaps.
@@ -172,7 +186,7 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Provides two-stage intermediate cleanup: routine cleanup only for user-unneeded, fast-regenerating caches, and final cleanup only after explicit no-more-edits confirmation.
 - Records AI-generated shot plans with provider, model, capability snapshot, paid-call authorization, and QC targets.
 - Runs automated media checks and requires separate human-review evidence before local release.
-  The current full regression discovers 159 checks.
+  The current full regression discovers 160 checks.
 - Keeps uploads, publishing, purchases, and paid generation outside the default authorization boundary.
 
 <p align="center">

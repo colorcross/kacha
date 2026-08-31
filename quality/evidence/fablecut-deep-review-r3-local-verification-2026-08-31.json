@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "1.0",
+  "evidenceId": "kacha-fablecut-deep-review-r3-local-verification-2026-08-31",
+  "status": "pass",
+  "verifiedAt": "2026-08-31T10:22:05Z",
+  "baselineRevision": "02c074ae9d20c20b95295bac7ba96af3de4a752f",
+  "candidateState": "dirty-uncommitted-worktree",
+  "reviewRecord": "quality/fablecut-informed-deep-review-r3-2026-08-31.json",
+  "candidateWorktreeSha256BeforeEvidenceClose": "29222fb5ea83ac5697c50808d97e47ba75d0877d6e2a488e1ff53c082a29f992",
+  "findings": {"total": 10, "high": 4, "medium": 5, "low": 1, "verifiedClosed": 10, "open": 0},
+  "checks": [
+    {"command": "make check-full", "status": "pass", "evidence": "160/160 main regressions, MCP protocol/security, Workbench distribution, isolated dual-agent installer and secret scan passed."},
+    {"command": "make check-website", "status": "pass", "evidence": "Lint, TypeScript, Chinese/English GitHub Pages packaging and dependency audit passed; production vulnerabilities 0."},
+    {"command": "node tests/run_tests.mjs --suite editor", "status": "pass", "evidence": "6/6 editor tests passed after final permission migration and strict scalar remediation."},
+    {"command": "node tests/workbench_distribution_tests.mjs", "status": "pass", "evidence": "MCP wrong-root and prefix-confusable-root readback fail closed; exact binding passes."},
+    {"command": "make check-static", "status": "pass", "evidence": "JavaScript, shell and Python syntax, secret scan and derived product truth passed after final changes."},
+    {"command": "Playwright Chromium 1440x900", "status": "pass", "evidence": "0.413-second playhead marker aligned to tick 48000; click on ruler child sought to 2.120 seconds; zero page or console errors."},
+    {"command": "node scripts/kacha.mjs install sync --source . --agent both --apply", "status": "pass", "evidence": "Isolated pre-install full regression passed and both local targets synchronized atomically with backup."},
+    {"command": "node scripts/kacha.mjs install status --source . --agent both", "status": "pass", "evidence": "Codex and Claude targets both read back current at the same bundle digest."},
+    {"command": "codex mcp get kacha-local && claude mcp get kacha-local", "status": "pass", "evidence": "Codex reports enabled and Claude reports connected; both retain the project-parent confined root and synchronized installed scripts."}
+  ],
+  "browserEvidence": {
+    "viewport": "1440x900",
+    "playheadSeconds": 0.413,
+    "writtenMarkerTick": 48000,
+    "ticksPerFrame": 4800,
+    "rulerChildClickTimecode": "00:00:02.120",
+    "consoleErrors": 0
+  },
+  "localDistribution": {
+    "bundleDigest": "62124fcbd75db3e6cd176c9f1fa88d60228d7eec663780514b5a05e92fc3ab35",
+    "contentSha256": "050c79ae18968699d71cb41e5f0645042fb015677c55a044743e476cf9ac4937",
+    "codexTarget": "home:.codex/skills/kacha",
+    "claudeTarget": "home:.claude/skills/kacha",
+    "backupRoot": "home:.kacha-backups/2026-08-31T10-21-14-597Z-16745",
+    "mcpServerSha256": "fdaf893697989c20bffb00108d310bddfcdc9cea60e6d9e1ba8be6f6fda6b6fc"
+  },
+  "fileSha256": {
+    "scripts/editor_operations.mjs": "69fe1582dc379272ab8fd61f9b7eafef7e8c4aa20f00eaa5c93d938742efe523",
+    "scripts/editor_command_journal.mjs": "0d598278f5512bc5a78370cc5fce402d999f760c924111cc086cba000cbc5f2d",
+    "scripts/kacha_mcp_config.mjs": "75e0bbd580642ecf1adfac0c9ac4908f6a173a676daa1ce3056f7826cc9abbdb",
+    "scripts/project_bin.mjs": "d751e22eed969d866f75eca6887b94f5f16b679605ed7159628187d9ee6eacf8",
+    "scripts/timeline_projection.mjs": "54817cec537eebaf52c4abdde88825ef50605b3cc83e7e9b3f66f843d7f30fc8",
+    "scripts/timeline_ir.mjs": "f50896eeacc160a15e8a9de0a6be8166a92dd5ae28485d42cc387b6ba62d2c99",
+    "scripts/kacha_studio_server.mjs": "6665835cf8ea5171206a91f84c3bd17afb1c4e188c5241a73588628f66e21fc0",
+    "studio/editor.js": "bb29abb2674f16a969cca39b0c31f0dc34bb7fe331ad3fdbdb0ef9cc54af88e3"
+  },
+  "claimsBoundary": [
+    "This is producer-owned local verification, not independent approval.",
+    "Normal-speed creator acceptance on real production material remains external.",
+    "No commit, push, remote CI or public deployment was performed in this review turn."
+  ]
+}

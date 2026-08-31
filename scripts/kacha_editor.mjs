@@ -93,9 +93,13 @@ if (action === "command") {
     if (!commandFile || !fs.existsSync(commandFile)) fail("--command 文件不存在", 2);
     print(applyEditorCommand(timeline, readJson(path.resolve(commandFile))));
   } else if (commandAction === "undo") {
-    print(undoEditorCommand(timeline));
+    const expectedCurrentSha256 = option("--expected-sha");
+    if (!expectedCurrentSha256) fail("undo 必须提供 --expected-sha", 2);
+    print(undoEditorCommand(timeline, expectedCurrentSha256));
   } else if (commandAction === "redo") {
-    print(redoEditorCommand(timeline));
+    const expectedCurrentSha256 = option("--expected-sha");
+    if (!expectedCurrentSha256) fail("redo 必须提供 --expected-sha", 2);
+    print(redoEditorCommand(timeline, expectedCurrentSha256));
   } else {
     fail("editor command 只支持 apply|undo|redo", 2);
   }
@@ -141,7 +145,8 @@ if (action === "preview-eligibility") {
 
 fail(
   "用法：kacha editor inspect|project|query|history --timeline FILE\n"
-    + "  kacha editor command apply|undo|redo --timeline FILE [--command FILE]\n"
+    + "  kacha editor command apply --timeline FILE --command FILE\n"
+    + "  kacha editor command undo|redo --timeline FILE --expected-sha SHA\n"
     + "  kacha editor recover|reopen --timeline FILE --expected-sha SHA [--actor NAME --reason TEXT]\n"
     + "  kacha editor preview-capabilities\n"
     + "  kacha editor preview-eligibility --provider ID --purpose preview|final",

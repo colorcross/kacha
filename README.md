@@ -62,6 +62,9 @@ AI 负责组织证据、编译计划、执行获批修改并把技术结果留�
 | 弱模型稳定生产 | 五种紧凑 packet + 十三阶段文件证据状态机，减少上下文与临场猜测 |
 | Agent 对话控制面 | 自然语言仍是主入口；Mutation Delta、确定性对象 `@` 引用、本地句向量素材搜索和终态受保护的异步任务在后台运行 |
 | 精确时间与调整工作台 | 120000 tick/s、有理帧率、类型化 Timeline Projection、Command Journal、撤销/重做和本地 `/editor` 校正界面 |
+| 人机共编 Workbench V2 | 多选吸附、trim/split/EDL 重排、Marker/工作区、多画幅安全框、异步波形、许可可见 Project Bin 与 FFmpeg 终渲染键帧 |
+| Codex / Claude MCP | 根目录受限的本地 stdio 工具面；紧凑读取和 SHA 锁定写入复用同一 Timeline IR 与 Command Journal |
+| 技术节奏证据 | 本地提取场景变化、能量、起音、下降和 BPM 候选；强制标明非语义、非权威 beat grid，并绑定参考片权利流程 |
 | 治理式能力路由 | 先按可用性、模式、隐私、许可和费用做硬排除，再输出带探测证据的逐维排名；不让总分绕过红线 |
 | 费用账本 | 估算、预占、超阈值审批、对账和退款使用项目级原子状态机；未知费用不等于免费 |
 | 参考片到原创方案 | 冻结本地参考文件身份和版权状态，把可借鉴原则、必须改造项与禁止复制项交给既有 Kacha 计划门禁 |
@@ -95,7 +98,7 @@ AI 负责组织证据、编译计划、执行获批修改并把技术结果留�
 核心资源、10 种转场、5 种开场、5 种画面呼吸运动、7 种口播字幕布局，以及
 从 6 条参考视频中验证出的 33 种语义网感机制。机制可从最终带时间文稿生成
 帧级计划、进入完整视频渲染，并通过摘要、资源、时序与媒体保真门禁。
-当前仓库完整回归为 159 项；五套图库另有语义三元组、跨风格重复、同风格未声明
+当前仓库完整回归为 160 项；五套图库另有语义三元组、跨风格重复、同风格未声明
 近似构图、人物头部碰撞、黑块、字体和动效合同专项 QC。当前提交的 1200 组
 “效果定义—参考图—动效合同”语义三元组全部匹配，其余上述问题均为 0。
 
@@ -205,6 +208,26 @@ AI 首剪之后需要精调时，从顶部进入“调整”或打开
 显示一个主画面；正式成片仍需重新运行 FFmpeg Render Graph、技术 QC 和正常速度
 人工审片。日志截断/损坏使用 `recover` 恢复最后有效快照；确认外部修改有效时使用
 `reopen` 建立新 session，两者都要求显式提供当前 SHA 并保留旧状态归档。
+
+Workbench V2 还提供多选/吸附、trim、split、EDL 显式重排、Marker、工作区、
+多交付画幅安全框、异步波形、Project Bin 和 overlay `x/y` 终渲染键帧。Project
+Bin 替换只接受当前索引中许可、来源和强身份仍有效的素材；Marker、工作区和画幅
+参考不改变 Render Graph，键帧则会进入 FFmpeg final。
+Studio 打开时会校验已声明的源媒体 SHA-256，播放头创建的编辑点统一对齐整帧；
+Editor 历史与快照以本机私有权限保存。MCP 显式安装后还会回读 executable、script 和
+完整 root 绑定，避免把“命令成功”误认为“配置正确”。
+
+可直接运行本地首跑，或为 Codex / Claude Code 生成 MCP 配置：
+
+```bash
+node examples/first-run/demo.mjs
+node scripts/kacha.mjs rhythm analyze --input REFERENCE.mp4 --output rhythm.json
+node scripts/kacha.mjs mcp-config show --client codex --root /absolute/project
+node scripts/kacha.mjs mcp-config show --client claude --root /absolute/project
+```
+
+首跑的 90 秒目标只衡量离线首次可验证编辑；MCP 注册也不授予上传、付费、正式
+渲染或发布权限。
 
 ```bash
 node scripts/kacha.mjs timeline migrate-timebase \

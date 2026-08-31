@@ -43,6 +43,9 @@ Placeholder 的 ready 状态与产物 SHA；重复对象 ID 必须使用确定�
 - `reference analyze/derive`：只接收本地、已确认来源的参考文件；版权为 `unknown`
   或仅允许 `analysis-only` 时禁止派生；`licensed`/`fair-use-review` 要求权利证据。
   派生物必须保留 `keep/change/doNotCopy` 和禁止逐镜复制合同，源文件变化后旧分析失效。
+- `rhythm analyze/validate`：只生成绑定本地源文件强身份的场景变化、能量、起音、
+  下降和 BPM 技术候选；必须保留“无语义理解、非权威 beat grid”声明。要把证据带入
+  原创方案，必须先由 `reference analyze --rhythm-evidence` 绑定，且权利允许原则派生。
 - `composition route`：`series` 与 `hero` 的必需能力和选中引擎必须落盘；引擎
   不可用时阻断并重新决策，禁止静默替换。
 - `corpus build/search`：片段必须绑定当前索引、源 SHA 和有效时间范围；源文件或
@@ -257,10 +260,12 @@ node scripts/kacha.mjs editor inspect --timeline TIMELINE.json
 node scripts/kacha.mjs editor project --timeline TIMELINE.json
 node scripts/kacha.mjs editor command apply --timeline TIMELINE.json \
   --command COMMAND.json
-node scripts/kacha.mjs editor command undo --timeline TIMELINE.json
-node scripts/kacha.mjs editor command redo --timeline TIMELINE.json
+node scripts/kacha.mjs editor command undo --timeline TIMELINE.json --expected-sha CURRENT_SHA
+node scripts/kacha.mjs editor command redo --timeline TIMELINE.json --expected-sha CURRENT_SHA
 node scripts/kacha.mjs editor recover --timeline TIMELINE.json --expected-sha CURRENT_SHA
 node scripts/kacha.mjs editor reopen --timeline TIMELINE.json --expected-sha CURRENT_SHA
+node scripts/kacha.mjs mcp-config show --client codex --root /absolute/project
+node scripts/kacha.mjs mcp-config show --client claude --root /absolute/project
 ```
 
 每次写入必须命中 item allowlist、当前 base SHA 和 Command Journal；journal 保存
@@ -268,6 +273,16 @@ forward/inverse mutation、快照、影响轨道与所需 QC。`recover` 只恢�
 快照，`reopen` 只接受合法外部修改；两者都要求当前 SHA 并归档旧状态。浏览器按
 EDL 映射源时间但不合成转场 overlap，只提供 `approximate_preview`，不能替代
 FFmpeg Render Graph 或发布审片。
+
+Workbench V2 可做多选吸附、timed-item move、trim、split、EDL 显式重排、Marker、
+工作区、多画幅安全框、异步波形、Project Bin 替换和 overlay `x/y` 键帧。Marker、
+工作区和交付画幅是非渲染 editor metadata；键帧会进入 FFmpeg final。媒体替换只
+接受当前项目索引中强身份、许可和来源仍有效的适配素材；转场已执行时结构编辑失败关闭。
+
+Codex/Claude Code 可选用根目录受限的本地 stdio MCP。所有路径必须位于启动时
+指定的绝对 `--root`，写工具仍要求 Timeline SHA 并走同一 journal。MCP 接入不授予
+上传、付费、正式渲染、发布、force mutation 或整项目覆盖权限。首次验证可运行
+`node examples/first-run/demo.mjs`；90 秒目标仅表示离线首次可验证编辑，不是成片验收。
 
 这些命令默认由 Agent 自动调用；不要把内部命令选择、索引建立或对象标注工作
 推给用户。mutation delta 是单次操作证据，v3 version delta 仍负责版本级

@@ -4,13 +4,39 @@
   "title": "Kacha Editor Command",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "kind", "itemId", "changes"],
+  "required": ["schemaVersion", "kind", "baseSha256"],
+  "oneOf": [
+    {
+      "required": ["itemId", "changes"],
+      "not": {
+        "anyOf": [
+          { "required": ["operation"] },
+          { "required": ["arguments"] }
+        ]
+      }
+    },
+    {
+      "required": ["operation", "arguments"],
+      "not": { "required": ["changes"] }
+    }
+  ],
   "properties": {
     "schemaVersion": { "const": "1.0" },
     "kind": { "const": "kacha-editor-command" },
     "commandId": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\u0000-\\u001f\\u007f]+$" },
     "baseSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "itemId": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\u0000-\\u001f\\u007f]+$" },
+    "operation": {
+      "enum": [
+        "batch", "move", "trim", "split", "reorder",
+        "marker_set", "marker_remove", "work_area_set", "work_area_clear",
+        "keyframe_set", "keyframe_remove", "delivery_frames_set", "replace_media"
+      ]
+    },
+    "arguments": {
+      "type": "object",
+      "maxProperties": 16
+    },
     "changes": {
       "type": "object",
       "minProperties": 1,

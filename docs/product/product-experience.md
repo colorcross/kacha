@@ -1,6 +1,6 @@
 # Product experience
 
-> 对账修订：`kacha-product-optimization-2026-08-30`。
+> 对账修订：`kacha-human-agent-editing-2026-08-31`。
 
 ## 信息架构与产品形态
 
@@ -20,6 +20,16 @@ Command → required QC → 撤销/重做 → 重新渲染与审片`。浏览器
 打开的 Timeline，后续请求不能改写目标路径；发现外部修改、journal 断链或 session
 过期时失败关闭。journal 损坏后可显式恢复最后有效快照；确认外部修改合法时可显式
 重开 session。播放器显示源时间，Timeline 显示并控制 EDL 映射后的成片时间。
+
+Workbench V2 将“看、选、改、验证”放在同一工作面：SSE 显示当前 revision 和冲突，
+异步波形提供时间参照，多选与吸附减少重复操作，Project Bin 明示许可和来源，
+多画幅安全框只做构图辅助。Marker、工作区和交付画幅不改变 Render Graph；overlay
+键帧会改变正式渲染图。主画面结构变化使用 split/trim/显式 EDL 重排，不能用看似
+自由拖拽的操作掩盖转场和连续性风险。
+
+Codex/Claude Code 还可通过根目录受限的 stdio MCP 读取和修改同一 Timeline；客户端
+接入不改变权限边界。首次演示提供小于 90 秒的离线激活目标，但首次验证候选仍要求
+可解码成片、自动 QC 与绑定哈希的人工审片，不能把 demo 渲染算作价值闭环。
 
 ## 主要交互、异常与恢复
 

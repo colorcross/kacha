@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0",
+  "status": "open_external_conditions",
+  "iteration": "kacha-human-agent-editing-2026-08-31",
+  "conditions": [
+    {"id": "EXT-HAE-001", "owner": "independent reviewer", "status": "not_started", "condition": "Review the final diff independently from the producer and record attributable findings.", "localCompletionImpact": "none; producer review is complete but is not independent evidence"},
+    {"id": "EXT-HAE-002", "owner": "creator/user", "status": "not_started", "condition": "Use Workbench V2 on a real 行者大灰 project and complete normal-speed visual acceptance for edit quality, keyboard ergonomics and Project Bin usefulness.", "localCompletionImpact": "blocks creator-value and quality-improvement claims"},
+    {"id": "EXT-HAE-003", "owner": "repository release workflow", "status": "not_authorized", "condition": "Commit, push, read back CI and optionally publish a tagged release.", "localCompletionImpact": "local source and installs can pass; remote delivery remains unverified"},
+    {"id": "EXT-HAE-004", "owner": "MCP registry operator", "status": "out_of_scope", "condition": "Review packaging requirements and publish externally if a registry listing is desired.", "localCompletionImpact": "local stdio clients remain fully usable without registry publication"},
+    {"id": "EXT-HAE-005", "owner": "product analytics decision", "status": "not_authorized", "condition": "Collect consented install-to-first-project and real first-verified-candidate metrics.", "localCompletionImpact": "the 90-second synthetic demo remains engineering evidence only"}
+  ]
+}

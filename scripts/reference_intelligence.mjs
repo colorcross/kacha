@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { ffprobe, fileIdentity, fileIdentityMatches, readJson, sha256Value, writeJsonAtomic } from "./kacha_utils.mjs";
+import { validateRhythmEvidence } from "./rhythm_analysis.mjs";
 
 const args = process.argv.slice(2);
 const action = args[0];
@@ -55,6 +56,18 @@ function validateAnalysis(value, { requireDigest = true } = {}) {
   if (value.rights?.derivationAllowed !== expectedDerivation) errors.push("rights.derivationAllowed is inconsistent with status, permittedUse or evidence");
   if (!value.boundaries || !Array.isArray(value.boundaries.keepAsAbstractPrinciples) || !Array.isArray(value.boundaries.changeForKachaAndCreator) || !Array.isArray(value.boundaries.doNotCopy) || value.boundaries.doNotCopy.length === 0) errors.push("keep/change/doNotCopy boundaries are required");
   if (!value.technical || !Number.isFinite(value.technical.durationSeconds)) errors.push("technical probe is required");
+  if (value.technicalRhythmEvidence) {
+    try {
+      const evidence = readJson(path.resolve(value.technicalRhythmEvidence.path));
+      const rhythmErrors = validateRhythmEvidence(evidence);
+      if (rhythmErrors.length > 0) errors.push(`rhythm evidence invalid: ${rhythmErrors.join(", ")}`);
+      if (evidence.evidenceDigest !== value.technicalRhythmEvidence.evidenceDigest) errors.push("rhythm evidence digest no longer matches");
+      if (evidence.source?.identity?.sha256 !== value.source?.identity?.sha256) errors.push("rhythm evidence does not describe the reference source");
+      if (evidence.source?.identity?.sha256 !== value.technicalRhythmEvidence.sourceSha256) errors.push("rhythm evidence sourceSha256 binding no longer matches");
+    } catch (error) {
+      errors.push(`rhythm evidence unavailable: ${error.message}`);
+    }
+  }
   if (requireDigest && !/^[a-f0-9]{64}$/i.test(value.analysisDigest ?? "")) errors.push("analysisDigest is required");
   if (value.analysisDigest) {
     const copy = structuredClone(value);
@@ -83,6 +96,22 @@ function validatePlan(value, { requireDigest = true } = {}) {
       errors.push(`reference analysis unavailable: ${error.message}`);
     }
   } else errors.push("referenceAnalysis is required");
+  if (value.referenceAnalysis) {
+    try {
+      const analysis = readJson(path.resolve(value.referenceAnalysis));
+      const analysisRhythm = analysis.technicalRhythmEvidence ?? null;
+      const planRhythm = value.technicalRhythmEvidence ?? null;
+      if (Boolean(analysisRhythm) !== Boolean(planRhythm)) {
+        errors.push("derived plan must preserve the approved analysis rhythm evidence presence");
+      } else if (analysisRhythm && (
+        analysis.technicalRhythmEvidence?.evidenceDigest !== value.technicalRhythmEvidence.evidenceDigest
+        || analysis.technicalRhythmEvidence?.path !== value.technicalRhythmEvidence.path
+        || analysis.technicalRhythmEvidence?.sourceSha256 !== value.technicalRhythmEvidence.sourceSha256
+      )) errors.push("derived rhythm evidence is not bound to the approved reference analysis");
+    } catch {
+      // The reference-analysis availability error above is sufficient.
+    }
+  }
   if (requireDigest && !/^[a-f0-9]{64}$/i.test(value.planDigest ?? "")) errors.push("planDigest is required");
   if (value.planDigest) {
     const copy = structuredClone(value);
@@ -112,6 +141,18 @@ if (action === "analyze") {
   const derivationAllowed = rightsStatus !== "unknown"
     && permittedUse === "principle-derivation"
     && (!evidenceRequired || Boolean(rightsEvidence));
+  const rhythmEvidenceFile = option("--rhythm-evidence");
+  let rhythmEvidence = null;
+  if (rhythmEvidenceFile) {
+    const resolvedRhythm = path.resolve(rhythmEvidenceFile);
+    const rhythmValue = readJson(resolvedRhythm);
+    const rhythmErrors = validateRhythmEvidence(rhythmValue);
+    if (rhythmErrors.length > 0) fail(`rhythm evidence invalid: ${rhythmErrors.join("; ")}`);
+    const referenceIdentity = fileIdentity(file);
+    if (rhythmValue.source.identity.sha256 !== referenceIdentity.sha256) fail("rhythm evidence source does not match the reference file");
+    rhythmEvidence = { path: resolvedRhythm, evidenceDigest: rhythmValue.evidenceDigest, sourceSha256: rhythmValue.source.identity.sha256 };
+  }
+  const sourceIdentity = fileIdentity(file);
   const value = {
     schemaVersion: "1.0",
     kind: "kacha-reference-analysis",
@@ -119,7 +160,7 @@ if (action === "analyze") {
     analyzedAt: new Date().toISOString(),
     source: {
       type: "local-file",
-      identity: fileIdentity(file),
+      identity: sourceIdentity,
       sourceUrl: option("--source-url"),
       creator: option("--creator"),
       title: option("--title", path.basename(file))
@@ -138,6 +179,7 @@ if (action === "analyze") {
             : "The recorded permitted use is analysis-only; principle derivation is blocked."
     },
     technical: mediaTechnical(file),
+    ...(rhythmEvidence ? { technicalRhythmEvidence: rhythmEvidence } : {}),
     observations: {
       narrativeStructure: listOption("--narrative"),
       pacingPatterns: listOption("--pacing"),
@@ -180,6 +222,7 @@ if (action === "derive") {
     derivedAt: new Date().toISOString(),
     referenceAnalysis: path.resolve(analysisFile),
     referenceAnalysisDigest: analysis.analysisDigest ?? sha256Value(analysis),
+    ...(analysis.technicalRhythmEvidence ? { technicalRhythmEvidence: structuredClone(analysis.technicalRhythmEvidence) } : {}),
     target: {
       creator: option("--target-creator", "行者大灰"),
       show: option("--show", "未指定"),

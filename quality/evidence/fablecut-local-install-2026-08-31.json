@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0",
+  "status": "passed",
+  "verifiedAt": "2026-08-31T07:52:58Z",
+  "source": {
+    "root": "workspace:kacha",
+    "ref": "02c074ae9d20c20b95295bac7ba96af3de4a752f",
+    "dirty": true,
+    "bundleDigest": "b9b92b752d637c1279c3eb932fba060a42fb5a4be8611499ca7ddef9e0b0f855",
+    "contentDigest": "3a50791cf58c7d2e353bcae7ff598c5d7f986b09c91af66c64fc225f105ce645"
+  },
+  "installations": [
+    {
+      "agent": "codex",
+      "path": "home:.codex/skills/kacha",
+      "state": "current",
+      "bundleDigest": "b9b92b752d637c1279c3eb932fba060a42fb5a4be8611499ca7ddef9e0b0f855",
+      "mcpServerScriptSha256": "527aabeb5bd378f1a67c17ebb7653b178b0a690c9569a83fe395c8c0ab0e687b",
+      "mcpReadback": {
+        "name": "kacha-local",
+        "enabled": true,
+        "transport": "stdio",
+        "root": "workspace:行者大灰"
+      }
+    },
+    {
+      "agent": "claude",
+      "path": "home:.claude/skills/kacha",
+      "state": "current",
+      "bundleDigest": "b9b92b752d637c1279c3eb932fba060a42fb5a4be8611499ca7ddef9e0b0f855",
+      "mcpServerScriptSha256": "527aabeb5bd378f1a67c17ebb7653b178b0a690c9569a83fe395c8c0ab0e687b",
+      "mcpReadback": {
+        "name": "kacha-local",
+        "connected": true,
+        "scope": "user",
+        "transport": "stdio",
+        "root": "workspace:行者大灰"
+      }
+    }
+  ],
+  "backupRoot": "home:.kacha-backups/2026-08-31T07-51-35-374Z-11158",
+  "readbackChecks": [
+    "Both installed bundle digests equal the source bundle digest.",
+    "Both installed MCP server scripts pass node --check and have identical SHA-256 values.",
+    "Both bundles contain the MCP manifest, offline first-run demo and bundle-safe brand logo.",
+    "Codex reports kacha-local enabled; Claude reports kacha-local connected."
+  ],
+  "boundaries": [
+    "This is local installation evidence, not a GitHub commit, push, remote CI run or registry publication.",
+    "The installed source is intentionally recorded as dirty because this turn did not authorize a commit or push."
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "1.0",
+  "evidenceId": "kacha-fablecut-deep-review-r2-local-verification-2026-08-31",
+  "status": "pass",
+  "verifiedAt": "2026-08-31T09:04:54Z",
+  "baselineRevision": "02c074ae9d20c20b95295bac7ba96af3de4a752f",
+  "candidateState": "dirty-uncommitted-worktree",
+  "reviewRecord": "quality/fablecut-informed-deep-review-r2-2026-08-31.json",
+  "findings": {
+    "total": 12,
+    "high": 4,
+    "medium": 5,
+    "low": 3,
+    "verifiedClosed": 12,
+    "open": 0
+  },
+  "checks": [
+    {"command": "make check-full", "status": "pass", "evidence": "160/160 main regressions, MCP protocol/security, Workbench distribution, isolated dual-agent installer and secret scan passed."},
+    {"command": "make check-website", "status": "pass", "evidence": "lint, TypeScript, Chinese/English GitHub Pages packaging and dependency audit passed; production vulnerabilities 0."},
+    {"command": "node tests/run_tests.mjs --suite editor", "status": "pass", "evidence": "6/6 focused editor tests passed after the final pointer lifecycle remediation."},
+    {"command": "node tests/run_tests.mjs --match 'reference intelligence freezes rights'", "status": "pass", "evidence": "Approved rhythm evidence binding and anti-shot-for-shot derivation regression passed."},
+    {"command": "node tests/mcp_server_tests.mjs", "status": "pass", "evidence": "Modern and legacy lifecycle, SHA mutation/history, bounded framing, oversized-line recovery, root confinement and closed arguments passed."},
+    {"command": "node tests/workbench_distribution_tests.mjs", "status": "pass", "evidence": "Uncertain registration preflight fails closed and successful registration requires client readback."},
+    {"command": "Playwright CLI desktop and 390x844", "status": "pass", "evidence": "Atomic X/Y keyframed drag, SHA-locked undo/redo, no horizontal overflow, pointercancel cleanup and zero console errors/warnings verified in a real browser."},
+    {"command": "node scripts/kacha.mjs install sync --source . --agent both --apply", "status": "pass", "evidence": "The isolated pre-install full regression passed and both local targets synchronized atomically."},
+    {"command": "node scripts/kacha.mjs install status --source . --agent both", "status": "pass", "evidence": "Codex and Claude both read back current with the same bundle digest."},
+    {"command": "codex mcp get kacha-local && claude mcp get kacha-local", "status": "pass", "evidence": "Codex reports enabled and Claude reports connected; both use root-confined installed stdio servers."}
+  ],
+  "browserEvidence": {
+    "timelineFixtureSha256BeforeCancelledMove": "91ce1f27f50131472d239a4a1782e717dfcdb3e216ffb898c255698f07fb80c8",
+    "timelineFixtureSha256AfterCancelledMove": "91ce1f27f50131472d239a4a1782e717dfcdb3e216ffb898c255698f07fb80c8",
+    "transientTransformBeforePointerCancel": "translateX(44.56px)",
+    "transientTransformAfterPointerCancel": "",
+    "mobileViewport": "390x844",
+    "mobileDocumentWidth": 390,
+    "consoleErrors": 0,
+    "consoleWarnings": 0
+  },
+  "localDistribution": {
+    "bundleDigest": "2bda27a5a7c3f585070a58efec15ae6986c0b158b19af14d54568a10580a2140",
+    "contentSha256": "f5c22fb77c6ea0f8447d052577837a251fe8ffa21a45a7f9f7c8e808ee8b5a44",
+    "codexTarget": "home:.codex/skills/kacha",
+    "claudeTarget": "home:.claude/skills/kacha",
+    "backupRoot": "home:.kacha-backups/2026-08-31T09-04-07-494Z-4442"
+  },
+  "fileSha256": {
+    "scripts/editor_operations.mjs": "9e7e62be6168b97669e3dae892b86aaaefb9c9768391fb5c930b1d5c7b60305d",
+    "scripts/editor_command_journal.mjs": "1ebbad030b5479093f5bdde1a23e940e14ee3b23aca673d2e42ba0329a6d3f3f",
+    "scripts/kacha_mcp_server.mjs": "fdaf893697989c20bffb00108d310bddfcdc9cea60e6d9e1ba8be6f6fda6b6fc",
+    "scripts/kacha_mcp_config.mjs": "349b5eb9ae3efc1d5aa1956d54e04389efee32968e91accd946bd0380fa5dce3",
+    "scripts/project_bin.mjs": "d0c47db5e9fdc4cd7d0666a3ab3b422913858af360685bacda1b092d83646089",
+    "scripts/rhythm_analysis.mjs": "4df8e0570059ff6b064f4916ede0ebdc5a851e3cf01827cb8409229ab562c173",
+    "studio/editor.js": "ed4aa0ee3ef5ec09666b75e20a86959d5d8b18a0fbddb899f9a47aea3d208e8a"
+  },
+  "claimsBoundary": [
+    "This is producer-owned local verification, not independent approval.",
+    "Normal-speed creator acceptance on real production material remains external.",
+    "No commit, push, remote CI or public deployment was performed in this review turn."
+  ]
+}

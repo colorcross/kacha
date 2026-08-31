@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "evidenceId": "kacha-fablecut-deep-review-r4-local-verification-2026-08-31",
+  "status": "pass",
+  "verifiedAt": "2026-08-31T11:15:54Z",
+  "baselineRevision": "02c074ae9d20c20b95295bac7ba96af3de4a752f",
+  "candidateState": "dirty-uncommitted-worktree",
+  "reviewRecord": "quality/fablecut-informed-deep-review-r4-2026-08-31.json",
+  "runtimeCoreContentSha256": "bf2b5d28d5b6be3258cf5357b1def7b7f38779dac63c1edbca281ca9ccf16e9d",
+  "findings": {"total": 7, "high": 3, "medium": 3, "low": 1, "verifiedClosed": 7, "open": 0},
+  "checks": [
+    {"command": "node tests/mcp_server_tests.mjs", "status": "pass", "evidence": "Closed runtime schema, bounded values and exclusive command branches fail closed without Timeline mutation."},
+    {"command": "node tests/workbench_distribution_tests.mjs", "status": "pass", "evidence": "Wrong or failed post-add MCP readback triggers verified rollback; browser client invariants remain packaged."},
+    {"command": "node tests/run_tests.mjs --suite editor", "status": "pass", "evidence": "6/6 editor tests passed, including latched source drift conflict and blocked command/undo/redo."},
+    {"command": "make check-static", "status": "pass", "evidence": "JavaScript, shell and Python syntax, secret scan and product truth passed; one personal path in the durable log was removed."},
+    {"command": "make check-full", "status": "pass", "evidence": "160/160 regressions plus MCP, Workbench distribution, installer, secret and product-truth gates passed."},
+    {"command": "make check-website", "status": "pass", "evidence": "Lint, TypeScript, Chinese/English GitHub Pages and dependency audit passed; production vulnerabilities 0."},
+    {"command": "Playwright CLI Chromium", "status": "pass", "evidence": "After EDL reorder a,b to b,a at output tick 0, video currentTime was 1.0 second; empty numeric submit preserved Timeline SHA and showed a field-specific error."},
+    {"command": "node scripts/kacha.mjs install sync --source . --agent both --apply", "status": "pass", "evidence": "The isolated installation bundle repeated full verification and atomically synchronized both local agents with a recoverable backup."},
+    {"command": "node scripts/kacha.mjs install status --source . --agent both", "status": "pass", "evidence": "Codex and Claude independently read back current at the same bundle digest."},
+    {"command": "codex mcp get kacha-local && claude mcp get kacha-local", "status": "pass", "evidence": "Codex reports enabled and Claude reports connected; both retain root-confined installed scripts."}
+  ],
+  "browserEvidence": {
+    "fixture": "temporary two-picture Timeline",
+    "reorderBefore": ["picture:a", "picture:b"],
+    "reorderAfter": ["picture:b", "picture:a"],
+    "outputTick": 0,
+    "sourceTimeSecondsAfterReorder": 1,
+    "emptyField": "sourceStartTick",
+    "emptySubmitTimelineShaUnchanged": true,
+    "screenshot": {"path": "output/playwright/kacha-workbench-r4-deep-review.png", "sha256": "4d4cd2d055767f3ca80fdea044563bbbf71a36a20a3b8c498ec22a0228a6dd6f"},
+    "knownSetupConsoleEvent": "One expected HTTP 400 occurred before the temporary fixture journal was deliberately reopened; no new browser error occurred during the accepted reorder/input journey."
+  },
+  "localDistribution": {
+    "bundleDigest": "45d6bd87d0f5917bf49418e97e80771964511821660b84c4bd2e0e9d02fc301d",
+    "contentSha256": "bf2b5d28d5b6be3258cf5357b1def7b7f38779dac63c1edbca281ca9ccf16e9d",
+    "codexTarget": "home:.codex/skills/kacha",
+    "claudeTarget": "home:.claude/skills/kacha",
+    "backupRoot": "home:.kacha-backups/2026-08-31T11-15-42-739Z-37672",
+    "mcpServerSha256": "8d4dbe26633e8e3c9f29e69ae5c0dd265791f78a84002882e7fd7eb8bc8f467f"
+  },
+  "fileSha256": {
+    "scripts/kacha_mcp_config.mjs": "aed61a5de9eb8c3875285aca9a026285cda88f28a2348832f6028cd99e4f2d0e",
+    "scripts/kacha_mcp_server.mjs": "8d4dbe26633e8e3c9f29e69ae5c0dd265791f78a84002882e7fd7eb8bc8f467f",
+    "scripts/project_bin.mjs": "6ffd7d6c4f4253cff48663ec1552c59f04c6bdd0ff7e6031e29c427e1bddf3fe",
+    "scripts/kacha_studio_server.mjs": "4e0dd298c9e3ebd7e5c85b4c2da0f73b755d29ef2b445296bbbeb687239f8d13",
+    "studio/editor.js": "0400a07a9f97ced62d8ba935cab3ec3d82d0f3a3d66aa8689ad94f092862369d",
+    "tests/mcp_server_tests.mjs": "6890168feddb95649a0578bf29d67b43f409b5abcb2c877e21944fa94b3323b3",
+    "tests/workbench_distribution_tests.mjs": "8dd1a03abc47fa41bb860d4e953e0fc121cd81e4c8237252963ebdb928e3aeb3",
+    "tests/run_tests.mjs": "0d4ef0848029fec0e4228677cf4e4f76d82667590c233443134061dd52d78a79"
+  },
+  "claimsBoundary": [
+    "This is producer-owned local verification, not independent approval.",
+    "Normal-speed creator acceptance on real production material remains external.",
+    "No commit, push, remote CI or public deployment was performed in this review turn."
+  ]
+}

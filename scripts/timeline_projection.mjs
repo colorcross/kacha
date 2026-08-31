@@ -179,6 +179,7 @@ export function buildTimelineProjection(timelineFile, { includeSourceHash = fals
         width: entry.width,
         height: entry.height,
         opacity: entry.opacity ?? 1,
+        keyframes: entry.keyframes ?? {},
       },
     }));
   });
@@ -301,11 +302,82 @@ export function buildTimelineProjection(timelineFile, { includeSourceHash = fals
       && Number.isFinite(outputHeight)
       && (Number(x) + Number(width) > outputWidth || Number(y) + Number(height) > outputHeight)
     ) throw new Error(`${item.id} 超出输出画布`);
+    const keyframes = item.metadata.keyframes;
+    if (!keyframes || typeof keyframes !== "object" || Array.isArray(keyframes)) {
+      throw new Error(`${item.id}.keyframes 必须是 object`);
+    }
+    const unknownProperties = Object.keys(keyframes).filter((property) => !["x", "y"].includes(property));
+    if (unknownProperties.length > 0) throw new Error(`${item.id}.keyframes 存在未执行属性：${unknownProperties.join(", ")}`);
+    for (const [property, points] of Object.entries(keyframes)) {
+      if (!Array.isArray(points) || points.length < 1 || points.length > 256) {
+        throw new Error(`${item.id}.keyframes.${property} 必须包含 1–256 个点`);
+      }
+      let previousTick = -1;
+      const maximum = property === "x" ? outputWidth - Number(width) : outputHeight - Number(height);
+      for (const point of points) {
+        if (
+          !Number.isSafeInteger(point?.tick)
+          || point.tick < item.startTick
+          || point.tick > item.endTick
+          || point.tick <= previousTick
+          || typeof point.value !== "number"
+          || !Number.isFinite(point.value)
+          || point.value < 0
+          || point.value > maximum
+        ) throw new Error(`${item.id}.keyframes.${property} 时间或几何无效`);
+        previousTick = point.tick;
+      }
+    }
+  }
+  const editor = timeline.editor ?? {};
+  if (!editor || typeof editor !== "object" || Array.isArray(editor)) throw new Error("Timeline editor 必须是 object");
+  const markers = editor.markers ?? [];
+  if (!Array.isArray(markers) || markers.length > 1000) throw new Error("editor.markers 必须是最多 1000 项的数组");
+  const markerIds = new Set();
+  for (const marker of markers) {
+    const markerId = marker?.id;
+    const markerLabel = marker?.label;
+    const markerColor = marker?.color ?? "amber";
+    if (
+      typeof markerId !== "string" || !markerId.trim() || markerId.length > 200 || /[\u0000-\u001f\u007f]/.test(markerId) || markerIds.has(marker.id)
+      || !Number.isSafeInteger(marker.tick) || marker.tick < 0 || marker.tick > durationTick
+      || typeof markerLabel !== "string" || !markerLabel.trim() || markerLabel.length > 500 || /[\u0000-\u001f\u007f]/.test(markerLabel)
+      || typeof markerColor !== "string" || !markerColor.trim() || markerColor.length > 32 || /[\u0000-\u001f\u007f]/.test(markerColor)
+    ) throw new Error("editor.markers 包含重复 id、越界 tick 或空 label");
+    markerIds.add(marker.id);
+  }
+  if (editor.workArea !== undefined && (
+    !Number.isSafeInteger(editor.workArea?.startTick)
+    || !Number.isSafeInteger(editor.workArea?.endTick)
+    || editor.workArea.startTick < 0
+    || editor.workArea.endTick <= editor.workArea.startTick
+    || editor.workArea.endTick > durationTick
+  )) throw new Error("editor.workArea 必须满足 0 <= start < end <= duration");
+  const deliveryFrames = editor.deliveryFrames ?? [];
+  if (!Array.isArray(deliveryFrames) || deliveryFrames.length > 8) throw new Error("editor.deliveryFrames 必须是最多 8 项的数组");
+  const deliveryIds = new Set();
+  for (const frame of deliveryFrames) {
+    const frameId = frame?.id;
+    const frameLabel = frame?.label ?? frameId;
+    if (
+      typeof frameId !== "string" || !frameId.trim() || frameId.length > 200 || /[\u0000-\u001f\u007f]/.test(frameId) || deliveryIds.has(frame.id)
+      || typeof frameLabel !== "string" || !frameLabel.trim() || frameLabel.length > 120 || /[\u0000-\u001f\u007f]/.test(frameLabel)
+      || !Number.isInteger(frame.width) || !Number.isInteger(frame.height)
+      || frame.width < 64 || frame.height < 64 || frame.width > 16384 || frame.height > 16384
+    ) throw new Error("editor.deliveryFrames 包含重复 id 或无效几何");
+    deliveryIds.add(frame.id);
   }
   const media = sourceFile(resolved, timeline.source);
   const sourceIdentity = media && fs.existsSync(media) && fs.statSync(media).isFile()
     ? fileIdentity(fs.realpathSync(media), { includeHash: includeSourceHash })
     : null;
+  if (includeSourceHash && timeline.source && Object.hasOwn(timeline.source, "sha256")) {
+    const declaredSha256 = timeline.source.sha256;
+    if (!/^[a-f0-9]{64}$/.test(declaredSha256 ?? "")) throw new Error("Timeline source.sha256 合同无效");
+    if (!sourceIdentity?.sha256 || sourceIdentity.sha256 !== declaredSha256) {
+      throw new Error("Timeline source.sha256 已失效；源媒体内容已变化");
+    }
+  }
   return {
     schemaVersion: "1.0",
     kind: "kacha-timeline-projection",
@@ -321,6 +393,11 @@ export function buildTimelineProjection(timelineFile, { includeSourceHash = fals
     durationTick,
     durationSeconds: ticksToSeconds(durationTick, timebase),
     output: timeline.output ?? {},
+    editor: {
+      markers,
+      workArea: editor.workArea ?? null,
+      deliveryFrames,
+    },
     tracks,
     items,
     digest: sha256Value({ projectId: timeline.projectId, timebase, durationTick, tracks, items }),

@@ -52,10 +52,13 @@ function usage() {
       + "  kacha.mjs resources status|run [options]\n"
       + "  kacha.mjs delta diff|apply [options]\n"
       + "  kacha.mjs editor inspect|project|query|history|command|preview-capabilities [options]\n"
+      + "  kacha.mjs mcp serve --root /absolute/project\n"
+      + "  kacha.mjs mcp-config show|validate|install --client codex|claude --root /absolute/project\n"
       + "  kacha.mjs media index|search [options]\n"
       + "  kacha.mjs capabilities validate|list|probe|rank [options]\n"
       + "  kacha.mjs cost init|estimate|reserve|approve|consume|reconcile|refund|status|validate [options]\n"
       + "  kacha.mjs reference analyze|derive|validate [options]\n"
+      + "  kacha.mjs rhythm analyze|validate --input MEDIA [options]\n"
       + "  kacha.mjs flight snapshot|replay|validate [options]\n"
       + "  kacha.mjs corpus build|search|validate [options]\n"
       + "  kacha.mjs composition template|route|validate [options]\n"
@@ -174,10 +177,13 @@ const delegatedCommands = {
   resources: "resource_scheduler.mjs",
   delta: "kacha_delta.mjs",
   editor: "kacha_editor.mjs",
+  mcp: "kacha_mcp_server.mjs",
+  "mcp-config": "kacha_mcp_config.mjs",
   media: "kacha_media.mjs",
   capabilities: "capability_broker.mjs",
   cost: "cost_ledger.mjs",
   reference: "reference_intelligence.mjs",
+  rhythm: "rhythm_analysis.mjs",
   flight: "production_flight_recorder.mjs",
   corpus: "media_corpus.mjs",
   composition: "composition_router.mjs",
@@ -206,7 +212,7 @@ const delegatedCommands = {
   render: "render_project.mjs",
 };
 if (Object.hasOwn(delegatedCommands, command)) {
-  if (command === "studio" && projectInput === "serve") {
+  if ((command === "studio" || command === "mcp") && projectInput === "serve") {
     invoke(
       delegatedCommands[command],
       [projectInput, ...remainingArguments],

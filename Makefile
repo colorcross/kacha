@@ -10,12 +10,16 @@ check-static:
 check-targeted: check-static
 	node tests/run_tests.mjs --match 'production packs separate generic policy'
 	node tests/run_tests.mjs --match 'production quality contract gates'
+	node tests/mcp_server_tests.mjs
+	node tests/workbench_distribution_tests.mjs
 
 check-core:
 	node tests/run_tests.mjs --suite core
 
 check-full: check-static
 	node tests/run_tests.mjs
+	node tests/mcp_server_tests.mjs
+	node tests/workbench_distribution_tests.mjs
 	bash tests/test_installer.sh
 
 check-website:

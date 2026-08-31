@@ -582,6 +582,47 @@ function validatePlan(planFile) {
     }
   }
   const duration = outputDuration(edl, transitions);
+  const editor = plan.editor ?? {};
+  if (!editor || typeof editor !== "object" || Array.isArray(editor)) {
+    errors.push("editor 必须是 object");
+  } else {
+    const markers = editor.markers ?? [];
+    if (!Array.isArray(markers) || markers.length > 1000) errors.push("editor.markers 必须是最多 1000 项的数组");
+    const markerIds = new Set();
+    for (const [index, marker] of (Array.isArray(markers) ? markers : []).entries()) {
+      const markerId = marker?.id;
+      const markerLabel = marker?.label;
+      const markerColor = marker?.color ?? "amber";
+      if (
+        typeof markerId !== "string" || !markerId.trim() || markerId.length > 200 || /[\u0000-\u001f\u007f]/.test(markerId) || markerIds.has(marker.id)
+        || !Number.isSafeInteger(marker.tick) || marker.tick < 0
+        || marker.tick > Math.round(duration * (plan.timebase?.ticksPerSecond ?? 120000))
+        || typeof markerLabel !== "string" || !markerLabel.trim() || markerLabel.length > 500 || /[\u0000-\u001f\u007f]/.test(markerLabel)
+        || typeof markerColor !== "string" || !markerColor.trim() || markerColor.length > 32 || /[\u0000-\u001f\u007f]/.test(markerColor)
+      ) errors.push(`editor.markers[${index}] 合同无效`);
+      markerIds.add(marker?.id);
+    }
+    const workArea = editor.workArea;
+    if (workArea !== undefined && (
+      !Number.isSafeInteger(workArea?.startTick) || !Number.isSafeInteger(workArea?.endTick)
+      || workArea.startTick < 0 || workArea.endTick <= workArea.startTick
+      || workArea.endTick > Math.round(duration * (plan.timebase?.ticksPerSecond ?? 120000))
+    )) errors.push("editor.workArea 合同无效");
+    const deliveryFrames = editor.deliveryFrames ?? [];
+    if (!Array.isArray(deliveryFrames) || deliveryFrames.length > 8) errors.push("editor.deliveryFrames 必须是最多 8 项的数组");
+    const frameIds = new Set();
+    for (const [index, frame] of (Array.isArray(deliveryFrames) ? deliveryFrames : []).entries()) {
+      const frameId = frame?.id;
+      const frameLabel = frame?.label ?? frameId;
+      if (
+        typeof frameId !== "string" || !frameId.trim() || frameId.length > 200 || /[\u0000-\u001f\u007f]/.test(frameId) || frameIds.has(frame.id)
+        || typeof frameLabel !== "string" || !frameLabel.trim() || frameLabel.length > 120 || /[\u0000-\u001f\u007f]/.test(frameLabel)
+        || !Number.isInteger(frame.width) || !Number.isInteger(frame.height)
+        || frame.width < 64 || frame.height < 64 || frame.width > 16384 || frame.height > 16384
+      ) errors.push(`editor.deliveryFrames[${index}] 合同无效`);
+      frameIds.add(frame?.id);
+    }
+  }
   if (plan.decisionPlan) {
     const decisionFile = existingFile(planFile, plan.decisionPlan);
     if (!decisionFile) {
@@ -679,6 +720,30 @@ function validatePlan(planFile) {
       )
     ) {
       errors.push(`visual.overlays[${index}] 超出输出画布`);
+    }
+    const keyframes = event.keyframes ?? {};
+    if (!keyframes || typeof keyframes !== "object" || Array.isArray(keyframes)) {
+      errors.push(`visual.overlays[${index}].keyframes 必须是 object`);
+    } else {
+      const unknown = Object.keys(keyframes).filter((property) => !["x", "y"].includes(property));
+      if (unknown.length) errors.push(`visual.overlays[${index}].keyframes 存在未执行属性：${unknown.join(", ")}`);
+      for (const [property, points] of Object.entries(keyframes)) {
+        if (!Array.isArray(points) || points.length < 1 || points.length > 256) {
+          errors.push(`visual.overlays[${index}].keyframes.${property} 必须包含 1–256 个点`);
+          continue;
+        }
+        let previousTick = -1;
+        const maximum = property === "x" ? outputWidth - Number(event.width) : outputHeight - Number(event.height);
+        for (const point of points) {
+          if (
+            !Number.isSafeInteger(point?.tick)
+            || point.tick < event.startTick || point.tick > event.endTick || point.tick <= previousTick
+            || typeof point.value !== "number" || !Number.isFinite(point.value)
+            || point.value < 0 || point.value > maximum
+          ) errors.push(`visual.overlays[${index}].keyframes.${property} 时间或几何无效`);
+          previousTick = point?.tick ?? previousTick;
+        }
+      }
     }
   });
   if (plan.visual?.subtitles) {
@@ -1070,6 +1135,17 @@ function compileGraph(validated, loadedConfig) {
         y: Number(entry.y) * previewScale,
         width: Number(entry.width) * previewScale,
         height: Number(entry.height) * previewScale,
+        keyframes: Object.fromEntries(
+          Object.entries(entry.keyframes ?? {}).map(([property, points]) => [
+            property,
+            points.map((point) => ({
+              ...point,
+              time: Number(point.tick) / Number(plan.timebase?.ticksPerSecond ?? 120000)
+                - Number(range?.start ?? 0),
+              value: Number(point.value) * previewScale,
+            })),
+          ]),
+        ),
         path: existingFile(validated.planFile ?? "", entry)
           ?? mediaPath(validated.planFile ?? "", entry),
         identity: assetIdentity(validated.planFile ?? "", entry),
@@ -1159,6 +1235,24 @@ function compileGraph(validated, loadedConfig) {
   };
   graph.digest = sha256Value({ ...graph, digest: undefined });
   return graph;
+}
+
+function keyframeExpression(points, fallback) {
+  if (!Array.isArray(points) || points.length === 0) return formatNumber(fallback);
+  const ordered = [...points].sort((left, right) => Number(left.time) - Number(right.time));
+  let expression = formatNumber(ordered.at(-1).value);
+  for (let index = ordered.length - 2; index >= 0; index -= 1) {
+    const left = ordered[index];
+    const right = ordered[index + 1];
+    const start = Number(left.time);
+    const end = Number(right.time);
+    const span = Math.max(0.000001, end - start);
+    const interpolation = `${formatNumber(left.value)}+`
+      + `(${formatNumber(Number(right.value) - Number(left.value))})*`
+      + `(t-${formatNumber(start)})/${formatNumber(span)}`;
+    expression = `if(lt(t,${formatNumber(end)}),${interpolation},${expression})`;
+  }
+  return `if(lte(t,${formatNumber(ordered[0].time)}),${formatNumber(ordered[0].value)},${expression})`;
 }
 
 function buildRenderCommand(graph, { hardwareDecode = process.platform === "darwin" } = {}) {
@@ -1336,9 +1430,11 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
         + `setpts=PTS-STARTPTS+${formatNumber(overlay.start)}/TB[${label}]`,
     );
     const next = `vover${index}`;
+    const overlayX = keyframeExpression(overlay.keyframes?.x, Number(overlay.x));
+    const overlayY = keyframeExpression(overlay.keyframes?.y, Number(overlay.y));
     filters.push(
-      `[${currentVideo}][${label}]overlay=x=${Math.round(Number(overlay.x))}:`
-        + `y=${Math.round(Number(overlay.y))}:`
+      `[${currentVideo}][${label}]overlay=x='${overlayX}':`
+        + `y='${overlayY}':eval=frame:`
         + `enable='between(t,${formatNumber(overlay.start)},${formatNumber(overlay.end)})':`
         + `eof_action=pass:shortest=0[${next}]`,
     );

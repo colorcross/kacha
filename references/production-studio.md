@@ -87,9 +87,12 @@ BGM、美颜、开场、效果数量和输出目标。步骤状态表示当前�
 
 现在另有第四个专业调整入口 `/editor`：它把 Timeline IR 投影为主画面、叠加、
 字幕、效果、dialogue、BGM 和 SFX 轨，提供播放头、Inspector、基础时序/几何
-调整、撤销和重做。它只适合 AI 成片后的校正与批准，不取代 Agent 默认入口。
+调整、撤销和重做。V2 进一步提供多选、吸附、Marker、工作区、分割、trim 手柄、
+EDL 显式重排、多画幅安全框、异步波形、Project Bin 与 overlay `x/y` 终渲染
+键帧。它只适合 AI 成片后的校正与批准，不取代 Agent 默认入口。
 所有修改通过受 SHA 保护的 Command Journal 写回同一 Timeline IR；不能修改
-媒体身份、字幕正文、音频路由、发布字段或 allowlist 之外的 JSON Pointer。
+字幕正文、音频路由、发布字段或 allowlist 之外的 JSON Pointer。素材替换仅接受
+当前 media index 中身份、许可和来源证据仍有效的项目素材。
 
 画面区始终显示 `APPROXIMATE PREVIEW`。浏览器只组合源视频与可视化投影，不
 代表 FFmpeg 正式效果；修改后页面只报告需要重跑的 Timeline/QC 项，不会把
@@ -194,6 +197,10 @@ node scripts/kacha.mjs editor recover --timeline /absolute/path/timeline.json \
   --expected-sha CURRENT_SHA
 node scripts/kacha.mjs editor reopen --timeline /absolute/path/timeline.json \
   --expected-sha CURRENT_SHA
+node scripts/kacha.mjs rhythm analyze --input /absolute/path/reference.mp4 \
+  --output /absolute/path/rhythm-evidence.json
+node scripts/kacha.mjs mcp-config show --client codex --root /absolute/path/project
+node scripts/kacha.mjs mcp-config show --client claude --root /absolute/path/project
 node scripts/kacha.mjs start --script /absolute/path/script.md \
   --task content_generation --project-root /absolute/path/content-project
 node scripts/kacha.mjs status /absolute/path/project
@@ -209,6 +216,10 @@ node scripts/kacha.mjs review validate \
 
 请求示例见 `examples/production-request.json`。CLI 与页面使用同一校验器，
 不存在“页面能保存但命令行不能执行”的第二套格式。
+
+首次体验可运行 `node examples/first-run/demo.mjs`。它生成本地合成素材并走完
+键帧写入、Marker、undo/redo、Timeline 校验和 FFmpeg 预览渲染；90 秒目标只衡量
+离线首次可验证编辑，不替代创意质量和人工审片。
 
 审片预览通过 loopback Range 接口按审片包内 SHA-256 身份读取，不开放任意媒体
 目录，并支持 GET/HEAD 与单区间 Range。页面仍不能授予上传、付费、发布、覆盖源片或跳过人工审片的权限。完整

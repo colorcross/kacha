@@ -5,89 +5,90 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
   <link rel="icon" href="data:,">
-  <title>咔嚓 · 专业调整工作台</title>
+  <title>咔嚓 · Human–Agent Workbench</title>
   <link rel="stylesheet" href="/editor.css">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/" aria-label="返回咔嚓生产台">
-      <img src="/brand/kacha-logo.png" alt="">
-      <span>咔嚓</span>
-    </a>
+    <a class="brand" href="/" aria-label="返回咔嚓生产台"><img src="/brand/kacha-logo.png" alt=""><span>咔嚓</span></a>
     <nav aria-label="生产台页面">
       <a href="/content">内容</a><a href="/">配置</a><a href="/project">项目</a>
       <a class="active" href="/editor" aria-current="page">调整</a><a href="/review">审片</a>
     </nav>
-    <div class="preview-badge" title="正式成片仍由 FFmpeg Render Graph 生成">
-      APPROXIMATE PREVIEW
-    </div>
+    <div class="live-cluster"><span id="liveDot" class="live-dot idle"></span><span id="liveState">OFFLINE</span></div>
+    <div class="preview-badge" title="正式成片仍由 FFmpeg Render Graph 生成">APPROXIMATE PREVIEW</div>
   </header>
 
   <main>
     <section class="open-panel" aria-labelledby="open-title">
       <div>
-        <p class="eyebrow">TIMELINE IR · SINGLE SOURCE OF TRUTH</p>
-        <h1 id="open-title">专业调整工作台</h1>
-        <p>用于查看、校正、撤销和批准。Agent 仍是默认生产入口；这里不会绕过渲染、QC 或人工审片。</p>
+        <p class="eyebrow">TIMELINE IR · SHA-LOCKED · REVERSIBLE</p>
+        <h1 id="open-title">Human–Agent Workbench</h1>
+        <p>Agent 完成高强度生产，人在这里做关键校正。每次改动都进入 Command Journal，不绕过终渲染、QC 和人工审片。</p>
       </div>
       <form id="openForm">
         <label for="timelinePath">Timeline IR 绝对路径</label>
-        <div class="path-row">
-          <input id="timelinePath" name="timelinePath" autocomplete="off" spellcheck="false"
-            placeholder="/absolute/path/contracts/timeline.json" required>
-          <button type="submit">打开时间线</button>
-        </div>
+        <div class="path-row"><input id="timelinePath" autocomplete="off" spellcheck="false" placeholder="/absolute/path/contracts/timeline.json" required><button type="submit">打开时间线</button></div>
       </form>
-      <p id="status" class="status" role="status">等待打开本机 Timeline IR。</p>
+      <p id="status" class="status" role="status" aria-live="polite">等待打开本机 Timeline IR。</p>
     </section>
 
     <section id="workspace" class="workspace" hidden>
-      <section class="preview-panel" aria-label="近似画面预览">
-        <div class="panel-heading">
-          <div><span class="panel-index">01</span><h2>画面</h2></div>
-          <span id="projectMeta" class="mono"></span>
-        </div>
+      <section class="tool-strip" aria-label="时间线工具">
+        <div class="tool-group"><button id="snapButton" class="active" type="button" aria-pressed="true">SNAP</button><button id="markerButton" type="button" title="M">标记</button><button id="inButton" type="button" title="[">设入点</button><button id="outButton" type="button" title="]">设出点</button></div>
+        <div class="tool-group"><button id="splitButton" type="button" title="S">分割</button><button id="moveLeftButton" type="button">主画面左移</button><button id="moveRightButton" type="button">主画面右移</button></div>
+        <div class="tool-group history-actions"><button id="undoButton" type="button" disabled>撤销</button><button id="redoButton" type="button" disabled>重做</button></div>
+        <div id="selectionSummary" class="selection-summary">0 SELECTED</div>
+      </section>
+
+      <aside class="bin-panel panel" aria-labelledby="bin-title">
+        <div class="panel-heading"><div><span class="panel-index">01</span><h2 id="bin-title">PROJECT BIN</h2></div><button id="refreshBin" class="icon-button" type="button" title="刷新">↻</button></div>
+        <form id="binSearch" class="bin-search"><input id="binQuery" placeholder="搜索素材 / 标签"><select id="binKind" aria-label="素材类型"><option value="">全部</option><option value="video">视频</option><option value="image">图像</option><option value="audio">音频</option></select></form>
+        <p id="binMeta" class="microcopy">打开时间线后读取项目索引。</p>
+        <div id="binItems" class="bin-items"><div class="empty compact">尚无素材。</div></div>
+      </aside>
+
+      <section class="preview-panel panel" aria-label="近似画面预览">
+        <div class="panel-heading"><div><span class="panel-index">02</span><h2>PROGRAM</h2></div><div class="heading-actions"><select id="deliveryFrame" aria-label="交付构图"><option value="">原始画布</option></select><span id="projectMeta" class="mono"></span></div></div>
         <div id="stage" class="stage">
           <video id="video" controls preload="metadata"></video>
-          <div id="overlayLayer" class="overlay-layer" aria-hidden="true"></div>
-          <div class="stage-note">播放器显示源时间 · Timeline 显示成片时间 · 非正式渲染</div>
+          <div id="deliveryGuide" class="delivery-guide" hidden><span></span></div>
+          <div id="overlayLayer" class="overlay-layer" aria-label="可调整叠加层"></div>
+          <div class="stage-note">源时间 → 成片时间 · 画布为近似预览</div>
         </div>
       </section>
 
-      <aside class="inspector-panel" aria-labelledby="inspector-title">
-        <div class="panel-heading">
-          <div><span class="panel-index">02</span><h2 id="inspector-title">Inspector</h2></div>
-        </div>
-        <div id="emptyInspector" class="empty">从时间线选择一个条目。</div>
+      <aside class="inspector-panel panel" aria-labelledby="inspector-title">
+        <div class="panel-heading"><div><span class="panel-index">03</span><h2 id="inspector-title">INSPECTOR</h2></div></div>
+        <div id="emptyInspector" class="empty">从时间线选择一个条目。<br><kbd>Shift</kbd> 可多选。</div>
         <form id="inspector" hidden>
           <div class="object-head"><strong id="itemLabel"></strong><code id="itemType"></code></div>
           <p id="sourcePointer" class="mono pointer"></p>
           <div id="fieldList" class="field-list"></div>
           <p id="readonlyReason" class="notice" hidden></p>
-          <label for="reason">修改理由</label>
-          <input id="reason" value="人工调整工作台校正">
-          <button id="applyButton" type="submit">应用 Command</button>
+          <label for="reason">修改理由</label><input id="reason" value="人工调整工作台校正">
+          <button id="applyButton" class="primary" type="submit">原子应用</button>
         </form>
-        <div class="history-actions">
-          <button id="undoButton" type="button" disabled>撤销</button>
-          <button id="redoButton" type="button" disabled>重做</button>
-        </div>
+        <section id="keyframePanel" class="subpanel" hidden>
+          <div class="subpanel-title"><span>POSITION KEYFRAMES</span><span class="mono">FFMPEG FINAL</span></div>
+          <p class="microcopy">在当前播放头锁定位置，x/y 会进入正式终渲染。</p>
+          <div class="keyframe-actions"><button data-keyframe="x" type="button">+ X</button><button data-keyframe="y" type="button">+ Y</button><button id="removeKeyframe" type="button">移除当前</button></div>
+          <div id="keyframeList" class="keyframe-list"></div>
+        </section>
         <div id="qcNotice" class="qc-notice">修改后仍需重新运行对应 Timeline/QC 门禁。</div>
       </aside>
 
-      <section class="timeline-panel" aria-labelledby="timeline-title">
-        <div class="panel-heading timeline-heading">
-          <div><span class="panel-index">03</span><h2 id="timeline-title">Timeline Projection</h2></div>
-          <div class="transport">
-            <span id="timecode" class="mono">00:00:00.000</span>
-            <label>缩放 <input id="zoom" type="range" min="1" max="8" step="0.5" value="1"></label>
-          </div>
-        </div>
+      <section class="timeline-panel panel" aria-labelledby="timeline-title">
+        <div class="panel-heading timeline-heading"><div><span class="panel-index">04</span><h2 id="timeline-title">Timeline Projection</h2></div><div class="transport"><span id="timecode" class="mono">00:00:00.000</span><label>缩放 <input id="zoom" type="range" min="1" max="8" step=".5" value="1"></label></div></div>
         <div id="timelineViewport" class="timeline-viewport">
           <div id="ruler" class="ruler"></div>
+          <div id="waveform" class="waveform"><span class="track-label">WAVEFORM</span><div class="waveform-lane"><img id="waveformImage" alt="源音频波形" hidden><span id="waveformState">波形尚未生成</span></div></div>
           <div id="tracks" class="tracks"></div>
+          <div id="workArea" class="work-area" hidden></div>
+          <div id="markerLayer" class="marker-layer" aria-hidden="true"></div>
           <div id="playhead" class="playhead" aria-hidden="true"></div>
         </div>
+        <footer class="shortcut-bar"><span><kbd>Space</kbd> 播放</span><span><kbd>M</kbd> 标记</span><span><kbd>S</kbd> 分割</span><span><kbd>[</kbd>/<kbd>]</kbd> 工作区</span><span><kbd>⌘Z</kbd> 撤销</span><span>拖动叠加层或片段边缘进行校正</span></footer>
       </section>
     </section>
   </main>

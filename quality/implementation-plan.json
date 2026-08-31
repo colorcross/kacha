@@ -2,323 +2,146 @@
   "$schema": "appcreate://schemas/implementation-plan.schema.json",
   "schemaVersion": 3,
   "status": "approved",
-  "draftRevision": "kacha-product-optimization-draft-r1",
-  "objective": "Fix every locally solvable finding from the 2026-08-30 comprehensive Kacha audit, prove the exact change set across code, browser, installer, macOS CI and product-truth layers, push it to main, and install the reviewed bundle to Codex and Claude Code without expanding Kacha into a general NLE.",
+  "draftRevision": "kacha-human-agent-editing-draft-r1",
+  "objective": "Implement the FableCut-informed recommendations as a safe, client-neutral professional human-agent editing layer on Kacha's existing Timeline IR, and verify every locally solvable slice without weakening rendering, copyright, QC or human-review boundaries.",
   "scopeIn": [
-    "secure standalone and checkout installer channel resolution",
-    "Studio immutable catalog cache and startup prewarm",
-    "typed Studio JSON body limits and error responses",
-    "macOS smoke Python venv repair",
-    "machine-checked current product counts and synchronized canonical copy",
-    "explicit stable/canary acquisition messaging",
-    "correct Chinese and English document languages",
-    "privacy-conscious adoption measurement contract",
-    "focused, full, browser, security, deployment and dual-agent install verification",
-    "commit and push the reviewed exact tree to origin/main"
+    "Workbench V2: direct manipulation, multi-select, snapping, trim, split, explicit EDL reorder, markers, work area, waveforms, keyframes, supported media replacement and delivery guides",
+    "typed operation commands compiled through the existing mutation and Command Journal path",
+    "revision-aware Studio editor events without a second state store",
+    "Project Bin backed by media index and corpus provenance",
+    "local technical rhythm analysis and rights-gated clean-room translation",
+    "client-neutral Kacha MCP stdio server with compact reads and typed operations",
+    "local MCP configuration metadata and deterministic first-run demo",
+    "focused, full, browser, protocol, security, documentation and installation verification"
   ],
   "scopeOut": [
-    "GitHub Release or tag creation",
-    "third-party analytics installation",
-    "forced vinext major-beta migration",
-    "paid model calls or external media upload",
-    "general-purpose nonlinear editor scope",
-    "claims of real creator value, retention or output quality without external evidence",
-    "independent final approval performed by the same producer"
+    "general-purpose NLE parity, whole-project JSON set or force overwrite",
+    "browser or WebGPU final rendering, cloud collaboration, accounts or remote asset storage",
+    "silent downloads, paid calls, external media upload or shot-for-shot reproduction",
+    "official MCP Registry publication, Git commit, push or GitHub release",
+    "creator-value claims without normal-speed human evidence"
   ],
   "constraints": [
-    "Timeline IR remains canonical and FFmpeg remains the only current final renderer",
-    "Studio Canvas remains visibly approximate",
-    "source media, private fonts, SFX and user assets remain outside the public change set",
-    "installation never overwrites an existing skill",
-    "all public-current claims must be derived or checked while historical snapshots remain unchanged",
-    "all expected request failures remain JSON, local-only and fail-closed",
-    "the exact reviewed source tree must be installed after tests and before local deployment is claimed"
+    "Timeline IR and 120000-tick Timebase V2 remain canonical.",
+    "Every edit requires base SHA, typed allowlist, atomic validation, journal evidence, undo/redo and required QC.",
+    "Workbench stays visibly approximate and cannot approve final render, QC or release.",
+    "Asset views disclose strong identity, provenance, license and semantic limitations.",
+    "Rhythm analysis is local technical evidence and cannot claim semantic understanding or creative authorization.",
+    "Public bundles exclude project/private assets and AppCreate evidence.",
+    "MCP filesystem access is restricted to an explicit configured project root and realpath containment checks."
   ],
   "assumptions": [
-    "built-in catalog files are immutable during one Studio process while custom styles may change",
-    "raw GitHub remains the authoritative standalone source for config/release-channels.json",
-    "GitHub Pages continues to deploy website changes through the existing workflow",
-    "GitHub macos-latest provides python3 venv and Homebrew",
-    "multiple Next-compatible root layouts are supported by the current vinext build"
+    "Supported media replacement preserves surrounding edits only for asset slots represented by current Timeline IR.",
+    "Waveform peaks can be generated locally with FFmpeg and cached by strong identity.",
+    "Protocol fixtures can prove current and legacy MCP compatibility without a runtime npm dependency."
   ],
   "architectureDecisions": [
-    {
-      "id": "AD-OPT-01",
-      "decision": "Release refs remain single-sourced in config/release-channels.json; a standalone installer fetches and validates that file instead of duplicating refs."
-    },
-    {
-      "id": "AD-OPT-02",
-      "decision": "Only the immutable production catalog base is cached per process; custom style files are reread and merged on every public load."
-    },
-    {
-      "id": "AD-OPT-03",
-      "decision": "Studio request parsing produces a plain-object contract and typed 400/413 errors without destroying the loopback server connection."
-    },
-    {
-      "id": "AD-OPT-04",
-      "decision": "Current product counts are executable truth checked by the static gate; historical evidence files are not rewritten."
-    },
-    {
-      "id": "AD-OPT-05",
-      "decision": "Locale-specific route groups own html lang while shared metadata and SiteShell preserve one visual implementation."
-    },
-    {
-      "id": "AD-OPT-06",
-      "decision": "Adoption measurement is local-first and opt-in; no tracker or business outcome is invented in this iteration."
-    }
+    {"id": "AD-HAE-01", "decision": "Add typed operation commands beside scalar changes, compiling both through one journaled mutation boundary; picture ordering uses an explicit reorder operation while timed tracks use bounded position changes; no UI-only edit state is persisted."},
+    {"id": "AD-HAE-02", "decision": "Represent markers, work area, keyframes and delivery frames as validated optional editor metadata inside Timeline IR 1.0; final rendering ignores metadata without execution semantics and parity tests prove metadata-only edits do not alter the Render Graph digest."},
+    {"id": "AD-HAE-03", "decision": "SSE carries only Timeline SHA and projection digest; browser access uses the unguessable active editor session handle because native EventSource cannot add the Studio header, while loopback Host/Origin checks and no-referrer policy remain mandatory."},
+    {"id": "AD-HAE-04", "decision": "Project Bin reads media-index/corpus contracts; insertion or replacement exists only for typed supported Timeline slots and must revalidate indexed SHA, provenance and license at mutation time."},
+    {"id": "AD-HAE-05", "decision": "Rhythm analysis emits cuts, onsets, BPM candidates, energy windows and drops; clean-room derivation remains rights-gated."},
+    {"id": "AD-HAE-06", "decision": "Use a dependency-free stdio MCP facade with deterministic tools/list, compact structuredContent, explicit project-root confinement, 2026-07-28 discovery and legacy initialize compatibility."},
+    {"id": "AD-HAE-07", "decision": "Distribution means bundle-contained metadata, configuration helpers and a local demo; external registry publication is an external condition."}
   ],
   "verticalSlices": [
     {
-      "id": "INSTALL",
-      "outcome": "The primary public install path works securely and exposes an explicit channel choice.",
-      "scope": [
-        "scripts/install.sh",
-        "tests/test_installer.sh",
-        "README files",
-        "website install copy"
-      ],
-      "acceptance": [
-        "checkout stable and canary dry-runs pass",
-        "piped execution works with a mocked authoritative config fetch before push",
-        "the official remote piped dry-run succeeds from the pushed commit",
-        "invalid config and fetch failure fail closed",
-        "website names canary and documents stable"
-      ],
+      "id": "EDITOR-COMMANDS",
+      "outcome": "Professional timeline operations are safe, atomic and reversible.",
+      "scope": ["scripts/timeline_projection.mjs", "scripts/editor_command_journal.mjs", "config/schemas/editor-command.schema.json", "scripts/timeline_ir.mjs"],
+      "acceptance": ["batch changes, bounded timed-item move, explicit EDL reorder, trim, split, marker/work-area, keyframe and supported media-replace reject stale SHA or invalid ranges", "every success records forward/inverse mutations, affected tracks and QC", "undo/redo and recovery remain valid", "editor-metadata-only changes do not alter the Render Graph digest"],
       "status": "planned"
     },
     {
-      "id": "STUDIO-RUNTIME",
-      "outcome": "Studio starts with a warmed immutable catalog and keeps custom styles live.",
-      "scope": [
-        "scripts/kacha_studio.mjs",
-        "scripts/kacha_studio_server.mjs",
-        "tests/run_tests.mjs"
-      ],
-      "acceptance": [
-        "immutable validation runs once per process",
-        "returned catalog objects cannot mutate the cache",
-        "new custom styles appear after warmup",
-        "three post-ready bootstrap samples are sub-second on the audit host and are reported as host-specific evidence"
-      ],
+      "id": "WORKBENCH-V2",
+      "outcome": "Users can perform high-value corrections without editing JSON.",
+      "scope": ["studio/editor.html", "studio/editor.css", "studio/editor.js", "scripts/kacha_studio_server.mjs"],
+      "acceptance": ["multi-select, move/trim/split, snapping, markers/work area, overlay move/resize and keyframes are keyboard and pointer operable", "waveforms, delivery guides, empty/loading/error/conflict and QC states are visible", "desktop and 390px browser journeys have no uncaught errors or document overflow"],
       "status": "planned"
     },
     {
-      "id": "STUDIO-BOUNDARY",
-      "outcome": "Malformed and oversized Studio requests return deterministic JSON failures and leave the server healthy.",
-      "scope": [
-        "scripts/kacha_studio_server.mjs",
-        "tests/run_tests.mjs"
-      ],
-      "acceptance": [
-        "null and array roots return 400",
-        "declared and streamed bodies above 1 MB return 413",
-        "a health request succeeds after each failure",
-        "timeouts are finite and compatible with current local operations"
-      ],
+      "id": "LIVE-PROJECTION",
+      "outcome": "Workbench observes Agent edits without hidden state.",
+      "scope": ["scripts/kacha_studio_server.mjs", "studio/editor.js"],
+      "acceptance": ["loopback-only session-scoped SSE emits revision SHA and projection digest", "browser refetches canonical projection and surfaces conflicts", "invalid session, Origin or Host fails closed; disconnect cleanup and bounded clients are tested"],
       "status": "planned"
     },
     {
-      "id": "MACOS-CI",
-      "outcome": "The native smoke reaches static, core and installer gates on macos-latest.",
-      "scope": [
-        ".github/workflows/macos-smoke.yml"
-      ],
-      "acceptance": [
-        "Python packages install in a runner-temp venv",
-        "later scripts resolve the venv python3",
-        "a post-push manual dispatch reaches all smoke steps"
-      ],
+      "id": "PROJECT-BIN",
+      "outcome": "Local assets are searchable and visibly rights-aware in Workbench.",
+      "scope": ["scripts/project_bin.mjs", "scripts/kacha_studio_server.mjs", "studio/editor.html", "studio/editor.css", "studio/editor.js"],
+      "acceptance": ["index and optional corpus load with digest and identity checks", "search/filter returns compact type, range, provenance, license and limitation badges", "replacement revalidates current SHA/provenance/license and unsupported slots or stale identity fail closed"],
       "status": "planned"
     },
     {
-      "id": "PRODUCT-TRUTH",
-      "outcome": "Current counts, positioning, channel truth and adoption metrics stay synchronized.",
-      "scope": [
-        "scripts/verify_product_truth.mjs",
-        "Makefile",
-        "README files",
-        "website",
-        "docs/product"
-      ],
-      "acceptance": [
-        "checker derives 159 tests, 65 templates, 69 design entries and 23 core resources",
-        "canonical current surfaces agree",
-        "a negative mutation is rejected",
-        "measurement docs separate engineering, activation and human outcomes"
-      ],
+      "id": "RHYTHM-ORIGINALITY",
+      "outcome": "Kacha learns technical pacing while preserving originality and rights.",
+      "scope": ["scripts/rhythm_analysis.mjs", "scripts/reference_intelligence.mjs", "scripts/kacha.mjs"],
+      "acceptance": ["analysis returns bounded cuts, BPM candidates, energy windows and drops with method limits", "derived plans bind rhythm evidence only when rights allow", "network references, unknown rights and shot-for-shot instructions are rejected"],
       "status": "planned"
     },
     {
-      "id": "LOCALE-ACCESSIBILITY",
-      "outcome": "Chinese and English public pages render the correct document-level language without route or design regression.",
-      "scope": [
-        "website/app route layouts",
-        "website rendered tests"
-      ],
-      "acceptance": [
-        "root html is zh-CN at / and en at /en/",
-        "canonical URLs and metadata stay correct",
-        "normal and GitHub Pages packaged builds contain both locale routes",
-        "desktop and 390 px routes have no overflow or console errors"
-      ],
+      "id": "MCP-CONTROL",
+      "outcome": "Compatible local hosts use one compact Kacha control plane.",
+      "scope": ["scripts/kacha_mcp_server.mjs", "config/mcp/kacha.json", "tests/mcp_server_tests.mjs"],
+      "acceptance": ["stdio is newline-delimited JSON-RPC and stdout is protocol-only", "tool order is deterministic and schemas closed", "all file parameters resolve inside explicit project root", "mutations require path, base SHA and typed args", "2026-07-28 discovery and 2025-11-25 lifecycle fixtures pass"],
       "status": "planned"
     },
     {
-      "id": "VERIFY-DEPLOY",
-      "outcome": "The exact reviewed tree is pushed, publicly/readably deployed where authorized, and installed locally to both agents.",
-      "scope": [
-        "full test suite",
-        "website build",
-        "browser journeys",
-        "security review",
-        "Git diff",
-        "GitHub Actions",
-        "Codex and Claude Code skill directories"
-      ],
-      "acceptance": [
-        "focused and full checks pass",
-        "secret/privacy scan passes",
-        "remote main equals the local commit",
-        "Pages deploys the pushed website commit or is explicitly reported as failed",
-        "macOS smoke reaches all gates or is explicitly reported as failed",
-        "Codex and Claude installs report the same source revision and bundle digest"
-      ],
+      "id": "DISTRIBUTION-FIRST-RUN",
+      "outcome": "Local users can configure MCP and complete one deterministic offline walkthrough in under 90 seconds on the audit host.",
+      "scope": ["manifest.json", "scripts/kacha_mcp_config.mjs", "examples/first-run", "README.md", "README.en.md", "scripts/sync_skill_installs.mjs"],
+      "acceptance": ["helper emits client-neutral and host snippets without editing files by default", "offline demo builds, projects, edits, undoes and validates in under 90 seconds on the audit host", "bundle includes MCP assets and excludes private data", "Codex and Claude installed bundle digests match after gates"],
+      "status": "planned"
+    },
+    {
+      "id": "DOCS-QC",
+      "outcome": "Architecture, product truth and evidence accurately describe delivery.",
+      "scope": ["docs", "references", "quality", "tests"],
+      "acceptance": ["focused/full tests, browser flows, protocol fixtures, secret scan and install dry-run pass", "producer review covers all professional dimensions", "independent review, creator acceptance and registry publication stay external"],
       "status": "planned"
     }
   ],
-  "pageIds": [
-    "studio-home",
-    "studio-content",
-    "studio-project",
-    "studio-editor",
-    "studio-review",
-    "website-zh",
-    "website-en"
-  ],
+  "pageIds": ["studio-editor"],
   "acceptanceCriteria": [
-    "all eight selected audit recommendations have implementation or documentation evidence",
-    "the one deferred dependency recommendation remains exact, bounded and production-zero",
-    "159 baseline tests remain 159 and pass without weakening assertions",
-    "the official remote pipe installer dry-run succeeds before completion is claimed",
-    "first post-ready Studio bootstrap is sub-second on the audit host and custom styles stay live",
-    "all public and canonical current-product values pass the product-truth gate",
-    "website routes pass lint, types, rendered tests, Pages packaging and real-browser review",
-    "no private paths, credentials, project SFX or source media are committed",
-    "main is pushed and read back, then the exact reviewed bundle is installed to both local agents",
-    "independent final review and real-project outcome evidence remain explicitly open"
+    "all seven recommendation themes have code, tests and docs or an explicit external condition",
+    "no operation bypasses SHA, allowlist, atomic validation, journal, undo/redo or QC",
+    "Workbench stays approximate and final rendering stays FFmpeg-only",
+    "reference rhythm cannot bypass rights or originality gates",
+    "current and legacy MCP fixtures pass with compact deterministic output",
+    "full regression and installer checks pass without weakening prior tests",
+    "real browser evidence covers direct manipulation, responsive states and conflict handling",
+    "source and installed bundles contain no private media, SFX sources, credentials or quality evidence",
+    "producer findings are fixed and external evidence is not promoted to done"
   ],
-  "risks": [
-    "installer config bootstrap depends on raw GitHub availability",
-    "catalog caching could leak shared mutation or hide in-process built-in file edits",
-    "request streaming code could double-settle or leave listeners active",
-    "multiple root layouts may expose vinext compatibility differences",
-    "product-truth matching could become too broad and rewrite historical evidence",
-    "post-push Pages or macOS workflows may fail for infrastructure reasons",
-    "small future adoption cohorts may produce noisy signals"
-  ],
-  "rollback": "Revert the single scoped commit, verify origin/main and local skill targets separately, restore checkout-only install guidance if the remote bootstrap fails, and never delete user project data or existing skill directories.",
-  "projectContext": {
-    "ref": "quality/implementation-plan-context.json",
-    "digest": "sha256:a0287d52537fb954be45d0b35cf47c63d2fdd8a101b44cc15db46cecc9672753"
-  },
+  "risks": ["metadata could affect render identity without semantics", "split/trim could invalidate source or transitions", "SSE could leak descriptors or encourage hidden state", "waveform work could block Studio or grow disk", "MCP hosts may lag the protocol", "dense UI could regress accessibility", "rhythm evidence could be mistaken for authorization"],
+  "rollback": "Revert scoped source changes, restore prior Timeline/journal snapshots for experiments, remove only generated demo/temp/cache artifacts, and restore local skill targets from sync backups; never delete user media or silently rewrite client config.",
+  "projectContext": {"ref": "quality/implementation-plan-context.json", "digest": "sha256:cdeb89ae91663b6216ec7fe5429590b61862bb4603df69ae4a71efc15fadcae2"},
   "planReview": {
     "status": "completed",
     "reviewer": "codex-plan-review",
-    "reviewedAt": "2026-08-30T12:28:00Z",
-    "scope": [
-      "project fit",
-      "architecture boundaries",
-      "security",
-      "performance evidence",
-      "deployment truth",
-      "rollback and completion integrity"
-    ],
-    "evidenceRefs": [
-      "quality/product-audit-roadmap-2026-08-30.json",
-      "quality/implementation-plan-context.json",
-      "quality/product-optimization-plan-review-2026-08-30.json"
-    ],
-    "reviewedDraftDigest": "sha256:52bc61d5f77f112f9653d767938daa8585037f5519964a6c20a6844755c70aa7",
-    "acceptedFinalDigest": "sha256:87cba15b18ff14d4cf1600397314f44af26311c564e9d7d969f26c7d66f4c6a2",
+    "reviewedAt": "2026-08-31T06:52:00Z",
+    "scope": ["project fit", "architecture", "data contracts", "security", "UI journeys", "protocol compatibility", "testability", "completion integrity"],
+    "evidenceRefs": ["quality/implementation-plan-context.json", "quality/fablecut-informed-plan-review-2026-08-31.json"],
+    "reviewedDraftDigest": "sha256:b23a7f55afaf1cf9d188e913cf0effe99dc812a4c699c1afbd186f2bed051556",
+    "acceptedFinalDigest": "sha256:02b78604ec74b77bcd56cdeaf3cb286469f5bf4731f2a6ad9ffe611fb2fc5a5b",
     "findings": [
-      {
-        "id": "PLAN-OPT-001",
-        "severity": "high",
-        "status": "verified_closed",
-        "statement": "The installer slice only required a mocked stdin path and could pass while the real public raw-GitHub command remained broken.",
-        "impact": "The primary activation defect could be falsely closed.",
-        "remediation": "Add an official remote pipe dry-run bound to the pushed commit before completion.",
-        "verificationRefs": [
-          "quality/product-optimization-plan-review-2026-08-30.json"
-        ]
-      },
-      {
-        "id": "PLAN-OPT-002",
-        "severity": "medium",
-        "status": "verified_closed",
-        "statement": "A generic latency target would overstate cross-hardware performance.",
-        "impact": "Performance acceptance could be flaky or misleading.",
-        "remediation": "Bind the sub-second target to three post-ready samples on the audited host and report it as host-specific evidence.",
-        "verificationRefs": [
-          "quality/product-optimization-plan-review-2026-08-30.json"
-        ]
-      },
-      {
-        "id": "PLAN-OPT-003",
-        "severity": "medium",
-        "status": "verified_closed",
-        "statement": "Locale route-group changes were not explicitly required to survive GitHub Pages packaging.",
-        "impact": "Local accessibility could be fixed while the deployed static route disappears.",
-        "remediation": "Require both normal and Pages-packaged builds to contain both locale routes.",
-        "verificationRefs": [
-          "quality/product-optimization-plan-review-2026-08-30.json"
-        ]
-      },
-      {
-        "id": "PLAN-OPT-004",
-        "severity": "medium",
-        "status": "verified_closed",
-        "statement": "Deployment wording could be read as guaranteeing external workflow success.",
-        "impact": "A pushed commit could be mislabeled fully deployed when Pages or macOS infrastructure fails.",
-        "remediation": "Require exact outcome readback and honest failure reporting for each external layer.",
-        "verificationRefs": [
-          "quality/product-optimization-plan-review-2026-08-30.json"
-        ]
-      }
+      {"id": "PLAN-HAE-001", "severity": "high", "status": "verified_closed", "statement": "Generic picture movement was incompatible with contiguous EDL semantics.", "remediation": "Use explicit EDL reorder and reserve positional moves for timed tracks."},
+      {"id": "PLAN-HAE-002", "severity": "high", "status": "verified_closed", "statement": "Editor metadata could accidentally be treated as rendered output.", "remediation": "Validate it under an editor namespace and prove metadata-only changes preserve Render Graph digest."},
+      {"id": "PLAN-HAE-003", "severity": "high", "status": "verified_closed", "statement": "Native EventSource cannot send the existing Studio read header.", "remediation": "Use the active unguessable editor session handle with Host/Origin/no-referrer protections and negative tests."},
+      {"id": "PLAN-HAE-004", "severity": "medium", "status": "verified_closed", "statement": "Waveform work could block the server or consume unbounded resources.", "remediation": "Require asynchronous FFmpeg extraction, capped bins, timeout, identity cache and bounded concurrency."},
+      {"id": "PLAN-HAE-005", "severity": "high", "status": "verified_closed", "statement": "Arbitrary replacement paths would bypass asset provenance.", "remediation": "Allow only current indexed assets and revalidate SHA, provenance, license and supported slot at mutation time."},
+      {"id": "PLAN-HAE-006", "severity": "high", "status": "verified_closed", "statement": "A local MCP process without root confinement could expose unrelated files.", "remediation": "Require an explicit project root and realpath containment for every file argument."},
+      {"id": "PLAN-HAE-007", "severity": "medium", "status": "verified_closed", "statement": "The phrase 90-second demo was ambiguous between media duration and activation time.", "remediation": "Define it as a deterministic offline walkthrough completing under 90 seconds on the audited host."}
     ]
   },
-  "finalPlan": {
-    "revision": "kacha-product-optimization-final-r1",
-    "status": "frozen",
-    "basedOnDraftRevision": "kacha-product-optimization-draft-r1",
-    "contextDigest": "sha256:a0287d52537fb954be45d0b35cf47c63d2fdd8a101b44cc15db46cecc9672753",
-    "contentDigest": "sha256:87cba15b18ff14d4cf1600397314f44af26311c564e9d7d969f26c7d66f4c6a2",
-    "reviewRef": "quality/implementation-plan.json",
-    "finalizedBy": "codex-primary",
-    "finalizedAt": "2026-08-30T12:30:00Z",
-    "approvedBy": "user-explicit-request-2026-08-30",
-    "approvedAt": "2026-08-30T12:30:00Z"
-  },
   "adjustments": [
-    {
-      "id": "ADJ-OPT-001",
-      "reason": "Post-cache measurement showed that repeated system font discovery, not catalog parsing, accounted for the remaining roughly 0.8 seconds of every bootstrap request.",
-      "change": "Cache the installed-font probe per process, keyed by platform, PATH, configured font directory and local font-directory metadata; return a fresh Map to callers.",
-      "impact": "Closes the already frozen Studio performance acceptance without changing product scope, public contracts or final-render authority. New system fonts may require a Studio restart unless a watched project font directory changes.",
-      "impactLevel": "minor",
-      "status": "reviewed",
-      "approvedBy": "codex-plan-review",
-      "observedAt": "2026-08-30T13:05:00Z"
-    },
-    {
-      "id": "ADJ-OPT-002",
-      "reason": "Real-browser verification showed that a clipboard write can remain pending, leaving the public install action without success or failure feedback.",
-      "change": "Bound the Clipboard API attempt, add a local legacy-copy fallback, expose localized success/failure states, and verify both the normal and timeout paths in a real browser.",
-      "impact": "Closes the frozen public-site journey acceptance without changing the install command, product scope, data handling or external services.",
-      "impactLevel": "minor",
-      "status": "reviewed",
-      "approvedBy": "codex-plan-review",
-      "observedAt": "2026-08-30T13:35:00Z"
-    }
-  ]
+    "Replaced picture move with explicit EDL reorder.",
+    "Added render-digest parity for editor metadata.",
+    "Added session-scoped SSE security contract.",
+    "Bounded waveform extraction and asset replacement.",
+    "Added MCP project-root confinement.",
+    "Clarified the first-run performance target."
+  ],
+  "finalPlan": {"revision": "kacha-human-agent-editing-final-r2", "frozenAt": "2026-08-31T07:39:58Z", "digest": "sha256:02b78604ec74b77bcd56cdeaf3cb286469f5bf4731f2a6ad9ffe611fb2fc5a5b", "digestAlgorithm": "sha256-canonical-json-without-planReview.acceptedFinalDigest-and-finalPlan.digest", "digestBoundary": "approved plan content before self-referential digest fields"}
 }

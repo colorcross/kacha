@@ -210,8 +210,8 @@ node scripts/kacha.mjs editor project --timeline timeline.json
 node scripts/kacha.mjs editor query --timeline timeline.json --track overlays
 node scripts/kacha.mjs editor command apply --timeline timeline.json \
   --command command.json
-node scripts/kacha.mjs editor command undo --timeline timeline.json
-node scripts/kacha.mjs editor command redo --timeline timeline.json
+node scripts/kacha.mjs editor command undo --timeline timeline.json --expected-sha CURRENT_SHA
+node scripts/kacha.mjs editor command redo --timeline timeline.json --expected-sha CURRENT_SHA
 node scripts/kacha.mjs editor recover --timeline timeline.json --expected-sha CURRENT_SHA
 node scripts/kacha.mjs editor reopen --timeline timeline.json --expected-sha CURRENT_SHA
 ```
@@ -229,6 +229,20 @@ Studio Canvas 按 EDL 把成片播放头映射到源片，并显示图层投影�
 `ffmpeg-render-graph` 仍是 canonical final provider，但 final eligibility 还要
 通过当前 FFmpeg runtime probe。WebGPU 在没有 current golden parity 之前保持
 `not_implemented/finalEligible=false`。
+
+## MCP 客户端接入
+
+Codex 与 Claude Code 可通过本地 `stdio` MCP 使用同一控制面：
+
+```bash
+node scripts/kacha.mjs mcp-config show --client codex --root /absolute/project
+node scripts/kacha.mjs mcp-config show --client claude --root /absolute/project
+node scripts/kacha.mjs mcp serve --root /absolute/project
+```
+
+MCP tool 只返回紧凑 projection、状态和证据，不读取项目根目录外的路径。任何
+写操作都要求当前 Timeline SHA，并继续进入 Command Journal、快照、undo/redo 和
+required QC。MCP 注册不授予上传、付费、正式渲染或发布权限。
 
 ## Agent 默认编排
 

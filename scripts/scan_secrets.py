@@ -151,6 +151,18 @@ def main() -> int:
                 if (
                     entropy(candidate) >= 4.5
                     and not candidate.startswith(("http", "sha256"))
+                    and not candidate.startswith(
+                        (
+                            "quality/",
+                            "docs/",
+                            "references/",
+                            "scripts/",
+                            "config/",
+                            "examples/",
+                            "tests/",
+                            "website/",
+                        )
+                    )
                     and relative.name not in {
                         "package-lock.json",
                         "pnpm-lock.yaml",

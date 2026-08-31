@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0",
+  "reviewId": "kacha-human-agent-editing-plan-review-2026-08-31",
+  "status": "completed_with_findings_closed",
+  "reviewer": "codex-plan-review",
+  "producer": "codex-primary",
+  "independentFromProducer": false,
+  "reviewedAt": "2026-08-31T06:52:00Z",
+  "draftRevision": "kacha-human-agent-editing-draft-r1",
+  "reviewedDraftDigest": "sha256:b23a7f55afaf1cf9d188e913cf0effe99dc812a4c699c1afbd186f2bed051556",
+  "dimensions": ["product fit", "single source of truth", "mutation safety and recovery", "render and QC truth", "rights and originality", "UI accessibility and responsive behavior", "MCP compatibility and security", "performance and resource bounds", "testability and rollback", "completion honesty"],
+  "findings": [
+    {"id": "PLAN-HAE-001", "severity": "high", "status": "verified_closed", "problem": "Generic picture movement conflicts with contiguous EDL semantics.", "resolution": "Use explicit EDL reorder and bounded positional moves only for timed tracks."},
+    {"id": "PLAN-HAE-002", "severity": "high", "status": "verified_closed", "problem": "Editor metadata could be mistaken for rendered semantics.", "resolution": "Validate the editor namespace and add Render Graph digest parity tests."},
+    {"id": "PLAN-HAE-003", "severity": "high", "status": "verified_closed", "problem": "EventSource cannot send the Studio read header.", "resolution": "Use the active unguessable editor session plus loopback Host/Origin/no-referrer checks."},
+    {"id": "PLAN-HAE-004", "severity": "medium", "status": "verified_closed", "problem": "Waveform extraction could block or grow without bounds.", "resolution": "Use async FFmpeg, timeout, capped bins, strong-identity cache and bounded concurrency."},
+    {"id": "PLAN-HAE-005", "severity": "high", "status": "verified_closed", "problem": "Media replacement could bypass provenance.", "resolution": "Revalidate indexed SHA, provenance, license and supported slot at mutation time."},
+    {"id": "PLAN-HAE-006", "severity": "high", "status": "verified_closed", "problem": "MCP file parameters lacked an explicit trust boundary.", "resolution": "Require a configured project root and realpath containment."},
+    {"id": "PLAN-HAE-007", "severity": "medium", "status": "verified_closed", "problem": "The 90-second demo target was ambiguous.", "resolution": "Define it as offline activation time on the audited host."}
+  ],
+  "acceptedFinalRevision": "kacha-human-agent-editing-final-r2",
+  "acceptedFinalDigest": "sha256:02b78604ec74b77bcd56cdeaf3cb286469f5bf4731f2a6ad9ffe611fb2fc5a5b",
+  "administrativeCorrection": "r2 corrects the Chinese product name in the context and records explicit canonical digest algorithms; scope, findings and approval decision are unchanged.",
+  "decision": "approved_for_implementation"
+}

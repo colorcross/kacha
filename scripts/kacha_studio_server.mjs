@@ -13,7 +13,7 @@ import {
   saveCustomStyle,
 } from "./kacha_studio.mjs";
 import { loadKachaConfig } from "./kacha_config.mjs";
-import { readJson } from "./kacha_utils.mjs";
+import { fastIdentityMatches, fileIdentityMatches, readJson, sha256File } from "./kacha_utils.mjs";
 import { buildFlightSnapshot } from "./production_flight_recorder.mjs";
 import {
   buildPreferenceCandidate,
@@ -37,15 +37,21 @@ import {
   undoEditorCommand,
 } from "./editor_command_journal.mjs";
 import { listPreviewProviders } from "./preview_provider.mjs";
+import { listProjectBin } from "./project_bin.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(scriptDirectory, "..");
 const studioRoot = path.join(skillRoot, "studio");
-const brandLogo = path.join(skillRoot, "website", "public", "brand", "kacha-logo.png");
+const brandLogo = path.join(skillRoot, "assets", "brand", "kacha-logo.png");
 const MAX_BODY_BYTES = 1024 * 1024;
 const editorSessions = new Map();
 const EDITOR_SESSION_LIMIT = 32;
 const EDITOR_SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+const EDITOR_EVENT_CLIENT_LIMIT = 64;
+const waveformCache = new Map();
+const waveformPending = new Map();
+const WAVEFORM_CACHE_LIMIT = 24;
+const WAVEFORM_CONCURRENCY_LIMIT = 2;
 const SECURITY_HEADERS = {
   "Content-Security-Policy":
     "default-src 'self'; base-uri 'none'; connect-src 'self'; "
@@ -187,14 +193,222 @@ function requireLocalRead(request, port) {
   if (request.headers["x-kacha-studio"] !== "1") throw new Error("缺少本地生产台读取标记");
 }
 
+export function editorSessionExpired(session, atMs = Date.now()) {
+  return atMs - Number(session?.openedAtMs ?? 0) > EDITOR_SESSION_MAX_AGE_MS;
+}
+
 function activeEditorSession(sessionId) {
   const session = editorSessions.get(sessionId);
   if (!session) throw new Error("Editor browser session 已失效，请重新打开 Timeline");
-  if (Date.now() - session.openedAtMs > EDITOR_SESSION_MAX_AGE_MS) {
-    editorSessions.delete(sessionId);
+  if (editorSessionExpired(session)) {
+    disposeEditorSession(sessionId);
     throw new Error("Editor browser session 已过期，请重新打开 Timeline");
   }
   return session;
+}
+
+function disposeEditorSession(sessionId) {
+  const session = editorSessions.get(sessionId);
+  for (const response of session?.eventClients ?? []) {
+    try { response.end(); } catch {}
+  }
+  session?.eventClients?.clear();
+  editorSessions.delete(sessionId);
+}
+
+function editorSourceCurrent(session) {
+  if (!session.source) return true;
+  if (session.sourceCompromised) return false;
+  try {
+    const current = fastIdentityMatches(session.source.path, session.source.identity);
+    if (!current) session.sourceCompromised = true;
+    return current;
+  } catch {
+    session.sourceCompromised = true;
+    return false;
+  }
+}
+
+function assertEditorSourceCurrent(session) {
+  if (!editorSourceCurrent(session)) throw new HttpRequestError(409, "源媒体身份已变化，请重新打开 Timeline 后再编辑");
+}
+
+function browserEditorProject(session) {
+  const project = openEditorProject(session.timelinePath);
+  if (editorSourceCurrent(session)) return project;
+  return {
+    ...project,
+    status: "conflict",
+    session: { ...project.session, synchronized: false },
+    sourceIntegrity: {
+      status: "conflict",
+      reason: "source_identity_changed",
+      error: "源媒体身份已变化，请重新打开 Timeline 后再编辑",
+    },
+  };
+}
+
+function editorRevision(session) {
+  try {
+    const timelineSha256 = sha256File(session.timelinePath);
+    const project = browserEditorProject(session);
+    return {
+      schemaVersion: "1.0",
+      kind: "kacha-editor-revision",
+      status: project.status,
+      timelineSha256,
+      sessionSha256: project.session.currentSha256,
+      projectionDigest: project.projection.digest,
+      conflict: project.status !== "pass",
+      observedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    let timelineSha256 = null;
+    try { timelineSha256 = sha256File(session.timelinePath); } catch {}
+    return {
+      schemaVersion: "1.0",
+      kind: "kacha-editor-revision",
+      status: "blocked",
+      timelineSha256,
+      projectionDigest: null,
+      conflict: true,
+      error: error.message,
+      observedAt: new Date().toISOString(),
+    };
+  }
+}
+
+function writeEditorEvent(response, event, payload) {
+  response.write(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`);
+}
+
+function notifyEditorSession(session, reason = "mutation") {
+  const revision = { ...editorRevision(session), reason };
+  session.lastRevisionSha256 = revision.timelineSha256;
+  for (const response of session.eventClients ?? []) {
+    try { writeEditorEvent(response, "revision", revision); } catch {}
+  }
+}
+
+function serveEditorEvents(request, response, session, sessionId) {
+  const totalClients = [...editorSessions.values()].reduce(
+    (sum, candidate) => sum + Number(candidate.eventClients?.size ?? 0), 0,
+  );
+  if (totalClients >= EDITOR_EVENT_CLIENT_LIMIT) throw new HttpRequestError(429, "Editor 实时连接已达上限");
+  session.eventClients ??= new Set();
+  session.eventClients.add(response);
+  response.writeHead(200, {
+    ...SECURITY_HEADERS,
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-store, no-transform",
+    "Connection": "keep-alive",
+    "X-Accel-Buffering": "no",
+  });
+  const initial = editorRevision(session);
+  session.lastRevisionSha256 = initial.timelineSha256;
+  writeEditorEvent(response, "revision", { ...initial, reason: "connected" });
+  const interval = setInterval(() => {
+    try {
+      if (editorSessionExpired(session)) {
+        writeEditorEvent(response, "revision", {
+          schemaVersion: "1.0", status: "expired", conflict: true,
+          error: "Editor browser session 已过期，请重新打开 Timeline",
+          reason: "session_expired", observedAt: new Date().toISOString(),
+        });
+        disposeEditorSession(sessionId);
+        return;
+      }
+      const current = sha256File(session.timelinePath);
+      if (!editorSourceCurrent(session) && !session.sourceDriftNotified) {
+        session.sourceDriftNotified = true;
+        notifyEditorSession(session, "source_identity_changed");
+      } else if (current !== session.lastRevisionSha256) notifyEditorSession(session, "external_change");
+      else response.write(": heartbeat\n\n");
+    } catch (error) {
+      writeEditorEvent(response, "revision", {
+        schemaVersion: "1.0", status: "blocked", conflict: true,
+        error: error.message, reason: "poll_failed", observedAt: new Date().toISOString(),
+      });
+    }
+  }, 1000);
+  interval.unref();
+  const close = () => {
+    clearInterval(interval);
+    session.eventClients?.delete(response);
+  };
+  request.once("close", close);
+  response.once("close", close);
+}
+
+function waveformKey(session, width) {
+  const identity = session.source?.identity ?? {};
+  return [identity.path, identity.sizeBytes, identity.mtimeMs, identity.ctimeMs, identity.inode, width].join(":");
+}
+
+function generateWaveform(session, width) {
+  if (!session.source?.path || !fileIdentityMatches(session.source.path, session.source.identity)) {
+    return Promise.reject(new HttpRequestError(409, "源媒体身份已变化，请重新打开 Timeline"));
+  }
+  const key = waveformKey(session, width);
+  if (waveformCache.has(key)) return Promise.resolve(waveformCache.get(key));
+  if (waveformPending.has(key)) return waveformPending.get(key);
+  if (waveformPending.size >= WAVEFORM_CONCURRENCY_LIMIT) {
+    return Promise.reject(new HttpRequestError(429, "Editor 波形生成繁忙，请稍后重试"));
+  }
+  const task = new Promise((resolve, reject) => {
+    const child = spawn("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-nostdin",
+      "-i", session.source.path,
+      "-filter_complex", `aformat=channel_layouts=mono,showwavespic=s=${width}x96:colors=0xD59A52`,
+      "-frames:v", "1", "-f", "image2pipe", "-vcodec", "png", "pipe:1",
+    ], { stdio: ["ignore", "pipe", "pipe"] });
+    const output = [];
+    const errors = [];
+    let outputBytes = 0;
+    let errorBytes = 0;
+    const timeout = setTimeout(() => child.kill("SIGKILL"), 30_000);
+    child.stdout.on("data", (chunk) => {
+      outputBytes += chunk.length;
+      if (outputBytes <= 4 * 1024 * 1024) output.push(chunk);
+      else child.kill("SIGKILL");
+    });
+    child.stderr.on("data", (chunk) => {
+      errorBytes += chunk.length;
+      if (errorBytes <= 64 * 1024) errors.push(chunk);
+    });
+    child.once("error", reject);
+    child.once("close", (code, signal) => {
+      clearTimeout(timeout);
+      if (code !== 0 || signal || outputBytes === 0 || outputBytes > 4 * 1024 * 1024) {
+        reject(new HttpRequestError(422, Buffer.concat(errors).toString("utf8").trim() || "源媒体没有可生成的音频波形"));
+        return;
+      }
+      if (!fileIdentityMatches(session.source.path, session.source.identity)) {
+        reject(new HttpRequestError(409, "波形生成期间源媒体身份发生变化，请重新打开 Timeline"));
+        return;
+      }
+      const buffer = Buffer.concat(output);
+      waveformCache.set(key, buffer);
+      while (waveformCache.size > WAVEFORM_CACHE_LIMIT) waveformCache.delete(waveformCache.keys().next().value);
+      resolve(buffer);
+    });
+  }).finally(() => waveformPending.delete(key));
+  waveformPending.set(key, task);
+  return task;
+}
+
+async function serveWaveform(response, session, requestedWidth) {
+  if (!session.source) throw new HttpRequestError(404, "Editor session 没有源媒体");
+  const width = Number(requestedWidth ?? 1200);
+  if (!Number.isInteger(width) || width < 240 || width > 2048) throw new HttpRequestError(400, "waveform width 必须是 240–2048 整数");
+  const body = await generateWaveform(session, width);
+  response.writeHead(200, {
+    ...SECURITY_HEADERS,
+    "Content-Type": "image/png",
+    "Content-Length": body.length,
+    "Cache-Control": "private, max-age=300",
+  });
+  response.end(body);
 }
 
 function nativePick(kind) {
@@ -396,6 +610,18 @@ async function handleApi(request, response, url, port) {
     serveMedia(request, response, session.source);
     return;
   }
+  if (request.method === "GET" && pathname === "/api/editor/events") {
+    if (!sameOrigin(request, port)) throw new Error("拒绝跨站 Editor 事件读取");
+    const session = activeEditorSession(url.searchParams.get("session"));
+    serveEditorEvents(request, response, session, url.searchParams.get("session"));
+    return;
+  }
+  if (request.method === "GET" && pathname === "/api/editor/waveform") {
+    if (!sameOrigin(request, port)) throw new Error("拒绝跨站 Editor 波形读取");
+    const session = activeEditorSession(url.searchParams.get("session"));
+    await serveWaveform(response, session, url.searchParams.get("width"));
+    return;
+  }
   if (request.method !== "POST") {
     json(response, 405, { status: "blocked", error: "Method not allowed" });
     return;
@@ -535,12 +761,12 @@ async function handleApi(request, response, url, port) {
     }
     const currentTime = Date.now();
     for (const [id, session] of editorSessions.entries()) {
-      if (currentTime - session.openedAtMs > EDITOR_SESSION_MAX_AGE_MS) editorSessions.delete(id);
+      if (currentTime - session.openedAtMs > EDITOR_SESSION_MAX_AGE_MS) disposeEditorSession(id);
     }
     while (editorSessions.size >= EDITOR_SESSION_LIMIT) {
-      editorSessions.delete(editorSessions.keys().next().value);
+      disposeEditorSession(editorSessions.keys().next().value);
     }
-    const project = openEditorProject(body.timelinePath);
+    const project = openEditorProject(body.timelinePath, { includeSourceHash: true });
     if (project.status !== "pass") {
       throw new Error("Timeline 与既有 editor session 冲突；请先检查 editor history/recovery，再继续写入");
     }
@@ -555,6 +781,10 @@ async function handleApi(request, response, url, port) {
         : null,
       openedAt: new Date().toISOString(),
       openedAtMs: currentTime,
+      sourceCompromised: false,
+      sourceDriftNotified: false,
+      eventClients: new Set(),
+      lastRevisionSha256: project.session.currentSha256,
     });
     json(response, 200, {
       ...project,
@@ -566,23 +796,42 @@ async function handleApi(request, response, url, port) {
   if (pathname.startsWith("/api/editor/")) {
     const session = activeEditorSession(body.sessionId);
     if (pathname === "/api/editor/project") {
-      json(response, 200, openEditorProject(session.timelinePath));
+      json(response, 200, browserEditorProject(session));
       return;
     }
     if (pathname === "/api/editor/command") {
-      json(response, 200, applyEditorCommand(session.timelinePath, body.command));
+      assertEditorSourceCurrent(session);
+      const result = applyEditorCommand(session.timelinePath, body.command);
+      notifyEditorSession(session, "command");
+      json(response, 200, result);
       return;
     }
     if (pathname === "/api/editor/undo") {
-      json(response, 200, undoEditorCommand(session.timelinePath));
+      assertEditorSourceCurrent(session);
+      const result = undoEditorCommand(session.timelinePath, body.baseSha256);
+      notifyEditorSession(session, "undo");
+      json(response, 200, result);
       return;
     }
     if (pathname === "/api/editor/redo") {
-      json(response, 200, redoEditorCommand(session.timelinePath));
+      assertEditorSourceCurrent(session);
+      const result = redoEditorCommand(session.timelinePath, body.baseSha256);
+      notifyEditorSession(session, "redo");
+      json(response, 200, result);
       return;
     }
     if (pathname === "/api/editor/history") {
       json(response, 200, editorHistory(session.timelinePath));
+      return;
+    }
+    if (pathname === "/api/editor/bin") {
+      json(response, 200, listProjectBin(session.timelinePath, {
+        indexPath: body.indexPath ?? null,
+        query: body.query ?? "",
+        kind: body.kind ?? null,
+        license: body.license ?? null,
+        limit: body.limit ?? 40,
+      }));
       return;
     }
   }

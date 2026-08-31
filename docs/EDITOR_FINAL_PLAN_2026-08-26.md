@@ -93,8 +93,8 @@ kacha editor inspect --timeline TIMELINE.json
 kacha editor project --timeline TIMELINE.json
 kacha editor query --timeline TIMELINE.json --track caption
 kacha editor command apply --timeline TIMELINE.json --command COMMAND.json
-kacha editor command undo --timeline TIMELINE.json
-kacha editor command redo --timeline TIMELINE.json
+kacha editor command undo --timeline TIMELINE.json --expected-sha CURRENT_SHA
+kacha editor command redo --timeline TIMELINE.json --expected-sha CURRENT_SHA
 kacha editor history --timeline TIMELINE.json
 kacha editor recover --timeline TIMELINE.json --expected-sha CURRENT_SHA
 kacha editor reopen --timeline TIMELINE.json --expected-sha CURRENT_SHA

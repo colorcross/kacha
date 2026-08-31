@@ -57,7 +57,7 @@ node scripts/kacha.mjs install status --agent both
 node scripts/kacha.mjs timeline migrate-timebase \
   --plan timeline.json --output timeline.v2.json
 node scripts/kacha.mjs editor project --timeline timeline.v2.json
-node scripts/kacha.mjs editor command undo --timeline timeline.v2.json
+node scripts/kacha.mjs editor command undo --timeline timeline.v2.json --expected-sha CURRENT_SHA
 ```
 
 完整协议、失败边界和 Agent 编排见

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0",
+  "reviewId": "kacha-fablecut-informed-deep-review-r3-2026-08-31",
+  "status": "verified_closed",
+  "startedAt": "2026-08-31T09:42:45Z",
+  "producer": "codex-primary",
+  "baselineRevision": "02c074ae9d20c20b95295bac7ba96af3de4a752f",
+  "candidateWorktreeSha256AtStart": "51c3f1d09d16ff4ca66bde240097ba57539d6a9bca97a5d7862d772fbe88f34e",
+  "installedBundleDigestAtStart": "2bda27a5a7c3f585070a58efec15ae6986c0b158b19af14d54568a10580a2140",
+  "reviewBoundary": "Third producer deep review of the complete dirty candidate after R2 remediation, with fresh emphasis on concurrency, exact API contracts, lifecycle cleanup, crash consistency, protocol framing, browser accessibility and distribution truth.",
+  "dimensions": [
+    "product-boundary",
+    "editing-semantics",
+    "timeline-data-integrity",
+    "crash-consistency-and-concurrency",
+    "render-parity",
+    "security-privacy",
+    "interaction-accessibility",
+    "performance-reliability",
+    "protocol-compatibility",
+    "installation-rollback",
+    "tests-documentation-evidence"
+  ],
+  "findings": [
+    {"id": "DR3-001", "severity": "high", "status": "verified_fixed", "area": "playhead-edit-semantics", "problem": "Marker and work-area actions use the fractional HTMLVideoElement playhead tick directly, so normal playback can submit non-integer ticks that the Timeline contract rejects.", "remediation": "Marker, in/out and split edit points are frame-aligned before command submission; Chromium verified 0.413 seconds becomes tick 48000 at 25 fps."},
+    {"id": "DR3-002", "severity": "medium", "status": "verified_fixed", "area": "conflict-diagnostics", "problem": "openEditorProject reports the observed Timeline SHA as session.currentSha256 even during conflict, so revision.sessionSha256 cannot identify the stored journal-session head.", "remediation": "Session head remains currentSha256 and observed file state is exposed separately as timelineSha256, with drift regression coverage."},
+    {"id": "DR3-003", "severity": "medium", "status": "verified_fixed", "area": "command-contract", "problem": "Typed commands and direct editor metadata coerce objects or numeric strings into declared string/number fields, diverging from the JSON schema and scalar command contract.", "remediation": "String and numeric contracts now reject objects and numeric strings across typed commands and direct marker, delivery-frame and keyframe metadata."},
+    {"id": "DR3-004", "severity": "high", "status": "verified_fixed", "area": "project-bin-provenance", "problem": "Project Bin does not require ref to equal @asset:id and accepts malformed license or provenance evidence types that can be treated as replacement-authorized.", "remediation": "Index validation requires exact @asset:id refs, bounded license/provenance scalar types and audited string-or-string-array evidence before replacement."},
+    {"id": "DR3-005", "severity": "high", "status": "verified_fixed", "area": "mcp-distribution", "problem": "MCP registration readback checks only the client exit code, not whether the registered executable, server script and confined root match the requested configuration.", "remediation": "Registration now fails unless token-bounded readback matches name, executable, server script, --root and the complete project root; prefix-confusable roots are covered."},
+    {"id": "DR3-006", "severity": "medium", "status": "verified_fixed", "area": "workbench-async-state", "problem": "Late open, project refresh, Project Bin and mutation responses can render an older browser session or query after the user has moved to newer state.", "remediation": "Open, project and Project Bin requests use generation/session guards; mutations are serialized and stale session responses cannot render."},
+    {"id": "DR3-007", "severity": "medium", "status": "verified_fixed", "area": "workbench-time-ui", "problem": "Ruler clicks use target-relative offsetX and millisecond display floors floating-point values, causing incorrect seeks on tick labels and visible 2.400s to appear as 2.399s.", "remediation": "Ruler seeking uses clientX against the ruler bounding box and timecode rounds total milliseconds before decomposition; real Chromium child-label click reached 2.120 seconds."},
+    {"id": "DR3-008", "severity": "medium", "status": "verified_fixed", "area": "local-privacy", "problem": "Editor session, recovery and snapshot JSON files are written with the generic process umask instead of the journal's explicit private 0600 mode.", "remediation": "All private editor state is atomically written at 0600 and existing regular state files are tightened on open; regression begins from simulated legacy 0644 files."},
+    {"id": "DR3-009", "severity": "high", "status": "verified_fixed", "area": "source-integrity", "problem": "Studio open builds a fast projection without verifying a declared source.sha256, so an already-drifted source can be previewed as if it belonged to the Timeline.", "remediation": "Studio open computes the source hash and rejects a missing, malformed or stale declared source.sha256; noninteractive projection keeps its explicit fast default."},
+    {"id": "DR3-010", "severity": "low", "status": "verified_fixed", "area": "studio-lifecycle", "problem": "An active SSE connection can outlive the documented 12-hour editor-session TTL indefinitely because expiry is checked only on API lookup or later opens.", "remediation": "The SSE heartbeat checks the same TTL, emits an expiry revision and disposes all event clients and session state."}
+  ],
+  "completedAt": "2026-08-31T10:22:05Z",
+  "candidateWorktreeSha256BeforeEvidenceClose": "29222fb5ea83ac5697c50808d97e47ba75d0877d6e2a488e1ff53c082a29f992",
+  "verificationEvidence": "quality/evidence/fablecut-deep-review-r3-local-verification-2026-08-31.json",
+  "decision": "producer_verified_closed",
+  "limitations": [
+    "This is a producer review and cannot self-approve independent final review.",
+    "Real creator normal-speed acceptance remains an external condition."
+  ]
+}

@@ -9,6 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   acquireFileLock,
   fileIdentity,
+  mediaIndexDigest,
   mediaSummary,
   readJson,
   run,
@@ -42,7 +43,10 @@ import {
   redoEditorCommand,
   undoEditorCommand,
 } from "../scripts/editor_command_journal.mjs";
+import { buildTimelineProjection } from "../scripts/timeline_projection.mjs";
 import { applyJsonOperations } from "../scripts/json_mutation.mjs";
+import { listProjectBin, resolveIndexedAsset } from "../scripts/project_bin.mjs";
+import { editorSessionExpired } from "../scripts/kacha_studio_server.mjs";
 import {
   assertPreviewProviderEligibility,
   listPreviewProviders,
@@ -5269,6 +5273,12 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
         width: 70,
         height: 50,
         opacity: 0.85,
+        keyframes: {
+          x: [
+            { tick: 60000, time: 0.5, value: 230 },
+            { tick: 156000, time: 1.3, value: 100 },
+          ],
+        },
       }],
       subtitles: { kind: "overlay_video", path: subtitles },
     },
@@ -5327,6 +5337,7 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
     || readJson(graph).edl[0]?.scale !== 1.08
     || readJson(graph).edl[0]?.anchorY !== 0.42
     || compiledGraph.audio?.masterTruePeakDb !== -4
+    || compiledGraph.visual?.overlays?.[0]?.keyframes?.x?.length !== 2
     || compiledGraph.audio?.sfx?.[0]?.alignmentMode !== "waveform_peak"
     || Math.abs(
       compiledGraph.audio.sfx[0].fileStartSeconds
@@ -5338,6 +5349,20 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
     || summary.probe.streams.some((stream) => stream.codec_type === "data")
   ) {
     throw new Error("unified renderer did not preserve its one-encode media contract");
+  }
+  const metadataOnlyTimeline = readJson(timeline);
+  metadataOnlyTimeline.editor = {
+    markers: [{ id: "review", tick: 120000, label: "Review", color: "amber" }],
+    workArea: { startTick: 60000, endTick: 240000 },
+    deliveryFrames: [{ id: "vertical", label: "9:16", width: 1080, height: 1920 }],
+  };
+  writeJson(timeline, metadataOnlyTimeline);
+  const metadataGraph = path.join(directory, "render-graph-editor-metadata.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "timeline", "compile", "--plan", timeline, "--graph", metadataGraph,
+  ]);
+  if (readJson(metadataGraph).digest !== compiledGraph.digest) {
+    throw new Error("editor-only markers/work area/delivery guides changed Render Graph identity");
   }
   for (const stem of [dialogueStem, bgmStem, sfxStem, mixStem]) {
     if (!fs.existsSync(stem) || !mediaSummary(stem).audio) {
@@ -10392,7 +10417,7 @@ await test("V6 review workbench is local-only and exposes the new review assets"
     || !projectJs.includes("/api/project/run")
     || !projectJs.includes("renderEfficiency")
     || !contentHtml.includes("还没有视频")
-    || !editorJs.includes("if (!projection) return;")
+    || !editorJs.includes("if (!current) {")
     || !css.includes("--signal: #ff6b1a")
   ) throw new Error("V7 local project and unified review workbench contract is incomplete");
   const root = path.join(temporary, "v6-review-workbench");
@@ -10759,6 +10784,16 @@ await test("Timeline Projection and Command Journal apply undo redo and detect t
   }
   const originalSha = opened.session.currentSha256;
   const alignedStartTick = opened.session.timebase.ticksPerFrame * 30;
+  let missingBaseBlocked = false;
+  try {
+    applyEditorCommand(timeline, {
+      schemaVersion: "1.0", kind: "kacha-editor-command",
+      itemId: overlay.id, changes: { x: 240 },
+    });
+  } catch (error) {
+    missingBaseBlocked = /baseSha256/.test(error.message);
+  }
+  if (!missingBaseBlocked || sha256File(timeline) !== originalSha) throw new Error("editor apply accepted a mutation without caller SHA");
   const applied = applyEditorCommand(timeline, {
     schemaVersion: "1.0",
     kind: "kacha-editor-command",
@@ -10831,11 +10866,18 @@ await test("Timeline Projection and Command Journal apply undo redo and detect t
     staleBlocked = /expected|过期|其他进程/.test(error.message);
   }
   if (!staleBlocked) throw new Error("stale editor base SHA was not blocked");
-  const undone = undoEditorCommand(timeline);
+  let staleUndoBlocked = false;
+  try { undoEditorCommand(timeline, originalSha); } catch (error) {
+    staleUndoBlocked = /过期|expected/.test(error.message);
+  }
+  if (!staleUndoBlocked || sha256File(timeline) !== applied.timelineSha256) {
+    throw new Error("stale undo caller mutated current Timeline history");
+  }
+  const undone = undoEditorCommand(timeline, applied.timelineSha256);
   if (readJson(timeline).visual.overlays[0].x !== 20 || !undone.project.session.canRedo) {
     throw new Error("undo did not restore the snapshot-backed inverse command");
   }
-  const redone = redoEditorCommand(timeline);
+  const redone = redoEditorCommand(timeline, undone.timelineSha256);
   if (readJson(timeline).visual.overlays[0].x !== 240 || !redone.project.session.canUndo) {
     throw new Error("redo did not replay the original command");
   }
@@ -10874,6 +10916,12 @@ await test("Timeline Projection and Command Journal apply undo redo and detect t
   if (!externalDriftBlocked || sha256File(driftTimeline) !== driftSha || driftOpened.status !== "pass") {
     throw new Error("caller-supplied current SHA bypassed editor session conflict detection");
   }
+  const conflicted = openEditorProject(driftTimeline);
+  if (
+    conflicted.status !== "conflict"
+    || conflicted.session.currentSha256 !== driftOpened.session.currentSha256
+    || conflicted.session.timelineSha256 !== driftSha
+  ) throw new Error("editor conflict diagnostics collapsed session head into observed Timeline SHA");
   const reopened = reopenEditorProject(driftTimeline, {
     expectedCurrentSha256: driftSha,
     actor: "test",
@@ -10896,6 +10944,32 @@ await test("Timeline Projection and Command Journal apply undo redo and detect t
     throw new Error("valid command journal was not accepted");
   }
   const journal = applied.project.journal;
+  if (process.platform !== "win32") {
+    const editorStateRoot = path.dirname(journal);
+    const sessionState = readJson(path.join(editorStateRoot, "session.json"));
+    for (const privateFile of [
+      path.join(editorStateRoot, "session.json"),
+      sessionState.initialSnapshot.path,
+      path.join(editorStateRoot, "recovery.json"),
+    ]) {
+      if ((fs.statSync(privateFile).mode & 0o777) !== 0o600) {
+        throw new Error(`editor private state permissions are too broad: ${privateFile}`);
+      }
+    }
+    const legacyPrivateFiles = [
+      path.join(editorStateRoot, "session.json"),
+      sessionState.initialSnapshot.path,
+      path.join(editorStateRoot, "recovery.json"),
+      journal,
+    ];
+    for (const privateFile of legacyPrivateFiles) fs.chmodSync(privateFile, 0o644);
+    openEditorProject(timeline);
+    for (const privateFile of legacyPrivateFiles) {
+      if ((fs.statSync(privateFile).mode & 0o777) !== 0o600) {
+        throw new Error(`legacy editor state permissions were not tightened: ${privateFile}`);
+      }
+    }
+  }
   const originalJournal = fs.readFileSync(journal, "utf8");
   const tampered = originalJournal.split("\n").filter(Boolean).map((line, index) => {
     const record = JSON.parse(line);
@@ -10936,6 +11010,211 @@ await test("Timeline Projection and Command Journal apply undo redo and detect t
     || readJson(timeline).visual.overlays[0].x !== 240
     || editorHistory(timeline).status !== "pass"
   ) throw new Error("editor recovery did not restore and re-chain the last valid snapshot");
+  const recoveredJournal = recovered.project.journal;
+  const lastRecoveredRecord = fs.readFileSync(recoveredJournal, "utf8").trim().split("\n").map(JSON.parse).at(-1);
+  const snapshotPath = lastRecoveredRecord.snapshots.after.path;
+  const outsideSnapshot = path.join(root, "outside-snapshot.json");
+  fs.copyFileSync(snapshotPath, outsideSnapshot);
+  fs.unlinkSync(snapshotPath);
+  fs.symlinkSync(outsideSnapshot, snapshotPath);
+  let escapedSnapshotBlocked = false;
+  try {
+    recoverEditorProject(timeline, { expectedCurrentSha256: recovered.timelineSha256 });
+  } catch (error) {
+    escapedSnapshotBlocked = /越出 snapshots/.test(error.message);
+  } finally {
+    fs.unlinkSync(snapshotPath);
+    fs.copyFileSync(outsideSnapshot, snapshotPath);
+  }
+  if (!escapedSnapshotBlocked) throw new Error("snapshot recovery followed a symlink outside its evidence directory");
+}, "editor");
+
+await test("Editor V2 operations keep structural and motion edits journaled and reversible", () => {
+  const root = path.join(temporary, "editor-v2-operations");
+  fs.mkdirSync(root, { recursive: true });
+  const timeline = path.join(root, "timeline.json");
+  writeJson(timeline, {
+    schemaVersion: "1.0",
+    projectId: "editor-v2-operations",
+    mode: "preview",
+    source: { path: "missing-source.mp4" },
+    edl: [
+      { id: "a", sourceStart: 0, sourceEnd: 4 },
+      { id: "b", sourceStart: 5, sourceEnd: 9 },
+    ],
+    transitions: [],
+    visual: {
+      breathing: [],
+      overlays: [{
+        id: "card", kind: "image", path: "missing.png",
+        start: 1, end: 3, x: 10, y: 20, width: 100, height: 80, opacity: 1,
+      }],
+    },
+    audio: { bgm: { segments: [{ id: "music", path: "missing.wav", start: 0, end: 8 }] }, sfx: [] },
+    output: { path: "preview.mp4", width: 1280, height: 720, fps: 25 },
+  });
+  let project = openEditorProject(timeline);
+  const command = (body) => {
+    const value = applyEditorCommand(timeline, {
+      schemaVersion: "1.0",
+      kind: "kacha-editor-command",
+      baseSha256: project.session.currentSha256,
+      actor: "editor-v2-test",
+      reason: "exercise typed operation",
+      ...body,
+    });
+    project = value.project;
+    return value;
+  };
+  const frame = project.session.timebase.ticksPerFrame;
+  command({ operation: "marker_set", arguments: { marker: { id: "beat", tick: frame * 25, label: "Beat" } } });
+  command({ operation: "work_area_set", arguments: { startTick: frame * 10, endTick: frame * 120 } });
+  command({ operation: "delivery_frames_set", arguments: { frames: [
+    { id: "landscape", label: "16:9", width: 1920, height: 1080 },
+    { id: "vertical", label: "9:16", width: 1080, height: 1920 },
+  ] } });
+  command({ itemId: "overlay:card", operation: "keyframe_set", arguments: { property: "x", tick: frame * 25, value: 40 } });
+  command({ itemId: "overlay:card", operation: "keyframe_set", arguments: { property: "x", tick: frame * 50, value: 240 } });
+  command({ itemId: "overlay:card", operation: "keyframe_set", arguments: { tick: frame * 60, values: { x: 280, y: 90 } } });
+  const atomicKeyframes = readJson(timeline).visual.overlays[0].keyframes;
+  if (!atomicKeyframes.x.some((point) => point.tick === frame * 60 && point.value === 280)
+    || !atomicKeyframes.y.some((point) => point.tick === frame * 60 && point.value === 90)) {
+    throw new Error("atomic x/y keyframe edit did not update both rendered properties");
+  }
+  for (const invalidTyped of [
+    { operation: "marker_set", arguments: { marker: { id: "invalid", tick: frame, label: "x", hiddenPath: "/tmp" } } },
+    { operation: "work_area_clear", arguments: { unexpected: true } },
+    { itemId: "overlay:card", operation: "keyframe_set", arguments: { property: "x", value: 10, values: { x: 20 }, tick: frame * 40 } },
+    { operation: "batch", arguments: { edits: [{ itemId: "overlay:card", changes: { x: 5 }, arbitrary: true }] } },
+    { operation: "marker_remove", arguments: { id: "beat" }, arbitraryPath: "/tmp" },
+  ]) {
+    const before = sha256File(timeline);
+    let blocked = false;
+    try { command(invalidTyped); } catch (error) { blocked = /未知字段|不能混用/.test(error.message); }
+    if (!blocked || sha256File(timeline) !== before) throw new Error("typed operation accepted undeclared command or argument fields");
+  }
+  for (const invalidScalar of [
+    { operation: "marker_set", arguments: { marker: { id: { forged: true }, tick: frame, label: "x" } } },
+    { operation: "delivery_frames_set", arguments: { frames: [{ id: "bad", width: "640", height: 360 }] } },
+    { itemId: "overlay:card", operation: "keyframe_set", arguments: { property: "x", tick: frame * 40, value: "10" } },
+    { operation: "marker_set", arguments: { marker: { id: "actor-test", tick: frame, label: "x" } }, actor: { forged: true } },
+  ]) {
+    const before = sha256File(timeline);
+    let blocked = false;
+    try { command(invalidScalar); } catch (error) { blocked = /必须是|必须为/.test(error.message); }
+    if (!blocked || sha256File(timeline) !== before) throw new Error("typed operation coerced a non-contract scalar value");
+  }
+  const beforeMove = buildTimelineProjection(timeline).items.find((item) => item.id === "overlay:card");
+  command({ operation: "move", arguments: { itemIds: ["overlay:card"], deltaTick: frame * 5 } });
+  const afterMove = buildTimelineProjection(timeline).items.find((item) => item.id === "overlay:card");
+  if (afterMove.startTick - beforeMove.startTick !== frame * 5) throw new Error("typed move did not preserve duration");
+  command({ itemId: "picture:a", operation: "split", arguments: { outputTick: frame * 50, newId: "a-tail" } });
+  const splitProjection = buildTimelineProjection(timeline);
+  if (!splitProjection.items.some((item) => item.id === "picture:a-tail") || readJson(timeline).edl.length !== 3) {
+    throw new Error("typed split did not create a valid EDL segment");
+  }
+  command({ operation: "reorder", arguments: { itemIds: ["picture:b", "picture:a", "picture:a-tail"] } });
+  if (readJson(timeline).edl.map((entry) => entry.id).join(",") !== "b,a,a-tail") throw new Error("explicit EDL reorder failed");
+  const operationHistory = editorHistory(timeline);
+  if (operationHistory.status !== "pass" || !operationHistory.records.some((entry) => entry.operation === "keyframe_set")) {
+    throw new Error("operation identity was not retained in the Command Journal");
+  }
+  const binRoot = path.join(root, "assets");
+  fs.mkdirSync(binRoot, { recursive: true });
+  const targetAsset = path.join(binRoot, "target.png");
+  fs.writeFileSync(targetAsset, "project-bin-exact-target");
+  const targetIdentity = fileIdentity(targetAsset);
+  const makeAsset = (id) => ({
+    id, ref: `@asset:${id}`, kind: "image", path: targetAsset, identity: targetIdentity,
+    fields: { filename: `${id}.png` }, license: "owned",
+    provenance: { kind: "owned_local", evidence: "test-attestation", externalUpload: false },
+  });
+  const mediaIndexFile = path.join(root, ".kacha", "media-index.json");
+  const mediaIndex = {
+    schemaVersion: "1.0", kind: "kacha_media_index", digestVersion: "2", status: "pass",
+    root, items: [...Array.from({ length: 120 }, (_, index) => makeAsset(`target-${index}`)), makeAsset("target")],
+  };
+  mediaIndex.digest = mediaIndexDigest(mediaIndex);
+  writeJson(mediaIndexFile, mediaIndex);
+  if (resolveIndexedAsset(timeline, { assetRef: "@asset:target" }).ref !== "@asset:target") {
+    throw new Error("exact Project Bin resolution was truncated by substring candidates");
+  }
+  const duplicateRefIndex = readJson(mediaIndexFile);
+  duplicateRefIndex.items.push({ ...makeAsset("duplicate"), ref: "@asset:target" });
+  duplicateRefIndex.digest = mediaIndexDigest(duplicateRefIndex);
+  writeJson(mediaIndexFile, duplicateRefIndex);
+  let duplicateRefBlocked = false;
+  try { listProjectBin(timeline); } catch (error) { duplicateRefBlocked = /身份、ref 或类型合同无效/.test(error.message); }
+  if (!duplicateRefBlocked) throw new Error("Project Bin accepted duplicate asset refs");
+  for (const mutate of [
+    (value) => { value.items[0].ref = "@asset:wrong-id"; },
+    (value) => { value.items[0].license = { forged: true }; },
+    (value) => { value.items[0].license = " unknown "; },
+    (value) => { value.items[0].provenance.evidence = { forged: true }; },
+    (value) => { delete value.items[0].provenance.externalUpload; },
+  ]) {
+    const invalidIndex = structuredClone(mediaIndex);
+    mutate(invalidIndex);
+    invalidIndex.digest = mediaIndexDigest(invalidIndex);
+    writeJson(mediaIndexFile, invalidIndex);
+    let blocked = false;
+    try { listProjectBin(timeline); } catch (error) { blocked = /合同无效/.test(error.message); }
+    if (!blocked) throw new Error("Project Bin accepted forged ref, license or provenance evidence");
+  }
+  for (const mutate of [
+    (value) => { value.items.at(-1).license = "UNKNOWN"; },
+    (value) => { value.items.at(-1).provenance.kind = "Unverified"; },
+  ]) {
+    const riskIndex = structuredClone(mediaIndex);
+    mutate(riskIndex);
+    riskIndex.digest = mediaIndexDigest(riskIndex);
+    writeJson(mediaIndexFile, riskIndex);
+    const listed = listProjectBin(timeline, { exactRef: "@asset:target", limit: 1 });
+    if (listed.items[0]?.replacementEligible !== false) throw new Error("Project Bin presented canonical risk evidence as replacement-eligible");
+    let blocked = false;
+    try { resolveIndexedAsset(timeline, { assetRef: "@asset:target" }); } catch (error) { blocked = /未验证/.test(error.message); }
+    if (!blocked) throw new Error("Project Bin canonical risk state bypassed replacement authorization");
+  }
+  writeJson(mediaIndexFile, mediaIndex);
+  const invalidEditorMetadata = path.join(root, "invalid-editor-metadata.json");
+  const invalidEditorValue = readJson(timeline);
+  invalidEditorValue.editor.markers[0].label = "x".repeat(501);
+  writeJson(invalidEditorMetadata, invalidEditorValue);
+  let invalidMetadataBlocked = false;
+  try { openEditorProject(invalidEditorMetadata); } catch (error) { invalidMetadataBlocked = /editor.markers/.test(error.message); }
+  if (!invalidMetadataBlocked) throw new Error("direct Timeline metadata bypassed typed marker string bounds");
+  const invalidEditorType = path.join(root, "invalid-editor-type.json");
+  const invalidEditorTypeValue = readJson(timeline);
+  invalidEditorTypeValue.editor.markers[0].id = { forged: true };
+  writeJson(invalidEditorType, invalidEditorTypeValue);
+  let invalidMetadataTypeBlocked = false;
+  try { openEditorProject(invalidEditorType); } catch (error) { invalidMetadataTypeBlocked = /editor.markers/.test(error.message); }
+  if (!invalidMetadataTypeBlocked) throw new Error("direct Timeline metadata coerced an object marker id");
+  const invalidKeyframeType = path.join(root, "invalid-keyframe-type.json");
+  const invalidKeyframeTypeValue = readJson(timeline);
+  invalidKeyframeTypeValue.visual.overlays[0].keyframes.x[0].value = "40";
+  writeJson(invalidKeyframeType, invalidKeyframeTypeValue);
+  let invalidKeyframeTypeBlocked = false;
+  try { openEditorProject(invalidKeyframeType); } catch (error) { invalidKeyframeTypeBlocked = /keyframes.x/.test(error.message); }
+  if (!invalidKeyframeTypeBlocked) throw new Error("direct Timeline metadata coerced a string keyframe value");
+  const beforeInvalid = sha256File(timeline);
+  let transitionBlocked = false;
+  const withTransition = readJson(timeline);
+  withTransition.transitions = [{ boundaryIndex: 0, effectId: "micro_fade", durationFrames: 2 }];
+  withTransition.audio.bgm.segments[0].end = 8 - 2 / 25;
+  writeJson(timeline, withTransition);
+  const driftSha = sha256File(timeline);
+  reopenEditorProject(timeline, { expectedCurrentSha256: driftSha, actor: "test", reason: "add transition boundary" });
+  project = openEditorProject(timeline);
+  try {
+    command({ operation: "reorder", arguments: { itemIds: ["picture:a", "picture:b", "picture:a-tail"] } });
+  } catch (error) {
+    transitionBlocked = /已执行转场/.test(error.message);
+  }
+  if (!transitionBlocked || sha256File(timeline) !== driftSha || beforeInvalid === driftSha) {
+    throw new Error("structural edit bypassed executed transition safety");
+  }
+  if (editorHistory(timeline).status !== "pass") throw new Error("reopened operation history is invalid");
 }, "editor");
 
 await test("Preview Provider gate keeps approximate Canvas and unimplemented WebGPU out of final", () => {
@@ -10963,16 +11242,46 @@ await test("Preview Provider gate keeps approximate Canvas and unimplemented Web
 }, "editor");
 
 await test("Studio editor session supports open apply undo redo without arbitrary write paths", async () => {
+  if (!editorSessionExpired({ openedAtMs: 1 }, 12 * 60 * 60 * 1000 + 2)
+    || editorSessionExpired({ openedAtMs: 1000 }, 1001)) {
+    throw new Error("Editor SSE session expiry predicate is incorrect");
+  }
   const root = path.join(temporary, "studio-editor-api");
   fs.mkdirSync(root, { recursive: true });
   const timeline = path.join(root, "timeline.json");
   const sourceMedia = path.join(root, "source.mp4");
-  fs.writeFileSync(sourceMedia, Buffer.from("kacha-editor-media-range-test"));
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=0x20252b:s=320x180:d=1",
+    "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-shortest", "-c:v", "libx264", "-c:a", "aac", sourceMedia,
+  ]);
+  const assetRoot = path.join(root, "assets");
+  fs.mkdirSync(path.join(root, ".kacha"), { recursive: true });
+  fs.mkdirSync(assetRoot, { recursive: true });
+  const indexedAsset = path.join(assetRoot, "owned-card.png");
+  execute("ffmpeg", ["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=0xd59a52:s=64x64:d=0.1", "-frames:v", "1", indexedAsset]);
+  const mediaCatalog = path.join(root, "media-catalog.json");
+  writeJson(mediaCatalog, { entries: [{ path: "assets/owned-card.png", license: "owned", provenance: { kind: "owned_local", evidence: "test-owner-attestation", externalUpload: false } }] });
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "media", "index", "--root", root, "--catalog", mediaCatalog, "--output", path.join(root, ".kacha", "media-index.json")]);
+  const outsideIndexedAsset = path.join(temporary, "studio-editor-outside.png");
+  fs.copyFileSync(indexedAsset, outsideIndexedAsset);
+  const indexFile = path.join(root, ".kacha", "media-index.json");
+  const indexValue = readJson(indexFile);
+  const indexedCard = indexValue.items.find((entry) => path.basename(entry.path) === path.basename(indexedAsset));
+  if (!indexedCard) throw new Error("synthetic indexed card is missing");
+  indexValue.items.push({
+    ...structuredClone(indexedCard),
+    id: "outside-card",
+    ref: "@asset:outside-card",
+    path: outsideIndexedAsset,
+    identity: fileIdentity(outsideIndexedAsset),
+  });
+  indexValue.digest = mediaIndexDigest(indexValue);
+  writeJson(indexFile, indexValue);
   writeJson(timeline, {
     schemaVersion: "1.0",
     projectId: "studio-editor-api",
     mode: "preview",
-    source: { path: "source.mp4" },
+    source: { path: "source.mp4", sha256: sha256File(sourceMedia) },
     edl: [{ id: "main", sourceStart: 0, sourceEnd: 8 }],
     visual: { overlays: [{ id: "card", kind: "image", path: "missing.png", start: 1, end: 3, x: 10, y: 10, width: 100, height: 80, opacity: 1 }] },
     audio: { sfx: [] },
@@ -11006,15 +11315,38 @@ await test("Studio editor session supports open apply undo redo without arbitrar
     const item = opened.projection?.items?.find((candidate) => candidate.id === "overlay:card");
     if (!openedResponse.ok || !opened.browserSessionId || !item) throw new Error(`editor open failed: ${JSON.stringify(opened)}`);
     if (
-      opened.projection.timeline.sourceSha256 !== null
-      || opened.projection.timeline.sourceIdentity?.sha256 !== undefined
-    ) throw new Error("interactive projection hashed the complete source media by default");
+      opened.projection.timeline.sourceSha256 !== sha256File(sourceMedia)
+      || opened.projection.timeline.sourceIdentity?.sha256 !== sha256File(sourceMedia)
+    ) throw new Error("Studio open omitted the declared source media integrity verification");
+    const invalidEvents = await fetch(`${origin}/api/editor/events?session=${encodeURIComponent(opened.browserSessionId)}`, { headers: { origin: "https://attacker.invalid" } });
+    if (invalidEvents.ok) throw new Error("cross-origin editor event stream was accepted");
+    const eventsResponse = await fetch(`${origin}/api/editor/events?session=${encodeURIComponent(opened.browserSessionId)}`, { headers: { origin } });
+    if (!eventsResponse.ok || !String(eventsResponse.headers.get("content-type")).startsWith("text/event-stream")) throw new Error("editor event stream did not open");
+    const eventsReader = eventsResponse.body.getReader();
+    const initialEvent = Buffer.from((await eventsReader.read()).value ?? []).toString("utf8");
+    if (!initialEvent.includes("kacha-editor-revision") || !initialEvent.includes("connected")) throw new Error("editor event stream omitted its canonical initial revision");
     const mediaResponse = await fetch(
       `${origin}/api/editor/media?session=${encodeURIComponent(opened.browserSessionId)}`,
       { headers: { range: "bytes=0-4" } },
     );
-    if (mediaResponse.status !== 206 || Buffer.from(await mediaResponse.arrayBuffer()).toString() !== "kacha") {
+    if (mediaResponse.status !== 206 || Buffer.from(await mediaResponse.arrayBuffer()).length !== 5) {
       throw new Error("editor source media session did not stream the identity-bound byte range");
+    }
+    const waveformResponse = await fetch(`${origin}/api/editor/waveform?session=${encodeURIComponent(opened.browserSessionId)}&width=320`, { headers: { origin } });
+    const waveform = Buffer.from(await waveformResponse.arrayBuffer());
+    if (!waveformResponse.ok || waveform.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a") throw new Error("bounded editor waveform endpoint did not return PNG evidence");
+    const concurrentWaveforms = await Promise.all([321, 322, 323].map((width) => fetch(`${origin}/api/editor/waveform?session=${encodeURIComponent(opened.browserSessionId)}&width=${width}`, { headers: { origin } })));
+    if (!concurrentWaveforms.some((response) => response.status === 429) || concurrentWaveforms.filter((response) => response.ok).length > 2) {
+      throw new Error(`waveform concurrency was not bounded: ${concurrentWaveforms.map((response) => response.status).join(",")}`);
+    }
+    await Promise.all(concurrentWaveforms.map((response) => response.arrayBuffer()));
+    const binResponse = await fetch(`${origin}/api/editor/bin`, {
+      method: "POST", headers, body: JSON.stringify({ sessionId: opened.browserSessionId, query: "owned-card" }),
+    });
+    const projectBin = await binResponse.json();
+    const binEvidence = projectBin.items?.[0]?.provenance?.evidence;
+    if (!binResponse.ok || projectBin.items?.[0]?.license !== "owned" || projectBin.outsideRootExcluded !== 1 || projectBin.items.some((entry) => entry.path === outsideIndexedAsset) || !(Array.isArray(binEvidence) ? binEvidence : [binEvidence]).includes("test-owner-attestation")) {
+      throw new Error(`Project Bin omitted current license/provenance evidence: ${JSON.stringify(projectBin)}`);
     }
     const commandResponse = await fetch(`${origin}/api/editor/command`, {
       method: "POST", headers, body: JSON.stringify({
@@ -11030,13 +11362,71 @@ await test("Studio editor session supports open apply undo redo without arbitrar
     if (!commandResponse.ok || readJson(timeline).visual.overlays[0].x !== 88) {
       throw new Error(`editor command API failed: ${JSON.stringify(command)}`);
     }
+    let mutationEvent = "";
+    for (let attempt = 0; attempt < 4 && !mutationEvent.includes('"reason":"command"'); attempt += 1) {
+      const chunk = await Promise.race([
+        eventsReader.read(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("editor event timeout")), 2500)),
+      ]);
+      mutationEvent += Buffer.from(chunk.value ?? []).toString("utf8");
+    }
+    if (!mutationEvent.includes(command.timelineSha256) || !mutationEvent.includes('"reason":"command"')) throw new Error("editor command did not emit its SHA revision event");
+    const staleUndo = await fetch(`${origin}/api/editor/undo`, {
+      method: "POST", headers, body: JSON.stringify({ sessionId: opened.browserSessionId, baseSha256: opened.session.currentSha256 }),
+    });
+    if (staleUndo.ok || readJson(timeline).visual.overlays[0].x !== 88) throw new Error("stale Studio undo mutated current history");
+    let historySha = command.timelineSha256;
     for (const action of ["undo", "redo"]) {
       const response = await fetch(`${origin}/api/editor/${action}`, {
-        method: "POST", headers, body: JSON.stringify({ sessionId: opened.browserSessionId }),
+        method: "POST", headers, body: JSON.stringify({ sessionId: opened.browserSessionId, baseSha256: historySha }),
       });
-      if (!response.ok || (await response.json()).status !== "pass") throw new Error(`editor ${action} API failed`);
+      const value = await response.json();
+      if (!response.ok || value.status !== "pass") throw new Error(`editor ${action} API failed`);
+      historySha = value.timelineSha256;
     }
     if (readJson(timeline).visual.overlays[0].x !== 88) throw new Error("editor HTTP redo did not restore command");
+    const beforeSourceDriftSha = sha256File(timeline);
+    fs.appendFileSync(sourceMedia, Buffer.from([0]));
+    const staleWaveform = await fetch(`${origin}/api/editor/waveform?session=${encodeURIComponent(opened.browserSessionId)}&width=320`, { headers: { origin } });
+    if (staleWaveform.status !== 409 || !(await staleWaveform.text()).includes("源媒体身份已变化")) {
+      throw new Error("cached waveform bypassed the opened source identity");
+    }
+    let sourceDriftEvent = "";
+    for (let attempt = 0; attempt < 4 && !sourceDriftEvent.includes('"reason":"source_identity_changed"'); attempt += 1) {
+      const chunk = await Promise.race([
+        eventsReader.read(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("source drift event timeout")), 2500)),
+      ]);
+      sourceDriftEvent += Buffer.from(chunk.value ?? []).toString("utf8");
+    }
+    if (!sourceDriftEvent.includes('"reason":"source_identity_changed"') || !sourceDriftEvent.includes('"conflict":true')) {
+      throw new Error("source identity drift did not emit a terminal editor conflict revision");
+    }
+    const driftProjectResponse = await fetch(`${origin}/api/editor/project`, {
+      method: "POST", headers, body: JSON.stringify({ sessionId: opened.browserSessionId }),
+    });
+    const driftProject = await driftProjectResponse.json();
+    if (!driftProjectResponse.ok || driftProject.status !== "conflict" || driftProject.sourceIntegrity?.reason !== "source_identity_changed") {
+      throw new Error("Editor project readback did not disclose source identity drift");
+    }
+    for (const [endpoint, body] of [
+      ["command", { command: { schemaVersion: "1.0", kind: "kacha-editor-command", baseSha256: historySha, itemId: item.id, changes: { x: 89 }, actor: "studio-test", reason: "must block after source drift" } }],
+      ["undo", { baseSha256: historySha }],
+      ["redo", { baseSha256: historySha }],
+    ]) {
+      const response = await fetch(`${origin}/api/editor/${endpoint}`, {
+        method: "POST", headers, body: JSON.stringify({ sessionId: opened.browserSessionId, ...body }),
+      });
+      if (response.status !== 409 || !(await response.text()).includes("源媒体身份已变化") || sha256File(timeline) !== beforeSourceDriftSha) {
+        throw new Error(`Editor ${endpoint} mutated or proceeded after source identity drift`);
+      }
+    }
+    const staleOpenResponse = await fetch(`${origin}/api/editor/open`, {
+      method: "POST", headers, body: JSON.stringify({ timelinePath: timeline }),
+    });
+    if (staleOpenResponse.ok || !(await staleOpenResponse.text()).includes("source.sha256 已失效")) {
+      throw new Error("Studio reopened a Timeline whose declared source digest was stale");
+    }
     const forged = await fetch(`${origin}/api/editor/command`, {
       method: "POST", headers, body: JSON.stringify({
         sessionId: "forged-session",
@@ -11045,6 +11435,7 @@ await test("Studio editor session supports open apply undo redo without arbitrar
       }),
     });
     if (forged.ok || fs.existsSync(path.join(root, "other.json"))) throw new Error("forged editor session escaped its bound timeline");
+    await eventsReader.cancel();
   } finally {
     child.kill("SIGTERM");
     await Promise.race([
@@ -11126,6 +11517,46 @@ await test("cost ledger locks budget through reserve approve reconcile and refun
 
 await test("reference intelligence freezes rights and forbids shot for shot derivation", () => {
   const media = path.join(skillDirectory, "design", "reference-gallery", "xingzhe-v3", "normal-speed-previews", "info_single.mp4");
+  const rhythmMedia = path.join(temporary, "rhythm-reference.mp4");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=25:duration=4",
+    "-f", "lavfi", "-i", "sine=frequency=880:sample_rate=48000:duration=4",
+    "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", rhythmMedia,
+  ]);
+  const rhythmEvidence = path.join(temporary, "rhythm-evidence.json");
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "rhythm", "analyze", "--input", rhythmMedia, "--output", rhythmEvidence, "--max-events", "40"]);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "rhythm", "validate", "--input", rhythmEvidence]);
+  const rhythmValue = readJson(rhythmEvidence);
+  if (
+    rhythmValue.claims.semanticUnderstanding !== false
+    || rhythmValue.claims.beatGridIsAuthoritative !== false
+    || !Array.isArray(rhythmValue.audio.bpmCandidates)
+    || !rhythmValue.source.identity.sha256
+  ) throw new Error("technical rhythm evidence overclaimed semantics or omitted strong identity");
+  const rhythmAnalysis = path.join(temporary, "rhythm-reference-analysis.json");
+  const rhythmPlan = path.join(temporary, "rhythm-reference-plan.json");
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "analyze", "--input", rhythmMedia, "--output", rhythmAnalysis, "--rights-status", "owned", "--rhythm-evidence", rhythmEvidence]);
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "derive", "--analysis", rhythmAnalysis, "--output", rhythmPlan]);
+  if (readJson(rhythmPlan).technicalRhythmEvidence?.evidenceDigest !== rhythmValue.evidenceDigest) throw new Error("derived reference plan lost its approved technical rhythm evidence binding");
+  const malformedRhythm = readJson(rhythmEvidence);
+  malformedRhythm.audio.bpmCandidates = [{ bpm: 999, confidence: 2 }];
+  delete malformedRhythm.evidenceDigest;
+  malformedRhythm.evidenceDigest = sha256Value(malformedRhythm);
+  const malformedRhythmFile = path.join(temporary, "malformed-rhythm-evidence.json");
+  writeJson(malformedRhythmFile, malformedRhythm);
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "rhythm", "validate", "--input", malformedRhythmFile]).stderr.includes("invalid bpm or confidence")) {
+    throw new Error("rhythm validation accepted out-of-contract technical candidates");
+  }
+  const droppedRhythmPlan = readJson(rhythmPlan);
+  delete droppedRhythmPlan.technicalRhythmEvidence;
+  delete droppedRhythmPlan.planDigest;
+  droppedRhythmPlan.planDigest = sha256Value(droppedRhythmPlan);
+  const droppedRhythmPlanFile = path.join(temporary, "rhythm-plan-without-binding.json");
+  writeJson(droppedRhythmPlanFile, droppedRhythmPlan);
+  if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "validate", "--input", droppedRhythmPlanFile]).stderr.includes("preserve the approved analysis rhythm evidence")) {
+    throw new Error("reference validation allowed a derived plan to drop approved rhythm evidence");
+  }
   const analysis = path.join(temporary, "reference-analysis.json");
   const plan = path.join(temporary, "reference-plan.json");
   execute(process.execPath, [path.join(scripts, "kacha.mjs"), "reference", "analyze", "--input", media, "--output", analysis, "--rights-status", "owned", "--keep", "editorial hierarchy", "--change", "replace every shot"]);
