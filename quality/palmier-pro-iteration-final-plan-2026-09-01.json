@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "status": "frozen",
+  "revision": "kacha-palmier-workspace-v3-final-r2",
+  "iterationId": "kacha-palmier-workspace-v3-2026-09-01",
+  "contextRef": "quality/palmier-pro-iteration-context-2026-09-01.json",
+  "reviewRefs": [
+    "quality/palmier-pro-iteration-plan-review-r1-2026-09-01.json",
+    "quality/palmier-pro-iteration-plan-review-r2-2026-09-01.json"
+  ],
+  "implementationOrder": [
+    "CAPABILITY-MAP",
+    "MULTI-TIMELINE",
+    "PRO-OPERATIONS",
+    "DELIVERY-HUB",
+    "WORKBENCH-V3",
+    "INTELLIGENCE-SURFACE",
+    "DOCS-QC"
+  ],
+  "acceptance": [
+    "多时间线工作区可创建、校验、列出和安全复制版本/画幅，不覆盖基线。",
+    "ripple trim 和 overwrite 经过同一 Command Journal 并可 undo/redo，过期 SHA、非整帧、越界或转场冲突全部失败关闭。",
+    "能力目录对用户列出 available/partial/planned/blocked、证据、局限和实际入口。",
+    "交付中心提供 H.264/H.265/ProRes 封闭 profile 与运行时可用性，交换与自包含包不越界不覆盖。",
+    "Workbench V3 在宽屏和 390px 宽度下可用，无未捕获异常，焦点、状态、局限和 required QC 可见。",
+    "旧 Timeline、旧 Editor Command、正式 FFmpeg 渲染和现有安全边界全量回归不退化。"
+  ],
+  "outOfScope": [
+    "伪造 multicam/nested 终渲染、通用调色节点和降噪执行链",
+    "外部付费生成、媒体外传、发布、commit 或 push",
+    "没有真实创作者证据的效率或质量提升声明"
+  ]
+}

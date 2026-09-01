@@ -1,6 +1,6 @@
 # Roadmap and decisions
 
-> 对账修订：`kacha-human-agent-editing-2026-08-31`。
+> 对账修订：`kacha-palmier-workspace-v3-2026-09-01`。
 
 ## 当前路线与优先级
 
@@ -36,6 +36,12 @@
     `x/y` 键帧是正式画面状态，必须进入 FFmpeg 终渲染和视觉动态复核。
 17. MCP 使用根目录受限的 stdio 工具面；它复用 Timeline IR 与 Command Journal，
     不建立第二套工程状态或权限系统。
+18. Palmier Pro 的可取之处是统一专业工作面、多时间线版本和 UI/Agent 共用编辑域；
+    咔嚓采用 clean-room 产品模式，不复制 GPLv3 实现。
+19. Workspace 只注册多个独立 Timeline IR；nested timeline 在终渲染语义完成前保持 planned。
+20. H.264/H.265/ProRes 使用封闭 profile 和运行时 encoder 探测；交付计划不冒充已渲染成片。
+21. 工程包默认 contract-only，不泄露绝对路径；只有显式授权且 license/provenance/SHA
+    完整的媒体才允许复制。
 
 ## 被替代的产品定义
 

@@ -38,6 +38,18 @@ import {
 } from "./editor_command_journal.mjs";
 import { listPreviewProviders } from "./preview_provider.mjs";
 import { listProjectBin } from "./project_bin.mjs";
+import { professionalCapabilityMap } from "./professional_capabilities.mjs";
+import {
+  duplicateWorkspaceTimeline,
+  loadEditorWorkspace,
+  resolveWorkspaceTimeline,
+} from "./editor_workspace.mjs";
+import {
+  createDeliveryPlan,
+  createSelfContainedBundle,
+  listDeliveryProfiles,
+} from "./kacha_delivery.mjs";
+import { exportNle } from "./kacha_nle.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(scriptDirectory, "..");
@@ -233,11 +245,13 @@ function assertEditorSourceCurrent(session) {
   if (!editorSourceCurrent(session)) throw new HttpRequestError(409, "源媒体身份已变化，请重新打开 Timeline 后再编辑");
 }
 
-function browserEditorProject(session) {
+function browserEditorProject(session, { includeWorkspace = true } = {}) {
   const project = openEditorProject(session.timelinePath);
-  if (editorSourceCurrent(session)) return project;
+  const workspace = includeWorkspace && session.workspacePath ? loadEditorWorkspace(session.workspacePath) : null;
+  if (editorSourceCurrent(session)) return { ...project, workspace };
   return {
     ...project,
+    workspace,
     status: "conflict",
     session: { ...project.session, synchronized: false },
     sourceIntegrity: {
@@ -251,7 +265,7 @@ function browserEditorProject(session) {
 function editorRevision(session) {
   try {
     const timelineSha256 = sha256File(session.timelinePath);
-    const project = browserEditorProject(session);
+    const project = browserEditorProject(session, { includeWorkspace: false });
     return {
       schemaVersion: "1.0",
       kind: "kacha-editor-revision",
@@ -766,13 +780,30 @@ async function handleApi(request, response, url, port) {
     while (editorSessions.size >= EDITOR_SESSION_LIMIT) {
       disposeEditorSession(editorSessions.keys().next().value);
     }
-    const project = openEditorProject(body.timelinePath, { includeSourceHash: true });
+    let timelinePath = body.timelinePath;
+    let workspace = null;
+    try {
+      const requested = readJson(path.resolve(body.timelinePath));
+      if (requested?.kind === "kacha-editor-workspace") {
+        const resolved = resolveWorkspaceTimeline(body.timelinePath, body.timelineId ?? null);
+        workspace = resolved.view;
+        timelinePath = resolved.timeline.absolutePath;
+      }
+    } catch (error) {
+      if (error instanceof SyntaxError) throw new Error("Timeline/Workspace 必须是有效 JSON");
+      throw error;
+    }
+    const project = openEditorProject(timelinePath, { includeSourceHash: true });
     if (project.status !== "pass") {
       throw new Error("Timeline 与既有 editor session 冲突；请先检查 editor history/recovery，再继续写入");
     }
     const sessionId = randomUUID();
     editorSessions.set(sessionId, {
       timelinePath: project.session.timelinePath,
+      workspacePath: workspace?.workspace?.path ?? null,
+      workspaceTimelineId: workspace
+        ? workspace.timelines.find((entry) => entry.absolutePath === project.session.timelinePath)?.id ?? workspace.activeTimelineId
+        : null,
       source: project.projection.timeline.sourceIdentity
         ? {
             path: project.projection.timeline.sourceIdentity.path,
@@ -788,6 +819,7 @@ async function handleApi(request, response, url, port) {
     });
     json(response, 200, {
       ...project,
+      workspace,
       browserSessionId: sessionId,
       previewProviders: listPreviewProviders(),
     });
@@ -822,6 +854,45 @@ async function handleApi(request, response, url, port) {
     }
     if (pathname === "/api/editor/history") {
       json(response, 200, editorHistory(session.timelinePath));
+      return;
+    }
+    if (pathname === "/api/editor/capabilities") {
+      json(response, 200, professionalCapabilityMap());
+      return;
+    }
+    if (pathname === "/api/editor/delivery-profiles") {
+      json(response, 200, listDeliveryProfiles());
+      return;
+    }
+    if (pathname === "/api/editor/delivery-plan") {
+      assertEditorSourceCurrent(session);
+      json(response, 201, createDeliveryPlan(session.timelinePath, body.profileId, body.outputPath));
+      return;
+    }
+    if (pathname === "/api/editor/delivery-bundle") {
+      assertEditorSourceCurrent(session);
+      json(response, 201, createSelfContainedBundle(session.timelinePath, body.outputPath, { includeMedia: body.includeMedia === true }));
+      return;
+    }
+    if (pathname === "/api/editor/nle-export") {
+      assertEditorSourceCurrent(session);
+      json(response, 201, exportNle(session.timelinePath, body.format, body.outputPath));
+      return;
+    }
+    if (pathname === "/api/editor/workspace-duplicate") {
+      assertEditorSourceCurrent(session);
+      if (!session.workspacePath) throw new Error("当前 Editor session 未从 Workspace 打开");
+      const workspace = duplicateWorkspaceTimeline(session.workspacePath, {
+        expectedWorkspaceSha256: body.expectedWorkspaceSha256,
+        sourceTimelineId: session.workspaceTimelineId,
+        newTimelineId: body.newTimelineId,
+        label: body.label,
+        outputPath: body.outputPath,
+        width: body.width,
+        height: body.height,
+        role: body.role,
+      });
+      json(response, 201, workspace);
       return;
     }
     if (pathname === "/api/editor/bin") {

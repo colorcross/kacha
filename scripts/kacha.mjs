@@ -52,6 +52,9 @@ function usage() {
       + "  kacha.mjs resources status|run [options]\n"
       + "  kacha.mjs delta diff|apply [options]\n"
       + "  kacha.mjs editor inspect|project|query|history|command|preview-capabilities [options]\n"
+      + "  kacha.mjs workspace create|show|duplicate [options]\n"
+      + "  kacha.mjs pro-capabilities\n"
+      + "  kacha.mjs delivery profiles|plan|bundle [options]\n"
       + "  kacha.mjs mcp serve --root /absolute/project\n"
       + "  kacha.mjs mcp-config show|validate|install --client codex|claude --root /absolute/project\n"
       + "  kacha.mjs media index|search [options]\n"
@@ -70,7 +73,7 @@ function usage() {
       + "  kacha.mjs eval template|cohort-template|validate|score|compare [options]\n"
       + "  kacha.mjs review build|show|validate|record|learn|activate|rollback [options]\n"
       + "  kacha.mjs release-review open|init|record|approve <project-manifest.json> [options]\n"
-      + "  kacha.mjs nle export|import --format otio|fcpxml|cmx3600 [options]\n"
+      + "  kacha.mjs nle export --format otio|fcpxml|premiere-xml|cmx3600 | import --format otio|fcpxml [options]\n"
       + "  kacha.mjs nle-app detect|session|record|validate [options]\n"
       + "  kacha.mjs install status|sync [options]\n"
       + "  kacha.mjs cache key|run|inspect [options]\n"
@@ -177,6 +180,9 @@ const delegatedCommands = {
   resources: "resource_scheduler.mjs",
   delta: "kacha_delta.mjs",
   editor: "kacha_editor.mjs",
+  workspace: "editor_workspace.mjs",
+  "pro-capabilities": "professional_capabilities.mjs",
+  delivery: "kacha_delivery.mjs",
   mcp: "kacha_mcp_server.mjs",
   "mcp-config": "kacha_mcp_config.mjs",
   media: "kacha_media.mjs",

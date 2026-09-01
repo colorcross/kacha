@@ -1,6 +1,6 @@
 # Product experience
 
-> 对账修订：`kacha-human-agent-editing-2026-08-31`。
+> 对账修订：`kacha-palmier-workspace-v3-2026-09-01`。
 
 ## 信息架构与产品形态
 
@@ -26,6 +26,11 @@ Workbench V2 将“看、选、改、验证”放在同一工作面：SSE 显示
 多画幅安全框只做构图辅助。Marker、工作区和交付画幅不改变 Render Graph；overlay
 键帧会改变正式渲染图。主画面结构变化使用 split/trim/显式 EDL 重排，不能用看似
 自由拖拽的操作掩盖转场和连续性风险。
+
+Workbench V3 增加 `Workspace → Timeline 版本/画幅切换 → 人机共用命令 → 交付计划/交换`
+旅程。复制时间线永不覆盖基线；ripple/overwrite 遇到转场、非整帧或 SHA 冲突时失败
+关闭。Professional Capability Map 区分已可用、部分可用和规划能力；Delivery Center 区分
+“已写计划/交换文件”和“已渲染/已在目标 NLE 验证”。
 
 Codex/Claude Code 还可通过根目录受限的 stdio MCP 读取和修改同一 Timeline；客户端
 接入不改变权限边界。首次演示提供小于 90 秒的离线激活目标，但首次验证候选仍要求

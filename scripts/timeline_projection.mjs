@@ -2,9 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   fileIdentity,
+  mediaSummary,
   readJson,
   resolveFrom,
-  sha256File,
   sha256Value,
 } from "./kacha_utils.mjs";
 import {
@@ -35,6 +35,61 @@ function sourceFile(timelineFile, source) {
   const candidate = typeof source === "string" ? source : source?.path;
   if (!candidate) return null;
   return resolveFrom(timelineFile, candidate);
+}
+
+function sameIdentity(left, right) {
+  return Boolean(left && right
+    && left.path === right.path
+    && left.sizeBytes === right.sizeBytes
+    && left.sha256 === right.sha256);
+}
+
+export function assertProjectionSourceCurrent(projection, {
+  cache = null,
+  requireDeclaredSha = false,
+} = {}) {
+  const declared = projection?.timeline?.sourceDeclared === true;
+  if (!declared) return { status: "not_declared", source: null, durationTick: null };
+  const source = projection?.timeline?.source;
+  if (!source) throw new Error("Timeline source 不存在");
+  const declaredSha256 = projection.timeline.sourceDeclaredSha256;
+  if (declaredSha256 !== null && !/^[a-f0-9]{64}$/.test(declaredSha256)) {
+    throw new Error("Timeline source.sha256 合同无效");
+  }
+  if (requireDeclaredSha && declaredSha256 === null) {
+    throw new Error("Timeline source 必须绑定当前真实 SHA-256");
+  }
+  let verification = cache?.get(source) ?? null;
+  if (!verification) {
+    const identity = fileIdentity(source);
+    const summary = mediaSummary(source);
+    if (!(Number.isFinite(summary.duration) && summary.duration > 0)) {
+      throw new Error("Timeline source 无法取得有效媒体时长");
+    }
+    verification = {
+      identity,
+      durationTick: secondsToTicks(summary.duration, projection.timebase),
+    };
+    cache?.set(source, verification);
+  }
+  if (declaredSha256 !== null && verification.identity.sha256 !== declaredSha256) {
+    throw new Error("Timeline source.sha256 已失效；源媒体内容已变化");
+  }
+  for (const item of projection.items.filter((candidate) => candidate.type === "picture")) {
+    if (item.metadata.sourceEndTick > verification.durationTick) {
+      throw new Error(`${item.id} 超出源媒体时长`);
+    }
+  }
+  return { status: "verified_current", source, ...verification };
+}
+
+export function assertSourceVerificationCacheStable(cache) {
+  for (const [source, verification] of cache ?? []) {
+    const current = fileIdentity(source);
+    if (!sameIdentity(current, verification.identity)) {
+      throw new Error(`Timeline source 在校验期间已变化：${source}`);
+    }
+  }
 }
 
 export function resolveTimelinePath(timelineFile) {
@@ -91,6 +146,7 @@ function makeItem({
 
 export function buildTimelineProjection(timelineFile, { includeSourceHash = false } = {}) {
   const resolved = resolveTimelinePath(timelineFile);
+  const timelineIdentity = fileIdentity(resolved);
   const input = readJson(resolved);
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new Error("Timeline 根节点必须是 object");
@@ -371,23 +427,24 @@ export function buildTimelineProjection(timelineFile, { includeSourceHash = fals
   const sourceIdentity = media && fs.existsSync(media) && fs.statSync(media).isFile()
     ? fileIdentity(fs.realpathSync(media), { includeHash: includeSourceHash })
     : null;
-  if (includeSourceHash && timeline.source && Object.hasOwn(timeline.source, "sha256")) {
-    const declaredSha256 = timeline.source.sha256;
-    if (!/^[a-f0-9]{64}$/.test(declaredSha256 ?? "")) throw new Error("Timeline source.sha256 合同无效");
-    if (!sourceIdentity?.sha256 || sourceIdentity.sha256 !== declaredSha256) {
-      throw new Error("Timeline source.sha256 已失效；源媒体内容已变化");
-    }
+  const currentTimelineIdentity = fileIdentity(resolved);
+  if (!sameIdentity(timelineIdentity, currentTimelineIdentity)) {
+    throw new Error("Timeline 在投影期间已变化");
   }
-  return {
+  const result = {
     schemaVersion: "1.0",
     kind: "kacha-timeline-projection",
     projectId: timeline.projectId,
     timeline: {
       path: resolved,
-      sha256: sha256File(resolved),
+      sha256: timelineIdentity.sha256,
       source: sourceIdentity?.path ?? null,
       sourceIdentity,
       sourceSha256: sourceIdentity?.sha256 ?? null,
+      sourceDeclared: Boolean(timeline.source),
+      sourceDeclaredSha256: typeof timeline.source === "object" && timeline.source !== null
+        ? timeline.source.sha256 ?? null
+        : null,
     },
     timebase: timebaseSummary(timebase),
     durationTick,
@@ -402,6 +459,12 @@ export function buildTimelineProjection(timelineFile, { includeSourceHash = fals
     items,
     digest: sha256Value({ projectId: timeline.projectId, timebase, durationTick, tracks, items }),
   };
+  if (includeSourceHash) {
+    const verification = assertProjectionSourceCurrent(result);
+    result.timeline.sourceIdentity = verification.identity ?? null;
+    result.timeline.sourceSha256 = verification.identity?.sha256 ?? null;
+  }
+  return result;
 }
 
 export function findProjectionItem(projection, itemId) {

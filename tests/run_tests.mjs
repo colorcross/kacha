@@ -51,6 +51,18 @@ import {
   assertPreviewProviderEligibility,
   listPreviewProviders,
 } from "../scripts/preview_provider.mjs";
+import { professionalCapabilityMap } from "../scripts/professional_capabilities.mjs";
+import {
+  createEditorWorkspace,
+  duplicateWorkspaceTimeline,
+  loadEditorWorkspace,
+} from "../scripts/editor_workspace.mjs";
+import {
+  createDeliveryPlan,
+  createSelfContainedBundle,
+  listDeliveryProfiles,
+} from "../scripts/kacha_delivery.mjs";
+import { exportNle, importNle } from "../scripts/kacha_nle.mjs";
 
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillDirectory = path.dirname(testDirectory);
@@ -10311,7 +10323,11 @@ await test("V6 NLE interchange round-trips semantic clip IDs as candidate-only t
   const root = path.join(temporary, "v6-nle");
   fs.mkdirSync(root, { recursive: true });
   const source = path.join(root, "source.mov");
-  fs.writeFileSync(source, "source fixture");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=0x263238:s=160x90:d=11:r=30000/1001",
+    "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", source,
+  ]);
+  if (mediaSummary(source).duration < 10) throw new Error("NLE source fixture is not a valid 10-second media file");
   const timeline = path.join(root, "timeline.json");
   writeJson(timeline, {
     schemaVersion: "1.0",
@@ -10380,7 +10396,11 @@ await test("V6 NLE interchange round-trips semantic clip IDs as candidate-only t
     "--output", path.join(root, "wrong-source-sha-candidate.json"),
   ]);
   const otherSource = path.join(root, "other-source.mov");
-  fs.writeFileSync(otherSource, "unrelated source fixture");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=0x5d4037:s=160x90:d=11:r=30000/1001",
+    "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", otherSource,
+  ]);
+  if (mediaSummary(otherSource).duration < 10) throw new Error("alternate NLE source fixture is not valid media");
   const otherTimeline = path.join(root, "other-timeline.json");
   const otherTimelineValue = readJson(timeline);
   otherTimelineValue.source = { path: otherSource, sha256: sha256File(otherSource) };
@@ -11251,8 +11271,8 @@ await test("Studio editor session supports open apply undo redo without arbitrar
   const timeline = path.join(root, "timeline.json");
   const sourceMedia = path.join(root, "source.mp4");
   execute("ffmpeg", [
-    "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=0x20252b:s=320x180:d=1",
-    "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-shortest", "-c:v", "libx264", "-c:a", "aac", sourceMedia,
+    "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=0x20252b:s=320x180:d=8",
+    "-f", "lavfi", "-i", "sine=frequency=440:duration=8", "-shortest", "-c:v", "libx264", "-c:a", "aac", sourceMedia,
   ]);
   const assetRoot = path.join(root, "assets");
   fs.mkdirSync(path.join(root, ".kacha"), { recursive: true });
@@ -11714,6 +11734,379 @@ await test("workflow packs validate and resolve through existing Kacha commands"
   fs.writeFileSync(customRegistry, "null\n");
   if (!expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "workflows", "validate", "--registry", customRegistry]).stderr.includes("root must be an object")) throw new Error("workflow registry null root was not rejected cleanly");
 }, "core");
+
+await test("Editor V3 workspace capability map ripple overwrite and delivery contracts remain honest and reversible", () => {
+  ensureMediaFixtures();
+  const root = path.join(temporary, "editor-v3-palmier-workspace");
+  fs.mkdirSync(root, { recursive: true });
+  const timeline = path.join(root, "timeline.json");
+  writeJson(timeline, {
+    schemaVersion: "1.0", projectId: "editor-v3", mode: "preview",
+    source: {
+      path: baseVideo, sha256: sha256File(baseVideo), license: "owned",
+      provenance: { kind: "owned_local", evidence: "test-owner-attestation", externalUpload: false },
+    },
+    edl: [
+      { id: "a", sourceStart: 0, sourceEnd: 1 },
+      { id: "b", sourceStart: 1, sourceEnd: 2 },
+    ],
+    transitions: [], visual: { breathing: [], overlays: [] }, audio: { sfx: [] },
+    output: { path: "./output/preview.mp4", width: 1280, height: 720, fps: 25 },
+  });
+  let project = openEditorProject(timeline);
+  const frame = project.session.timebase.ticksPerFrame;
+  let result = applyEditorCommand(timeline, {
+    schemaVersion: "1.0", kind: "kacha-editor-command", baseSha256: project.session.currentSha256,
+    itemId: "picture:a", operation: "ripple_trim", arguments: { edge: "end", outputTick: frame * 20 },
+    actor: "editor-v3-test", reason: "picture ripple trim",
+  });
+  if (buildTimelineProjection(timeline).durationTick !== frame * 45 || !result.requiredQc.includes("connection_qc")) {
+    throw new Error("picture ripple trim did not shift the contiguous EDL duration or require connection QC");
+  }
+  result = undoEditorCommand(timeline, result.timelineSha256); project = result.project;
+  const beforeOverwrite = sha256File(timeline);
+  result = applyEditorCommand(timeline, {
+    schemaVersion: "1.0", kind: "kacha-editor-command", baseSha256: project.session.currentSha256,
+    operation: "overwrite", arguments: {
+      outputStartTick: frame * 10, outputEndTick: frame * 20,
+      sourceStartTick: frame * 30, sourceEndTick: frame * 40,
+      newId: "insert", sourceDecisionId: "decision-insert", semanticBeatId: "beat-insert", reason: "evidence overwrite",
+    }, actor: "editor-v3-test", reason: "overwrite work area",
+  });
+  const overwritten = readJson(timeline);
+  if (!overwritten.edl.some((clip) => clip.id === "insert" && clip.semanticBeatId === "beat-insert") || overwritten.edl.length !== 4) {
+    throw new Error("overwrite did not preserve left/right ranges and semantic metadata");
+  }
+  const restored = undoEditorCommand(timeline, result.timelineSha256);
+  if (sha256File(timeline) !== beforeOverwrite || restored.project.status !== "pass") throw new Error("overwrite was not exactly reversible");
+  const invalidBefore = sha256File(timeline);
+  let unalignedBlocked = false;
+  try {
+    applyEditorCommand(timeline, {
+      schemaVersion: "1.0", kind: "kacha-editor-command", baseSha256: invalidBefore,
+      operation: "overwrite", arguments: { outputStartTick: 1, outputEndTick: frame, sourceStartTick: 0, sourceEndTick: frame - 1, newId: "bad" },
+    });
+  } catch (error) { unalignedBlocked = /整帧/.test(error.message); }
+  if (!unalignedBlocked || sha256File(timeline) !== invalidBefore) throw new Error("unaligned overwrite crossed the atomic boundary");
+  let structuredMetadataBlocked = false;
+  try {
+    applyEditorCommand(timeline, {
+      schemaVersion: "1.0", kind: "kacha-editor-command", baseSha256: invalidBefore,
+      operation: "overwrite", arguments: {
+        outputStartTick: frame * 10, outputEndTick: frame * 20, sourceStartTick: frame * 30, sourceEndTick: frame * 40,
+        newId: "structured", sourceDecisionId: { forged: true },
+      },
+    });
+  } catch (error) { structuredMetadataBlocked = /必须是/.test(error.message); }
+  if (!structuredMetadataBlocked || sha256File(timeline) !== invalidBefore) throw new Error("overwrite coerced structured semantic metadata");
+  let sourceDurationBlocked = false;
+  try {
+    applyEditorCommand(timeline, {
+      schemaVersion: "1.0", kind: "kacha-editor-command", baseSha256: invalidBefore,
+      operation: "overwrite", arguments: {
+        outputStartTick: 0, outputEndTick: frame,
+        sourceStartTick: frame * 10_000, sourceEndTick: frame * 10_001,
+        newId: "beyond-source-duration",
+      },
+    });
+  } catch (error) { sourceDurationBlocked = /源媒体时长/.test(error.message); }
+  if (!sourceDurationBlocked || sha256File(timeline) !== invalidBefore) throw new Error("overwrite accepted a range beyond source media duration");
+  const transitionTimeline = path.join(root, "transition-timeline.json");
+  const transitionValue = readJson(timeline); transitionValue.transitions = [{ transition: "fade", durationFrames: 2 }];
+  writeJson(transitionTimeline, transitionValue);
+  const transitionProject = openEditorProject(transitionTimeline); const transitionBefore = sha256File(transitionTimeline);
+  let transitionBlocked = false;
+  try {
+    applyEditorCommand(transitionTimeline, {
+      schemaVersion: "1.0", kind: "kacha-editor-command", baseSha256: transitionProject.session.currentSha256,
+      itemId: "picture:a", operation: "ripple_trim", arguments: { edge: "end", outputTick: frame * 20 },
+    });
+  } catch (error) { transitionBlocked = /已执行转场/.test(error.message); }
+  if (!transitionBlocked || sha256File(transitionTimeline) !== transitionBefore) throw new Error("ripple trim modified an EDL with executed transitions");
+
+  const workspaceFile = path.join(root, "editor-workspace.json");
+  let workspace = createEditorWorkspace(workspaceFile, timeline, { label: "V3 Workspace" });
+  if (workspace.timelines.length !== 1 || workspace.activeTimelineId !== "main") throw new Error("workspace did not register the primary Timeline");
+  workspace = duplicateWorkspaceTimeline(workspaceFile, {
+    expectedWorkspaceSha256: workspace.workspace.sha256, sourceTimelineId: "main", newTimelineId: "vertical-v1",
+    label: "Vertical V1", outputPath: "versions/vertical-v1.json", width: 1080, height: 1920, role: "aspect",
+  });
+  const vertical = workspace.timelines.find((entry) => entry.id === "vertical-v1");
+  if (workspace.timelines.length !== 2 || vertical.projection.width !== 1080 || vertical.projection.height !== 1920 || workspace.activeTimelineId !== "vertical-v1") {
+    throw new Error("workspace duplicate did not create an independent aspect candidate");
+  }
+  const staleDestination = path.join(root, "versions", "stale.json");
+  let staleBlocked = false;
+  try {
+    duplicateWorkspaceTimeline(workspaceFile, {
+      expectedWorkspaceSha256: "0".repeat(64), sourceTimelineId: "main", newTimelineId: "stale",
+      outputPath: "versions/stale.json", width: 720, height: 1280,
+    });
+  } catch (error) { staleBlocked = /SHA/.test(error.message); }
+  if (!staleBlocked || fs.existsSync(staleDestination) || loadEditorWorkspace(workspaceFile).timelines.length !== 2) throw new Error("stale workspace mutation was not fail-closed");
+  const outside = path.join(temporary, "editor-v3-outside"); fs.mkdirSync(outside, { recursive: true });
+  const linked = path.join(root, "linked-outside"); fs.symlinkSync(outside, linked, "dir");
+  let symlinkEscapeBlocked = false;
+  try {
+    duplicateWorkspaceTimeline(workspaceFile, {
+      expectedWorkspaceSha256: workspace.workspace.sha256, sourceTimelineId: "main", newTimelineId: "escaped",
+      outputPath: "linked-outside/escaped.json", width: 720, height: 1280,
+    });
+  } catch (error) { symlinkEscapeBlocked = /链接越出|Workspace 路径/.test(error.message); }
+  if (!symlinkEscapeBlocked || fs.existsSync(path.join(outside, "escaped.json"))) throw new Error("workspace duplicate followed a symlink outside the project root");
+  const digestTamperFile = path.join(root, "digest-tamper-workspace.json");
+  const digestTamper = readJson(workspaceFile);
+  digestTamper.updatedAt = "2099-01-01T00:00:00.000Z";
+  digestTamper.timelines[0].path = "missing-before-digest-check.json";
+  writeJson(digestTamperFile, digestTamper);
+  let digestTamperBlockedFirst = false;
+  try { loadEditorWorkspace(digestTamperFile); }
+  catch (error) { digestTamperBlockedFirst = /digest/.test(error.message); }
+  if (!digestTamperBlockedFirst) throw new Error("workspace did not bind updatedAt or validate digest before timeline files");
+
+  const maxWorkspaceFile = path.join(root, "max-workspace.json");
+  const maxWorkspace = readJson(workspaceFile);
+  const templateVersion = structuredClone(maxWorkspace.timelines[1]);
+  while (maxWorkspace.timelines.length < 64) {
+    const index = maxWorkspace.timelines.length;
+    maxWorkspace.timelines.push({
+      ...structuredClone(templateVersion), id: `version-${index}`, label: `Version ${index}`, createdFrom: "main",
+    });
+  }
+  maxWorkspace.updatedAt = new Date().toISOString();
+  const maxDigestValue = structuredClone(maxWorkspace); delete maxDigestValue.digest;
+  maxWorkspace.digest = sha256Value(maxDigestValue);
+  writeJson(maxWorkspaceFile, maxWorkspace);
+  const maxWorkspaceView = loadEditorWorkspace(maxWorkspaceFile);
+  if (maxWorkspaceView.sourceVerification?.uniqueSources !== 1) {
+    throw new Error("64-timeline workspace did not deduplicate shared source verification");
+  }
+  const maxDestination = path.join(root, "versions", "version-65.json");
+  const maxWorkspaceSha = maxWorkspaceView.workspace.sha256;
+  let maxWorkspaceBlocked = false;
+  try {
+    duplicateWorkspaceTimeline(maxWorkspaceFile, {
+      expectedWorkspaceSha256: maxWorkspaceSha, sourceTimelineId: "main", newTimelineId: "version-65",
+      outputPath: "versions/version-65.json", width: 1280, height: 720,
+    });
+  } catch (error) { maxWorkspaceBlocked = /64/.test(error.message); }
+  if (!maxWorkspaceBlocked || fs.existsSync(maxDestination) || sha256File(maxWorkspaceFile) !== maxWorkspaceSha) {
+    throw new Error("64-timeline workspace cap was not fail-closed and non-mutating");
+  }
+
+  const staleSourceTimeline = path.join(root, "stale-source-timeline.json");
+  const staleSourceValue = readJson(timeline); staleSourceValue.source.sha256 = "0".repeat(64);
+  writeJson(staleSourceTimeline, staleSourceValue);
+  const staleSourceWorkspace = path.join(root, "stale-source-workspace.json");
+  let staleSourceBlocked = false;
+  try { createEditorWorkspace(staleSourceWorkspace, staleSourceTimeline); }
+  catch (error) { staleSourceBlocked = /source\.sha256/.test(error.message); }
+  if (!staleSourceBlocked || fs.existsSync(staleSourceWorkspace)) throw new Error("workspace registered a Timeline with stale source media identity");
+
+  const relativeRoot = path.join(root, "relative-project");
+  const relativeMediaDirectory = path.join(relativeRoot, "media");
+  fs.mkdirSync(relativeMediaDirectory, { recursive: true });
+  const relativeMedia = path.join(relativeMediaDirectory, "source.mp4");
+  fs.copyFileSync(baseVideo, relativeMedia);
+  const relativeTimeline = path.join(relativeRoot, "timeline.json");
+  const relativeTimelineValue = readJson(timeline);
+  relativeTimelineValue.source = {
+    ...relativeTimelineValue.source, path: "./media/source.mp4", sha256: sha256File(relativeMedia),
+  };
+  relativeTimelineValue.output = {
+    ...relativeTimelineValue.output,
+    path: "./output/main.mp4", dialogueStem: "./output/dialogue.wav", mixStem: "./output/mix.wav",
+  };
+  writeJson(relativeTimeline, relativeTimelineValue);
+  const relativeWorkspaceFile = path.join(relativeRoot, "workspace.json");
+  const relativeWorkspace = createEditorWorkspace(relativeWorkspaceFile, relativeTimeline);
+  const duplicatedRelativeWorkspace = duplicateWorkspaceTimeline(relativeWorkspaceFile, {
+    expectedWorkspaceSha256: relativeWorkspace.workspace.sha256, sourceTimelineId: "main", newTimelineId: "relative-version",
+    outputPath: "versions/relative-version.json", width: 1080, height: 1920, role: "aspect",
+  });
+  const duplicatedRelative = duplicatedRelativeWorkspace.timelines.find((entry) => entry.id === "relative-version");
+  const duplicatedRelativeValue = readJson(duplicatedRelative.absolutePath);
+  const duplicatedSourcePath = path.resolve(path.dirname(duplicatedRelative.absolutePath), duplicatedRelativeValue.source.path);
+  if (fs.realpathSync(duplicatedSourcePath) !== fs.realpathSync(relativeMedia)
+    || duplicatedRelativeValue.output.path !== "./output/relative-version.mp4"
+    || duplicatedRelativeValue.output.dialogueStem === relativeTimelineValue.output.dialogueStem) {
+    throw new Error("workspace duplicate broke relative media paths or reused output targets");
+  }
+
+  const invalidWorkspaceFile = path.join(root, "invalid-workspace.json");
+  const invalidWorkspace = readJson(workspaceFile);
+  invalidWorkspace.timelines[1].role = "mystery-role";
+  const invalidWorkspaceDigest = structuredClone(invalidWorkspace);
+  delete invalidWorkspaceDigest.digest;
+  invalidWorkspace.digest = sha256Value(invalidWorkspaceDigest);
+  writeJson(invalidWorkspaceFile, invalidWorkspace);
+  let invalidWorkspaceBlocked = false;
+  try { loadEditorWorkspace(invalidWorkspaceFile); }
+  catch (error) { invalidWorkspaceBlocked = /role 非法/.test(error.message); }
+  if (!invalidWorkspaceBlocked) throw new Error("workspace silently normalized an unknown timeline role");
+  const foreignTimeline = path.join(root, "foreign-project-timeline.json");
+  const foreignTimelineValue = readJson(timeline); foreignTimelineValue.projectId = "foreign-project";
+  writeJson(foreignTimeline, foreignTimelineValue);
+  const foreignWorkspaceFile = path.join(root, "foreign-project-workspace.json");
+  const foreignWorkspace = readJson(workspaceFile);
+  foreignWorkspace.timelines[1].path = path.basename(foreignTimeline);
+  foreignWorkspace.timelines[1].aspect = "1280:720";
+  const foreignWorkspaceDigest = structuredClone(foreignWorkspace); delete foreignWorkspaceDigest.digest;
+  foreignWorkspace.digest = sha256Value(foreignWorkspaceDigest);
+  writeJson(foreignWorkspaceFile, foreignWorkspace);
+  let foreignProjectBlocked = false;
+  try { loadEditorWorkspace(foreignWorkspaceFile); }
+  catch (error) { foreignProjectBlocked = /其他 projectId/.test(error.message); }
+  if (!foreignProjectBlocked) throw new Error("workspace registered a Timeline from another project");
+
+  const unrootedWorkspaceFile = path.join(root, "unrooted-workspace.json");
+  const unrootedWorkspace = readJson(workspaceFile);
+  unrootedWorkspace.timelines[1].createdFrom = null;
+  const unrootedWorkspaceDigest = structuredClone(unrootedWorkspace); delete unrootedWorkspaceDigest.digest;
+  unrootedWorkspace.digest = sha256Value(unrootedWorkspaceDigest);
+  writeJson(unrootedWorkspaceFile, unrootedWorkspace);
+  let unrootedBlocked = false;
+  try { loadEditorWorkspace(unrootedWorkspaceFile); }
+  catch (error) { unrootedBlocked = /createdFrom 不得为空/.test(error.message); }
+  if (!unrootedBlocked) throw new Error("non-primary Timeline could escape primary ancestry");
+
+  const map = professionalCapabilityMap();
+  if (!map.capabilities.some((item) => item.id === "timeline.multicam" && item.status === "planned")
+    || !map.capabilities.some((item) => item.id === "workspace.versions" && item.status === "available")) {
+    throw new Error("professional capability map promoted planned features or omitted implemented workspace versions");
+  }
+  const profiles = listDeliveryProfiles();
+  if (!profiles.profiles.some((profile) => profile.id === "h264-master") || !profiles.profiles.some((profile) => profile.id === "prores-422-hq")) {
+    throw new Error("delivery profiles omitted required H.264 or ProRes contracts");
+  }
+  const h264 = profiles.profiles.find((profile) => profile.id === "h264-master");
+  for (const profile of profiles.profiles) {
+    const checksPass = Object.values(profile.runtimeChecks ?? {}).every(Boolean);
+    if ((profile.status === "available") !== checksPass
+      || (profile.status === "available" && (!profile.selectedEncoder || !profile.selectedAudioEncoder || profile.blockedReasons.length))) {
+      throw new Error(`delivery profile ${profile.id} overstated incomplete runtime support`);
+    }
+  }
+  if (h264.status === "available") {
+    const deliveryOutput = path.join(root, "final.mp4");
+    const delivery = createDeliveryPlan(timeline, "h264-master", deliveryOutput);
+    if (delivery.status !== "planned_not_rendered" || !fs.existsSync(`${deliveryOutput}.kacha-delivery.json`) || fs.existsSync(deliveryOutput)) {
+      throw new Error("delivery plan was confused with a rendered output");
+    }
+  }
+  const contractBundle = createSelfContainedBundle(timeline, path.join(root, "contract-bundle"));
+  if (contractBundle.status !== "contract_only" || contractBundle.excludedMedia.length < 1) throw new Error("contract-only bundle silently copied source media");
+  const contractManifestText = fs.readFileSync(path.join(root, "contract-bundle", "manifest.json"), "utf8");
+  const contractTimelineText = fs.readFileSync(path.join(root, "contract-bundle", "timeline.json"), "utf8");
+  if (contractManifestText.includes(temporary) || contractTimelineText.includes(temporary) || !contractTimelineText.includes("./Missing/")) {
+    throw new Error("contract-only bundle leaked an absolute local path instead of a Missing placeholder");
+  }
+  const mediaBundle = createSelfContainedBundle(timeline, path.join(root, "media-bundle"), { includeMedia: true });
+  if (mediaBundle.status !== "portable_with_authorized_media" || mediaBundle.includedMedia.length !== 1) throw new Error("authorized media bundle did not preserve strong identity evidence");
+  const generatedProvenanceTimeline = path.join(root, "generated-provenance-timeline.json");
+  const generatedProvenanceValue = readJson(timeline);
+  generatedProvenanceValue.visual.overlays = [{
+    id: "generated-layer", path: baseVideo, sha256: sha256File(baseVideo), kind: "video",
+    start: 0, end: 1, x: 0, y: 0, width: 320, height: 180, opacity: 1,
+    license: "generated", provenance: { kind: "project_generated_subtitles", evidence: "generation-manifest" },
+  }];
+  writeJson(generatedProvenanceTimeline, generatedProvenanceValue);
+  const generatedProvenanceBundle = createSelfContainedBundle(generatedProvenanceTimeline, path.join(root, "generated-provenance-bundle"), { includeMedia: true });
+  if (generatedProvenanceBundle.includedMedia.length !== 2) throw new Error("bundle rejected a documented project-generated provenance kind");
+  const pendingLicenseTimeline = path.join(root, "pending-license-timeline.json");
+  const pendingLicenseValue = readJson(timeline); pendingLicenseValue.source.license = "pending-review";
+  writeJson(pendingLicenseTimeline, pendingLicenseValue);
+  const pendingLicenseBundle = path.join(root, "pending-license-bundle");
+  let pendingLicenseBlocked = false;
+  try { createSelfContainedBundle(pendingLicenseTimeline, pendingLicenseBundle, { includeMedia: true }); }
+  catch (error) { pendingLicenseBlocked = /license\/provenance/.test(error.message); }
+  if (!pendingLicenseBlocked || fs.existsSync(pendingLicenseBundle)) throw new Error("self-contained bundle accepted an unapproved license state");
+  const occupiedBundle = path.join(root, "occupied-bundle");
+  fs.mkdirSync(occupiedBundle); fs.writeFileSync(path.join(occupiedBundle, "owner.txt"), "preserve me");
+  let occupiedBundleBlocked = false;
+  try { createSelfContainedBundle(timeline, occupiedBundle); }
+  catch (error) { occupiedBundleBlocked = /拒绝覆盖/.test(error.message); }
+  if (!occupiedBundleBlocked || fs.readFileSync(path.join(occupiedBundle, "owner.txt"), "utf8") !== "preserve me") {
+    throw new Error("bundle publication overwrote a concurrently occupied destination");
+  }
+  const duplicateShaAuthorizationTimeline = path.join(root, "duplicate-sha-authorization-timeline.json");
+  const duplicateShaAuthorizationValue = readJson(timeline);
+  duplicateShaAuthorizationValue.source.license = "unknown";
+  duplicateShaAuthorizationValue.visual.overlays = [{
+    id: "same-bytes-overlay", path: baseVideo, sha256: sha256File(baseVideo), kind: "video",
+    start: 0, end: 1, x: 0, y: 0, width: 320, height: 180, opacity: 1,
+    license: "owned", provenance: { kind: "owned_local", evidence: "overlay-owner-attestation" },
+  }];
+  writeJson(duplicateShaAuthorizationTimeline, duplicateShaAuthorizationValue);
+  const unauthorizedBundle = path.join(root, "unauthorized-dedup-bundle");
+  let duplicateShaBypassBlocked = false;
+  try { createSelfContainedBundle(duplicateShaAuthorizationTimeline, unauthorizedBundle, { includeMedia: true }); }
+  catch (error) { duplicateShaBypassBlocked = /source/.test(error.message); }
+  if (!duplicateShaBypassBlocked || fs.existsSync(unauthorizedBundle)) throw new Error("same-SHA asset dedup bypassed per-reference media authorization");
+  const leakedTimeline = path.join(root, "timeline-with-local-evidence-path.json");
+  const leakedTimelineValue = readJson(timeline);
+  leakedTimelineValue.source.provenance.localEvidencePath = path.join(temporary, "private-evidence.json");
+  writeJson(leakedTimeline, leakedTimelineValue);
+  let localPathBlocked = false;
+  try { createSelfContainedBundle(leakedTimeline, path.join(root, "leaking-bundle")); }
+  catch (error) { localPathBlocked = /绝对本机路径/.test(error.message); }
+  if (!localPathBlocked || fs.existsSync(path.join(root, "leaking-bundle"))) throw new Error("project bundle leaked a nested local evidence path");
+  const staleNleTimeline = path.join(root, "stale-nle-timeline.json");
+  const staleNleValue = readJson(timeline); staleNleValue.source.sha256 = "0".repeat(64);
+  writeJson(staleNleTimeline, staleNleValue);
+  const staleNleOutput = path.join(root, "stale.otio");
+  let staleNleBlocked = false;
+  try { exportNle(staleNleTimeline, "otio", staleNleOutput); }
+  catch (error) { staleNleBlocked = /source\.sha256/.test(error.message); }
+  if (!staleNleBlocked || fs.existsSync(staleNleOutput)) throw new Error("NLE export accepted a stale source identity");
+  const beyondNleTimeline = path.join(root, "beyond-source-nle-timeline.json");
+  const beyondNleValue = readJson(timeline); beyondNleValue.edl[1].sourceEnd = 9_999;
+  writeJson(beyondNleTimeline, beyondNleValue);
+  const beyondNleOutput = path.join(root, "beyond.otio");
+  let beyondNleBlocked = false;
+  try { exportNle(beyondNleTimeline, "otio", beyondNleOutput); }
+  catch (error) { beyondNleBlocked = /源媒体时长/.test(error.message); }
+  if (!beyondNleBlocked || fs.existsSync(beyondNleOutput)) throw new Error("NLE export accepted a source range beyond real media duration");
+  const otioFile = path.join(root, "timeline.otio");
+  exportNle(timeline, "otio", otioFile);
+  const nestedCandidate = path.join(root, "nle-candidates", "nested", "candidate.json");
+  const nestedImport = importNle(otioFile, "otio", timeline, nestedCandidate);
+  const nestedCandidateValue = readJson(nestedCandidate);
+  const nestedSource = path.resolve(path.dirname(nestedCandidate), nestedCandidateValue.source.path);
+  if (nestedImport.status !== "candidate_only" || fs.realpathSync(nestedSource) !== fs.realpathSync(baseVideo)
+    || nestedCandidateValue.output.path !== "./output/candidate.mp4") {
+    throw new Error("NLE import did not rebase relative inputs or isolate candidate outputs");
+  }
+  const importRollbackOutput = path.join(root, `${"i".repeat(235)}.json`);
+  let importReportFailureObserved = false;
+  try { importNle(otioFile, "otio", timeline, importRollbackOutput); }
+  catch { importReportFailureObserved = true; }
+  if (!importReportFailureObserved || fs.existsSync(importRollbackOutput)) throw new Error("NLE import left an orphan candidate after report creation failed");
+  const premiereFile = path.join(root, "timeline-premiere.xml");
+  const premiere = exportNle(timeline, "premiere-xml", premiereFile);
+  const premiereText = fs.readFileSync(premiereFile, "utf8");
+  if (!premiere.compatibilityRoute?.includes("xmeml v5") || !premiereText.includes('<xmeml version="5">')
+    || !premiereText.includes('<clipitem id="video-clipitem-1">') || !premiereText.includes("<pathurl>file:")) {
+    throw new Error("Premiere export is not a real xmeml v5 interchange candidate");
+  }
+  const rollbackOutput = path.join(root, `${"x".repeat(235)}.otio`);
+  let reportFailureObserved = false;
+  try { exportNle(timeline, "otio", rollbackOutput); }
+  catch { reportFailureObserved = true; }
+  if (!reportFailureObserved || fs.existsSync(rollbackOutput)) throw new Error("NLE export left an orphan output after report creation failed");
+}, "editor");
+
+await test("Editor V3 surface exposes workspace intelligence delivery and activity without claiming final preview", () => {
+  const html = fs.readFileSync(path.join(skillDirectory, "studio", "editor.html"), "utf8");
+  const js = fs.readFileSync(path.join(skillDirectory, "studio", "editor.js"), "utf8");
+  for (const id of ["timelineSwitcher", "capabilityDrawer", "deliveryDrawer", "activityDrawer", "overwriteButton", "duplicateDialog"]) {
+    if (!html.includes(`id="${id}"`)) throw new Error(`Editor V3 surface omitted ${id}`);
+  }
+  if (!html.includes("APPROXIMATE PREVIEW") || !html.includes("PLAN ≠ RENDERED") || !js.includes('operation: "overwrite"') || !js.includes('"ripple_trim"')
+    || !js.includes("capability.evidence") || !js.includes("const drawers =")) {
+    throw new Error("Editor V3 UI lost its preview/delivery truth boundary or professional operations");
+  }
+}, "editor");
 
 try {
   if (listOnly) {

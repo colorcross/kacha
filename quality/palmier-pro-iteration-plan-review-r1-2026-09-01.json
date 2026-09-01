@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0",
+  "review": "product-design-architecture",
+  "status": "completed_with_findings_closed",
+  "findings": [
+    {"id":"PAL-PLAN-001","severity":"high","problem":"将所有 Palmier 功能都平铺到界面会形成伪能力。","resolution":"增加 capability map，以 available/partial/planned/blocked 和证据入口控制呈现。"},
+    {"id":"PAL-PLAN-002","severity":"high","problem":"多时间线若嵌入 Timeline IR 会建立第二个项目真相模型。","resolution":"使用只引用独立 Timeline IR 文件的 workspace registry，时间线内容仍各自以 Timeline IR 为真相源。"},
+    {"id":"PAL-PLAN-003","severity":"medium","problem":"消息密度可能让工作台退化为仪表盘。","resolution":"以 Program 和 Timeline 为主视觉，能力与 Agent Activity 使用可折叠次级面板。"}
+  ]
+}

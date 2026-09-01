@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "iterationId": "kacha-palmier-workspace-v3-2026-09-01",
+  "baselineRevision": "2c09208c29dbd8d44340b2ca286fd24882464b21",
+  "observedAt": "2026-09-01T00:00:00+08:00",
+  "producer": "codex-primary",
+  "productGoal": "把咔嚓已有的智能生产能力收敛为一个可见、可编辑、可撤销、可交付的专业 Human-Agent 工作台。",
+  "facts": [
+    "Timeline IR 1.0 + Timebase V2 是唯一时间线事实源，FFmpeg Render Graph 是唯一 final-eligible 渲染器。",
+    "Workbench V2 已有多选、吸附、trim、split、EDL reorder、marker、work area、波形、Project Bin、交付画幅和 overlay x/y 关键帧。",
+    "字幕、转写、静音检测、节拍分析、媒体语义搜索、生成媒体、色彩/美颜/蒙版与 NLE 交换已存在，但主要分散在 CLI、计划合同和独立页面。",
+    "当前不具备可声称完成的 multicam、nested timeline 终渲染、专业色轮/曲线交互和通用降噪节点。",
+    "当前 NLE 交换支持 OTIO、FCPXML 和 CMX3600；尚无 Premiere XML 名义路由和自包含工程包。",
+    "当前项目没有一级的多时间线/版本注册表。"
+  ],
+  "constraints": [
+    "只借鉴 Palmier Pro 的产品模型和交互范式，不复制 GPLv3 源码、素材或文案。",
+    "不建立第二个时间线事实源，不让浏览器预览伪装正式成片。",
+    "每个写操作必须受输入 allowlist、SHA 乐观锁、原子写、Command Journal、undo/redo 和 required QC 保护。",
+    "未形成终渲染和验证链的能力必须显示 planned 或 blocked，不得显示 available。",
+    "不执行外部付费生成、媒体外传、发布、Git commit 或 push。"
+  ],
+  "unknowns": [
+    "未有本轮真实创作者正常速度验收和效率对照数据。",
+    "Premiere、Final Cut Pro 和 DaVinci Resolve 对本轮导出产物的真实应用程序验证仍是外部证据。",
+    "H.265/ProRes 是否可在当前每台机器硬件加速依赖运行时探测。"
+  ]
+}

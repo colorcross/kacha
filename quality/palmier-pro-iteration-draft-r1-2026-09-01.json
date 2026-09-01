@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "status": "draft",
+  "iterationId": "kacha-palmier-workspace-v3-2026-09-01",
+  "objective": "建立 Palmier-inspired 但 Kacha-native 的专业项目工作台 V3。",
+  "slices": [
+    {"id":"CAPABILITY-MAP","outcome":"界面仅展示经运行时和实现链证明的能力，其余显示局限与解锁条件。"},
+    {"id":"MULTI-TIMELINE","outcome":"一个项目内注册多时间线，可切换、复制版本和生成不同画幅候选，不覆盖基线。"},
+    {"id":"PRO-OPERATIONS","outcome":"在现有日志路径新增 ripple trim 和 overwrite，并把 sync/multicam/nested 作为显式能力门禁。"},
+    {"id":"WORKBENCH-V3","outcome":"以 Project/Timeline、Media/Generate、Program、Inspector、Timeline、Agent Activity 六个清晰区域收敛现有能力。"},
+    {"id":"DELIVERY-HUB","outcome":"用显式编码 profile 提供 H.264/H.265/ProRes 交付计划，提供 OTIO/FCPXML/Premiere XML 兼容路由和自包含工程包。"},
+    {"id":"INTELLIGENCE-SURFACE","outcome":"在工作台中将转写、静音、节拍、搜索、生成能力映射到实际 CLI/证据入口，不伪造执行结果。"},
+    {"id":"DOCS-QC","outcome":"文档、单元/集成/浏览器/安全测试与深度复审完成闭环。"}
+  ],
+  "completionBoundary": "最高只声称本地 candidate evidence；不声称已达到 Palmier 全功能对等、真实成片更好或生产发布完成。"
+}

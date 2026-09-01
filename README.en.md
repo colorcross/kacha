@@ -176,6 +176,7 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
   after external-upload, paid-service, and explicit command authorization;
   the whole video is never uploaded by this path.
 - Validates semantic cuts, shot motivation, continuity, reframing, masks, picture-in-picture, subtitles, covers, and visual packaging.
+- Provides Workbench V3 with independent timeline versions and aspect candidates, ripple trim and overwrite through the same reversible journal, a truthful capability map, agent activity, and a delivery center for closed codec plans and NLE interchange candidates.
 - Coordinates dialogue preprocessing, voice enhancement, final mixing, and audio/video alignment.
 - Bundles 12 creator-produced sound effects with exact titles, IDs, hashes, and a dedicated asset license.
 - Requires local styleframes or an optional Figma handoff before implementing information cards, flowcharts, popups, stylized transitions, and masks.
@@ -186,7 +187,7 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Provides two-stage intermediate cleanup: routine cleanup only for user-unneeded, fast-regenerating caches, and final cleanup only after explicit no-more-edits confirmation.
 - Records AI-generated shot plans with provider, model, capability snapshot, paid-call authorization, and QC targets.
 - Runs automated media checks and requires separate human-review evidence before local release.
-  The current full regression discovers 160 checks.
+  The current full regression discovers 162 checks.
 - Keeps uploads, publishing, purchases, and paid generation outside the default authorization boundary.
 
 <p align="center">

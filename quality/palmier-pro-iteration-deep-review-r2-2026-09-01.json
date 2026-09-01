@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "iterationId": "kacha-palmier-workspace-v3-2026-09-01",
+  "reviewId": "kacha-palmier-workspace-v3-producer-review-r2",
+  "status": "producer_review_completed_pending_independent_final_review",
+  "reviewAuthority": "producer self-review",
+  "reviewedDimensions": [
+    "product truth and documentation",
+    "workspace domain integrity and transaction safety",
+    "timeline operation correctness",
+    "filesystem and local HTTP security",
+    "media authorization and project portability",
+    "NLE export failure atomicity",
+    "desktop and 390px full-workbench usability",
+    "regression, distribution and installer compatibility"
+  ],
+  "findings": [
+    {"id":"PAL-R2-001","severity":"high","problem":"Workspace digest excluded updatedAt and was checked only after referenced Timeline expansion.","resolution":"Bind updatedAt into the digest and reject an invalid digest before reading referenced Timeline files.","status":"closed"},
+    {"id":"PAL-R2-002","severity":"critical","problem":"Duplicating a 64-item Workspace could write a 65th entry, fail on reload and leave the registry corrupted.","resolution":"Reject at the mutation boundary before creating a destination and roll back only files whose SHA still matches this invocation.","status":"closed"},
+    {"id":"PAL-R2-003","severity":"high","problem":"Workspace duplication did not recheck the source Timeline identity or its declared source-media SHA during cloning.","resolution":"Check Timeline SHA before and after read and validation; require current source-media identity on create, load, duplicate and Studio duplicate.","status":"closed"},
+    {"id":"PAL-R2-004","severity":"high","problem":"Moving a cloned Timeline into a versions subdirectory broke relative input paths and could reuse output/stem targets.","resolution":"Rebase relative input and evidence paths to the new owner file and create version-specific output and stem paths.","status":"closed"},
+    {"id":"PAL-R2-005","severity":"high","problem":"overwrite accepted a frame-aligned source range beyond the real source-media duration.","resolution":"Probe the bound source and reject sourceEnd beyond the media-duration tick before compiling mutations.","status":"closed"},
+    {"id":"PAL-R2-006","severity":"high","problem":"NLE output could remain orphaned if report creation failed after the exchange file was written.","resolution":"Use durable exclusive writes and remove only the invocation-owned matching-SHA output on report failure.","status":"closed"},
+    {"id":"PAL-R2-007","severity":"critical","problem":"Self-contained bundle authorization deduplicated references by SHA before checking rights, allowing a licensed overlay to mask an unknown-license source with identical bytes.","resolution":"Authorize every reference independently, reject unknown/unverified license or provenance, then deduplicate only the physical copy by SHA.","status":"closed"},
+    {"id":"PAL-R2-008","severity":"high","problem":"Workspace allowed cross-project Timelines, non-primary ancestry without a parent and unchecked root timestamps.","resolution":"Require one projectId, primary-rooted ancestry and valid monotonic createdAt/updatedAt values.","status":"closed"},
+    {"id":"PAL-R2-009","severity":"medium","problem":"Capability cards omitted implementation evidence and blocked counts while three drawers could remain stacked open.","resolution":"Render evidence and all status counts; make Capability, Delivery and Activity drawers mutually exclusive.","status":"closed"},
+    {"id":"PAL-R2-010","severity":"high","problem":"The 390px browser check reloaded to the unopened landing state and did not test the mobile workbench.","resolution":"Reopen the Workspace at 390x844, mount capability evidence, assert the full Timeline surface and verify zero document overflow.","status":"closed"},
+    {"id":"PAL-R2-011","severity":"medium","problem":"Repository SKILL.md still documented Workbench V2 and omitted V3 workspace, capability and delivery truth boundaries.","resolution":"Update the repository skill contract to Workbench V3 commands and retain explicit plan-versus-rendered and target-NLE verification boundaries.","status":"closed"}
+  ],
+  "localVerificationRef": "quality/evidence/palmier-pro-workbench-v3-r2-local-verification-2026-09-01.json",
+  "remainingExternalConditionsRef": "quality/palmier-pro-iteration-external-conditions-2026-09-01.json",
+  "claimBoundary": "All findings reproducible by this producer are closed locally. This is not independent final-review evidence and does not prove creator value, final rendered-media quality, target NLE import, remote CI or deployment."
+}

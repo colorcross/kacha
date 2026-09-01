@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "iterationId": "kacha-palmier-workspace-v3-2026-09-01",
+  "status": "producer_review_completed_with_local_findings_closed",
+  "reviewAuthority": "producer self-review; not an independent final review",
+  "reviewedDimensions": [
+    "product truth and Palmier-inspired interaction",
+    "Timeline IR architecture and reversibility",
+    "filesystem and local HTTP security",
+    "NLE interchange fidelity",
+    "delivery claim boundaries",
+    "desktop and narrow-viewport usability",
+    "backward compatibility and distribution"
+  ],
+  "findings": [
+    {"id":"PAL-REV-001","severity":"high","problem":"Workspace could silently normalize an unknown timeline role and did not validate ancestry invariants.","resolution":"Reject unknown roles; require one primary; validate aspect, timestamps, createdFrom references and cycles.","status":"closed"},
+    {"id":"PAL-REV-002","severity":"critical","problem":"A destination parent symlink could redirect timeline duplication outside the Workspace root.","resolution":"Resolve the nearest existing ancestor with realpath and enforce containment before exclusive creation.","status":"closed"},
+    {"id":"PAL-REV-003","severity":"critical","problem":"A project bundle could retain absolute local paths in nested metadata.","resolution":"Replace bound media paths, summarize provenance and recursively reject any remaining absolute path before atomic publication.","status":"closed"},
+    {"id":"PAL-REV-004","severity":"high","problem":"One-second revision polling expanded and hashed every Workspace timeline.","resolution":"Revision polling reads only the active Timeline; Workspace expansion is reserved for explicit project reads.","status":"closed"},
+    {"id":"PAL-REV-005","severity":"high","problem":"Premiere XML was initially an FCPXML alias rather than a distinct Premiere interchange candidate.","resolution":"Generate Final Cut Pro 7 XML xmeml v5 with linked video/audio clipitems, file URL, rate, geometry and Kacha metadata.","status":"closed"},
+    {"id":"PAL-REV-006","severity":"high","problem":"Encoder presence could overstate H.264/H.265/ProRes as end-to-end available.","resolution":"Keep codec delivery capability partial until every profile is connected to final render, QC and review; profile availability now means runtime encoder evidence only.","status":"closed"},
+    {"id":"PAL-REV-007","severity":"medium","problem":"Agent Activity assumed every historical record contained requiredQc.","resolution":"Render old journal entries with a safe none fallback.","status":"closed"},
+    {"id":"PAL-REV-008","severity":"high","problem":"ripple/overwrite could invalidate executed transition semantics or accept structured semantic metadata.","resolution":"Fail closed on executed transitions and audit semantic fields as bounded strings or null.","status":"closed"},
+    {"id":"PAL-REV-009","severity":"medium","problem":"Workbench controls became visible before capability and delivery data finished loading, allowing an empty drawer race.","resolution":"Keep capability, delivery and activity controls disabled until their corresponding session data is ready; browser acceptance waits for mounted capability content.","status":"closed"}
+  ],
+  "remainingExternalConditionsRef": "quality/palmier-pro-iteration-external-conditions-2026-09-01.json",
+  "claimBoundary": "This historical producer review closed its listed local findings but is not independent final-review evidence. A fresh R2 producer review records later findings; target NLE import, creator value, independent final review and production release remain external evidence."
+}

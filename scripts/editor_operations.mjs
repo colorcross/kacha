@@ -1,10 +1,10 @@
-import { readJson } from "./kacha_utils.mjs";
-import { normalizeTimebase, ticksToSeconds } from "./media_time.mjs";
+import { mediaSummary, readJson } from "./kacha_utils.mjs";
+import { normalizeTimebase, secondsToTicks, ticksToSeconds } from "./media_time.mjs";
 import { compileProjectionCommand, findProjectionItem } from "./timeline_projection.mjs";
 import { resolveIndexedAsset } from "./project_bin.mjs";
 
 const OPERATIONS = new Set([
-  "batch", "move", "trim", "split", "reorder",
+  "batch", "move", "trim", "ripple_trim", "split", "overwrite", "reorder",
   "marker_set", "marker_remove", "work_area_set", "work_area_clear",
   "keyframe_set", "keyframe_remove", "delivery_frames_set",
   "replace_media",
@@ -14,12 +14,14 @@ const COMMAND_FIELDS = new Set([
   "schemaVersion", "kind", "commandId", "baseSha256", "itemId",
   "operation", "arguments", "actor", "reason",
 ]);
-const ITEM_OPERATIONS = new Set(["trim", "split", "keyframe_set", "keyframe_remove", "replace_media"]);
+const ITEM_OPERATIONS = new Set(["trim", "ripple_trim", "split", "keyframe_set", "keyframe_remove", "replace_media"]);
 const OPERATION_ARGUMENT_FIELDS = Object.freeze({
   batch: new Set(["edits"]),
   move: new Set(["itemIds", "deltaTick"]),
   trim: new Set(["edge", "outputTick"]),
+  ripple_trim: new Set(["edge", "outputTick"]),
   split: new Set(["outputTick", "newId"]),
+  overwrite: new Set(["outputStartTick", "outputEndTick", "sourceStartTick", "sourceEndTick", "newId", "sourceDecisionId", "semanticBeatId", "reason"]),
   reorder: new Set(["itemIds"]),
   marker_set: new Set(["marker"]),
   marker_remove: new Set(["id"]),
@@ -185,6 +187,24 @@ function compileTrim(projection, command) {
   });
 }
 
+function compileRippleTrim(projection, command, timeline) {
+  const item = findProjectionItem(projection, command.itemId);
+  if (item.type !== "picture") throw new Error("ripple_trim 当前只支持主画面 EDL 片段");
+  structuralTransitionReset(timeline);
+  const compiled = compileTrim(projection, command);
+  compiled.requiredQc = [...new Set([...compiled.requiredQc, "connection_qc"])];
+  compiled.proposed = {
+    operation: "ripple_trim",
+    itemId: item.id,
+    edge: command.arguments.edge,
+    outputTick: command.arguments.outputTick,
+    downstreamShiftTick: command.arguments.edge === "end"
+      ? command.arguments.outputTick - item.endTick
+      : item.startTick - command.arguments.outputTick,
+  };
+  return compiled;
+}
+
 function structuralTransitionReset(timeline) {
   const transitions = timeline.transitions ?? [];
   if (transitions.some((entry) => Number(entry?.durationFrames ?? 0) > 0)) {
@@ -214,6 +234,100 @@ function compileSplit(projection, command, timeline) {
   const reset = structuralTransitionReset(timeline);
   if (reset) operations.push(reset);
   return compiledResult(operations, ["picture"], ["connection_qc"], { operation: "split", sourceSplitTick });
+}
+
+function uniqueClipId(base, used) {
+  let candidate = base;
+  let suffix = 2;
+  while (used.has(candidate)) candidate = `${base}-${suffix++}`;
+  used.add(candidate);
+  return candidate;
+}
+
+function compileOverwrite(projection, command, timeline) {
+  const start = integerTick(command.arguments?.outputStartTick, "overwrite.arguments.outputStartTick");
+  const end = integerTick(command.arguments?.outputEndTick, "overwrite.arguments.outputEndTick");
+  const sourceStart = integerTick(command.arguments?.sourceStartTick, "overwrite.arguments.sourceStartTick");
+  const sourceEnd = integerTick(command.arguments?.sourceEndTick, "overwrite.arguments.sourceEndTick");
+  const timebase = projectionTimebase(projection);
+  if (end <= start || end > projection.durationTick) throw new Error("overwrite 输出区间必须位于时间线内且为正时长");
+  if (sourceEnd <= sourceStart || sourceEnd - sourceStart !== end - start) throw new Error("overwrite 源区间必须与输出区间等长");
+  for (const tick of [start, end, sourceStart, sourceEnd]) {
+    if (tick % timebase.ticksPerFrame !== 0) throw new Error("overwrite 所有边界必须落在整帧");
+  }
+  const sourcePath = projection.timeline.source;
+  if (!sourcePath) throw new Error("overwrite 需要可读取的源媒体");
+  const sourceDuration = mediaSummary(sourcePath).duration;
+  if (!Number.isFinite(sourceDuration) || sourceDuration <= 0) throw new Error("overwrite 无法确认源媒体时长");
+  const sourceDurationTick = secondsToTicks(sourceDuration, timebase);
+  if (sourceEnd > sourceDurationTick) throw new Error("overwrite 源区间超出源媒体时长");
+  const newId = auditString(command.arguments?.newId, "overwrite.arguments.newId");
+  const sourceDecisionId = command.arguments.sourceDecisionId === undefined || command.arguments.sourceDecisionId === null
+    ? null : auditString(command.arguments.sourceDecisionId, "overwrite.arguments.sourceDecisionId");
+  const semanticBeatId = command.arguments.semanticBeatId === undefined || command.arguments.semanticBeatId === null
+    ? null : auditString(command.arguments.semanticBeatId, "overwrite.arguments.semanticBeatId");
+  const overwriteReason = command.arguments.reason === undefined
+    ? "editor overwrite" : auditString(command.arguments.reason, "overwrite.arguments.reason", 500);
+  const pictures = projection.items.filter((item) => item.type === "picture").sort((left, right) => left.startTick - right.startTick);
+  const usedIds = new Set((timeline.edl ?? []).map((entry) => String(entry.id ?? "")));
+  if (usedIds.has(newId)) throw new Error(`overwrite 新 id 已存在：${newId}`);
+  usedIds.add(newId);
+  const nextEdl = [];
+  let inserted = false;
+  for (const picture of pictures) {
+    const index = Number(picture.sourcePointer.split("/").at(-1));
+    const original = structuredClone(timeline.edl[index]);
+    if (picture.endTick <= start || picture.startTick >= end) {
+      if (!inserted && picture.startTick >= end) {
+        nextEdl.push({
+          id: newId,
+          sourceStartTick: sourceStart,
+          sourceStart: ticksToSeconds(sourceStart, timebase),
+          sourceEndTick: sourceEnd,
+          sourceEnd: ticksToSeconds(sourceEnd, timebase),
+          sourceDecisionId,
+          semanticBeatId,
+          reason: overwriteReason,
+        });
+        inserted = true;
+      }
+      nextEdl.push(original);
+      continue;
+    }
+    if (picture.startTick < start) {
+      const leftSourceEnd = picture.metadata.sourceStartTick + start - picture.startTick;
+      nextEdl.push({ ...original, sourceEndTick: leftSourceEnd, sourceEnd: ticksToSeconds(leftSourceEnd, timebase) });
+    }
+    if (!inserted) {
+      nextEdl.push({
+        id: newId,
+        sourceStartTick: sourceStart,
+        sourceStart: ticksToSeconds(sourceStart, timebase),
+        sourceEndTick: sourceEnd,
+        sourceEnd: ticksToSeconds(sourceEnd, timebase),
+        sourceDecisionId,
+        semanticBeatId,
+        reason: overwriteReason,
+      });
+      inserted = true;
+    }
+    if (picture.endTick > end) {
+      const rightSourceStart = picture.metadata.sourceStartTick + end - picture.startTick;
+      nextEdl.push({
+        ...original,
+        id: uniqueClipId(`${original.id ?? `segment-${index + 1}`}-tail-${start}`, usedIds),
+        sourceStartTick: rightSourceStart,
+        sourceStart: ticksToSeconds(rightSourceStart, timebase),
+      });
+    }
+  }
+  if (!inserted) throw new Error("overwrite 未与主画面时间线相交");
+  const operations = [{ op: "replace", path: "/edl", value: nextEdl }];
+  const reset = structuralTransitionReset(timeline);
+  if (reset) operations.push(reset);
+  return compiledResult(operations, ["picture"], ["connection_qc", "semantic_review"], {
+    operation: "overwrite", outputStartTick: start, outputEndTick: end, sourceStartTick: sourceStart, sourceEndTick: sourceEnd, newId,
+  });
 }
 
 function compileReorder(projection, command, timeline) {
@@ -377,7 +491,9 @@ export function compileEditorOperation(projection, command) {
   if (command.operation === "batch") return compileBatch(projection, command);
   if (command.operation === "move") return compileMove(projection, command);
   if (command.operation === "trim") return compileTrim(projection, command);
+  if (command.operation === "ripple_trim") return compileRippleTrim(projection, command, timeline);
   if (command.operation === "split") return compileSplit(projection, command, timeline);
+  if (command.operation === "overwrite") return compileOverwrite(projection, command, timeline);
   if (command.operation === "reorder") return compileReorder(projection, command, timeline);
   if (command.operation.startsWith("marker_")) return compileMarker(projection, command, timeline);
   if (command.operation.startsWith("work_area_")) return compileWorkArea(projection, command, timeline);

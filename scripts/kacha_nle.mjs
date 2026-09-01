@@ -8,6 +8,12 @@ import {
   readJson,
   sha256Value,
 } from "./kacha_utils.mjs";
+import {
+  assertProjectionSourceCurrent,
+  assertSourceVerificationCacheStable,
+  buildTimelineProjection,
+} from "./timeline_projection.mjs";
+import { rebaseTimelineInputs } from "./timeline_paths.mjs";
 
 function option(args, name, fallback = null) {
   const index = args.indexOf(name);
@@ -22,6 +28,14 @@ function ensureFile(file, label) {
   return resolved;
 }
 
+function fileMatchesSha(file, sha256) {
+  try {
+    return Boolean(sha256) && fs.existsSync(file) && fs.statSync(file).isFile() && fileIdentity(file).sha256 === sha256;
+  } catch {
+    return false;
+  }
+}
+
 function round(value, digits = 6) {
   return Number(Number(value).toFixed(digits));
 }
@@ -33,9 +47,31 @@ function stableDigest(value) {
   return sha256Value(copy);
 }
 
-function writeJsonExclusive(file, value) {
+function writeTextExclusive(file, body) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, { flag: "wx" });
+  let descriptor = null;
+  let created = false;
+  let failure = null;
+  try {
+    descriptor = fs.openSync(file, "wx", 0o600);
+    created = true;
+    fs.writeFileSync(descriptor, body);
+    fs.fsyncSync(descriptor);
+  } catch (error) {
+    failure = error;
+  } finally {
+    if (descriptor !== null) fs.closeSync(descriptor);
+  }
+  if (failure) {
+    if (created) {
+      try { fs.unlinkSync(file); } catch {}
+    }
+    throw failure;
+  }
+}
+
+function writeJsonExclusive(file, value) {
+  writeTextExclusive(file, `${JSON.stringify(value, null, 2)}\n`);
 }
 
 function xmlEscape(value) {
@@ -265,6 +301,74 @@ function fcpxmlExport(timelineFile, timeline) {
   ].join("\n");
 }
 
+function premiereXmlExport(timelineFile, timeline) {
+  const source = timelineSource(timelineFile, timeline);
+  const { fps, clips, durationFrames } = clipRows(timeline);
+  const timebase = Math.round(fps);
+  const ntsc = fpsFraction(fps).denominator === 1 ? "FALSE" : "TRUE";
+  const width = Number(timeline.output?.width ?? 1920);
+  const height = Number(timeline.output?.height ?? 1080);
+  const sourceFrames = Math.max(...clips.map((clip) => clip.sourceStartFrame + clip.durationFrames));
+  const rateXml = `<rate><timebase>${timebase}</timebase><ntsc>${ntsc}</ntsc></rate>`;
+  const fileXml = [
+    '<file id="file-1">',
+    `<name>${xmlEscape(path.basename(source))}</name>`,
+    `<pathurl>${xmlEscape(pathToFileURL(source).href)}</pathurl>`,
+    rateXml,
+    `<duration>${sourceFrames}</duration>`,
+    "<media>",
+    `<video><samplecharacteristics>${rateXml}<width>${width}</width><height>${height}</height><anamorphic>FALSE</anamorphic><pixelaspectratio>square</pixelaspectratio></samplecharacteristics></video>`,
+    "<audio><samplecharacteristics><depth>24</depth><samplerate>48000</samplerate></samplecharacteristics><channelcount>2</channelcount></audio>",
+    "</media>",
+    "</file>",
+  ].join("");
+  const clipXml = (clip, index, mediaType) => {
+    const number = index + 1;
+    const clipId = `${mediaType === "video" ? "video" : "audio"}-clipitem-${number}`;
+    const otherId = `${mediaType === "video" ? "audio" : "video"}-clipitem-${number}`;
+    const metadata = Buffer.from(JSON.stringify(clip.metadata), "utf8").toString("base64");
+    return [
+      `<clipitem id="${clipId}">`,
+      `<name>${xmlEscape(clip.id)}</name>`,
+      `<duration>${clip.durationFrames}</duration>`,
+      rateXml,
+      `<start>${clip.outputStartFrame}</start><end>${clip.outputStartFrame + clip.durationFrames}</end>`,
+      `<in>${clip.sourceStartFrame}</in><out>${clip.sourceStartFrame + clip.durationFrames}</out>`,
+      mediaType === "video" && index === 0 ? fileXml : '<file id="file-1"/>',
+      `<logginginfo><description>KACHA:${metadata}</description></logginginfo>`,
+      `<link><linkclipref>${clipId}</linkclipref><mediatype>${mediaType}</mediatype><trackindex>1</trackindex><clipindex>${number}</clipindex></link>`,
+      `<link><linkclipref>${otherId}</linkclipref><mediatype>${mediaType === "video" ? "audio" : "video"}</mediatype><trackindex>1</trackindex><clipindex>${number}</clipindex></link>`,
+      "</clipitem>",
+    ].join("");
+  };
+  const timelineMetadata = Buffer.from(JSON.stringify({
+    timelineSha256: fileIdentity(timelineFile).sha256,
+    sourceSha256: timeline.source.sha256,
+    semanticIdsPreserved: true,
+  }), "utf8").toString("base64");
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    "<!DOCTYPE xmeml>",
+    '<xmeml version="5">',
+    '  <sequence id="kacha-sequence-1">',
+    `    <name>${xmlEscape(timeline.projectId ?? "Kacha Timeline")}</name>`,
+    `    <duration>${durationFrames}</duration>`,
+    `    ${rateXml}`,
+    `    <description>KACHA:${timelineMetadata}</description>`,
+    "    <media>",
+    `      <video><format><samplecharacteristics>${rateXml}<width>${width}</width><height>${height}</height><anamorphic>FALSE</anamorphic><pixelaspectratio>square</pixelaspectratio></samplecharacteristics></format><track>`,
+    ...clips.map((clip, index) => `        ${clipXml(clip, index, "video")}`),
+    "      </track></video>",
+    "      <audio><format><samplecharacteristics><depth>24</depth><samplerate>48000</samplerate></samplecharacteristics></format><track>",
+    ...clips.map((clip, index) => `        ${clipXml(clip, index, "audio")}`),
+    "      </track></audio>",
+    "    </media>",
+    "  </sequence>",
+    "</xmeml>",
+    "",
+  ].join("\n");
+}
+
 function cmxExport(timelineFile, timeline) {
   const { fps, clips } = clipRows(timeline);
   const source = timelineSource(timelineFile, timeline);
@@ -288,7 +392,20 @@ function cmxExport(timelineFile, timeline) {
 
 export function exportNle(timelineFile, format, outputFile) {
   const file = ensureFile(timelineFile, "Timeline IR");
+  const timelineIdentity = fileIdentity(file);
   const timeline = readJson(file);
+  if (fileIdentity(file).sha256 !== timelineIdentity.sha256) {
+    throw new Error("Timeline 在 NLE 导出读取期间已变化");
+  }
+  const projection = buildTimelineProjection(file);
+  if (projection.timeline.sha256 !== timelineIdentity.sha256) {
+    throw new Error("Timeline 在 NLE 导出校验期间已变化");
+  }
+  const sourceCache = new Map();
+  const sourceVerification = assertProjectionSourceCurrent(projection, {
+    cache: sourceCache,
+    requireDeclaredSha: true,
+  });
   const output = path.resolve(outputFile ?? "");
   if (!outputFile) throw new Error("nle export 需要 --output FILE");
   const reportFile = `${output}.kacha-report.json`;
@@ -299,28 +416,52 @@ export function exportNle(timelineFile, format, outputFile) {
   let body;
   if (format === "otio") body = `${JSON.stringify(otioExport(file, timeline), null, 2)}\n`;
   else if (format === "fcpxml") body = fcpxmlExport(file, timeline);
+  else if (format === "premiere-xml") body = premiereXmlExport(file, timeline);
   else if (format === "cmx3600") body = cmxExport(file, timeline);
   else throw new Error(`不支持 NLE 格式：${format}`);
-  fs.writeFileSync(output, body, { flag: "wx" });
-  const report = {
-    schemaVersion: "1.0",
-    kind: "kacha_nle_export_report",
-    generatedAt: new Date().toISOString(),
-    status: "pass_with_limitations",
-    format,
-    timeline: fileIdentity(file),
-    output: fileIdentity(output),
-    clips: (timeline.edl ?? []).length,
-    semanticIdsPreserved: true,
-    limitations: [
-      "交换文件主要承载剪辑区间、源素材和语义 ID",
-      "咔嚓字幕、蒙版、Beauty、混音和复杂动效仍以 Timeline IR 为事实源",
-      "NLE 中的人工修改必须重新导入为候选并经过变化层 QC"
-    ],
-  };
-  report.digest = stableDigest(report);
-  writeJsonExclusive(reportFile, report);
-  return { ...report, report: fileIdentity(reportFile) };
+  if (fileIdentity(file).sha256 !== timelineIdentity.sha256) {
+    throw new Error("Timeline 在 NLE 导出生成期间已变化");
+  }
+  assertSourceVerificationCacheStable(sourceCache);
+  let outputCreated = false;
+  let outputSha = null;
+  try {
+    writeTextExclusive(output, body);
+    outputCreated = true;
+    outputSha = fileIdentity(output).sha256;
+    if (fileIdentity(file).sha256 !== timelineIdentity.sha256) {
+      throw new Error("Timeline 在 NLE 导出写入期间已变化");
+    }
+    assertSourceVerificationCacheStable(sourceCache);
+    const report = {
+      schemaVersion: "1.0",
+      kind: "kacha_nle_export_report",
+      generatedAt: new Date().toISOString(),
+      status: "pass_with_limitations",
+      format,
+      compatibilityRoute: format === "premiere-xml"
+        ? "Final Cut Pro 7 XML (xmeml v5) interchange for Premiere Pro; target-application import verification required"
+        : null,
+      timeline: timelineIdentity,
+      source: sourceVerification.identity,
+      output: fileIdentity(output),
+      clips: (timeline.edl ?? []).length,
+      semanticIdsPreserved: true,
+      limitations: [
+        "交换文件主要承载剪辑区间、源素材和语义 ID",
+        "咔嚓字幕、蒙版、Beauty、混音和复杂动效仍以 Timeline IR 为事实源",
+        "NLE 中的人工修改必须重新导入为候选并经过变化层 QC"
+      ],
+    };
+    report.digest = stableDigest(report);
+    writeJsonExclusive(reportFile, report);
+    return { ...report, report: fileIdentity(reportFile) };
+  } catch (error) {
+    if (outputCreated && fileMatchesSha(output, outputSha)) {
+      try { fs.unlinkSync(output); } catch {}
+    }
+    throw error;
+  }
 }
 
 function otioClips(value, baseIdentity, source, sourceSha256) {
@@ -430,7 +571,7 @@ function fcpxmlClips(xml, baseIdentity, source, sourceSha256) {
   return clips;
 }
 
-function validateImportedClips(clips, base) {
+function validateImportedClips(clips, base, sourceDurationSeconds) {
   if (!Array.isArray(clips) || clips.length === 0) {
     throw new Error("NLE 导入不能生成空时间线");
   }
@@ -438,6 +579,13 @@ function validateImportedClips(clips, base) {
   const ids = new Set();
   for (const [index, clip] of clips.entries()) {
     if (!clip.id || ids.has(clip.id)) throw new Error(`导入 clip[${index}].id 缺失或重复`);
+    if (
+      !Number.isFinite(clip.sourceStart)
+      || !Number.isFinite(clip.sourceEnd)
+      || clip.sourceStart < 0
+      || clip.sourceEnd <= clip.sourceStart
+      || clip.sourceEnd > sourceDurationSeconds + 1e-6
+    ) throw new Error(`导入 clip[${index}] 区间无效或超出源媒体时长`);
     ids.add(clip.id);
     const original = baseClips.get(String(clip.id));
     if (!original) throw new Error(`导入 clip[${index}] 使用了基线不存在的咔嚓 clip ID`);
@@ -453,6 +601,8 @@ function validateImportedClips(clips, base) {
 export function importNle(inputFile, format, baseTimelineFile, outputFile) {
   const input = ensureFile(inputFile, "NLE 交换文件");
   const baseFile = ensureFile(baseTimelineFile, "基线 Timeline IR");
+  const inputIdentity = fileIdentity(input);
+  const baseIdentity = fileIdentity(baseFile);
   const output = path.resolve(outputFile ?? "");
   if (!outputFile) throw new Error("nle import 需要 --output FILE");
   if (output === baseFile) throw new Error("NLE 导入不得覆盖基线 Timeline IR");
@@ -461,7 +611,18 @@ export function importNle(inputFile, format, baseTimelineFile, outputFile) {
     throw new Error(`拒绝覆盖候选时间线或既有报告：${output}`);
   }
   const base = readJson(baseFile);
-  const baseIdentity = fileIdentity(baseFile);
+  if (fileIdentity(baseFile).sha256 !== baseIdentity.sha256) {
+    throw new Error("基线 Timeline 在 NLE 导入读取期间已变化");
+  }
+  const projection = buildTimelineProjection(baseFile);
+  if (projection.timeline.sha256 !== baseIdentity.sha256) {
+    throw new Error("基线 Timeline 在 NLE 导入校验期间已变化");
+  }
+  const sourceCache = new Map();
+  const sourceVerification = assertProjectionSourceCurrent(projection, {
+    cache: sourceCache,
+    requireDeclaredSha: true,
+  });
   const source = timelineSource(baseFile, base);
   let clips;
   if (format === "otio") clips = otioClips(readJson(input), baseIdentity, source, base.source.sha256);
@@ -469,16 +630,23 @@ export function importNle(inputFile, format, baseTimelineFile, outputFile) {
     clips = fcpxmlClips(fs.readFileSync(input, "utf8"), baseIdentity, source, base.source.sha256);
   }
   else throw new Error("NLE 导入当前支持 otio 或 fcpxml；CMX3600 只用于兼容导出");
-  validateImportedClips(clips, base);
-  const candidate = structuredClone(base);
+  if (fileIdentity(input).sha256 !== inputIdentity.sha256) throw new Error("NLE 交换文件在读取期间已变化");
+  validateImportedClips(
+    clips,
+    base,
+    sourceVerification.durationTick / projection.timebase.ticksPerSecond,
+  );
+  const candidate = rebaseTimelineInputs(base, baseFile, output);
   candidate.mode = "preview";
   candidate.edl = clips;
-  candidate.output = {
-    ...candidate.output,
-    path: candidate.output?.path
-      ? `${candidate.output.path}.nle-candidate.mp4`
-      : "./output/nle-candidate.mp4",
-  };
+  const candidateName = path.basename(output, path.extname(output)).replace(/[^a-zA-Z0-9._-]+/g, "-") || "nle-candidate";
+  candidate.output = { ...candidate.output, path: `./output/${candidateName}.mp4` };
+  for (const field of ["dialogueStem", "bgmStem", "sfxStem", "mixStem"]) {
+    if (typeof candidate.output[field] === "string") {
+      const extension = path.extname(candidate.output[field]) || ".wav";
+      candidate.output[field] = `./output/${candidateName}-${field}${extension}`;
+    }
+  }
   candidate.interchangeCandidate = {
     schemaVersion: "1.0",
     format,
@@ -490,27 +658,45 @@ export function importNle(inputFile, format, baseTimelineFile, outputFile) {
     requires: ["timeline validate", "delta diff", "变化层 QC", "人工正常速度审片"],
   };
   candidate.interchangeCandidate.digest = sha256Value(candidate.interchangeCandidate);
-  writeJsonExclusive(output, candidate);
-  const report = {
-    schemaVersion: "1.0",
-    kind: "kacha_nle_import_report",
-    generatedAt: new Date().toISOString(),
-    status: "candidate_only",
-    format,
-    input: fileIdentity(input),
-    baseTimeline: fileIdentity(baseFile),
-    candidateTimeline: fileIdentity(output),
-    clips: clips.length,
-    nextActions: [
-      "校验候选 Timeline IR",
-      "与基线生成 mutation/version delta",
-      "只重建受影响层并执行动态 QC",
-      "人工正常速度批准后才可进入发布候选"
-    ],
-  };
-  report.digest = stableDigest(report);
-  writeJsonExclusive(reportFile, report);
-  return { ...report, report: fileIdentity(reportFile) };
+  let outputCreated = false;
+  let outputSha = null;
+  try {
+    if (fileIdentity(baseFile).sha256 !== baseIdentity.sha256) throw new Error("基线 Timeline 在 NLE 导入生成期间已变化");
+    assertSourceVerificationCacheStable(sourceCache);
+    writeJsonExclusive(output, candidate);
+    outputCreated = true;
+    outputSha = fileIdentity(output).sha256;
+    buildTimelineProjection(output, { includeSourceHash: true });
+    if (fileIdentity(baseFile).sha256 !== baseIdentity.sha256) throw new Error("基线 Timeline 在 NLE 导入写入期间已变化");
+    if (fileIdentity(input).sha256 !== inputIdentity.sha256) throw new Error("NLE 交换文件在导入期间已变化");
+    assertSourceVerificationCacheStable(sourceCache);
+    const report = {
+      schemaVersion: "1.0",
+      kind: "kacha_nle_import_report",
+      generatedAt: new Date().toISOString(),
+      status: "candidate_only",
+      format,
+      input: inputIdentity,
+      baseTimeline: baseIdentity,
+      source: sourceVerification.identity,
+      candidateTimeline: fileIdentity(output),
+      clips: clips.length,
+      nextActions: [
+        "校验候选 Timeline IR",
+        "与基线生成 mutation/version delta",
+        "只重建受影响层并执行动态 QC",
+        "人工正常速度批准后才可进入发布候选"
+      ],
+    };
+    report.digest = stableDigest(report);
+    writeJsonExclusive(reportFile, report);
+    return { ...report, report: fileIdentity(reportFile) };
+  } catch (error) {
+    if (outputCreated && fileMatchesSha(output, outputSha)) {
+      try { fs.unlinkSync(output); } catch {}
+    }
+    throw error;
+  }
 }
 
 export function runNleCli(args = process.argv.slice(2)) {
@@ -530,7 +716,7 @@ export function runNleCli(args = process.argv.slice(2)) {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
   }
-  throw new Error("用法：kacha.mjs nle export|import --format otio|fcpxml|cmx3600 [options]");
+  throw new Error("用法：export --format otio|fcpxml|premiere-xml|cmx3600；import --format otio|fcpxml [options]");
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

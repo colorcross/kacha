@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "1.0",
+  "iterationId": "kacha-palmier-workspace-v3-2026-09-01",
+  "reviewId": "kacha-palmier-workspace-v3-producer-review-r3",
+  "status": "pass_with_external_conditions",
+  "baselineRevision": "2c09208c29dbd8d44340b2ca286fd24882464b21",
+  "checks": [
+    {
+      "id": "full-regression-final-code-tree",
+      "command": "node tests/run_tests.mjs --report /tmp/kacha-palmier-v3-r3-full-report.json",
+      "status": "pass",
+      "passed": 162,
+      "failed": 0,
+      "reportSha256": "dee186f17ddb88170f95862009db9db3e079bf194e4c9eb0cce8ae1fef0e0bdc"
+    },
+    {
+      "id": "editor-focused-final-code-tree",
+      "command": "node tests/run_tests.mjs --suite editor --report /tmp/kacha-palmier-v3-r3-editor-report.json",
+      "status": "pass",
+      "passed": 8,
+      "failed": 0,
+      "reportSha256": "ebd67e8185c5eb218ffea924ee8789980144f1be3bae8399bf07c312989fa550"
+    },
+    {
+      "id": "static-secret-product-truth-final-tree",
+      "command": "make check-static",
+      "status": "pass",
+      "facts": {"regressionChecks":162,"templates":65,"designEntries":69,"coreResources":23,"assignableEffects":132}
+    },
+    {"id":"mcp-final-tree","command":"node tests/mcp_server_tests.mjs","status":"pass"},
+    {"id":"distribution-final-tree","command":"node tests/workbench_distribution_tests.mjs","status":"pass"},
+    {"id":"installer-isolated-final-tree","command":"bash tests/test_installer.sh","status":"pass","scope":"temporary isolated Codex and Claude homes"},
+    {
+      "id": "website-final-tree",
+      "command": "make check-website",
+      "status": "pass_with_exact_dev_exception",
+      "productionVulnerabilities": 0,
+      "allowedDevelopmentAdvisories": 2
+    },
+    {
+      "id": "browser-final-tree",
+      "command": "tests/browser/editor_v3_journey.mjs with Playwright and system Google Chrome",
+      "status": "pass",
+      "checks": 6,
+      "desktopViewport": "1440x1000",
+      "mobileViewport": "390x844",
+      "mobileOverflowPixels": 0,
+      "mobileCapabilityDrawerHeightPixels": 608,
+      "pageErrors": 0,
+      "reportSha256": "000737ffe1ae2ffda49a0b2790eda6d8a09dfd9df0538c1dedb6b0e23bdc891a",
+      "desktopScreenshotSha256": "c66a7bbc5d77944c00b096f21572c09996843b37291a397e8c720d44d518831c",
+      "mobileScreenshotSha256": "fbfe515d28b73a264b6467681e37c44883c60a73c663ed01a7c4a9e595b57d13"
+    },
+    {
+      "id": "premiere-xml-structure-final-tree",
+      "command": "kacha nle export --format premiere-xml followed by xmllint --nonet --noout",
+      "status": "pass",
+      "root": "xmeml v5",
+      "outputSha256": "f3d5bd46d0d1e3412e2408c013982f93732c65f996c2c446c533dc7fb0cd9480",
+      "reportSha256": "afd89c436a22683e18c765aaf073445c214d83d2afddfc1d0141c8c76d3ab455",
+      "targetApplicationImport": "not_run"
+    },
+    {"id":"diff","command":"git diff --check","status":"pass"},
+    {
+      "id": "user-home-install-status",
+      "command": "node scripts/kacha.mjs install status --agent both",
+      "status": "sync_required",
+      "sourceBundleDigest": "b8f77f9ae216484e1563b2e37b1fe32c32e3cad7d9673c32e62b469780790553",
+      "codex": "out_of_sync",
+      "claude": "out_of_sync",
+      "actionTaken": "none; deployment was not authorized in this review turn"
+    }
+  ],
+  "limitations": [
+    "This is producer-generated local evidence, not independent final review.",
+    "Browser evidence is local headless Chrome, not creator normal-speed acceptance.",
+    "Premiere, Final Cut Pro and Resolve target-application imports were not run.",
+    "No final media was rendered from the delivery-plan surface.",
+    "No commit, push, remote CI readback or user-home deployment was authorized in this review turn."
+  ]
+}

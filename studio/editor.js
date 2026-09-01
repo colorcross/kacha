@@ -14,6 +14,9 @@ const state = {
   openGeneration: 0,
   projectGeneration: 0,
   binGeneration: 0,
+  workspace: null,
+  capabilities: null,
+  deliveryProfiles: null,
 };
 
 async function api(endpoint, body) {
@@ -55,6 +58,87 @@ function alignFrame(tick) { return Math.round(Number(tick) / frameTick()) * fram
 function itemById(id) { return projection()?.items.find((item) => item.id === id) ?? null; }
 function selectedItems() { return [...state.selectedIds].map(itemById).filter(Boolean); }
 function pictureItems() { return projection().items.filter((item) => item.type === "picture").sort((a, b) => a.startTick - b.startTick); }
+
+const drawers = [
+  ["#capabilitiesButton", "#capabilityDrawer"],
+  ["#deliveryButton", "#deliveryDrawer"],
+  ["#activityButton", "#activityDrawer"],
+];
+
+function toggleDrawer(buttonSelector, drawerSelector) {
+  const button = $(buttonSelector); const drawer = $(drawerSelector); const opening = drawer.hidden;
+  for (const [otherButtonSelector, otherDrawerSelector] of drawers) {
+    $(otherDrawerSelector).hidden = true;
+    $(otherButtonSelector).setAttribute("aria-expanded", "false");
+  }
+  drawer.hidden = !opening;
+  button.setAttribute("aria-expanded", String(opening));
+}
+
+function renderWorkspace(workspace) {
+  state.workspace = workspace ?? null;
+  const switcher = $("#timelineSwitcher"); switcher.innerHTML = "";
+  if (!workspace) {
+    const option = document.createElement("option"); option.value = ""; option.textContent = "独立 Timeline"; switcher.append(option);
+    switcher.disabled = true; $("#duplicateTimelineButton").disabled = true; $("#workspaceLabel").textContent = "独立 Timeline"; return;
+  }
+  $("#workspaceLabel").textContent = workspace.label;
+  for (const timeline of workspace.timelines) {
+    const option = document.createElement("option"); option.value = timeline.id;
+    option.textContent = `${timeline.label} · ${timeline.role} · ${timeline.projection.width}×${timeline.projection.height}`;
+    switcher.append(option);
+  }
+  const activePath = state.project?.session?.timelinePath;
+  switcher.value = workspace.timelines.find((timeline) => timeline.absolutePath === activePath)?.id ?? workspace.activeTimelineId;
+  switcher.disabled = false; $("#duplicateTimelineButton").disabled = false;
+}
+
+function renderCapabilities(value) {
+  state.capabilities = value; const grid = $("#capabilityGrid"); grid.innerHTML = "";
+  const counts = value.counts ?? {}; $("#capabilityMeta").textContent = `AVAILABLE ${counts.available ?? 0} · PARTIAL ${counts.partial ?? 0} · PLANNED ${counts.planned ?? 0} · BLOCKED ${counts.blocked ?? 0}`;
+  for (const capability of value.capabilities ?? []) {
+    const card = document.createElement("article"); card.className = "capability-card";
+    const head = document.createElement("div"); head.className = "capability-head";
+    const title = document.createElement("h3"); title.textContent = capability.label;
+    const pill = document.createElement("span"); pill.className = `status-pill ${capability.status}`; pill.textContent = capability.status.toUpperCase(); head.append(title, pill);
+    const category = document.createElement("div"); category.className = "capability-category"; category.textContent = capability.category;
+    const limitation = document.createElement("p"); limitation.textContent = capability.limitations?.[0] ?? "无已知局限";
+    const evidence = document.createElement("p"); evidence.className = "capability-evidence"; evidence.textContent = capability.evidence?.length ? `证据：${capability.evidence.join(" · ")}` : "证据：尚无可执行证据";
+    const entry = document.createElement("p"); entry.className = "capability-entry"; entry.textContent = capability.entryPoints?.length ? `入口：${capability.entryPoints.join(" · ")}` : "解锁前无执行入口";
+    card.append(head, category, limitation, evidence, entry); grid.append(card);
+  }
+}
+
+function renderDeliveryProfiles(value) {
+  state.deliveryProfiles = value; const select = $("#deliveryProfile"); select.innerHTML = "";
+  let firstAvailable = null;
+  for (const profile of value.profiles ?? []) {
+    const option = document.createElement("option"); option.value = profile.id; option.disabled = profile.status !== "available";
+    if (profile.status === "available" && firstAvailable === null) firstAvailable = profile.id;
+    const runtime = profile.status === "available"
+      ? `${profile.selectedEncoder} + ${profile.selectedAudioEncoder}`
+      : `blocked: ${(profile.blockedReasons ?? []).join(", ") || "runtime"}`;
+    option.textContent = `${profile.id} · ${runtime} · ${profile.container.toUpperCase()}`; select.append(option);
+  }
+  if (firstAvailable !== null) select.value = firstAvailable;
+  const submit = $("#deliveryPlanForm")?.querySelector('button[type="submit"]');
+  if (submit) submit.disabled = firstAvailable === null;
+}
+
+async function refreshActivity() {
+  if (!state.sessionId) return;
+  const result = await api("/api/editor/history", { sessionId: state.sessionId });
+  const list = $("#activityList"); list.innerHTML = "";
+  const records = [...(result.records ?? [])].reverse().slice(0, 50);
+  if (!records.length) { list.innerHTML = '<p class="empty compact">Command Journal 尚无写入。</p>'; return; }
+  for (const record of records) {
+    const row = document.createElement("article"); row.className = "activity-item";
+    const at = document.createElement("span"); at.textContent = record.at;
+    const body = document.createElement("code"); body.textContent = `${record.action} / ${record.operation} / ${record.commandId}`;
+    const meta = document.createElement("span"); meta.textContent = `${record.actor ?? "unknown"} · QC ${(record.requiredQc ?? []).join(", ") || "none"}`;
+    row.append(at, body, meta); list.append(row);
+  }
+}
 
 function pictureAt(tick) {
   return pictureItems().filter((item) => item.startTick <= tick && tick < item.endTick).at(-1) ?? null;
@@ -202,7 +286,7 @@ function attachClipDrag(clip, item, lane) {
       const up = () => {
         cleanup();
         const tick = Number(clip.dataset.previewTick ?? originTick); delete clip.dataset.previewTick;
-        if (tick !== originTick) runCommand({ itemId: item.id, operation: "trim", arguments: { edge, outputTick: tick } }, `已修剪 ${item.label}`);
+        if (tick !== originTick) runCommand({ itemId: item.id, operation: item.type === "picture" ? "ripple_trim" : "trim", arguments: { edge, outputTick: tick } }, item.type === "picture" ? `已波纹修剪 ${item.label}` : `已修剪 ${item.label}`);
       };
       const cancel = () => { cleanup(); delete clip.dataset.previewTick; renderTracks(); renderSelection(); };
       handle.addEventListener("pointermove", move);
@@ -344,12 +428,13 @@ function updateDeliveryGuide() {
 }
 
 function renderProject(project) {
+  if (project.workspace === undefined && state.workspace) project = { ...project, workspace: state.workspace };
   state.project = project; const value = project.projection; state.outputTick = Math.min(state.outputTick, value.durationTick);
   $("#workspace").hidden = false; $("#projectMeta").textContent = `${value.projectId} · ${value.timebase.frameRate} · ${timecode(value.durationSeconds)}`;
   $("#undoButton").disabled = !project.session.canUndo; $("#redoButton").disabled = !project.session.canRedo;
   $("#timelineViewport").style.setProperty("--timeline-width", `${1100 * state.zoom}px`);
   for (const id of [...state.selectedIds]) if (!value.items.some((item) => item.id === id)) state.selectedIds.delete(id);
-  renderRuler(); renderTracks(); renderTimelineOverlays(); renderDeliveryFrames(); renderSelection(); seekOutputTick(state.outputTick);
+  renderWorkspace(project.workspace); renderRuler(); renderTracks(); renderTimelineOverlays(); renderDeliveryFrames(); renderSelection(); seekOutputTick(state.outputTick);
 }
 
 async function refreshProject(reason = "external change") {
@@ -426,20 +511,34 @@ function loadWaveform() {
   image.src = `/api/editor/waveform?session=${encodeURIComponent(state.sessionId)}&width=1600&v=${Date.now()}`;
 }
 
-$("#openForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
+async function openProjectPath(timelinePath, timelineId = null) {
   if (state.mutationInFlight) { setStatus("请等当前编辑命令完成后再打开新 Timeline。", true); return; }
   const generation = ++state.openGeneration;
-  const timelinePath = $("#timelinePath").value.trim();
+  for (const id of ["#capabilitiesButton", "#deliveryButton", "#activityButton"]) $(id).disabled = true;
   setStatus("正在验证 Timeline IR、源媒体身份、时间基和编辑历史……");
   try {
-    const result = await api("/api/editor/open", { timelinePath });
+    const result = await api("/api/editor/open", { timelinePath, timelineId });
     if (generation !== state.openGeneration) return;
     state.projectGeneration += 1; state.binGeneration += 1;
     state.sessionId = result.browserSessionId; state.selectedIds.clear(); state.selectedAssetRef = null; state.pendingInTick = null; state.outputTick = 0; state.activePictureId = null;
     const video = $("#video"); video.src = result.projection.timeline.source ? `/api/editor/media?session=${encodeURIComponent(state.sessionId)}` : ""; renderProject(result);
-    connectEvents(); refreshBin(); if (video.src) loadWaveform(); else updatePlayhead(); setStatus(`已打开 ${result.projection.projectId}；近似预览与正式终渲染边界有效。`);
+    $("#activityButton").disabled = false;
+    connectEvents(); refreshBin(); if (video.src) loadWaveform(); else updatePlayhead();
+    const [capabilities, profiles] = await Promise.all([
+      api("/api/editor/capabilities", { sessionId: state.sessionId }),
+      api("/api/editor/delivery-profiles", { sessionId: state.sessionId }),
+    ]);
+    if (generation !== state.openGeneration) return;
+    renderCapabilities(capabilities); renderDeliveryProfiles(profiles);
+    $("#capabilitiesButton").disabled = false; $("#deliveryButton").disabled = false;
+    refreshActivity().catch(() => {});
+    setStatus(`已打开 ${result.projection.projectId}；近似预览与正式终渲染边界有效。`);
   } catch (error) { if (generation === state.openGeneration) setStatus(error.message, true); }
+}
+
+$("#openForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await openProjectPath($("#timelinePath").value.trim());
 });
 
 $("#inspector").addEventListener("submit", (event) => {
@@ -476,6 +575,16 @@ $("#markerButton").onclick = () => { const tick = alignFrame(state.outputTick); 
 $("#inButton").onclick = () => { state.pendingInTick = alignFrame(state.outputTick); setStatus(`工作区入点：${timecode(ticksToSeconds(state.pendingInTick))}`); };
 $("#outButton").onclick = () => { const endTick = alignFrame(state.outputTick); if (state.pendingInTick === null || endTick <= state.pendingInTick) { setStatus("请先设置更早的入点。", true); return; } runCommand({ operation: "work_area_set", arguments: { startTick: state.pendingInTick, endTick } }, "已设置工作区"); };
 $("#splitButton").onclick = () => { const picture = selectedItems().find((item) => item.type === "picture") ?? pictureAt(state.outputTick); if (!picture || state.outputTick <= picture.startTick || state.outputTick >= picture.endTick) { setStatus("播放头必须位于主画面片段内部。", true); return; } runCommand({ itemId: picture.id, operation: "split", arguments: { outputTick: alignFrame(state.outputTick), newId: `${picture.label}-split-${state.outputTick}` } }, `已分割 ${picture.label}`); };
+$("#overwriteButton").onclick = () => {
+  const picture = selectedItems().find((item) => item.type === "picture"); const area = projection()?.editor?.workArea;
+  if (!picture || !area) { setStatus("覆盖需要选中一个主画面片段，并用 [ / ] 设置工作区。", true); return; }
+  const duration = area.endTick - area.startTick; const sourceStartTick = picture.metadata.sourceStartTick; const sourceEndTick = sourceStartTick + duration;
+  if (sourceEndTick > picture.metadata.sourceEndTick) { setStatus("已选片段的源区间短于覆盖工作区。", true); return; }
+  runCommand({ operation: "overwrite", arguments: {
+    outputStartTick: area.startTick, outputEndTick: area.endTick, sourceStartTick, sourceEndTick,
+    newId: `overwrite-${area.startTick}-${sourceStartTick}`, sourceDecisionId: null, semanticBeatId: null, reason: "studio work-area overwrite",
+  } }, `已用 ${picture.label} 的源区间覆盖工作区`);
+};
 
 function reorderPicture(direction) {
   const selected = selectedItems().find((item) => item.type === "picture"); if (!selected) { setStatus("请选择一个主画面片段。", true); return; }
@@ -514,4 +623,59 @@ window.addEventListener("keydown", (event) => {
   else if (event.key === "[") $("#inButton").click();
   else if (event.key === "]") $("#outButton").click();
   else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") { event.preventDefault(); $(event.shiftKey ? "#redoButton" : "#undoButton").click(); }
+});
+
+$("#capabilitiesButton").onclick = () => toggleDrawer("#capabilitiesButton", "#capabilityDrawer");
+$("#deliveryButton").onclick = () => toggleDrawer("#deliveryButton", "#deliveryDrawer");
+$("#activityButton").onclick = () => { toggleDrawer("#activityButton", "#activityDrawer"); if (!$("#activityDrawer").hidden) refreshActivity().catch((error) => setStatus(error.message, true)); };
+$("#refreshActivity").onclick = () => refreshActivity().catch((error) => setStatus(error.message, true));
+
+$("#timelineSwitcher").onchange = async (event) => {
+  if (!state.workspace || !event.target.value) return;
+  await openProjectPath(state.workspace.workspace.path, event.target.value);
+};
+
+$("#duplicateTimelineButton").onclick = () => {
+  if (!state.workspace) return;
+  const source = state.workspace.timelines.find((timeline) => timeline.absolutePath === state.project.session.timelinePath);
+  const id = `${source?.id ?? "timeline"}-v${state.workspace.timelines.length + 1}`;
+  $("#duplicateId").value = id; $("#duplicateLabel").value = `${source?.label ?? "Timeline"} 副本`;
+  $("#duplicatePath").value = `versions/${id}.json`; $("#duplicateWidth").value = projection().output.width; $("#duplicateHeight").value = projection().output.height;
+  $("#duplicateDialog").showModal();
+};
+$("#closeDuplicateDialog").onclick = () => $("#duplicateDialog").close();
+$("#duplicateForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try {
+    const newTimelineId = $("#duplicateId").value.trim();
+    const result = await api("/api/editor/workspace-duplicate", {
+      sessionId: state.sessionId, expectedWorkspaceSha256: state.workspace.workspace.sha256,
+      newTimelineId, label: $("#duplicateLabel").value.trim(), outputPath: $("#duplicatePath").value.trim(),
+      width: $("#duplicateWidth").valueAsNumber, height: $("#duplicateHeight").valueAsNumber, role: $("#duplicateRole").value,
+    });
+    $("#duplicateDialog").close(); setStatus(`已创建独立候选 ${newTimelineId}，正在切换。`);
+    await openProjectPath(result.workspace.path, result.activeTimelineId);
+  } catch (error) { setStatus(error.message, true); }
+});
+
+$("#deliveryPlanForm").addEventListener("submit", async (event) => {
+  event.preventDefault(); const status = $("#deliveryStatus");
+  try {
+    const result = await api("/api/editor/delivery-plan", { sessionId: state.sessionId, profileId: $("#deliveryProfile").value, outputPath: $("#deliveryOutput").value.trim() });
+    status.classList.remove("error"); status.textContent = `交付计划已写入 ${result.plan.path}；还未渲染成片。`;
+  } catch (error) { status.classList.add("error"); status.textContent = error.message; }
+});
+$("#nleExportForm").addEventListener("submit", async (event) => {
+  event.preventDefault(); const status = $("#deliveryStatus");
+  try {
+    const result = await api("/api/editor/nle-export", { sessionId: state.sessionId, format: $("#nleFormat").value, outputPath: $("#nleOutput").value.trim() });
+    status.classList.remove("error"); status.textContent = `NLE 交换候选已写入 ${result.output.path}；需在目标 NLE 真实导入验证。`;
+  } catch (error) { status.classList.add("error"); status.textContent = error.message; }
+});
+$("#bundleForm").addEventListener("submit", async (event) => {
+  event.preventDefault(); const status = $("#deliveryStatus");
+  try {
+    const result = await api("/api/editor/delivery-bundle", { sessionId: state.sessionId, outputPath: $("#bundleOutput").value.trim(), includeMedia: $("#bundleMedia").checked });
+    status.classList.remove("error"); status.textContent = `工程包已写入 ${result.output}；状态 ${result.status}。`;
+  } catch (error) { status.classList.add("error"); status.textContent = error.message; }
 });

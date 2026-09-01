@@ -98,6 +98,24 @@ Studio `/editor` 的源媒体波形由受并发、尺寸、时限和缓存上限
 Studio 打开 Timeline 时计算源媒体 SHA-256；如果 `source.sha256` 已声明，不匹配则
 直接失败。SSE 连接同样受 12 小时 session TTL 约束，不能借长连接无限续期。
 
+V3 在 Timeline IR 之上新增 `kacha-editor-workspace`。Workspace 只保存多个独立
+Timeline IR 的受约束相对路径、强身份和版本/画幅关系；它不保存 clip、track 或
+渲染状态。复制使用 Workspace SHA、文件锁、独占目标和 realpath 边界，包含 symlink
+父目录的越界路径被拒绝。
+
+`ripple_trim` 和 `overwrite` 经过同一 Editor Command 编译器。它们当前只对单源主画面
+EDL 开放；必须整帧、不越界、不与已执行转场冲突，并产生 connection/semantic QC。
+
+`professional_capabilities.mjs` 是工作台的能力事实投影：状态由实现文件、FFmpeg
+运行时 encoder/filter 和已知局限组成，不是用户可修改的功能开关。
+
+`kacha_delivery.mjs` 只接受封闭编码 profile，并同时探测视频/音频 encoder、muxer
+和 pixel format；交付计划不直接运行一段任意 FFmpeg 参数。自包含工程先在私有临时
+目录构建，再独占保留目标目录并以 manifest-last 发布，避免覆盖并发创建的目录；
+contract-only 包将媒体路径改写为 `./Missing/` 占位并移除本机绝对路径。包含媒体时，
+每个引用都必须独立通过当前 SHA、明确许可白名单、provenance 与证据校验，不能借同 SHA
+去重绕过授权。
+
 Studio `/editor` 是校正与批准 surface。浏览器 Canvas provider 固定为近似预览，
 按 EDL 将成片播放头映射到源片区间，但不合成转场 overlap；`finalEligible=false`。
 正式成片仍由通过当前 runtime probe 的 `ffmpeg-render-graph` 生成。未来 WebGPU

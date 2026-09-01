@@ -274,10 +274,32 @@ forward/inverse mutation、快照、影响轨道与所需 QC。`recover` 只恢�
 EDL 映射源时间但不合成转场 overlap，只提供 `approximate_preview`，不能替代
 FFmpeg Render Graph 或发布审片。
 
-Workbench V2 可做多选吸附、timed-item move、trim、split、EDL 显式重排、Marker、
-工作区、多画幅安全框、异步波形、Project Bin 替换和 overlay `x/y` 键帧。Marker、
-工作区和交付画幅是非渲染 editor metadata；键帧会进入 FFmpeg final。媒体替换只
-接受当前项目索引中强身份、许可和来源仍有效的适配素材；转场已执行时结构编辑失败关闭。
+Workbench V3 可做多选吸附、timed-item move、trim、ripple trim、split、overwrite、
+EDL 显式重排、Marker、工作区、多画幅安全框、异步波形、Project Bin 替换和 overlay
+`x/y` 键帧。Workspace 把同一项目内的主版本、候选版本和不同画幅注册为多条独立
+Timeline IR，并用 digest、当前 Workspace SHA 和 Timeline SHA 失败关闭：
+
+```bash
+node scripts/kacha.mjs workspace create --output WORKSPACE.json --timeline TIMELINE.json
+node scripts/kacha.mjs workspace show --workspace WORKSPACE.json
+node scripts/kacha.mjs workspace duplicate --workspace WORKSPACE.json \
+  --expected-sha WORKSPACE_SHA --source main --id vertical-v1 \
+  --output versions/vertical-v1.json --width 1080 --height 1920 --role aspect
+node scripts/kacha.mjs pro-capabilities
+node scripts/kacha.mjs delivery profiles
+node scripts/kacha.mjs delivery plan --timeline TIMELINE.json --profile h264-master --output FINAL.mp4
+node scripts/kacha.mjs delivery bundle --timeline TIMELINE.json --output PROJECT_BUNDLE
+node scripts/kacha.mjs nle export --timeline TIMELINE.json --format premiere-xml --output TIMELINE.xml
+```
+
+Marker、工作区和交付画幅是非渲染 editor metadata；键帧会进入 FFmpeg final。媒体
+替换只接受当前项目索引中强身份、许可和来源仍有效的适配素材；转场已执行时结构
+编辑失败关闭。交付 profile 必须同时验证视频/音频 encoder、muxer 和 pixel format；
+交付计划不是成片。自包含工程默认不复制媒体，显式包含时逐引用执行许可白名单、
+provenance、证据和当前 SHA 门禁。NLE 交换拒绝超出真实源媒体时长的区间并绑定稳定
+Timeline/source 快照；Premiere XML 是 xmeml v5 候选。H.264/H.265/ProRes 仍必须经过
+正式 Render Graph、QC、正常速度人工审片和目标 NLE 实机导入验证，不能因本机存在
+encoder 或生成了交换文件就宣称交付完成。
 
 Codex/Claude Code 可选用根目录受限的本地 stdio MCP。所有路径必须位于启动时
 指定的绝对 `--root`，写工具仍要求 Timeline SHA 并走同一 journal。MCP 接入不授予

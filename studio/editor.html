@@ -23,20 +23,50 @@
     <section class="open-panel" aria-labelledby="open-title">
       <div>
         <p class="eyebrow">TIMELINE IR · SHA-LOCKED · REVERSIBLE</p>
-        <h1 id="open-title">Human–Agent Workbench</h1>
-        <p>Agent 完成高强度生产，人在这里做关键校正。每次改动都进入 Command Journal，不绕过终渲染、QC 和人工审片。</p>
+        <h1 id="open-title">Professional Human–Agent Workbench</h1>
+        <p>项目、素材、智能能力、时间线与交付在同一个工作区协同。每次改动都进入 Command Journal，不绕过终渲染、QC 和人工审片。</p>
       </div>
       <form id="openForm">
-        <label for="timelinePath">Timeline IR 绝对路径</label>
-        <div class="path-row"><input id="timelinePath" autocomplete="off" spellcheck="false" placeholder="/absolute/path/contracts/timeline.json" required><button type="submit">打开时间线</button></div>
+        <label for="timelinePath">Timeline IR 或 Kacha Workspace 绝对路径</label>
+        <div class="path-row"><input id="timelinePath" autocomplete="off" spellcheck="false" placeholder="/absolute/path/.kacha/editor-workspace.json" required><button type="submit">打开项目</button></div>
       </form>
       <p id="status" class="status" role="status" aria-live="polite">等待打开本机 Timeline IR。</p>
     </section>
 
     <section id="workspace" class="workspace" hidden>
+      <section class="project-strip" aria-label="项目与时间线">
+        <div class="project-identity"><span class="eyebrow">PROJECT / TIMELINE</span><strong id="workspaceLabel">独立 Timeline</strong></div>
+        <label for="timelineSwitcher">当前版本 <select id="timelineSwitcher" disabled><option value="">独立 Timeline</option></select></label>
+        <button id="duplicateTimelineButton" type="button" disabled>复制版本 / 画幅</button>
+        <button id="capabilitiesButton" type="button" aria-expanded="false" disabled>能力地图</button>
+        <button id="deliveryButton" type="button" aria-expanded="false" disabled>交付中心</button>
+        <button id="activityButton" type="button" aria-expanded="false" disabled>Agent Activity</button>
+      </section>
+
+      <section id="capabilityDrawer" class="drawer panel" hidden aria-labelledby="capability-title">
+        <div class="panel-heading"><div><span class="panel-index">MAP</span><h2 id="capability-title">PROFESSIONAL CAPABILITY MAP</h2></div><span id="capabilityMeta" class="mono"></span></div>
+        <p class="drawer-intro">每项能力都显示当前状态、实现证据、局限和入口。<code>partial</code>、<code>planned</code> 与 <code>blocked</code> 不伪装成可执行功能。</p>
+        <div id="capabilityGrid" class="capability-grid"></div>
+      </section>
+
+      <section id="deliveryDrawer" class="drawer panel" hidden aria-labelledby="delivery-title">
+        <div class="panel-heading"><div><span class="panel-index">OUT</span><h2 id="delivery-title">DELIVERY CENTER</h2></div><span class="mono">PLAN ≠ RENDERED</span></div>
+        <div class="delivery-grid">
+          <form id="deliveryPlanForm" class="drawer-form"><h3>编码交付计划</h3><label>Profile <select id="deliveryProfile"></select></label><label>成片输出绝对路径 <input id="deliveryOutput" placeholder="/absolute/path/final.mp4" required></label><button type="submit">生成交付计划</button></form>
+          <form id="nleExportForm" class="drawer-form"><h3>NLE 交换</h3><label>格式 <select id="nleFormat"><option value="otio">OTIO</option><option value="fcpxml">FCPXML</option><option value="premiere-xml">Premiere XML (xmeml v5)</option><option value="cmx3600">CMX3600</option></select></label><label>输出绝对路径 <input id="nleOutput" placeholder="/absolute/path/timeline.otio" required></label><button type="submit">导出交换候选</button></form>
+          <form id="bundleForm" class="drawer-form"><h3>自包含工程</h3><label>输出目录 <input id="bundleOutput" placeholder="/absolute/path/KachaProject" required></label><label class="check-row"><input id="bundleMedia" type="checkbox"> 包含已验证 license/provenance 的媒体</label><button type="submit">生成工程包</button></form>
+        </div>
+        <p id="deliveryStatus" class="drawer-status" role="status" aria-live="polite">正式成片仍必须经过 FFmpeg Render Graph、QC 与正常速度人工审片。</p>
+      </section>
+
+      <section id="activityDrawer" class="drawer panel" hidden aria-labelledby="activity-title">
+        <div class="panel-heading"><div><span class="panel-index">LOG</span><h2 id="activity-title">AGENT ACTIVITY / COMMAND JOURNAL</h2></div><button id="refreshActivity" type="button">刷新</button></div>
+        <div id="activityList" class="activity-list"><p class="empty compact">尚未读取编辑记录。</p></div>
+      </section>
+
       <section class="tool-strip" aria-label="时间线工具">
         <div class="tool-group"><button id="snapButton" class="active" type="button" aria-pressed="true">SNAP</button><button id="markerButton" type="button" title="M">标记</button><button id="inButton" type="button" title="[">设入点</button><button id="outButton" type="button" title="]">设出点</button></div>
-        <div class="tool-group"><button id="splitButton" type="button" title="S">分割</button><button id="moveLeftButton" type="button">主画面左移</button><button id="moveRightButton" type="button">主画面右移</button></div>
+        <div class="tool-group"><button id="splitButton" type="button" title="S">分割</button><button id="overwriteButton" type="button" title="用已选主画面的源区间覆盖工作区">覆盖</button><button id="moveLeftButton" type="button">主画面左移</button><button id="moveRightButton" type="button">主画面右移</button></div>
         <div class="tool-group history-actions"><button id="undoButton" type="button" disabled>撤销</button><button id="redoButton" type="button" disabled>重做</button></div>
         <div id="selectionSummary" class="selection-summary">0 SELECTED</div>
       </section>
@@ -92,6 +122,17 @@
       </section>
     </section>
   </main>
+  <dialog id="duplicateDialog">
+    <form id="duplicateForm" method="dialog">
+      <div class="dialog-head"><div><span class="eyebrow">NON-DESTRUCTIVE VERSION</span><h2>复制时间线</h2></div><button id="closeDuplicateDialog" type="button" aria-label="关闭">×</button></div>
+      <label>ID <input id="duplicateId" pattern="[^\u0000-\u001f\u007f]+" required></label>
+      <label>名称 <input id="duplicateLabel" required></label>
+      <label>目标文件（Workspace 目录内相对路径）<input id="duplicatePath" placeholder="versions/vertical-v1.json" required></label>
+      <div class="dialog-dimensions"><label>宽 <input id="duplicateWidth" type="number" min="64" max="16384" required></label><label>高 <input id="duplicateHeight" type="number" min="64" max="16384" required></label></div>
+      <label>类型 <select id="duplicateRole"><option value="version">版本</option><option value="aspect">画幅</option></select></label>
+      <button class="primary" type="submit">创建独立候选</button>
+    </form>
+  </dialog>
   <script type="module" src="/editor.js"></script>
 </body>
 </html>

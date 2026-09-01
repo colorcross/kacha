@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1.0",
+  "review": "implementation-security-testability",
+  "status": "completed_with_findings_closed",
+  "findings": [
+    {"id":"PAL-PLAN-004","severity":"critical","problem":"自包含工程包若跟随任意路径会读取项目外文件或泄露私有素材。","resolution":"只允许 Timeline 已绑定且当前 SHA 匹配的媒体；打包前输出清单、许可与排除项，默认不包含媒体。"},
+    {"id":"PAL-PLAN-005","severity":"high","problem":"overwrite/ripple 可能破坏转场、语义 ID 或用户已完成的轨道对齐。","resolution":"结构操作遇到已执行转场失败关闭；overwrite 仅作用于主画面 EDL，新片段必须显式给出语义元数据和整帧边界。"},
+    {"id":"PAL-PLAN-006","severity":"high","problem":"导出编码选项若直接接受任意 FFmpeg 参数会形成 shell/文件覆盖边界。","resolution":"使用封闭 profile registry、spawn argv、独占输出和运行时 codec probe；工作台本轮只生成交付计划，不从浏览器绕过候选门禁。"},
+    {"id":"PAL-PLAN-007","severity":"high","problem":"将 FCPXML 改名为 Premiere XML 不构成可靠交换实现。","resolution":"独立生成 Final Cut Pro 7 XML（xmeml v5）Premiere 交换候选，保留 OTIO 作为跨 NLE 主路由，并要求目标应用导入验证。"}
+  ]
+}

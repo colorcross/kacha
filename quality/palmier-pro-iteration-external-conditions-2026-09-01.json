@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "iterationId": "kacha-palmier-workspace-v3-2026-09-01",
+  "status": "open_external_conditions",
+  "conditions": [
+    {"id":"PAL-EXT-001","owner":"creator/user","status":"not_started","condition":"Use Workbench V3 on a real 行者大灰 project and complete normal-speed acceptance for timeline ergonomics, edit quality and delivery clarity.","localCompletionImpact":"does not block local implementation; blocks creator-value and quality-improvement claims"},
+    {"id":"PAL-EXT-002","owner":"release operator","status":"not_started","condition":"Import current OTIO, FCPXML and xmeml v5 candidates into the target Premiere Pro / Final Cut Pro versions and record mapping losses.","localCompletionImpact":"blocks target-application interoperability claims"},
+    {"id":"PAL-EXT-003","owner":"product team","status":"not_started","condition":"Define and implement multi-source clocks, sync groups, angle switching and final-render semantics before enabling multicam.","localCompletionImpact":"keeps sync and multicam planned"},
+    {"id":"PAL-EXT-004","owner":"product team","status":"not_started","condition":"Define nested Timeline duration, rate conversion, dependency invalidation and render flattening semantics.","localCompletionImpact":"keeps nested timeline planned"},
+    {"id":"PAL-EXT-005","owner":"product team","status":"not_started","condition":"Connect each closed H.264/H.265/ProRes profile to final rendering, technical QC and normal-speed review.","localCompletionImpact":"keeps codec delivery partial despite local encoder availability"},
+    {"id":"PAL-EXT-006","owner":"release operator","status":"not_started","condition":"After an authorized commit and push, read back Linux CI, GitHub Pages and fresh Codex/Claude installations.","localCompletionImpact":"blocks remote release and deployment claims"},
+    {"id":"PAL-EXT-007","owner":"independent reviewer","status":"not_started","condition":"A reviewer independent from this implementation must inspect the current diff, reproduce the critical failure cases and issue final review evidence.","localCompletionImpact":"producer self-review may close local findings but cannot claim AppCreate independent deep-review completion"}
+  ]
+}

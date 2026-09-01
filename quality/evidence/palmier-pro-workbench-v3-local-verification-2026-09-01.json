@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "iterationId": "kacha-palmier-workspace-v3-2026-09-01",
+  "status": "pass_with_external_conditions",
+  "baselineRevision": "2c09208c29dbd8d44340b2ca286fd24882464b21",
+  "checks": [
+    {"id":"full-regression","command":"node tests/run_tests.mjs --report /tmp/kacha-palmier-v3-full-report.json","status":"pass","passed":162,"failed":0,"reportSha256":"dee186f17ddb88170f95862009db9db3e079bf194e4c9eb0cce8ae1fef0e0bdc"},
+    {"id":"editor-current-tree","command":"node tests/run_tests.mjs --suite editor","status":"pass","passed":8,"failed":0},
+    {"id":"static-and-truth","command":"make check-static","status":"pass","facts":{"regressionChecks":162,"templates":65,"designEntries":69,"coreResources":23,"assignableEffects":132}},
+    {"id":"mcp","command":"node tests/mcp_server_tests.mjs","status":"pass"},
+    {"id":"distribution","command":"node tests/workbench_distribution_tests.mjs","status":"pass"},
+    {"id":"installer","command":"bash tests/test_installer.sh","status":"pass","scope":"isolated temporary Codex and Claude homes"},
+    {"id":"website","command":"npm run lint && npm run typecheck && npm run test:pages && npm run audit:dependencies","status":"pass_with_exact_dev_exception","productionVulnerabilities":0,"allowedDevelopmentAdvisories":2},
+    {"id":"browser","command":"tests/browser/editor_v3_journey.mjs with Playwright 1.55 and system Google Chrome","status":"pass","checks":6,"desktopViewport":"1440x1000","mobileViewport":"390x844","mobileOverflowPixels":0,"pageErrors":0,"reportSha256":"914f2272bac106bb532ce2974908b296d15e2ffdc38e8d16b63167903a07cba4","desktopScreenshotSha256":"a093db42df728be0e8d7cd02275b40f015eee494d2cae0547930e484a9af198c","mobileScreenshotSha256":"8c51a0efca6604f556962636f0539601cb8e49de45bc703be3dbc4f034994933"},
+    {"id":"premiere-xml-structure","command":"kacha nle export --format premiere-xml followed by xmllint --nonet --noout","status":"pass","root":"xmeml v5","linkedVideoAudioClipItems":true,"targetApplicationImport":"not_run"},
+    {"id":"diff","command":"git diff --check","status":"pass"}
+  ],
+  "limitations": [
+    "Browser evidence is local headless Chrome, not creator normal-speed acceptance.",
+    "Premiere, Final Cut Pro and Resolve target-application imports were not run.",
+    "No final media was rendered from the new delivery-plan surface.",
+    "No commit, push, remote CI readback or user-home deployment was authorized in this iteration."
+  ]
+}

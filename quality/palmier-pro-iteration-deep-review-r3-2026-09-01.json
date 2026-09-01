@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "1.0",
+  "iterationId": "kacha-palmier-workspace-v3-2026-09-01",
+  "reviewId": "kacha-palmier-workspace-v3-producer-review-r3",
+  "status": "producer_review_completed_pending_independent_final_review",
+  "reviewAuthority": "producer self-review",
+  "reviewedDimensions": [
+    "Timeline and source-media snapshot consistency",
+    "NLE export and import media correctness",
+    "Workspace 64-version performance and whole-view consistency",
+    "delivery runtime capability truth",
+    "self-contained bundle authorization and publication safety",
+    "desktop and 390px interaction continuity",
+    "documentation and regression-fixture truth"
+  ],
+  "findings": [
+    {
+      "id": "PAL-R3-001",
+      "severity": "critical",
+      "problem": "NLE exchange validated a declared source SHA but did not bind the whole export to one stable Timeline/source snapshot or reject EDL ranges beyond the real media duration.",
+      "resolution": "Centralize current-source verification, real-duration bounds and before/after identity checks; bind the verified source identity into export reports.",
+      "status": "closed"
+    },
+    {
+      "id": "PAL-R3-002",
+      "severity": "high",
+      "problem": "NLE import could retain an orphan candidate when report creation failed and moving a candidate to another directory broke relative inputs or reused output/stem paths.",
+      "resolution": "Rebase Timeline inputs, isolate candidate outputs/stems, validate the written candidate, and remove only the invocation-owned matching-SHA candidate on failure.",
+      "status": "closed"
+    },
+    {
+      "id": "PAL-R3-003",
+      "severity": "high",
+      "problem": "A delivery profile was marked available after checking only its video encoder.",
+      "resolution": "Require video encoder, audio encoder, muxer and pixel format; expose per-requirement evidence and refresh the runtime probe when a plan is created.",
+      "status": "closed"
+    },
+    {
+      "id": "PAL-R3-004",
+      "severity": "critical",
+      "problem": "Any non-empty license/provenance label other than exact unknown/unverified could authorize media inclusion, including pending or restricted labels.",
+      "resolution": "Use explicit license and provenance vocabularies with evidence, retain documented project-generated kinds, and fail closed for pending-review, fair-use-review, restricted and arbitrary states.",
+      "status": "closed"
+    },
+    {
+      "id": "PAL-R3-005",
+      "severity": "high",
+      "problem": "The bundle's final directory rename could replace a concurrently created empty destination directory.",
+      "resolution": "Reserve the destination exclusively, move invocation-owned entries only, publish manifest last, and use token-scoped cleanup without deleting foreign content.",
+      "status": "closed"
+    },
+    {
+      "id": "PAL-R3-006",
+      "severity": "high",
+      "problem": "Loading a 64-version Workspace rehashed the same large source media once per Timeline.",
+      "resolution": "Share current-source verification by canonical source path within one Workspace load, then recheck each unique source at the whole-view boundary.",
+      "status": "closed"
+    },
+    {
+      "id": "PAL-R3-007",
+      "severity": "high",
+      "problem": "Projection, Workspace, bundle and delivery-plan paths could combine content read before a concurrent change with identities read after it.",
+      "resolution": "Bind initial identities, verify after reads/builds and again at publication boundaries; return the bound identity instead of a late unrelated readback.",
+      "status": "closed"
+    },
+    {
+      "id": "PAL-R3-008",
+      "severity": "medium",
+      "problem": "The mobile capability map expanded the document to more than four thousand pixels and displaced Program and Timeline from the editing context.",
+      "resolution": "Make mobile drawers viewport-bounded internal scrollers with a sticky heading and add a 390x844 drawer-height browser assertion.",
+      "status": "closed"
+    },
+    {
+      "id": "PAL-R3-009",
+      "severity": "medium",
+      "problem": "The delivery selector could retain a blocked first option when another runtime profile was available, or leave submit enabled when none were available.",
+      "resolution": "Select the first available profile and disable plan submission when the runtime exposes no complete profile.",
+      "status": "closed"
+    },
+    {
+      "id": "PAL-R3-010",
+      "severity": "high",
+      "problem": "Legacy NLE and Studio fixtures declared EDL ranges beyond fake or shorter source files, so old tests could pass without proving media correctness.",
+      "resolution": "Replace affected fixtures with decodable media of the declared duration and keep out-of-range cases as explicit negative regressions.",
+      "status": "closed"
+    }
+  ],
+  "localVerificationRef": "quality/evidence/palmier-pro-workbench-v3-r3-local-verification-2026-09-01.json",
+  "remainingExternalConditionsRef": "quality/palmier-pro-iteration-external-conditions-2026-09-01.json",
+  "claimBoundary": "All producer-reproducible R3 findings are closed locally. This is not independent final-review evidence and does not prove creator acceptance, final rendered-media quality, target NLE import, remote CI, commit, push or deployment."
+}

@@ -28,7 +28,7 @@
     "itemId": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\u0000-\\u001f\\u007f]+$" },
     "operation": {
       "enum": [
-        "batch", "move", "trim", "split", "reorder",
+        "batch", "move", "trim", "ripple_trim", "split", "overwrite", "reorder",
         "marker_set", "marker_remove", "work_area_set", "work_area_clear",
         "keyframe_set", "keyframe_remove", "delivery_frames_set", "replace_media"
       ]
