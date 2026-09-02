@@ -181,6 +181,20 @@ function coreIdentity(source) {
   };
 }
 
+// 测试套件会在 bundle 内自举本机运行时产物（如白板引擎的 .venv、.kacha
+// 状态）。它们是机器产物而非 skill 内容：既不属于部署物，也会让
+// status（不跑测试）与 sync（跑测试）计算出的 digest 永远不一致。
+// 安装副本按需用 `kacha whiteboard env-prepare` 重建该环境。
+function stripRuntimeArtifacts(bundle) {
+  const artifacts = [
+    path.join(bundle, "scripts", "whiteboard_engine", ".venv"),
+    path.join(bundle, ".kacha"),
+  ];
+  for (const artifact of artifacts) {
+    fs.rmSync(artifact, { recursive: true, force: true });
+  }
+}
+
 function verifyBundle(bundle, source) {
   if (!fs.existsSync(path.join(bundle, "SKILL.md"))) {
     throw new Error("组合后的 bundle 缺少 SKILL.md");
@@ -282,7 +296,10 @@ try {
       "",
     ].join("\n"),
   );
-  if (!verifyOnly) verifyBundle(bundle, source);
+  if (!verifyOnly) {
+    verifyBundle(bundle, source);
+    stripRuntimeArtifacts(bundle);
+  }
   const bundleDigest = treeDigest(bundle);
   const before = targets.map((target) => ({
     ...target,

@@ -12394,6 +12394,19 @@ await testIn("whiteboard", "scene QC gates paper purity coverage and merge integ
   }
 });
 
+await test("install sync strips test-bootstrapped runtime artifacts from the bundle", () => {
+  const source = fs.readFileSync(path.join(scripts, "sync_skill_installs.mjs"), "utf8");
+  if (!source.includes("stripRuntimeArtifacts(bundle)")) {
+    throw new Error("install sync does not strip runtime artifacts after bundle verification");
+  }
+  if (!source.includes('path.join(bundle, "scripts", "whiteboard_engine", ".venv")')) {
+    throw new Error("sync strip list lost the whiteboard engine venv");
+  }
+  if (!source.includes('path.join(bundle, ".kacha")')) {
+    throw new Error("sync strip list lost the .kacha runtime state");
+  }
+});
+
 await test("kacha closeout hook enforces the release contract with escape hatches", () => {
   const hook = path.join(skillDirectory, "hooks", "check_closeout.mjs");
   const runHook = (cwd, stdin = "{}") => run(process.execPath, [hook], {

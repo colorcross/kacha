@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- `install sync --apply` 的 bundle 校验会在 bundle 内运行完整测试套件；白板引擎等
+  运行时自举产物（226MB 的 .venv、.kacha 状态）会随测试生成并被打进安装副本，
+  同时导致 `install status` 的 digest（不跑测试）永远对不上（永久 out_of_sync）。
+  现在验证完成后剥离运行时自举产物再计算 digest 与安装；部署副本按需用
+  `kacha whiteboard env-prepare` 重建引擎环境。
+
 ## [1.2.0] - 2026-09-02
 
 ### Fixed
