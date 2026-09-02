@@ -19,7 +19,7 @@ piped_stable_plan=$(PATH="$mock_bin:$PATH" \
   KACHA_TEST_RELEASE_CHANNELS_FILE="$root/config/release-channels.json" \
   HOME="$test_home" \
   bash -s -- --agent codex --channel stable --dry-run < "$root/scripts/install.sh")
-[[ "$piped_stable_plan" == *"from ref v1.1.0"* ]]
+[[ "$piped_stable_plan" == *"from ref v1.2.0"* ]]
 
 piped_canary_plan=$(PATH="$mock_bin:$PATH" \
   KACHA_TEST_RELEASE_CHANNELS_FILE="$root/config/release-channels.json" \
@@ -54,7 +54,7 @@ stable_plan=$(HOME="$test_home" "$root/scripts/install.sh" \
   --agent codex \
   --channel stable \
   --dry-run)
-[[ "$stable_plan" == *"from ref v1.1.0"* ]]
+[[ "$stable_plan" == *"from ref v1.2.0"* ]]
 
 canary_plan=$(HOME="$test_home" "$root/scripts/install.sh" \
   --agent codex \
@@ -154,7 +154,7 @@ import sys
 payload = {
     "schemaVersion": 1,
     "channels": {
-        "stable": {"ref": "v1.1.0", "archiveSha256": sys.argv[1]},
+        "stable": {"ref": "v1.2.0", "archiveSha256": sys.argv[1]},
         "canary": {"ref": "main"},
     },
 }

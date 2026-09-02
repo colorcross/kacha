@@ -48,7 +48,7 @@ Codex/Claude Code 还可通过根目录受限的 stdio MCP 读取和修改同一
 ## 安装、启动与官网体验
 
 官网主命令明确选择 `canary`（跟随 `main`），稳定线需显式改为 `stable`；当前
-stable 仍是 `v1.1.0`，不能用当前 main 的能力说明冒充稳定版能力。checkout 安装
+stable 当前为 `v1.2.0`；在下一个正式 tag 之前，不能用当前 main 的能力说明冒充稳定版能力。checkout 安装
 优先读取本地 `config/release-channels.json`；stdin 安装只从固定官方 HTTPS 地址
 读取同一合同，解析或校验失败即停止，且任何路径都不覆盖已有 skill。
 

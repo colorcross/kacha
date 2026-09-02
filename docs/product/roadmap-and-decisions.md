@@ -24,7 +24,7 @@
 10. Journal recovery 与接受外部修改是两个显式动作；前者恢复最后有效快照，后者重开
     session，均要求当前 SHA、保留旧状态归档，不做静默 rebase。
 11. checkout 与 stdin 安装共用一份 release-channel 合同；官网命令显式选择 canary，
-    stable 在新 tag/Release 完成前保持 `v1.1.0`。
+    stable 当前为 `v1.2.0`，在新 tag/Release 完成前保持不变。
 12. 内置 Studio 目录按进程缓存并在 ready 前预热；自定义风格保持动态读取，不能用
     缓存换取陈旧的用户配置。
 13. 当前产品数字由静态门禁推导；采用指标遵循本地优先、最小化、显式同意和证据分层。
