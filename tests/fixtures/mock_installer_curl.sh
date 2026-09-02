@@ -28,12 +28,21 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$output" ]] || { printf '%s\n' "mock curl missing --output" >&2; exit 2; }
-[[ "$url" == "https://raw.githubusercontent.com/colorcross/kacha/main/config/release-channels.json" ]] || {
-  printf 'mock curl rejected URL: %s\n' "$url" >&2
-  exit 2
-}
-[[ -f "${KACHA_TEST_RELEASE_CHANNELS_FILE:-}" ]] || {
-  printf '%s\n' "mock release channel fixture is missing" >&2
-  exit 2
-}
-cp -- "$KACHA_TEST_RELEASE_CHANNELS_FILE" "$output"
+if [[ "$url" == "https://raw.githubusercontent.com/colorcross/kacha/main/config/release-channels.json" ]]; then
+  [[ -f "${KACHA_TEST_RELEASE_CHANNELS_FILE:-}" ]] || {
+    printf '%s\n' "mock release channel fixture is missing" >&2
+    exit 2
+  }
+  cp -- "$KACHA_TEST_RELEASE_CHANNELS_FILE" "$output"
+  exit 0
+fi
+if [[ "$url" == "https://api.github.com/repos/colorcross/kacha/tarball/"* ]]; then
+  [[ -f "${KACHA_TEST_ARCHIVE_FILE:-}" ]] || {
+    printf '%s\n' "mock archive fixture is missing" >&2
+    exit 2
+  }
+  cp -- "$KACHA_TEST_ARCHIVE_FILE" "$output"
+  exit 0
+fi
+printf 'mock curl rejected URL: %s\n' "$url" >&2
+exit 2
