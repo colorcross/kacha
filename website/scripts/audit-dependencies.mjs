@@ -43,7 +43,7 @@ if (
   || imageAdvisories.length !== allowedAdvisories.size
   || imageAdvisories.some((url) => !allowedAdvisories.has(url))
   || imageSize.fixAvailable?.name !== "vinext"
-  || imageSize.fixAvailable?.version !== "1.0.0-beta.8"
+  || imageSize.fixAvailable?.version !== "1.0.0-beta.9"
   || imageSize.fixAvailable?.isSemVerMajor !== true
 ) throw new Error("image-size 例外范围、修复状态或严重级别发生变化，必须重新审计");
 
@@ -51,7 +51,7 @@ const vinext = vulnerabilities.vinext;
 if (
   vinext.severity !== "high"
   || JSON.stringify(vinext.via) !== JSON.stringify(["image-size"])
-  || vinext.fixAvailable?.version !== "1.0.0-beta.8"
+  || vinext.fixAvailable?.version !== "1.0.0-beta.9"
   || vinext.fixAvailable?.isSemVerMajor !== true
 ) throw new Error("vinext 间接漏洞链或修复状态发生变化，必须重新审计");
 
@@ -66,6 +66,6 @@ console.log(JSON.stringify({
   productionVulnerabilities: 0,
   allowedDevelopmentAdvisories: [...allowedAdvisories].sort(),
   scope: "trusted repository assets during static build only",
-  reviewedAt: "2026-08-24",
-  availableFixDeferred: "vinext@1.0.0-beta.8 removes the chain but is a semver-major beta with peer changes; upgrade requires a separate compatibility iteration",
+  reviewedAt: "2026-09-02",
+  availableFixDeferred: "vinext@1.0.0-beta.9 removes the chain but is a semver-major beta with peer changes; upgrade requires a separate compatibility iteration",
 }, null, 2));
