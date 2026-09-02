@@ -11,7 +11,8 @@ const action = args[0];
 const defaultRegistry = path.join(scriptDirectory, "..", "config", "workflow-packs.json");
 const knownCommands = new Set([
   "reference", "start", "transcribe", "media", "corpus", "handoff", "visual-evidence", "captions", "timeline",
-  "run", "resume", "status", "gate-plan", "gate-render", "qc", "gate-candidate", "gate-release", "capabilities", "cost", "flight", "composition"
+  "run", "resume", "status", "gate-plan", "gate-render", "qc", "gate-candidate", "gate-release", "capabilities", "cost", "flight", "composition",
+  "whiteboard"
 ]);
 
 function option(name, fallback = null) {

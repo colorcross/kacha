@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "kacha-whiteboard-animation-contract",
+  "label": "白板手绘动画",
+  "intent": "把 SRT 字幕驱动的线稿渲染成按叙事顺序逐步绘制的暖纸底白板动画，供讲解、故事与课程类视频在合适时机整幕使用。",
+  "source": {
+    "upstream": "https://github.com/geeklee/srt-whiteboard-animation",
+    "license": "MIT",
+    "pinnedAt": "696a7243c0e6",
+    "engineDirectory": "scripts/whiteboard_engine"
+  },
+  "visualSpec": {
+    "paperHex": "#F6F1E3",
+    "paperHexSuggested": "#F5EBD7",
+    "ink": "深灰色素描线条",
+    "accents": "红、橙、蓝仅作少量概念性点缀",
+    "constraints": [
+      "极简手绘、干净背景与充足留白",
+      "不使用场景文字、标签、摄影感、3D 效果或复杂纹理"
+    ]
+  },
+  "defaults": {
+    "targetSec": 30,
+    "minSec": 25,
+    "maxSec": 35,
+    "inkPath": "grid",
+    "colorFill": "contour-wipe",
+    "pause": "heavy",
+    "fps": 60,
+    "capLongEdge": 1080
+  },
+  "annotationContract": {
+    "engineRequired": [
+      "canvas（与线稿图尺寸一致）",
+      "elements[].region（画布内整数像素矩形）",
+      "elements[].reveal.startMs / durationMs（非负、不越界）",
+      "elements[].reveal.protectedRegions（可选，遮住后续区域防止提前露线）",
+      "sceneDurationMs（正整数，必填；由 parse-srt 的分镜时长提供。引擎直连时才有缺省回退：最后一个 reveal 结束 +1s）"
+    ],
+    "authoringMetadata": [
+      "sequence（从 1 连续递增，叙事绘制顺序）",
+      "narrativeRole / subtitle（把区域与字幕事件对齐）",
+      "label / handPath / direction（检查图与预览台展示）",
+      "reveal.maskPaddingPx（上游 mask 画法遗留参数，stream 引擎不消费；保留以便跨画法复用标注）"
+    ],
+    "orderingRule": "按 sequence 排序后 startMs 必须非递减：绘制顺序与字幕叙事顺序一致"
+  },
+  "qc": {
+    "paperColorTolerance": 28,
+    "gates": [
+      "容器可解码、成片尺寸为偶数（编码要求）",
+      "首帧是干净纸底，没有提前露出的线条",
+      "末元素开始前其区域没有提前露线（保护区不变量）",
+      "收尾帧每个区域都有笔迹（不存在漏画的元素）"
+    ]
+  },
+  "workflow": {
+    "humanGates": [
+      "线稿确认（风格与叙事表达）",
+      "标注确认（区域、顺序、时序与字幕对齐）",
+      "成片正常速度审片"
+    ],
+    "prohibitions": [
+      "跳过标注校验直接渲染（--skip-validate 仅限已人工确认的返工）",
+      "覆盖已有成片输出",
+      "在未经授权时使用非本地线稿来源"
+    ]
+  },
+  "engineDependencies": {
+    "python": ">=3.10",
+    "packages": ["opencv-python-headless", "numpy", "av", "Pillow"],
+    "optional": "系统 ffmpeg 优先用于 H.264 转码与多幕无损拼接；缺失时引擎回退 PyAV"
+  }
+}

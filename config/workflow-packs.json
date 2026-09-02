@@ -8,61 +8,235 @@
       "version": "1.0.0",
       "label": "参考片到原创方案",
       "intent": "Extract reusable principles from a rights-reviewed reference and hand an original brief to Kacha.",
-      "requiredInputs": ["REFERENCE_VIDEO", "RIGHTS_STATUS", "RIGHTS_EVIDENCE", "PERMITTED_USE", "ANALYSIS_JSON", "DERIVED_PLAN_JSON", "BRIEF_JSON"],
-      "humanGates": ["rights review", "originality review", "confirm execution"],
-      "steps": [
-        {"id": "analyze", "command": "kacha reference analyze --input {{REFERENCE_VIDEO}} --rights-status {{RIGHTS_STATUS}} --rights-evidence {{RIGHTS_EVIDENCE}} --permitted-use {{PERMITTED_USE}} --output {{ANALYSIS_JSON}}"},
-        {"id": "derive", "command": "kacha reference derive --analysis {{ANALYSIS_JSON}} --output {{DERIVED_PLAN_JSON}}"},
-        {"id": "start", "command": "kacha start --brief {{BRIEF_JSON}}"}
+      "requiredInputs": [
+        "REFERENCE_VIDEO",
+        "RIGHTS_STATUS",
+        "RIGHTS_EVIDENCE",
+        "PERMITTED_USE",
+        "ANALYSIS_JSON",
+        "DERIVED_PLAN_JSON",
+        "BRIEF_JSON"
       ],
-      "exitGates": ["reference analysis validates", "derived plan validates", "Kacha project initialized"],
-      "prohibitions": ["shot-for-shot copying", "implicit network download", "source media redistribution"]
+      "humanGates": [
+        "rights review",
+        "originality review",
+        "confirm execution"
+      ],
+      "steps": [
+        {
+          "id": "analyze",
+          "command": "kacha reference analyze --input {{REFERENCE_VIDEO}} --rights-status {{RIGHTS_STATUS}} --rights-evidence {{RIGHTS_EVIDENCE}} --permitted-use {{PERMITTED_USE}} --output {{ANALYSIS_JSON}}"
+        },
+        {
+          "id": "derive",
+          "command": "kacha reference derive --analysis {{ANALYSIS_JSON}} --output {{DERIVED_PLAN_JSON}}"
+        },
+        {
+          "id": "start",
+          "command": "kacha start --brief {{BRIEF_JSON}}"
+        }
+      ],
+      "exitGates": [
+        "reference analysis validates",
+        "derived plan validates",
+        "Kacha project initialized"
+      ],
+      "prohibitions": [
+        "shot-for-shot copying",
+        "implicit network download",
+        "source media redistribution"
+      ]
     },
     {
       "id": "clip-factory",
       "version": "1.0.0",
       "label": "长视频切片工厂",
       "intent": "Produce traceable short-video candidates from approved long-form source media.",
-      "requiredInputs": ["SOURCE_VIDEO", "TRANSCRIPT_JSON", "PROJECT_ROOT", "MEDIA_INDEX", "CORPUS_JSON"],
-      "humanGates": ["content boundary approval", "representative clip review", "candidate review"],
-      "steps": [
-        {"id": "transcribe", "command": "kacha transcribe {{SOURCE_VIDEO}} --output {{TRANSCRIPT_JSON}}"},
-        {"id": "index", "command": "kacha media index --root {{PROJECT_ROOT}} --output {{MEDIA_INDEX}}"},
-        {"id": "corpus", "command": "kacha corpus build --index {{MEDIA_INDEX}} --output {{CORPUS_JSON}}"},
-        {"id": "start", "command": "kacha start --source {{SOURCE_VIDEO}} --project-root {{PROJECT_ROOT}}"}
+      "requiredInputs": [
+        "SOURCE_VIDEO",
+        "TRANSCRIPT_JSON",
+        "PROJECT_ROOT",
+        "MEDIA_INDEX",
+        "CORPUS_JSON"
       ],
-      "exitGates": ["transcript identity frozen", "clip corpus validates", "candidate QC passes"],
-      "prohibitions": ["invented quotes", "context-breaking extraction", "publishing without review"]
+      "humanGates": [
+        "content boundary approval",
+        "representative clip review",
+        "candidate review"
+      ],
+      "steps": [
+        {
+          "id": "transcribe",
+          "command": "kacha transcribe {{SOURCE_VIDEO}} --output {{TRANSCRIPT_JSON}}"
+        },
+        {
+          "id": "index",
+          "command": "kacha media index --root {{PROJECT_ROOT}} --output {{MEDIA_INDEX}}"
+        },
+        {
+          "id": "corpus",
+          "command": "kacha corpus build --index {{MEDIA_INDEX}} --output {{CORPUS_JSON}}"
+        },
+        {
+          "id": "start",
+          "command": "kacha start --source {{SOURCE_VIDEO}} --project-root {{PROJECT_ROOT}}"
+        }
+      ],
+      "exitGates": [
+        "transcript identity frozen",
+        "clip corpus validates",
+        "candidate QC passes"
+      ],
+      "prohibitions": [
+        "invented quotes",
+        "context-breaking extraction",
+        "publishing without review"
+      ]
     },
     {
       "id": "screen-demo",
       "version": "1.0.0",
       "label": "真实屏幕演示",
       "intent": "Build a creator-led product or tool walkthrough from real screen evidence.",
-      "requiredInputs": ["SCRIPT_FILE", "PROJECT_ROOT", "SOURCE_VIDEO", "VISUAL_EVIDENCE_DIR"],
-      "humanGates": ["fact approval", "recording handoff", "privacy review"],
-      "steps": [
-        {"id": "content", "command": "kacha start --script {{SCRIPT_FILE}} --task content_generation --project-root {{PROJECT_ROOT}}"},
-        {"id": "handoff", "command": "kacha handoff {{PROJECT_ROOT}} --source {{SOURCE_VIDEO}} --confirm-content-approved"},
-        {"id": "evidence", "command": "kacha visual-evidence {{SOURCE_VIDEO}} --output-dir {{VISUAL_EVIDENCE_DIR}} --mode review"}
+      "requiredInputs": [
+        "SCRIPT_FILE",
+        "PROJECT_ROOT",
+        "SOURCE_VIDEO",
+        "VISUAL_EVIDENCE_DIR"
       ],
-      "exitGates": ["claims linked to screen evidence", "private data masked", "full video QC passes"],
-      "prohibitions": ["fabricated product UI", "credential exposure", "unmarked simulated results"]
+      "humanGates": [
+        "fact approval",
+        "recording handoff",
+        "privacy review"
+      ],
+      "steps": [
+        {
+          "id": "content",
+          "command": "kacha start --script {{SCRIPT_FILE}} --task content_generation --project-root {{PROJECT_ROOT}}"
+        },
+        {
+          "id": "handoff",
+          "command": "kacha handoff {{PROJECT_ROOT}} --source {{SOURCE_VIDEO}} --confirm-content-approved"
+        },
+        {
+          "id": "evidence",
+          "command": "kacha visual-evidence {{SOURCE_VIDEO}} --output-dir {{VISUAL_EVIDENCE_DIR}} --mode review"
+        }
+      ],
+      "exitGates": [
+        "claims linked to screen evidence",
+        "private data masked",
+        "full video QC passes"
+      ],
+      "prohibitions": [
+        "fabricated product UI",
+        "credential exposure",
+        "unmarked simulated results"
+      ]
     },
     {
       "id": "localization-dub",
       "version": "1.0.0",
       "label": "本地化与配音",
       "intent": "Create a synchronized language adaptation while preserving source meaning and evidence.",
-      "requiredInputs": ["SOURCE_VIDEO", "TRANSCRIPT_JSON", "CAPTION_PLAN", "TIMELINE_PLAN"],
-      "humanGates": ["translation review", "voice authorization", "lip-sync and subtitle review"],
-      "steps": [
-        {"id": "transcribe", "command": "kacha transcribe {{SOURCE_VIDEO}} --output {{TRANSCRIPT_JSON}}"},
-        {"id": "captions", "command": "kacha captions validate --plan {{CAPTION_PLAN}}"},
-        {"id": "timeline", "command": "kacha timeline validate --plan {{TIMELINE_PLAN}}"}
+      "requiredInputs": [
+        "SOURCE_VIDEO",
+        "TRANSCRIPT_JSON",
+        "CAPTION_PLAN",
+        "TIMELINE_PLAN"
       ],
-      "exitGates": ["translation approved", "voice rights recorded", "timing and loudness QC pass"],
-      "prohibitions": ["unauthorized voice cloning", "meaning-changing compression", "subtitle timing guessed from text length"]
+      "humanGates": [
+        "translation review",
+        "voice authorization",
+        "lip-sync and subtitle review"
+      ],
+      "steps": [
+        {
+          "id": "transcribe",
+          "command": "kacha transcribe {{SOURCE_VIDEO}} --output {{TRANSCRIPT_JSON}}"
+        },
+        {
+          "id": "captions",
+          "command": "kacha captions validate --plan {{CAPTION_PLAN}}"
+        },
+        {
+          "id": "timeline",
+          "command": "kacha timeline validate --plan {{TIMELINE_PLAN}}"
+        }
+      ],
+      "exitGates": [
+        "translation approved",
+        "voice rights recorded",
+        "timing and loudness QC pass"
+      ],
+      "prohibitions": [
+        "unauthorized voice cloning",
+        "meaning-changing compression",
+        "subtitle timing guessed from text length"
+      ]
+    },
+    {
+      "id": "srt-whiteboard",
+      "version": "1.0.0",
+      "label": "字幕白板动画",
+      "intent": "Turn subtitle-driven line art into narrative-ordered whiteboard animation scenes (warm paper, streaming ink) for explainer and story videos.",
+      "requiredInputs": [
+        "SRT_FILE",
+        "STORYBOARD_PLAN_JSON",
+        "SCENE_ID",
+        "LINEART_PNG",
+        "ANNOTATION_JSON",
+        "CHECK_PNG",
+        "SCENE_MP4",
+        "SCENE_MP4S",
+        "FINAL_MP4"
+      ],
+      "humanGates": [
+        "lineart review",
+        "annotation review",
+        "final scene review"
+      ],
+      "steps": [
+        {
+          "id": "parse",
+          "command": "kacha whiteboard parse-srt --srt {{SRT_FILE}} --output {{STORYBOARD_PLAN_JSON}}"
+        },
+        {
+          "id": "scaffold",
+          "command": "kacha whiteboard scaffold --image {{LINEART_PNG}} --scene-id {{SCENE_ID}} --output {{ANNOTATION_JSON}}"
+        },
+        {
+          "id": "preview",
+          "command": "kacha whiteboard preview --image {{LINEART_PNG}} --annotation {{ANNOTATION_JSON}} --output {{CHECK_PNG}}"
+        },
+        {
+          "id": "validate",
+          "command": "kacha whiteboard validate --image {{LINEART_PNG}} --annotation {{ANNOTATION_JSON}}"
+        },
+        {
+          "id": "render",
+          "command": "kacha whiteboard render --image {{LINEART_PNG}} --annotation {{ANNOTATION_JSON}} --output {{SCENE_MP4}}"
+        },
+        {
+          "id": "qc",
+          "command": "kacha whiteboard qc --video {{SCENE_MP4}} --annotation {{ANNOTATION_JSON}} --image {{LINEART_PNG}}"
+        },
+        {
+          "id": "merge",
+          "command": "kacha whiteboard merge --inputs {{SCENE_MP4S}} --output {{FINAL_MP4}}"
+        }
+      ],
+      "exitGates": [
+        "storyboard plan generated from the real SRT",
+        "annotation passes contract validation",
+        "scene render carries whiteboard evidence",
+        "scene QC passes and the cut is reviewed at normal speed"
+      ],
+      "prohibitions": [
+        "rendering unvalidated annotations outside approved rework",
+        "overwriting reviewed scene outputs",
+        "publishing without human review"
+      ]
     }
   ]
 }
