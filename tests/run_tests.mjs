@@ -12405,6 +12405,9 @@ await test("install sync strips test-bootstrapped runtime artifacts from the bun
   if (!source.includes('path.join(bundle, ".kacha")')) {
     throw new Error("sync strip list lost the .kacha runtime state");
   }
+  if (!source.includes('"__pycache__"')) {
+    throw new Error("sync strip lost the python bytecode sweep");
+  }
 });
 
 await test("kacha closeout hook enforces the release contract with escape hatches", () => {

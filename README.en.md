@@ -188,7 +188,7 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Provides two-stage intermediate cleanup: routine cleanup only for user-unneeded, fast-regenerating caches, and final cleanup only after explicit no-more-edits confirmation.
 - Records AI-generated shot plans with provider, model, capability snapshot, paid-call authorization, and QC targets.
 - Runs automated media checks and requires separate human-review evidence before local release.
-  The current full regression discovers 169 checks.
+  The current full regression discovers 170 checks.
 - Keeps uploads, publishing, purchases, and paid generation outside the default authorization boundary.
 
 <p align="center">

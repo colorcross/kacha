@@ -61,6 +61,11 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install ffmpeg for the first-run demo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
       - name: Run MCP server tests
         run: node tests/mcp_server_tests.mjs
 

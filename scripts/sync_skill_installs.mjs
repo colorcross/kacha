@@ -193,6 +193,26 @@ function stripRuntimeArtifacts(bundle) {
   for (const artifact of artifacts) {
     fs.rmSync(artifact, { recursive: true, force: true });
   }
+  // Python 字节码缓存在测试导入引擎模块时再生，永远可重建，不进部署物——
+  // 否则 status（不跑测试）与 sync（跑测试）的 digest 永远对不上。
+  const pending = [bundle];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    let entries;
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      if (entry.name === "__pycache__") {
+        fs.rmSync(path.join(current, entry.name), { recursive: true, force: true });
+        continue;
+      }
+      pending.push(path.join(current, entry.name));
+    }
+  }
 }
 
 function verifyBundle(bundle, source) {
