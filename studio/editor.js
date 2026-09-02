@@ -1,4 +1,6 @@
 const $ = (selector) => document.querySelector(selector);
+import { studioHeaders, jsonErrorMessage } from "/shared.js";
+
 const state = {
   project: null,
   sessionId: null,
@@ -22,11 +24,11 @@ const state = {
 async function api(endpoint, body) {
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Kacha-Studio": "1" },
+    headers: studioHeaders(),
     body: JSON.stringify(body),
   });
   const value = await response.json();
-  if (!response.ok || value.status === "blocked") throw new Error(value.error ?? "请求失败");
+  if (!response.ok || value.status === "blocked") throw new Error(jsonErrorMessage(value, response));
   return value;
 }
 

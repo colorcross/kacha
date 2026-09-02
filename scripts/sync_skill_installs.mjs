@@ -52,7 +52,13 @@ function copyCore(source, output) {
     filter(candidate) {
       const relative = path.relative(source, candidate);
       if (relative === "") return true;
-      const first = relative.split(path.sep)[0];
+      const segments = relative.split(path.sep);
+      // 本机环境产物可能嵌在子目录（如 scripts/whiteboard_engine/.venv），
+      // 任何层级出现都不进入安装副本。
+      if (segments.some((segment) => [".venv", "venv", "__pycache__", "node_modules", ".playwright-cli"].includes(segment))) {
+        return false;
+      }
+      const first = segments[0];
       return ![
         ".git",
         ".DS_Store",

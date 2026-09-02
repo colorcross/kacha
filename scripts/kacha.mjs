@@ -20,6 +20,7 @@ function usage() {
       + "  kacha.mjs doctor [--profile core|claude-vision|full]\n"
       + "  kacha.mjs config show|validate|get|init [options]\n"
       + "  kacha.mjs design validate|list|show|resolve|preview|render|qc|gallery|library-qc [options]\n"
+      + "  kacha.mjs design motion-preview [--output DIR] [--scenes ID,ID] [--overwrite]\n"
       + "  kacha.mjs styleframe render --scene ID --output FILE [options]\n"
       + "  kacha.mjs beauty validate|show|authorize|render|qc [options]\n"
       + "  kacha.mjs effects list|show|validate|preview [options]\n"
@@ -34,6 +35,7 @@ function usage() {
       + "  kacha.mjs fonts scan|validate|resolve|preview [options]\n"
       + "  kacha.mjs captions plan|validate|render [options]\n"
       + "  kacha.mjs breathing plan|validate|render [options]\n"
+      + "  kacha.mjs whiteboard parse-srt|scaffold|validate|preview|render|qc|merge|env-check|env-prepare [options]\n"
       + "  kacha.mjs studio catalog|validate|probe|save-style|compile|serve [options]\n"
       + "  kacha.mjs start --brief BRIEF|--source VIDEO|--script FILE [options]\n"
       + "  kacha.mjs run|resume|status PROJECT [options]\n"
@@ -47,11 +49,13 @@ function usage() {
       + "  kacha.mjs next <project-manifest.json>\n"
       + "  kacha.mjs compile-change <change-request.json> [--output-dir DIR]\n"
       + "  kacha.mjs visual-evidence <video> --output-dir DIR [--mode fast|review|release]\n"
+      + "  kacha.mjs visual-evidence-watch watch --video VIDEO --start SEC --end SEC [--fps 6] [--force] [--transcript FILE] [--output FILE] [--ledger FILE]\n"
       + "  kacha.mjs vision-enrich <visual-evidence.json> --context CONTEXT --allow-external-upload\n"
       + "  kacha.mjs metrics run|summarize [options]\n"
       + "  kacha.mjs resources status|run [options]\n"
       + "  kacha.mjs delta diff|apply [options]\n"
       + "  kacha.mjs editor inspect|project|query|history|command|preview-capabilities [options]\n"
+      + "  kacha.mjs editor recover|reopen --timeline TIMELINE.json --expected-sha SHA [options]\n"
       + "  kacha.mjs workspace create|show|duplicate [options]\n"
       + "  kacha.mjs pro-capabilities\n"
       + "  kacha.mjs delivery profiles|plan|bundle [options]\n"
@@ -161,6 +165,7 @@ const delegatedCommands = {
   fonts: "kacha_fonts.mjs",
   captions: "caption_layout.mjs",
   breathing: "visual_breathing.mjs",
+  whiteboard: "kacha_whiteboard.mjs",
   studio: "kacha_studio.mjs",
   start: "kacha_orchestrator.mjs",
   run: "kacha_orchestrator.mjs",
@@ -175,6 +180,7 @@ const delegatedCommands = {
   next: "next_action.mjs",
   "compile-change": "compile_change_request.mjs",
   "visual-evidence": "build_visual_evidence.mjs",
+  "visual-evidence-watch": "visual_evidence_watch.mjs",
   "vision-enrich": "enrich_visual_evidence_minimax.mjs",
   metrics: "run_telemetry.mjs",
   resources: "resource_scheduler.mjs",

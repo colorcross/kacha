@@ -15,6 +15,11 @@ import {
   providerEnvironment,
 } from "./kacha_config.mjs";
 import { diagnostic } from "./kacha_error_catalog.mjs";
+import {
+  checkAssBurn,
+  checkEncoders,
+  summarizeFontCoverage,
+} from "./doctor_env_checks.mjs";
 
 const skillRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
@@ -145,6 +150,88 @@ const filterChecks = requiredFilters.map((filter) => ({
   available: new RegExp(`\\s${filter}\\s`).test(ffmpegFilters),
   evidence: `ffmpeg -filters contains ${filter}`,
 }));
+
+// 环境深度检查：编码器与 ASS 字幕烧录（libass）。与既有 filterChecks 一样
+// 只依赖已捕获的 ffmpeg 输出，成本近零。
+let envDepthChecks = [];
+if (commandExists("ffmpeg")) {
+  const encoders = run("ffmpeg", ["-hide_banner", "-encoders"]);
+  envDepthChecks = [
+    ...checkEncoders(`${encoders.stdout}\n${encoders.stderr}`),
+    checkAssBurn(ffmpegFilters),
+  ];
+}
+
+// 字体 CJK 覆盖：只在 full profile 且存在注册字体时运行（每字体一次 fontTools）。
+// 样例字符集是唯一事实来源（传入 summarizeFontCoverage），避免两处漂移。
+let fontCoverageCheck = null;
+if (profile === "full") {
+  const fontRegistryFile = path.join(
+    skillRoot,
+    "assets",
+    "private",
+    "fonts",
+    "authorized.json",
+  );
+  if (fs.existsSync(fontRegistryFile)) {
+    try {
+      const registry = JSON.parse(fs.readFileSync(fontRegistryFile, "utf8"));
+      const records = Array.isArray(registry.records) ? registry.records.slice(0, 8) : [];
+      const coverageSample = "行者大灰第期栏目更新工具分享解读好书有限的无限游戏灰常AI闲聊，。！？；：0123456789";
+      const coverageEntries = [];
+      for (const record of records) {
+        const fontFile = path.isAbsolute(record.file)
+          ? record.file
+          : path.resolve(path.dirname(fontRegistryFile), record.file);
+        if (!fs.existsSync(fontFile)) {
+          coverageEntries.push({
+            font: record.file ?? "?",
+            probeFailed: true,
+            detail: "字体文件不存在",
+          });
+          continue;
+        }
+        const probe = run("python3", [
+          "-c",
+          [
+            "import json,sys",
+            "from fontTools.ttLib import TTFont",
+            "sample = sys.argv[2]",
+            "font = TTFont(sys.argv[1], fontNumber=0, lazy=True)",
+            "cmap = set()",
+            "for table in font['cmap'].tables:",
+            "    if table.isUnicode():",
+            "        cmap.update(table.cmap.keys())",
+            "covered = sum(1 for ch in set(sample) if ord(ch) in cmap)",
+            "print(json.dumps({'covered': covered, 'total': len(set(sample))}))",
+          ].join("\n"),
+          fontFile,
+          coverageSample,
+        ], { stdio: ["ignore", "pipe", "pipe"], encoding: "utf8" });
+        if (probe.status === 0) {
+          const parsed = JSON.parse(probe.stdout);
+          coverageEntries.push({ font: path.basename(fontFile), covered: parsed.covered, total: parsed.total });
+        } else {
+          // 探测失败（如 fontTools 缺失、文件损坏）必须与"覆盖不足"区分：
+          // 前者修环境，后者换字体。
+          coverageEntries.push({
+            font: path.basename(fontFile),
+            probeFailed: true,
+            detail: probe.stderr.trim().split("\n").at(-1)?.slice(0, 120) || `python3 退出码 ${probe.status}`,
+          });
+        }
+      }
+      fontCoverageCheck = summarizeFontCoverage(coverageEntries, { sample: coverageSample });
+    } catch (error) {
+      fontCoverageCheck = {
+        id: "font:cjk-coverage",
+        required: false,
+        available: false,
+        evidence: `字体注册表不可读：${error.message}`,
+      };
+    }
+  }
+}
 
 let appleVision = {
   id: "framework:apple-vision",
@@ -335,6 +422,8 @@ const checks = [
   ...fileChecks,
   ...commandChecks,
   ...filterChecks,
+  ...envDepthChecks,
+  ...(fontCoverageCheck ? [fontCoverageCheck] : []),
   ...(inspectVisualSemantic
     ? [appleVision, mmxVision, mmxAuth, semanticVisualCheck]
     : []),

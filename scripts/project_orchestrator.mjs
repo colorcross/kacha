@@ -245,6 +245,24 @@ function outputContractFor(input) {
   };
 }
 
+// 项目脚手架：把本机运行状态目录加入项目 .gitignore。append-only 且去重：
+// 用户已有 .gitignore 只追加缺失行，没有就不创建之外的任何改动。
+function ensureProjectGitignore(baseRoot) {
+  const gitignore = path.join(baseRoot, ".gitignore");
+  const needed = [".kacha/", "previews/", "output/"];
+  let existing = "";
+  try {
+    existing = fs.readFileSync(gitignore, "utf8");
+  } catch {
+    // 没有就是全新文件。
+  }
+  const lines = new Set(existing.split(/\r?\n/).map((line) => line.trim()));
+  const missing = needed.filter((line) => !lines.has(line));
+  if (missing.length === 0) return;
+  const prefix = existing && !existing.endsWith("\n") ? "\n" : "";
+  fs.appendFileSync(gitignore, `${prefix}${["# kacha 本机运行状态与产物", ...missing].join("\n")}\n`);
+}
+
 function buildManifest({ projectId, projectRoot, input, runtimeLock, options }) {
   const contracts = path.join(projectRoot, "contracts");
   const manifestFile = path.join(contracts, "project-manifest.json");
@@ -389,6 +407,7 @@ export function initializeProject({
   fs.mkdirSync(path.join(baseRoot, ".kacha", "packets"), { recursive: true });
   fs.mkdirSync(path.join(baseRoot, "previews"), { recursive: true });
   fs.mkdirSync(path.join(baseRoot, "output"), { recursive: true });
+  ensureProjectGitignore(baseRoot);
 
   const runtime = inspectRuntime({ home });
   const runtimeAllowed = development || runtime.productionReady || !enforceRuntime;

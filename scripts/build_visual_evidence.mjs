@@ -208,7 +208,7 @@ function sceneTimes() {
     "-an",
     "-vf",
     `scale=320:-2:flags=fast_bilinear,select='gt(scene,${sceneThreshold})',showinfo`,
-    "-vsync",
+    "-fps_mode",
     "vfr",
     "-f",
     "null",

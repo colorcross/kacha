@@ -54,6 +54,15 @@ function write(value, output = null) {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
+// Agent 预看建议窗口：start/end 非有限数值（缺失或坏类型）时返回空数组，
+// 不产出 NaN 窗口；正常速度人工审片始终兜底。
+function buildSuggestedWatch(start, end) {
+  const from = Number(start);
+  const to = Number(end);
+  if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) return [];
+  return [{ start: Math.max(0, from - 0.5), end: to + 0.5, fps: 6 }];
+}
+
 function existingPreview(previewRoot, names) {
   if (!previewRoot || !fs.existsSync(previewRoot) || !fs.statSync(previewRoot).isDirectory()) {
     return null;
@@ -172,6 +181,10 @@ export function buildReviewBundle(timelineFile, directorFile, options = {}) {
         after: existingPreview(previewRoot, [`${beat.id}-after.mp4`, `${id}-after.mp4`, `${beat.id}.mp4`]),
         normalSpeedRequired: true,
       },
+      // Agent 预看建议：配合 visual-evidence-watch 在正常速度审片前核对
+      // 该高影响决定的实际画面。时间字段非有限时不给建议（NaN 窗口会让
+      // watch 直接报错），由 requiresHuman 的正常速度审片兜底。
+      suggestedWatch: buildSuggestedWatch(beat.start, beat.end),
       preference: preferenceMetadata(category, beat.styleMechanism),
       requiresHuman: true,
     });
@@ -204,6 +217,7 @@ export function buildReviewBundle(timelineFile, directorFile, options = {}) {
         after: existingPreview(previewRoot, [`${overlay.id}-after.mp4`, `${id}-after.mp4`, `${overlay.id}.mp4`]),
         normalSpeedRequired: true,
       },
+      suggestedWatch: buildSuggestedWatch(overlay.start, overlay.end),
       preference: preferenceMetadata("overlay", overlay.effectType ?? overlay.kind ?? "overlay"),
       requiresHuman: true,
     });

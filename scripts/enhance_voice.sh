@@ -202,6 +202,15 @@ esac
 neural_filter=""
 if [[ -n "$neural_model" ]]; then
   [[ -f "$neural_model" ]] || { printf 'Neural model not found: %s\n' "$neural_model" >&2; exit 2; }
+  # The model path is embedded into an ffmpeg filter string; characters with
+  # filter-graph meaning (':' option separator, ',' chain separator, quotes and
+  # escapes) would alter the filter, so reject them explicitly.
+  case "$neural_model" in
+    *:*|*,*|*\'*|*\"*|*\\*)
+      printf 'Neural model path contains characters that are unsafe for ffmpeg filters: %s\n' "$neural_model" >&2
+      exit 2
+      ;;
+  esac
   neural_filter="arnndn=m=${neural_model}:mix=0.88,"
 fi
 

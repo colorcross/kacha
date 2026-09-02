@@ -10,6 +10,8 @@ archive_url=${KACHA_ARCHIVE_URL:-}
 archive_url_explicit=false
 [[ -n "$archive_url" ]] && archive_url_explicit=true
 archive_file=""
+expected_archive_sha256=""
+hooks_requested=false
 agent=""
 custom_target=""
 dry_run=false
@@ -43,6 +45,9 @@ Options:
   --ref REF       Explicit GitHub branch or tag; reported as the custom channel
   --target DIR    Custom target; only valid with one agent
   --archive FILE  Install from a local tar.gz archive; reported as the custom channel
+  --hooks         Register the kacha Stop closeout hook in ~/.claude/settings.json
+                  (Claude Code only; skipped for Codex). Merge is idempotent and
+                  never removes existing hooks.
   --dry-run       Print planned actions without changing files
   -h, --help      Show this help
 
@@ -81,6 +86,10 @@ while [[ $# -gt 0 ]]; do
       [[ $# -ge 2 ]] || { usage >&2; exit 2; }
       archive_file=$2
       shift 2
+      ;;
+    --hooks)
+      hooks_requested=true
+      shift
       ;;
     --dry-run)
       dry_run=true
@@ -168,7 +177,7 @@ else
       "$release_channels_url"
     release_channels_file=$release_channels_temp
   fi
-  IFS=$'\t' read -r stable_ref canary_ref < <(python3 - "$release_channels_file" <<'PY'
+  IFS=$'\t' read -r stable_ref canary_ref stable_sha canary_sha < <(python3 - "$release_channels_file" <<'PY'
 import json
 import pathlib
 import sys
@@ -180,8 +189,10 @@ except (OSError, json.JSONDecodeError) as exc:
 if not isinstance(payload, dict) or payload.get("schemaVersion") not in (1, "1.0"):
     raise SystemExit("release channel config must be a schemaVersion 1 object")
 channels = payload.get("channels", {})
-stable = channels.get("stable", {}).get("ref")
-canary = channels.get("canary", {}).get("ref")
+stable = channels.get("stable", {})
+canary = channels.get("canary", {})
+stable_ref = stable.get("ref")
+canary_ref = canary.get("ref")
 def valid(value):
     if not isinstance(value, str) or not value or value.startswith(("-", "/", ".")):
         return False
@@ -190,14 +201,29 @@ def valid(value):
     if any(part.startswith(".") or part.endswith(".lock") for part in value.split("/")):
         return False
     return all(char.isascii() and (char.isalnum() or char in "._/-") for char in value)
-if not valid(stable) or not valid(canary):
+def valid_pin(value):
+    # archiveSha256 is an optional integrity pin for the downloaded archive.
+    # GitHub archive tarballs are not byte-stable across regenerations, so a
+    # pin must only be published together with a reproducible release asset.
+    if value is None or value == "":
+        return ""
+    if not isinstance(value, str) or len(value) != 64 or any(c not in "0123456789abcdef" for c in value):
+        raise SystemExit("release channel archiveSha256 must be 64 lowercase hex characters when present")
+    return value
+if not valid(stable_ref) or not valid(canary_ref):
     raise SystemExit("release channel config is missing stable/canary refs")
-print(f"{stable}\t{canary}")
+print(f"{stable_ref}\t{canary_ref}\t{valid_pin(stable.get('archiveSha256'))}\t{valid_pin(canary.get('archiveSha256'))}")
 PY
 )
   case "$channel" in
-    stable) ref=$stable_ref ;;
-    canary) ref=$canary_ref ;;
+    stable)
+      ref=$stable_ref
+      expected_archive_sha256=$stable_sha
+      ;;
+    canary)
+      ref=$canary_ref
+      expected_archive_sha256=$canary_sha
+      ;;
   esac
 fi
 
@@ -255,6 +281,60 @@ validate_target() {
     printf 'Refusing unsafe target: %s\n' "$target" >&2
     return 1
   }
+}
+
+# 把 kacha Stop 闭环 hook 注册进 Claude Code 的 settings.json。
+# 幂等：同一命令字符串已存在即跳过；绝不删除或改写用户已有 hooks。
+wire_claude_hooks() {
+  local skill_dir=$1
+  local hook_file="$skill_dir/hooks/check_closeout.mjs"
+  [[ -f "$hook_file" ]] || {
+    printf 'Hook script missing: %s\n' "$hook_file" >&2
+    printf '%s\n' "This installed copy predates the hooks feature and the installer never overwrites" >&2
+    printf '%s\n' "an existing install. Remove the target directory and re-run with --hooks to upgrade:" >&2
+    printf '%s\n' "  rm -rf \"$skill_dir\" && bash $0 --agent claude --hooks" >&2
+    return 1
+  }
+  local settings_dir=${KACHA_CLAUDE_SETTINGS_DIR:-"$HOME/.claude"}
+  local settings_file="$settings_dir/settings.json"
+  if $dry_run; then
+    printf '[dry-run] would register Stop hook in %s\n' "$settings_file"
+    return 0
+  fi
+  python3 - "$settings_file" "$hook_file" <<'PY'
+import json
+import pathlib
+import sys
+
+settings_path = pathlib.Path(sys.argv[1])
+hook_file = sys.argv[2]
+command = f'node "{hook_file}"'
+settings = {}
+if settings_path.exists():
+    try:
+        settings = json.loads(settings_path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"settings.json is not valid JSON: {exc}")
+if not isinstance(settings, dict):
+    raise SystemExit("settings.json root must be an object")
+hooks = settings.setdefault("hooks", {})
+if not isinstance(hooks, dict):
+    raise SystemExit("settings.json hooks must be an object")
+stop = hooks.setdefault("Stop", [])
+if not isinstance(stop, list):
+    raise SystemExit("settings.json hooks.Stop must be an array")
+for entry in stop:
+    if not isinstance(entry, dict):
+        continue
+    for hook in entry.get("hooks", []) if isinstance(entry.get("hooks"), list) else []:
+        if isinstance(hook, dict) and hook.get("command") == command:
+            print(f"Stop hook already registered: {command}")
+            raise SystemExit(0)
+stop.append({"hooks": [{"type": "command", "command": command}]})
+settings_path.parent.mkdir(parents=True, exist_ok=True)
+settings_path.write_text(json.dumps(settings, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+print(f"Registered kacha Stop closeout hook: {command}")
+PY
 }
 
 prepare_source() {
@@ -329,6 +409,13 @@ with pathlib.Path(sys.argv[1]).open("rb") as handle:
 print(digest.hexdigest())
 PY
 )
+  # A channel integrity pin is enforced fail-closed for downloaded archives.
+  # Explicit local archives (--archive) are already reported as the custom
+  # channel and are not bound by the release channel contract.
+  if [[ -z "$archive_file" && -n "$expected_archive_sha256" && "$archive_sha256" != "$expected_archive_sha256" ]]; then
+    printf 'Archive SHA-256 mismatch: expected %s, got %s\n' "$expected_archive_sha256" "$archive_sha256" >&2
+    return 1
+  fi
   printf 'channel=%s\nref=%s\nsource=%s\narchive=%s\narchive_sha256=%s\n' \
     "$channel" "$ref" "$version" "${archive_url:-local}" "$archive_sha256" > "$candidate/.kacha-version"
   printf '%s\n' "$candidate"
@@ -387,6 +474,21 @@ else
       cp -R "$source" "$codex_source"
       install_one codex "$codex_source"
       install_one claude "$source"
+      ;;
+  esac
+fi
+
+if $hooks_requested; then
+  case "$agent" in
+    claude)
+      wire_claude_hooks "$(resolve_target claude)"
+      ;;
+    both)
+      wire_claude_hooks "$(resolve_target claude)"
+      printf '%s\n' "--hooks is a Claude Code feature; nothing to register for Codex."
+      ;;
+    codex)
+      printf '%s\n' "--hooks is a Claude Code feature; nothing to register for Codex."
       ;;
   esac
 fi

@@ -1,9 +1,11 @@
+import { studioHeaders, jsonErrorMessage } from "/shared.js";
+
 const $ = (id) => document.getElementById(id);
 let mode = "script";
 async function api(path, body) {
-  const response = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json", "X-Kacha-Studio": "1" }, body: JSON.stringify(body) });
+  const response = await fetch(path, { method: "POST", headers: studioHeaders(), body: JSON.stringify(body) });
   const value = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(value.error || "请求失败");
+  if (!response.ok) throw new Error(jsonErrorMessage(value, response));
   return value;
 }
 function toast(message, error = false) {

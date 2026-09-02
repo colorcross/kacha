@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [core, proposal, cleanup, generated, visual, audio, sfx, qc, incremental, editor]
+        suite: [core, proposal, cleanup, generated, visual, audio, sfx, qc, incremental, editor, whiteboard]
     steps:
       - uses: actions/checkout@v7
 
@@ -42,8 +42,30 @@ jobs:
           sudo apt-get install -y ffmpeg jq librsvg2-bin fonts-noto-cjk fonts-dejavu-core
           python3 -m pip install --user Pillow fonttools
 
+      - name: Install whiteboard engine dependencies
+        if: matrix.suite == 'whiteboard'
+        run: |
+          python3 -m pip install --user "opencv-python-headless>=4.9" "numpy>=1.26" "av>=11"
+          echo "KACHA_WHITEBOARD_PYTHON=python3" >> "$GITHUB_ENV"
+
       - name: Run ${{ matrix.suite }} suite
         run: node tests/run_tests.mjs --suite "${{ matrix.suite }}"
+
+  control-plane:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Run MCP server tests
+        run: node tests/mcp_server_tests.mjs
+
+      - name: Run workbench distribution tests
+        run: node tests/workbench_distribution_tests.mjs
 
   installer:
     runs-on: ubuntu-latest

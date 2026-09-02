@@ -1,3 +1,5 @@
+import { escapeHtml, studioHeaders, jsonErrorMessage } from "/shared.js";
+
 const state = {
   catalog: null,
   selectedStyleId: null,
@@ -16,27 +18,14 @@ const state = {
 
 const $ = (id) => document.getElementById(id);
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
 async function api(path, options = {}) {
   const response = await fetch(path, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Kacha-Studio": "1",
-      ...(options.headers ?? {}),
-    },
+    headers: studioHeaders(options.headers),
   });
   const value = await response.json();
   if (!response.ok || value.status === "blocked") {
-    throw new Error(value.error || `请求失败：${response.status}`);
+    throw new Error(jsonErrorMessage(value, response, { includeStatus: true }));
   }
   return value;
 }

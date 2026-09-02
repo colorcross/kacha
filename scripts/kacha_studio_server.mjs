@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import {
@@ -425,7 +425,7 @@ async function serveWaveform(response, session, requestedWidth) {
   response.end(body);
 }
 
-function nativePick(kind) {
+async function nativePick(kind) {
   if (process.platform !== "darwin") {
     throw new Error("原生路径选择当前只支持 macOS；可以直接粘贴绝对路径");
   }
@@ -434,10 +434,28 @@ function nativePick(kind) {
     : kind === "document"
       ? 'POSIX path of (choose file with prompt "选择脚本或内容文档")'
       : 'POSIX path of (choose file with prompt "选择要剪辑的视频")';
-  const result = spawnSync("osascript", ["-e", script], {
-    encoding: "utf8",
-    timeout: 10 * 60 * 1000,
-    stdio: ["ignore", "pipe", "pipe"],
+  // Async spawn keeps the single-threaded studio server (other pages, SSE
+  // heartbeats) responsive while a native dialog stays open.
+  const result = await new Promise((resolve, reject) => {
+    const child = spawn("osascript", ["-e", script], {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const timer = setTimeout(() => {
+      child.kill("SIGTERM");
+      reject(new Error("原生路径选择超时"));
+    }, 10 * 60 * 1000);
+    const stdout = [];
+    const stderr = [];
+    child.stdout.on("data", (chunk) => stdout.push(chunk));
+    child.stderr.on("data", (chunk) => stderr.push(chunk));
+    child.once("error", (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+    child.once("close", (code) => {
+      clearTimeout(timer);
+      resolve({ status: code, stdout: stdout.join(""), stderr: stderr.join("") });
+    });
   });
   if (result.status !== 0) {
     const message = result.stderr.trim();
@@ -552,6 +570,7 @@ function safeStaticFile(urlPath) {
     "/index.html": path.join(studioRoot, "index.html"),
     "/app.css": path.join(studioRoot, "app.css"),
     "/app.js": path.join(studioRoot, "app.js"),
+    "/shared.js": path.join(studioRoot, "shared.js"),
     "/review": path.join(studioRoot, "review.html"),
     "/review.html": path.join(studioRoot, "review.html"),
     "/review.css": path.join(studioRoot, "review.css"),
@@ -610,6 +629,7 @@ async function handleApi(request, response, url, port) {
     return;
   }
   if (["GET", "HEAD"].includes(request.method) && pathname === "/api/review/media") {
+    if (!sameOrigin(request, port)) throw new Error("拒绝跨站审片媒体读取");
     const media = resolveReviewMedia(
       url.searchParams.get("bundle"),
       url.searchParams.get("decision"),
@@ -643,15 +663,15 @@ async function handleApi(request, response, url, port) {
   requireLocalMutation(request, port);
   const body = await readRequestBody(request);
   if (pathname === "/api/pick-video") {
-    json(response, 200, { status: "pass", ...nativePick("video") });
+    json(response, 200, { status: "pass", ...(await nativePick("video")) });
     return;
   }
   if (pathname === "/api/pick-output") {
-    json(response, 200, { status: "pass", ...nativePick("directory") });
+    json(response, 200, { status: "pass", ...(await nativePick("directory")) });
     return;
   }
   if (pathname === "/api/pick-document") {
-    json(response, 200, { status: "pass", ...nativePick("document") });
+    json(response, 200, { status: "pass", ...(await nativePick("document")) });
     return;
   }
   if (pathname === "/api/probe-video") {
@@ -940,7 +960,20 @@ export function startStudioServerFromCli(args = process.argv.slice(2)) {
   // while custom style files are still read on every request.
   loadProductionCatalog();
   const server = http.createServer(async (request, response) => {
-    const url = new URL(request.url ?? "/", `http://127.0.0.1:${requestedPort}`);
+    let url;
+    try {
+      url = new URL(request.url ?? "/", `http://127.0.0.1:${requestedPort}`);
+    } catch {
+      // Malformed request line (e.g. invalid characters) must fail fast with a
+      // 400 instead of throwing inside the async handler and hanging the
+      // connection until requestTimeout.
+      json(response, 400, {
+        schemaVersion: "1.0",
+        status: "blocked",
+        error: "无法解析请求路径",
+      });
+      return;
+    }
     try {
       if (!validLoopbackHost(request, requestedPort)) {
         json(response, 421, {

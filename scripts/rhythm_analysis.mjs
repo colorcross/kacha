@@ -119,7 +119,7 @@ function analyzeVideoCuts(file, durationSeconds, threshold, maxEvents) {
   const boundedDuration = Math.min(durationSeconds || MAX_ANALYSIS_SECONDS, MAX_ANALYSIS_SECONDS);
   const result = run("ffmpeg", [
     "-hide_banner", "-loglevel", "info", "-i", file, "-t", String(boundedDuration),
-    "-an", "-vf", `select='gt(scene,${threshold})',showinfo`, "-vsync", "vfr", "-f", "null", "-",
+    "-an", "-vf", `select='gt(scene,${threshold})',showinfo`, "-fps_mode", "vfr", "-f", "null", "-",
   ], { timeout: 45_000, maxBuffer: 32 * 1024 * 1024 });
   const stderr = String(result.stderr ?? "");
   if (result.status !== 0 && !/does not contain any stream|matches no streams|Output file #0 does not contain/.test(stderr)) {

@@ -1,4 +1,6 @@
 const $ = (id) => document.getElementById(id);
+import { studioHeaders, jsonErrorMessage } from "/shared.js";
+
 const state = { status: null };
 const escapeHtml = (value) => String(value ?? "")
   .replaceAll("&", "&amp;")
@@ -10,11 +12,11 @@ const escapeHtml = (value) => String(value ?? "")
 async function api(path, body) {
   const response = await fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Kacha-Studio": "1" },
+    headers: studioHeaders(),
     body: JSON.stringify(body),
   });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || `请求失败：${response.status}`);
+  if (!response.ok) throw new Error(jsonErrorMessage(result, response, { includeStatus: true }));
   return result;
 }
 

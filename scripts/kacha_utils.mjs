@@ -52,12 +52,23 @@ export function writeJsonAtomic(file, value, { mode = null } = {}) {
   const resolved = path.resolve(file);
   fs.mkdirSync(path.dirname(resolved), { recursive: true });
   const temporary = `${resolved}.tmp-${process.pid}-${Date.now()}`;
-  fs.writeFileSync(
-    temporary,
-    `${JSON.stringify(value, null, 2)}\n`,
-    mode === null ? undefined : { mode },
-  );
-  fs.renameSync(temporary, resolved);
+  try {
+    fs.writeFileSync(
+      temporary,
+      `${JSON.stringify(value, null, 2)}\n`,
+      mode === null ? undefined : { mode },
+    );
+    fs.renameSync(temporary, resolved);
+  } catch (error) {
+    // A failed write must not leave the partial temp file behind; the target
+    // file itself is only ever replaced by rename, so it stays intact.
+    try {
+      fs.unlinkSync(temporary);
+    } catch {
+      // Nothing to clean up if the temp file was never created.
+    }
+    throw error;
+  }
 }
 
 export function acquireFileLock(
@@ -427,13 +438,21 @@ export function commandExists(command) {
       encoding: "utf8",
       env: runtimeEnvironment(),
     }).status === 0;
+  } else if (path.isAbsolute(resolved)) {
+    available = fs.existsSync(resolved) && fs.statSync(resolved).isFile();
   } else {
-    available = path.isAbsolute(resolved)
-      ? fs.existsSync(resolved) && fs.statSync(resolved).isFile()
-      : spawnSync("/usr/bin/env", ["bash", "-lc", `command -v "${resolved}"`], {
-          encoding: "utf8",
-          env: runtimeEnvironment(),
-        }).status === 0;
+    // Pass the command name as a positional parameter instead of interpolating
+    // it into the shell string: names containing quotes or `$` must not be
+    // re-parsed by the shell. Login shell (-l) is kept so ~/.profile PATH
+    // additions (e.g. Homebrew) still resolve.
+    available = spawnSync(
+      "/usr/bin/env",
+      ["bash", "-lc", 'command -v "$1"', "kacha-command-probe", resolved],
+      {
+        encoding: "utf8",
+        env: runtimeEnvironment(),
+      },
+    ).status === 0;
   }
   commandCache.set(cacheKey, available);
   return available;
