@@ -4,18 +4,15 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-02
+
 ### Fixed
 
 - `install sync --apply` 的 bundle 校验会在 bundle 内运行完整测试套件；白板引擎等
   运行时自举产物（226MB 的 .venv、.kacha 状态）会随测试生成并被打进安装副本，
   同时导致 `install status` 的 digest（不跑测试）永远对不上（永久 out_of_sync）。
-  现在验证完成后剥离运行时自举产物再计算 digest 与安装；部署副本按需用
-  `kacha whiteboard env-prepare` 重建引擎环境。
-
-## [1.2.0] - 2026-09-02
-
-### Fixed
-
+  现在验证完成后剥离运行时自举产物（含 Python 字节码缓存）再计算 digest 与安装；
+  部署副本按需用 `kacha whiteboard env-prepare` 重建引擎环境。
 - 深度 review 修复：Studio 服务器对畸形请求行快速返回 400，不再挂起连接；
   `command -v` 探测改为位置参数传递，消除 shell 注入面；`enhance_voice.sh`
   拒绝包含 ffmpeg filter 元字符的神经降噪模型路径；`writeJsonAtomic` 失败时

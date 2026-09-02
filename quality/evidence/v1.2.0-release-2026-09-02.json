@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "kacha_release_evidence",
+  "release": "v1.2.0",
+  "tagCommit": "ce90a9f48f4e6e887d0146472efaf370f0b162d2",
+  "recordedAt": "2026-09-02",
+  "verification": {
+    "fullRegression": {
+      "command": "make check-full",
+      "status": "pass",
+      "regressionChecks": 169,
+      "note": "发布时点 169 项；发布后追加 sync 剥离合同与 gitignore 脚手架测试至 171 项"
+    },
+    "ci": {
+      "runId": "33637230365",
+      "status": "success",
+      "durationMinutes": 8,
+      "commit": "ce90a9f 之后首个含全部发布内容的提交为 cc84888/f23e5b6，均含 control-plane/regression/installer/website 矩阵"
+    },
+    "macosLocalSmoke": "全量回归 + installer 测试在 macOS（darwin 25.6.0 arm64）本机通过；ffmpeg-full 9.0.1 + libass 环境实测 ASS 烧录",
+    "installReadBack": [
+      {"agent": "codex", "path": "~/.codex/skills/kacha", "state": "current", "core_ref": "ce90a9f"},
+      {"agent": "claude", "path": "~/.claude/skills/kacha", "state": "current", "core_ref": "ce90a9f"},
+      {"agent": "zcode", "path": "~/.agents/skills/kacha", "state": "installed", "core_ref": "ce90a9f"}
+    ]
+  },
+  "notes": "stable 渠道自本 Release 起指向 v1.2.0。发布日修复（audit 例外重登记、installer 断言对齐、control-plane ffmpeg）已包含在 tag 指向的提交中。"
+}

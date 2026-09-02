@@ -12408,6 +12408,14 @@ await test("install sync strips test-bootstrapped runtime artifacts from the bun
   if (!source.includes('"__pycache__"')) {
     throw new Error("sync strip lost the python bytecode sweep");
   }
+  // 顺序锚定：strip 必须位于 verifyBundle 之后、treeDigest 之前，
+  // 否则测试自举产物会重新混进 digest（永久 out_of_sync 复发）。
+  const verifyIndex = source.indexOf("verifyBundle(bundle, source);");
+  const stripIndex = source.indexOf("stripRuntimeArtifacts(bundle);");
+  const digestIndex = source.indexOf("const bundleDigest = treeDigest(bundle);");
+  if (!(verifyIndex >= 0 && stripIndex > verifyIndex && digestIndex > stripIndex)) {
+    throw new Error("sync strip is not between bundle verification and digest computation");
+  }
 });
 
 await test("kacha closeout hook enforces the release contract with escape hatches", () => {
@@ -12523,6 +12531,21 @@ await test("kacha closeout hook enforces the release contract with escape hatche
   const violations = path.join(project, ".kacha", "hook-state", "violations.jsonl");
   if (!fs.existsSync(violations) || !fs.readFileSync(violations, "utf8").includes("hook-strike-test")) {
     throw new Error("released strikes were not recorded as violations");
+  }
+});
+
+await test("project init scaffolds a gitignore covering local runtime state", () => {
+  const orchestrator = fs.readFileSync(path.join(scripts, "project_orchestrator.mjs"), "utf8");
+  if (!orchestrator.includes("ensureProjectGitignore(baseRoot);")) {
+    throw new Error("project init does not invoke the gitignore scaffold");
+  }
+  for (const line of [".kacha/", "previews/", "output/"]) {
+    if (!orchestrator.includes(`"${line}"`)) {
+      throw new Error(`gitignore scaffold lost ${line}`);
+    }
+  }
+  if (!orchestrator.includes("fs.appendFileSync")) {
+    throw new Error("gitignore scaffold must be append-only to user files");
   }
 });
 

@@ -1,7 +1,7 @@
 .PHONY: check-static check-targeted check-core check-full check-website check-browser
 
 check-static:
-	find scripts tests -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
+	find scripts tests hooks -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
 	find scripts -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
 	python3 -m py_compile scripts/*.py
 	python3 scripts/scan_secrets.py

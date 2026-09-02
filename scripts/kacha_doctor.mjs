@@ -176,7 +176,20 @@ if (profile === "full") {
   if (fs.existsSync(fontRegistryFile)) {
     try {
       const registry = JSON.parse(fs.readFileSync(fontRegistryFile, "utf8"));
-      const records = Array.isArray(registry.records) ? registry.records.slice(0, 8) : [];
+      const records = Array.isArray(registry.records) && registry.records.length > 0
+        ? registry.records.slice(0, 8)
+        : null;
+      const truncated = Array.isArray(registry.records) && registry.records.length > 8;
+      if (records === null) {
+        // 注册表存在但内容缺失/畸形：与单字体探测失败同级，fail-closed，
+        // 不能当成"没有注册字体"放过。
+        fontCoverageCheck = {
+          id: "font:cjk-coverage",
+          required: true,
+          available: false,
+          evidence: `字体注册表存在但 records 缺失、为空或格式非法：${fontRegistryFile}`,
+        };
+      }
       const coverageSample = "行者大灰第期栏目更新工具分享解读好书有限的无限游戏灰常AI闲聊，。！？；：0123456789";
       const coverageEntries = [];
       for (const record of records) {
@@ -222,10 +235,16 @@ if (profile === "full") {
         }
       }
       fontCoverageCheck = summarizeFontCoverage(coverageEntries, { sample: coverageSample });
+      if (truncated) {
+        fontCoverageCheck = {
+          ...fontCoverageCheck,
+          evidence: `${fontCoverageCheck.evidence}（注册字体超过 8 个，仅探测前 8 个）`,
+        };
+      }
     } catch (error) {
       fontCoverageCheck = {
         id: "font:cjk-coverage",
-        required: false,
+        required: true,
         available: false,
         evidence: `字体注册表不可读：${error.message}`,
       };

@@ -37,7 +37,7 @@ test("server-renders the Chinese Kacha product page", async () => {
   assert.match(html, /先看变化，再看功能/);
   assert.match(html, /五种风格，不是同一套卡片换颜色/);
   assert.match(html, /2400 张峰值帧/);
-  assert.match(html, />170</);
+  assert.match(html, />171</);
   assert.match(html, /--agent both --channel canary/);
   assert.match(html, /项目编排与全片导演/);
   assert.match(html, /统一审片与发布检查/);

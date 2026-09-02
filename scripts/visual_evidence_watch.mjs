@@ -56,6 +56,7 @@ if (action !== "watch") {
     "      [--fps 6] [--force] [--transcript TRANSCRIPT.json] [--output WATCH.json] [--ledger FILE]",
     "",
     "窗口台账默认位于 <cwd>/.kacha/observation-ledger.json，可用 --ledger 覆盖；",
+    "观察包默认写入 <cwd>/.kacha/watch/visual-watch-<时间戳>.json，可用 --output 覆盖；",
     "台账与 hook 状态属本机缓存，建议将 .kacha/ 加入项目 .gitignore。",
     "观察包是工具产物；主观判断写入 review 文件，不回写本包。",
   ].join("\n");
@@ -123,7 +124,8 @@ const requestedFrames = Math.ceil((end - start) * fps);
 if (requestedFrames > MAX_FRAMES) {
   fail(
     `窗口 ${(end - start).toFixed(1)}s @ ${fps}fps 需要约 ${requestedFrames} 帧，超过单次观察上限 ${MAX_FRAMES} 帧。`
-    + `请缩小窗口或降低 --fps（例如 --fps ${Math.max(1, Math.floor((MAX_FRAMES - 1) / (end - start)))}），`
+    + `请降低 --fps（例如 --fps ${Math.max(1, Math.floor((MAX_FRAMES - 1) / (end - start)))}）`
+    + `或缩短窗口（例如 --end ${(start + MAX_FRAMES / fps).toFixed(1)}），`
     + "或分多次窗口观察；不做静默截断。",
   );
 }
@@ -140,6 +142,14 @@ try {
 } catch (error) {
   fail(`台账正被另一个 watch 进程占用，请稍后重试（${String(error.message).split("\n")[0]}）`);
 }
+// 兜底：任何路径退出（fail、异常、早退）都释放台账锁。
+process.on("exit", () => {
+  try {
+    releaseLedgerLock?.();
+  } catch {
+    // 退出路径不因锁清理失败而改变退出码。
+  }
+});
 
 let ledger = { schemaVersion: "1.0", kind: "kacha-observation-ledger", videos: {} };
 if (fs.existsSync(ledgerFile)) {
@@ -162,6 +172,7 @@ const isDuplicate = Boolean(
   && videoEntry.windows.find((window) => window.start === start && window.end === end && window.fps === fps),
 );
 if (isDuplicate) {
+  releaseLedgerLock();
   writeJsonAtomic(output, {
     schemaVersion: "1.0",
     kind: "kacha_visual_watch_evidence",

@@ -97,3 +97,24 @@ node scripts/kacha.mjs vision-enrich \
 - 全片没有漏检。
 
 这些仍需短片段、cut handle、同帧 A/B、正常速度通看和最终 release 清单。
+
+## 窗口观察回路（visual-evidence-watch）
+
+`visual-evidence` 产出整片证据包；需要对切点、连续性、遮挡等局部疑点做
+高帧率复看时，使用窗口观察：
+
+```bash
+node scripts/kacha.mjs visual-evidence-watch watch --video SOURCE.mp4 \
+  --start 12 --end 16 --fps 6 [--force] [--transcript transcript.json] \
+  [--output watch.json] [--ledger .kacha/observation-ledger.json]
+```
+
+- 观察包是工具产物（帧清单、contact sheet、对齐转录）；主 Agent 读图后的
+  主观判断写入 review 文件，不回写本包；
+- 窗口台账按源视频指纹记录 (start, end, fps)：精确重复返回
+  `skipped_duplicate`，不构成新的视觉证据；换 fps 算新观察；`--force`
+  强制重看；
+- 统一审片 bundle 的每个高影响决定带 `suggestedWatch` 建议窗口，预看后
+  仍必须完成正常速度人工审片。
+
+源视频被覆盖或替换后指纹失效，旧窗口自然不再判重。
