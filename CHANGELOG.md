@@ -4,8 +4,22 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-02
+
 ### Fixed
 
+- 深度 review 修复：Studio 服务器对畸形请求行快速返回 400，不再挂起连接；
+  `command -v` 探测改为位置参数传递，消除 shell 注入面；`enhance_voice.sh`
+  拒绝包含 ffmpeg filter 元字符的神经降噪模型路径；`writeJsonAtomic` 失败时
+  清理遗留临时文件；`/api/review/media` 补齐与其他读取端点一致的跨站读取
+  防护；原生文件选择对话框改为异步 spawn，选择期间服务器保持响应。
+- 深度 review 修复：CI 新增 control-plane job，MCP 服务器与 Workbench 分发
+  测试不再游离于持续集成之外；proposal/cleanup/generated/sfx 四个套件的
+  23 项测试改为显式 suite 标注，分片成员不再依赖测试名推断；清理零引用的
+  `build_reference_semantics.mjs`；`kacha.mjs help` 补齐 `editor recover/
+  reopen` 与 `design motion-preview`；Studio 前端抽出 `shared.js`（escapeHtml、
+  请求头与错误文案契约）并格式化 `editor.css`；同步文档数字（可搜索效果
+  132、口播字幕布局 10、解析后模板 65）。
 - 深度复核 OpenMontage 启发的生产控制面：付费预占改为一次性原子消费并绑定执行
   意图，账本拒绝审批/退款篡改；参考片和 corpus 重验权利、用途、索引与源身份；
   飞行记录限量脱敏并拒绝越界链接；provider、composition、workflow 与 Studio
@@ -46,6 +60,37 @@
 
 ### Added
 
+- 增加会话闭环 hooks 与 Agent 观察回路（借鉴 ZCode 官方 video-agent-kit 的
+  Stop 闭环与局部复看设计，落地为咔嚓合同）：`hooks/check_closeout.mjs` 在
+  Claude Code 会话结束前检查"成片已产出但发布审片缺失/过期/未批准"，逃生门
+  为 `unresolved.md`，同会话连续阻断最多 2 次、第 3 次尝试放行并记违规；`install.sh --hooks`
+  显式选择后幂等合并 `~/.claude/settings.json`，不覆盖已有 hooks。
+  `visual-evidence-watch` 对源视频指定窗口做局部抽帧观察包，窗口台账按
+  (start,end,fps) 判重（换 fps 算新观察，`--force` 强制重看），越界窗口拒绝
+  不静默截断；审片 bundle 的每个高影响决定附 `suggestedWatch` 建议窗口。
+  doctor 新增编码器（libx264/aac/libmp3lame）、ASS 烧录（libass）与注册字体
+  CJK 覆盖深度检查，缺失编码器提前到体检而非渲染最后一步才失败。新增五栏目
+  口播风格卡与语料格式（`references/shows/`、`references/corpus/`），语料
+  只从已发布真实稿件积累。
+- 增加白板手绘动画能力：把 SRT 字幕驱动的线稿渲染成按叙事顺序逐步绘制的
+  暖纸底流式笔迹动画（ink 铺线稿 → color 添彩，笔尖跟手）。`whiteboard`
+  命令提供分镜解析、标注脚手架、失败关闭的合同校验、检查图、真实渲染、
+  六项技术 QC（首帧纸底/保护区不提前露线/收尾全区域覆盖等）与多幕合并；
+  渲染与合并均留 SHA-256 证据，并编排为 `srt-whiteboard` 工作流包。引擎
+  vendored 自 geeklee/srt-whiteboard-animation（MIT，锚点 696a7243c0e6），
+  来源、许可与本地补丁见 `scripts/whiteboard_engine/README.md`。
+- 增加安装完整性校验机制：`release-channels.json` 渠道可声明可选的
+  `archiveSha256`，安装器对下载归档强制校验，失配即失败关闭；显式本地归档
+  与自定义 ref 不受渠道契约约束。GitHub 归档 tar 不保证字节稳定，发布可复现
+  资产前渠道保持不声明 pin。
+- 增加 Codex / Claude MCP 控制面：根目录受限的本地 stdio 服务器复用同一
+  Timeline IR 与 Command Journal，紧凑读取和 SHA 锁定写入绑定当前内容身份；
+  `mcp-config show/validate` 为双端生成本地配置并回读 executable、script 和
+  root 绑定，命令成功不等于配置正确。
+- 增加 Workbench V3 多时间线编辑工作台：多时间线版本与交付画幅、多选/吸附、
+  trim/ripple、split、overwrite、EDL 显式重排、Marker、工作区、异步波形、
+  Project Bin（只接受许可、来源与强身份仍有效的素材）、overlay `x/y` 终渲染
+  键帧、能力地图、Agent Activity 与交付中心（计划与成片分开，不冒充预览）。
 - 增加 Timebase V2：Timeline IR 编辑边界使用 120000 tick/s 与有理帧率，旧版
   seconds 保持兼容；tick/seconds 冲突超过半帧时失败关闭，并提供只写新文件的
   `timeline migrate-timebase`。
@@ -110,7 +155,7 @@
   本地混合语义素材索引结合描述、标签、转写、OCR 与 Apple Vision 分类；
   可恢复后台任务以 ready placeholder 证明产物；`@type:id` 绑定 owner SHA 与
   JSON Pointer；双端安装提供只读 current/out-of-sync 状态和显式原子同步。
-- 增加 60 套可执行效果模板，把开场、转场、语义动效、贴纸与视线引导、
+- 增加 65 套可执行效果模板，把开场、转场、语义动效、贴纸与视线引导、
   空间纵深、关键帧、并列句排版、口播字幕和画面呼吸统一绑定到设计系统、
   音效触发、安全区、降级链与资源解析合同；内置 15 个原创 SVG 设计资产、
   6 个运行时背景配方和 8 类按镜头检索的外部素材槽位。
@@ -136,7 +181,7 @@
   源几何、A/V 一帧内同步、技术 QC、无静默 fallback、双端安装和人工审片
   合同；新增中英文性能与弱模型生产文档。
 - 完成本地视频生产台深度 review：升级为“素材、风格、声音、效果、交付”
-  五步工作流，增加当前项目覆盖、129 个注册效果搜索、可写输出与授权字体
+  五步工作流，增加当前项目覆盖、132 个注册效果搜索、可写输出与授权字体
   预检、delivery contract、步骤完成状态、过期结果失效和同名风格防覆盖；
   同步完成桌面/移动响应式 UI、浏览器安全头与可编辑 Figma 设计稿。
 - 增加 GitHub Pages 公开官网发布链：静态预渲染中文与英文页面，校验
@@ -167,7 +212,7 @@
   限制运动覆盖率、静止比例、事件密度、相邻间隔和最大缩放，并把短促音效
   能量峰值对齐视觉峰值。
 - 增加口播字幕编排系统：从普通单行升级到左右对照、侧边标签、上下层级和
-  人物前后景七种布局；冻结人物蒙版、字体、设计摘要和音效落点，阻止挡脸、
+  人物前后景十种布局；冻结人物蒙版、字体、设计摘要和音效落点，阻止挡脸、
   多阅读区、亮底白字和无蒙版伪景深。
 - 增加本地字体注册与场景路由：扫描 `Fonts` 目录中的字体元数据、字符覆盖、
   字重、文件 hash 与项目授权，按主字幕、重音、观点、幽默、人文、科技和

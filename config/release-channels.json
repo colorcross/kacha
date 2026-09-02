@@ -3,7 +3,7 @@
   "defaultChannel": "canary",
   "channels": {
     "stable": {
-      "ref": "v1.1.0",
+      "ref": "v1.2.0",
       "meaning": "最后一个已正式标记的公开版本；不包含其后的 Unreleased 能力",
       "promotionGate": "候选提交、全量 CI、macOS smoke、安装回读、版本标签和 Release 均有证据"
     },
