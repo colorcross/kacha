@@ -37,7 +37,7 @@ test("server-renders the Chinese Kacha product page", async () => {
   assert.match(html, /先看变化，再看功能/);
   assert.match(html, /五种风格，不是同一套卡片换颜色/);
   assert.match(html, /2400 张峰值帧/);
-  assert.match(html, />162</);
+  assert.match(html, />169</);
   assert.match(html, /--agent both --channel canary/);
   assert.match(html, /项目编排与全片导演/);
   assert.match(html, /统一审片与发布检查/);
@@ -65,7 +65,7 @@ test("server-renders the English product page", async () => {
   assert.match(html, /See the change before the feature list/);
   assert.match(html, /Five styles, five editing grammars/);
   assert.match(html, /2,400 peak frames/);
-  assert.match(html, />162</);
+  assert.match(html, />169</);
   assert.match(html, /--agent both --channel canary/);
   assert.match(html, /four milestones/i);
   assert.match(html, /Asset gap inbox/);

@@ -86,6 +86,7 @@ AI 负责组织证据、编译计划、执行获批修改并把技术结果留�
 | 预制效果与资源 | 65 个模板统一解析开场、转场、语义画面、贴纸、纵深、流程、关键帧、并列句、字幕和呼吸；附原创视觉资源与许可路由 |
 | 可感知能力覆盖 | 行者风按时长约束外部/AI/HyperFrames 素材、PIP、蒙版、纵深、关键帧、关系字幕和大字的最低覆盖与多样性 |
 | 画面呼吸 | 用语义驱动的推近、停稳、释放、横移和重音冲击改善节奏，避免全片持续缩放 |
+| 白板手绘动画 | SRT 字幕驱动的线稿按叙事顺序流式落墨（ink→color），暖纸底配笔尖跟手；标注合同校验、真实渲染证据与技术 QC 一应俱全，适合讲解与故事视频整幕使用 |
 | 口播字幕编排 | 普通单行优先，按真实信息关系使用左右、上下或人物前后景排版并联动功能音效 |
 | 项目字体路由 | 行者风默认使用已授权的真正金陵体；读取真实文件、字符覆盖、授权与哈希，不静默换字体；私有字体只进入本地安装，不进入公开仓库 |
 | 有理由的剪辑 | 切镜、转场、蒙版、音效和 33 种语义网感机制都由带时间文稿触发并写入正式时间线 |
@@ -95,10 +96,10 @@ AI 负责组织证据、编译计划、执行获批修改并把技术结果留�
 | 失败即停 | 输入、授权、能力或 QC 不满足时停止，不用预览伪装最终成片 |
 
 当前版本包含 52 个设计组件、69 个复用场景、65 个预制效果模板、23 个公共
-核心资源、10 种转场、5 种开场、5 种画面呼吸运动、7 种口播字幕布局，以及
+核心资源、10 种转场、5 种开场、5 种画面呼吸运动、10 种口播字幕布局，以及
 从 6 条参考视频中验证出的 33 种语义网感机制。机制可从最终带时间文稿生成
 帧级计划、进入完整视频渲染，并通过摘要、资源、时序与媒体保真门禁。
-当前仓库完整回归为 162 项；五套图库另有语义三元组、跨风格重复、同风格未声明
+当前仓库完整回归为 169 项；五套图库另有语义三元组、跨风格重复、同风格未声明
 近似构图、人物头部碰撞、黑块、字体和动效合同专项 QC。当前提交的 1200 组
 “效果定义—参考图—动效合同”语义三元组全部匹配，其余上述问题均为 0。
 
@@ -152,7 +153,7 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 
 安装位置分别为 `~/.codex/skills/kacha` 和 `~/.claude/skills/kacha`。安装器
 不会覆盖已有目标。`canary` 跟随当前 `main`；`stable` 只指向最后一个正式 tag，
-在下一次 Release 完成前仍是 `v1.1.0`，不包含后续 Unreleased 能力。详见
+当前为 `v1.2.0`。详见
 [一句话安装](docs/AGENT_INSTALL.md)。
 `stable/canary` 的 ref 只从 `config/release-channels.json` 读取；显式 `--ref`、
 自定义归档 URL 或本地 `--archive` 一律显示为 `custom`，并在真实安装记录归档
@@ -191,7 +192,7 @@ node scripts/kacha.mjs workflows list
 页面只读取本机路径，可从脚本、选题或视频开始，支持基础风格、自建风格、
 “自动按语义”或浅暖轻浮层/空间光路/幽默漫画/像素风优先、开场选择和多组
 “自然语言位置 + 指定效果”。五步流程会分别处理素材、风格、声音、效果和
-交付；129 个注册效果支持搜索，生成前必须通过视频、输出目录、授权字体、
+交付；132 个注册效果支持搜索，生成前必须通过视频、输出目录、授权字体、
 设计系统与效果解析预检。它不会上传素材、覆盖源片或跳过质量门禁。详见
 [本地视频生产台](references/production-studio.md)。项目建立后可在 `/project`
 查看四个里程碑、十三阶段证据、素材收件箱和唯一下一步。
@@ -305,6 +306,7 @@ node scripts/kacha.mjs config show --anchor /path/to/project
 node scripts/kacha.mjs doctor --profile core
 ```
 
+- 安装器需要 Python 3、curl、tar 与 jq（管道安装/渠道契约解析）；
 - 核心门禁需要 Node.js 20+；
 - 媒体链路需要 FFmpeg 与 FFprobe；
 - 本地字体索引与字幕图层渲染需要 Python 3、Pillow 和 fontTools；
@@ -380,6 +382,8 @@ node scripts/kacha.mjs doctor --profile core
 | [安装与依赖](docs/INSTALLATION.md) | 环境、平台与可选能力 |
 | [配置说明](docs/CONFIGURATION.md) | 用户、项目、本机和密钥配置 |
 | [自适应背景音乐](docs/ADAPTIVE_BGM.md) | 五栏目音乐语法、专业提示词、多段 Timeline、混音与 QC |
+| [白板手绘动画](docs/WHITEBOARD_ANIMATION.md) | SRT 分镜、标注合同、流式笔迹渲染、场景 QC 与多幕合并 |
+| [会话闭环 hooks](docs/HOOKS.md) | Stop 事件检查发布合同闭环：过期审片报告阻断、逃生门与防死循环 |
 | [架构说明](docs/ARCHITECTURE.md) | 工作流、证据链与模块边界 |
 | [性能与弱模型稳定生产](docs/PERFORMANCE_TOKEN_STABILITY_V5.md) | 一次编码、局部预览、缓存、Token 和审计 |
 | [质量不降级效率 V8](docs/QUALITY_PRESERVING_EFFICIENCY_V8.md) | 风险、代表区间、依赖波次、强指纹缓存与成对效率证据 |
@@ -397,9 +401,11 @@ node scripts/kacha.mjs doctor --profile core
 仓库验证：
 
 ```bash
-node tests/run_tests.mjs
+node tests/run_tests.mjs            # 全量；--suite core|proposal|... 分套运行
 bash tests/test_installer.sh
 python3 scripts/scan_secrets.py
+node tests/mcp_server_tests.mjs
+node tests/workbench_distribution_tests.mjs
 ```
 
 官网验证：
@@ -409,7 +415,6 @@ cd website
 npm ci
 npm run lint
 npm run typecheck
-npm test
 npm run test:pages
 npm audit --audit-level=high
 ```

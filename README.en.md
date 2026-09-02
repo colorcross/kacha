@@ -184,10 +184,11 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
 - Separates dialogue from non-dialogue audio before spoken-word processing, and keeps only the approved dialogue stem in the downstream chain.
 - Detects an established series identity and carries the same series mark into both the video and its covers.
 - Preserves the source video's pixel dimensions and aspect ratio unless the user explicitly requests a change.
+- Turns SRT-driven line art into warm-paper whiteboard animation: subtitle-scoped streaming ink (ink then color), a fail-closed annotation contract, render evidence, per-scene technical QC, and multi-scene merging for explainer and story videos.
 - Provides two-stage intermediate cleanup: routine cleanup only for user-unneeded, fast-regenerating caches, and final cleanup only after explicit no-more-edits confirmation.
 - Records AI-generated shot plans with provider, model, capability snapshot, paid-call authorization, and QC targets.
 - Runs automated media checks and requires separate human-review evidence before local release.
-  The current full regression discovers 162 checks.
+  The current full regression discovers 169 checks.
 - Keeps uploads, publishing, purchases, and paid generation outside the default authorization boundary.
 
 <p align="center">
@@ -223,8 +224,7 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 ```
 
 The website command explicitly chooses `canary`, which tracks `main`. Replace it
-with `stable` for the last formally tagged line; stable remains `v1.1.0` until a
-new release is completed. The installer refuses to overwrite an existing target.
+with `stable` for the last formally tagged line; stable is now `v1.2.0`. The installer refuses to overwrite an existing target.
 The default locations are:
 
 | Agent | User-level skill directory |
@@ -442,7 +442,7 @@ node tests/run_tests.mjs --suite visual
 node tests/run_tests.mjs --report /tmp/kacha-tests.json
 bash tests/test_installer.sh
 python3 scripts/scan_secrets.py
-cd website && npm run lint && npm run typecheck && npm test && npm audit --audit-level=high
+cd website && npm run lint && npm run typecheck && npm run test:pages && npm run audit:dependencies
 ```
 
 Scoped suites generate only the media fixtures they need. Passing repository

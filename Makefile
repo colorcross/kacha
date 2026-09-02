@@ -1,4 +1,4 @@
-.PHONY: check-static check-targeted check-core check-full check-website
+.PHONY: check-static check-targeted check-core check-full check-website check-browser
 
 check-static:
 	find scripts tests -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
@@ -24,3 +24,8 @@ check-full: check-static
 
 check-website:
 	cd website && npm run lint && npm run typecheck && npm run test:pages && npm run audit:dependencies
+
+# Optional real-browser journey for the editor workbench. Requires a local
+# Playwright module; point KACHA_PLAYWRIGHT_MODULE at it and run `make check-browser`.
+check-browser:
+	node tests/browser/editor_v3_journey.mjs

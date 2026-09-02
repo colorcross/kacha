@@ -54,7 +54,13 @@ curl -fsSL https://raw.githubusercontent.com/colorcross/kacha/main/scripts/insta
 - 目标不存在时，先下载到临时目录，验证结构和隐私扫描后再移动；
 - 目标已存在时保持不变，不覆盖已有安装或本地修改；
 - `stable/canary` 的 ref 只读取 `config/release-channels.json`；环境变量不能改写渠道映射；
+- 渠道契约可声明可选的 `archiveSha256`（64 位小写十六进制）；声明后安装器
+  对下载归档强制校验，失配即失败关闭。GitHub 归档 tar 不保证字节稳定，
+  因此当前渠道均未声明 pin，留待发布可复现资产时启用；
 - `--ref`、自定义 URL 与本地 archive 统一标为 `custom`，本地安装记录归档 SHA-256；
+- `--hooks` 显式选择后，把 Claude Code Stop 闭环 hook 幂等合并进
+  `~/.claude/settings.json`（可用 `KACHA_CLAUDE_SETTINGS_DIR` 覆盖）；
+  不覆盖已有 hooks，Codex 目标自动跳过，详见 [docs/HOOKS.md](HOOKS.md)；
 - 不读取、不复制、不上传用户项目、密钥、素材和现有其他 skills；
 - Codex 安装不会修改 Claude Code 目录，Claude Code 安装不会修改 Codex 目录。
 

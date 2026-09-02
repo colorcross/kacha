@@ -181,6 +181,11 @@ node scripts/kacha.mjs efficiency compare BASELINE-COHORT.json CANDIDATE-COHORT.
   `references/visual-breathing-caption-typography.md`
 - 阅读字幕、语义字景、空间字景、栏目图形母题和歌词微型进度线：
   `docs/CINEMATIC_TEXT_SCENES_V1.md`
+- SRT 字幕转白板手绘动画（讲解/故事整幕使用）：`docs/WHITEBOARD_ANIMATION.md`；
+  线稿、标注与渲染都过 `whiteboard` 命令与 QC，不跳过人工确认
+- 口播稿腔调、句式与禁则按栏目风格卡执行；语料只从已发布真实稿件摘录：
+  `references/shows/`（工具分享、解读好书、有限的无限游戏、灰常AI、闲聊）
+  与 `references/corpus/`；与 V3.3 方案冲突时以方案为准
 - 本地页面选素材、建基础风格、选择五套剪辑视觉语言、指定开场/效果并生成项目配置：
   `references/production-studio.md`
 - 字幕/封面/品牌/系列：`references/subtitles-covers-brand.md`
@@ -819,8 +824,12 @@ node tests/run_tests.mjs --suite audio
 node tests/run_tests.mjs --suite visual
 node tests/run_tests.mjs --match "V8 "
 node tests/run_tests.mjs
+node tests/mcp_server_tests.mjs
+node tests/workbench_distribution_tests.mjs
 ```
 
 可用套件见 `node tests/run_tests.mjs --list`；也可用 `--match 关键词`。
-公开 core 与机器专属 overlay 必须分别测试，组合通过后再原子同步到 Codex
-和 Claude，不能直接覆盖当前可用安装。
+MCP 控制面与 Workbench 分发不在 `run_tests.mjs` 的 162 项之内，修改
+`kacha_mcp_server`、`mcp-config` 或编辑器分发时必须单独运行；`make
+check-full` 会覆盖全部三层。公开 core 与机器专属 overlay 必须分别测试，
+组合通过后再原子同步到 Codex 和 Claude，不能直接覆盖当前可用安装。

@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import http from "node:http";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -101,6 +102,7 @@ const knownSuites = new Set([
   "qc",
   "incremental",
   "editor",
+  "whiteboard",
 ]);
 for (const suite of requestedSuites) {
   if (!knownSuites.has(suite)) {
@@ -300,6 +302,12 @@ async function test(name, callback, explicitSuite = null) {
   }
 }
 
+// Pin a test to a CI matrix suite so shard membership no longer depends on
+// name-based inference surviving a future rename.
+async function testIn(suite, name, callback) {
+  return test(name, callback, suite);
+}
+
 const sourceFile = path.join(temporary, "source-input.txt");
 fs.writeFileSync(sourceFile, "immutable source fixture\n");
 let validProposalFixture = null;
@@ -422,7 +430,7 @@ await test("reference router loads only task-relevant context", () => {
   }
 });
 
-await test("cover workflow uses approved 3D turnaround as default generation anchor", () => {
+await testIn("generated", "cover workflow uses approved 3D turnaround as default generation anchor", () => {
   const reference = fs.readFileSync(
     path.join(skillDirectory, "references", "subtitles-covers-brand.md"),
     "utf8",
@@ -1805,14 +1813,14 @@ await test("connection scanner finds edit joins and emits review handles", () =>
   }
 }, "visual");
 
-await test("proposal executable source, hash and authorization pass", () => {
+await testIn("proposal", "proposal executable source, hash and authorization pass", () => {
   execute(process.execPath, [
     path.join(scripts, "validate_edit_proposal.mjs"),
     ensureValidProposalFixture(),
   ]);
 });
 
-await test("proposal rejects invalid stage status", () => {
+await testIn("proposal", "proposal rejects invalid stage status", () => {
   const proposal = readJson(ensureValidProposalFixture());
   proposal.executionFlow[0].status = "banana";
   const file = path.join(temporary, "proposal-bad-status.json");
@@ -1820,7 +1828,7 @@ await test("proposal rejects invalid stage status", () => {
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
 });
 
-await test("proposal passed stages require current file-backed evidence", () => {
+await testIn("proposal", "proposal passed stages require current file-backed evidence", () => {
   const proposal = readJson(ensureValidProposalFixture());
   proposal.executionFlow[0] = {
     ...proposal.executionFlow[0],
@@ -1838,7 +1846,7 @@ await test("proposal passed stages require current file-backed evidence", () => 
   }
 });
 
-await test("proposal rejects task and authorization mismatch", () => {
+await testIn("proposal", "proposal rejects task and authorization mismatch", () => {
   const proposal = readJson(ensureValidProposalFixture());
   proposal.taskPath = "proposal_review";
   const file = path.join(temporary, "proposal-bad-auth.json");
@@ -1846,7 +1854,7 @@ await test("proposal rejects task and authorization mismatch", () => {
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
 });
 
-await test("proposal rejects missing executable source", () => {
+await testIn("proposal", "proposal rejects missing executable source", () => {
   const proposal = readJson(ensureValidProposalFixture());
   proposal.sourceInventory[0].path = path.join(temporary, "missing.mov");
   const file = path.join(temporary, "proposal-missing-source.json");
@@ -1854,7 +1862,7 @@ await test("proposal rejects missing executable source", () => {
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
 });
 
-await test("proposal rejects an output ratio outside the creative lock", () => {
+await testIn("proposal", "proposal rejects an output ratio outside the creative lock", () => {
   const proposal = readJson(ensureValidProposalFixture());
   proposal.creativeLock.outputAspectRatio = "16:9";
   const file = path.join(temporary, "proposal-bad-creative-lock.json");
@@ -1862,7 +1870,7 @@ await test("proposal rejects an output ratio outside the creative lock", () => {
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
 });
 
-await test("proposal rejects unrequested source geometry changes", () => {
+await testIn("proposal", "proposal rejects unrequested source geometry changes", () => {
   const proposal = readJson(ensureValidProposalFixture());
   proposal.creativeLock.outputWidth = 1080;
   proposal.creativeLock.outputHeight = 1920;
@@ -1871,7 +1879,7 @@ await test("proposal rejects unrequested source geometry changes", () => {
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
 });
 
-await test("proposal accepts an explicitly authorized geometry change", () => {
+await testIn("proposal", "proposal accepts an explicitly authorized geometry change", () => {
   const proposal = readJson(ensureValidProposalFixture());
   proposal.goal.videoAspectRatios = ["16:9"];
   proposal.creativeLock.outputGeometryUserSpecified = true;
@@ -1887,7 +1895,7 @@ await test("proposal accepts an explicitly authorized geometry change", () => {
   execute(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
 });
 
-await test("proposal rejects spoken-word processing without source separation", () => {
+await testIn("proposal", "proposal rejects spoken-word processing without source separation", () => {
   const proposal = readJson(ensureValidProposalFixture());
   proposal.planModules.dialogueAudio.sourceSeparation.required = false;
   proposal.planModules.dialogueAudio.sourceSeparation.mixResidualIntoFinal = true;
@@ -1896,7 +1904,7 @@ await test("proposal rejects spoken-word processing without source separation", 
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
 });
 
-await test("proposal rejects a detected series missing the video mark", () => {
+await testIn("proposal", "proposal rejects a detected series missing the video mark", () => {
   const proposal = readJson(ensureValidProposalFixture());
   proposal.seriesIdentity.videoMark.enabled = false;
   const file = path.join(temporary, "proposal-series-video-mark-missing.json");
@@ -1904,7 +1912,7 @@ await test("proposal rejects a detected series missing the video mark", () => {
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
 });
 
-await test("proposal rejects an undetermined series identity before execution", () => {
+await testIn("proposal", "proposal rejects an undetermined series identity before execution", () => {
   const proposal = readJson(ensureValidProposalFixture());
   proposal.seriesIdentity.status = "undetermined";
   proposal.seriesIdentity.videoMark.enabled = false;
@@ -1914,7 +1922,7 @@ await test("proposal rejects an undetermined series identity before execution", 
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_proposal.mjs"), file]);
 });
 
-await test("routine cleanup dry-run keeps fast regenerable cache", () => {
+await testIn("cleanup", "routine cleanup dry-run keeps fast regenerable cache", () => {
   const root = path.join(temporary, "cleanup-routine");
   const cache = path.join(root, "work", "render-scratch");
   fs.mkdirSync(cache, { recursive: true });
@@ -1962,7 +1970,7 @@ await test("routine cleanup dry-run keeps fast regenerable cache", () => {
   }
 });
 
-await test("routine cleanup applies only the approved cache list", () => {
+await testIn("cleanup", "routine cleanup applies only the approved cache list", () => {
   const root = path.join(temporary, "cleanup-routine");
   const planFile = path.join(temporary, "cleanup-routine.json");
   execute(process.execPath, [
@@ -1983,7 +1991,7 @@ await test("routine cleanup applies only the approved cache list", () => {
   }
 });
 
-await test("routine cleanup rejects user-needed or slow-to-regenerate cache", () => {
+await testIn("cleanup", "routine cleanup rejects user-needed or slow-to-regenerate cache", () => {
   const root = path.join(temporary, "cleanup-routine-rejected");
   fs.mkdirSync(path.join(root, "work", "mask-cache"), { recursive: true });
   const plan = {
@@ -2023,7 +2031,7 @@ await test("routine cleanup rejects user-needed or slow-to-regenerate cache", ()
   }
 });
 
-await test("final cleanup requires explicit no-more-edits confirmation", () => {
+await testIn("cleanup", "final cleanup requires explicit no-more-edits confirmation", () => {
   const root = path.join(temporary, "cleanup-final");
   fs.mkdirSync(path.join(root, "work", "proxy"), { recursive: true });
   fs.writeFileSync(path.join(root, "work", "proxy", "proxy.mov"), "proxy");
@@ -2329,7 +2337,7 @@ await test("edit plan rejects split-screen panes without centered subject-aware 
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
 }, "visual");
 
-await test("edit plan accepts a varied whole-timeline SFX palette", () => {
+await testIn("sfx", "edit plan accepts a varied whole-timeline SFX palette", () => {
   const plan = readJson(path.join(examples, "edit-plan.json"));
   plan.sfxPlan.palette = [
     { assetId: "turn-local-pivot", title: "转折", category: "turn", useFor: "观点或叙事方向真正改变" },
@@ -2350,7 +2358,7 @@ await test("edit plan accepts a varied whole-timeline SFX palette", () => {
   execute(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
 });
 
-await test("edit plan rejects one SFX reused across the whole timeline", () => {
+await testIn("sfx", "edit plan rejects one SFX reused across the whole timeline", () => {
   const plan = readJson(path.join(examples, "edit-plan.json"));
   plan.effects[0].soundDesign.assetId = "knowledge-local-point";
   plan.effects[0].soundDesign.title = "知识点";
@@ -2371,14 +2379,14 @@ await test("edit plan rejects one SFX reused across the whole timeline", () => {
   expectFailure(process.execPath, [path.join(scripts, "validate_edit_plan.mjs"), file]);
 });
 
-await test("generated template cannot masquerade as an executable preflight", () => {
+await testIn("generated", "generated template cannot masquerade as an executable preflight", () => {
   expectFailure(process.execPath, [
     path.join(scripts, "validate_generated_shot_plan.mjs"),
     path.join(examples, "generated-shot-plan.json"),
   ]);
 });
 
-await test("generated plan rejects stale snapshot, fake model and invalid ratio", () => {
+await testIn("generated", "generated plan rejects stale snapshot, fake model and invalid ratio", () => {
   const plan = readJson(path.join(examples, "generated-shot-plan.json"));
   plan.template = false;
   plan.capabilitySnapshot.verifiedAt = "2020-01-01";
@@ -2392,7 +2400,7 @@ await test("generated plan rejects stale snapshot, fake model and invalid ratio"
   );
 });
 
-await test("generated execution validates real files, hashes and authorization", () => {
+await testIn("generated", "generated execution validates real files, hashes and authorization", () => {
   const image = path.join(temporary, "reference.png");
   const video = path.join(temporary, "reference.mp4");
   execute("ffmpeg", [
@@ -8251,7 +8259,7 @@ await test("incremental cleanup plan keeps slow or human-calibrated artifacts", 
   }
 });
 
-await test("bundled original SFX pass hash, format and distribution checks", () => {
+await testIn("sfx", "bundled original SFX pass hash, format and distribution checks", () => {
   const sfxConfig = path.join(temporary, "sfx-config.json");
   writeJson(sfxConfig, {
     schemaVersion: "1.0",
@@ -8271,7 +8279,7 @@ await test("bundled original SFX pass hash, format and distribution checks", () 
   }
 });
 
-await test("SFX aliases resolve uniquely and private assets fail public distribution", () => {
+await testIn("sfx", "SFX aliases resolve uniquely and private assets fail public distribution", () => {
   const sourceManifestFile = path.join(
     skillDirectory,
     "assets",
@@ -10586,16 +10594,35 @@ await test("V6 review workbench is local-only and exposes the new review assets"
     if (!healthyAfterBoundaryFailures.ok) {
       throw new Error("studio server was not healthy after request-body failures");
     }
+    const malformedRequestLine = await new Promise((resolve, reject) => {
+      const socket = net.createConnection({ host: "127.0.0.1", port }, () => {
+        socket.write(`GET /%\u0001\u0002bad HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nConnection: close\r\n\r\n`);
+      });
+      const chunks = [];
+      socket.on("data", (chunk) => chunks.push(chunk));
+      socket.once("close", () => resolve(Buffer.concat(chunks).toString("utf8")));
+      socket.once("error", reject);
+    });
+    if (!malformedRequestLine.startsWith("HTTP/1.1 400")) {
+      throw new Error(`malformed request line did not fail fast with 400: ${malformedRequestLine.slice(0, 40)}`);
+    }
     const openedResponse = await fetch(`${origin}/api/review/open`, {
       method: "POST",
       headers: mutationHeaders,
       body: JSON.stringify({ bundlePath: bundleFile }),
     });
     const opened = await openedResponse.json();
-    const previewDecision = opened.bundle?.decisions?.find((item) => item.preview?.after);
-    if (!openedResponse.ok || !previewDecision || !opened.session?.path) {
-      throw new Error(`review open API failed: ${JSON.stringify(opened)}`);
-    }
+  const previewDecision = opened.bundle?.decisions?.find((item) => item.preview?.after);
+  if (!openedResponse.ok || !previewDecision || !opened.session?.path) {
+    throw new Error(`review open API failed: ${JSON.stringify(opened)}`);
+  }
+  const watchable = opened.bundle.decisions.filter((decision) => (
+    Array.isArray(decision.suggestedWatch)
+    && decision.suggestedWatch.every((window) => window.end > window.start && window.fps > 0)
+  ));
+  if (watchable.length !== opened.bundle.decisions.length) {
+    throw new Error("review bundle lost suggested watch windows for some high-impact decisions");
+  }
     const mediaUrl = new URL("/api/review/media", origin);
     mediaUrl.searchParams.set("bundle", bundleFile);
     mediaUrl.searchParams.set("decision", previewDecision.id);
@@ -10614,6 +10641,10 @@ await test("V6 review workbench is local-only and exposes the new review assets"
       || headResponse.headers.get("content-length") !== String(previewBytes.length)
       || (await headResponse.text()) !== ""
     ) throw new Error("review media HEAD endpoint did not expose metadata without a body");
+    const crossOriginMedia = await fetch(mediaUrl, { headers: { origin: "https://attacker.invalid" } });
+    if (crossOriginMedia.ok) throw new Error("cross-origin review media read was accepted");
+    const sameOriginMedia = await fetch(mediaUrl, { headers: { origin } });
+    if (!sameOriginMedia.ok) throw new Error("same-origin review media read was rejected");
     const recordedResponse = await fetch(`${origin}/api/review/record`, {
       method: "POST",
       headers: mutationHeaders,
@@ -11696,7 +11727,7 @@ await test("composition router records explicit series choice and blocks unavail
 
 await test("workflow packs validate and resolve through existing Kacha commands", () => {
   const registry = JSON.parse(execute(process.execPath, [path.join(scripts, "kacha.mjs"), "workflows", "validate"]).stdout);
-  if (registry.packs !== 4) throw new Error("expected four workflow packs");
+  if (registry.packs !== 5) throw new Error("expected five workflow packs");
   const variables = path.join(temporary, "workflow-vars.json");
   const output = path.join(temporary, "workflow-instance.json");
   writeJson(variables, {
@@ -12107,6 +12138,520 @@ await test("Editor V3 surface exposes workspace intelligence delivery and activi
     throw new Error("Editor V3 UI lost its preview/delivery truth boundary or professional operations");
   }
 }, "editor");
+
+// ── 白板手绘动画（vendored 引擎，真实渲染回归）──
+
+const whiteboardEngineVenv = path.join(scripts, "whiteboard_engine", ".venv");
+const whiteboardEnginePython = process.platform.startsWith("win")
+  ? path.join(whiteboardEngineVenv, "Scripts", "python.exe")
+  : path.join(whiteboardEngineVenv, "bin", "python");
+
+function ensureWhiteboardEngine() {
+  if (fs.existsSync(whiteboardEnginePython)) return;
+  // CI 通过 KACHA_WHITEBOARD_PYTHON 指定系统解释器（矩阵 job 已 pip 安装依赖），
+  // 此时跳过 venv 引导，避免无谓下载。
+  if (process.env.KACHA_WHITEBOARD_PYTHON) return;
+  // 首次使用时引导引擎虚拟环境（幂等）。
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "whiteboard", "env-prepare"]);
+}
+
+function makeWhiteboardLineArt(target, width = 640, height = 360) {
+  const venvPython = fs.existsSync(whiteboardEnginePython) ? whiteboardEnginePython : "python3";
+  const script = [
+    "from PIL import Image, ImageDraw",
+    `img = Image.new("RGB", (${width}, ${height}), "#F6F1E3")`,
+    "d = ImageDraw.Draw(img)",
+    "d.line([(40,300),(160,120),(280,300)], fill=(70,70,70), width=4)",
+    "d.line([(460,300),(460,180)], fill=(70,70,70), width=5)",
+    "d.ellipse([(400,120),(520,200)], outline=(70,70,70), width=4)",
+    "d.ellipse([(540,40),(610,110)], outline=(200,120,60), width=4)",
+    "d.line([(20,301),(620,301)], fill=(70,70,70), width=4)",
+    `img.save(${JSON.stringify(target)})`,
+  ].join("\n");
+  const result = run(venvPython, ["-c", script], { cwd: temporary });
+  if (result.status !== 0) throw new Error(`合成线稿失败：${result.stderr}`);
+  return target;
+}
+
+function whiteboardAnnotation(canvas, overrides = {}) {
+  return {
+    schemaVersion: "1.0",
+    kind: "kacha_whiteboard_annotation",
+    sceneId: "scene-01",
+    canvas,
+    storyBasis: "山、树与太阳",
+    sceneDurationMs: 4000,
+    elements: [
+      {
+        id: "mountain", label: "小山", sequence: 1,
+        narrativeRole: "场景铺垫", subtitle: "远处有一座小山", type: "structure",
+        region: { x: 20, y: 100, width: 280, height: 220 },
+        reveal: { direction: "top_to_bottom", startMs: 200, durationMs: 1500, maskPaddingPx: 12, protectedRegions: [] },
+        handPath: { start: [160, 110], end: [160, 300], easing: "easeInOut" },
+      },
+      {
+        id: "tree", label: "大树", sequence: 2,
+        narrativeRole: "关键物体", subtitle: "树下长着一棵大树", type: "character",
+        region: { x: 390, y: 110, width: 140, height: 200 },
+        reveal: { direction: "bottom_to_top", startMs: 1800, durationMs: 1300, maskPaddingPx: 12, protectedRegions: [{ x: 530, y: 30, width: 90, height: 90 }] },
+        handPath: { start: [460, 300], end: [460, 130], easing: "easeInOut" },
+      },
+      {
+        id: "sun", label: "太阳", sequence: 3,
+        narrativeRole: "收尾意象", subtitle: "太阳挂在天空", type: "structure",
+        region: { x: 530, y: 30, width: 90, height: 90 },
+        reveal: { direction: "left_to_right", startMs: 3200, durationMs: 700, maskPaddingPx: 10, protectedRegions: [] },
+        handPath: { start: [540, 40], end: [600, 100], easing: "linear" },
+      },
+      ...overrides.elements ?? [],
+    ],
+    ...overrides.topLevel ?? {},
+  };
+}
+
+await testIn("whiteboard", "storyboard plan derives scenes from a real SRT under duration rules", () => {
+  const srt = path.join(temporary, "whiteboard-story.srt");
+  fs.writeFileSync(srt, [
+    "1",
+    "00:00:00,000 --> 00:00:12,000",
+    "远处有一座小山",
+    "",
+    "2",
+    "00:00:12,500 --> 00:00:24,000",
+    "山脚长着一棵大树",
+    "",
+    "3",
+    "00:00:24,500 --> 00:00:38,000",
+    "太阳慢慢落下去了",
+    "",
+    "4",
+    "00:00:38,500 --> 00:00:52,000",
+    "孩子们都回家了",
+    "",
+  ].join("\n"), "utf8");
+  const planFile = path.join(temporary, "whiteboard-story-plan.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "whiteboard", "parse-srt",
+    "--srt", srt, "--output", planFile,
+  ]);
+  const plan = readJson(planFile);
+  if (plan.kind !== "kacha_whiteboard_storyboard_plan" || plan.schemaVersion !== "1.0") {
+    throw new Error("storyboard plan lost its kacha contract identity");
+  }
+  if (plan.source.sha256 !== sha256File(srt)) throw new Error("storyboard plan omitted real source identity");
+  if (plan.cues.length !== 4) throw new Error(`expected 4 cues, got ${plan.cues.length}`);
+  if (plan.scenes.length !== 2) throw new Error(`25-35s 分幕规则失效：got ${plan.scenes.length} scenes`);
+  const [first, second] = plan.scenes;
+  if (first.cueRange[0] !== 1 || first.cueRange[1] !== 2 || second.cueRange[0] !== 3) {
+    throw new Error("scene cue ranges did not follow narrative order");
+  }
+});
+
+await testIn("whiteboard", "annotation contract validation is fail-closed on geometry and ordering", () => {
+  const image = makeWhiteboardLineArt(path.join(temporary, "whiteboard-validate.png"));
+  const good = path.join(temporary, "whiteboard-good-annotation.json");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "whiteboard", "scaffold",
+    "--image", image, "--scene-id", "scene-01", "--story-basis", "山、树与太阳",
+    "--duration-ms", "4000", "--output", good,
+  ]);
+  const scaffolded = readJson(good);
+  if (scaffolded.canvas.width !== 640 || scaffolded.canvas.height !== 360) {
+    throw new Error("scaffold did not probe the real image dimensions");
+  }
+  const annotation = whiteboardAnnotation(scaffolded.canvas);
+  fs.writeFileSync(good, JSON.stringify(annotation), "utf8");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "whiteboard", "validate",
+    "--image", image, "--annotation", good,
+  ]);
+  const broken = path.join(temporary, "whiteboard-broken-annotation.json");
+  const outOfBounds = whiteboardAnnotation(scaffolded.canvas);
+  outOfBounds.elements[0].region = { x: 600, y: 300, width: 200, height: 200 };
+  outOfBounds.elements[1].sequence = 4;
+  fs.writeFileSync(broken, JSON.stringify(outOfBounds), "utf8");
+  const failure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "whiteboard", "validate",
+    "--image", image, "--annotation", broken,
+  ]);
+  if (!failure.stderr.includes("超出画布右边界") || !failure.stderr.includes("sequence")) {
+    throw new Error(`validation failures lost their actionable reasons: ${failure.stderr.slice(0, 300)}`);
+  }
+  // 渲染入口默认校验：坏标注在渲染前被拒绝，且不产生任何输出文件。
+  expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "whiteboard", "render",
+    "--image", image, "--annotation", broken,
+    "--output", path.join(temporary, "whiteboard-should-not-render.mp4"),
+  ]);
+  if (fs.existsSync(path.join(temporary, "whiteboard-should-not-render.mp4"))) {
+    throw new Error("render gate did not run before the engine");
+  }
+});
+
+await testIn("whiteboard", "stream ink renderer produces a real narrated scene with evidence", async () => {
+  ensureWhiteboardEngine();
+  const image = makeWhiteboardLineArt(path.join(temporary, "whiteboard-render.png"));
+  const annotationFile = path.join(temporary, "whiteboard-render-annotation.json");
+  const canvas = { width: 640, height: 360 };
+  // 第 4 个元素区域落在空白纸面上：回归 vendored 引擎的空墨迹分支——
+  // 修复前该分支以 TypeError 崩溃，修复后跳过并继续。
+  const annotation = whiteboardAnnotation(canvas, {
+    elements: [{
+      id: "blank-area", label: "留白", sequence: 4,
+      narrativeRole: "呼吸留白", subtitle: "画面短暂留白", type: "structure",
+      region: { x: 300, y: 20, width: 60, height: 40 },
+      reveal: { direction: "left_to_right", startMs: 3400, durationMs: 500, maskPaddingPx: 0, protectedRegions: [] },
+      handPath: { start: [300, 20], end: [360, 60], easing: "linear" },
+    }],
+  });
+  fs.writeFileSync(annotationFile, JSON.stringify(annotation), "utf8");
+  const output = path.join(temporary, "whiteboard-render-scene.mp4");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "whiteboard", "render",
+    "--image", image, "--annotation", annotationFile,
+    "--output", output, "--fps", "12", "--cap-long-edge", "320",
+  ]);
+  if (!fs.existsSync(output)) throw new Error("whiteboard render produced no output");
+  const evidenceFile = `${output}.whiteboard-evidence.json`;
+  const evidence = readJson(evidenceFile);
+  if (evidence.kind !== "kacha_whiteboard_render_evidence" || evidence.schemaVersion !== "1.0") {
+    throw new Error("render evidence lost its kacha contract identity");
+  }
+  if (evidence.inputs.image.sha256 !== sha256File(image)
+    || evidence.inputs.annotation.sha256 !== sha256File(annotationFile)) {
+    throw new Error("render evidence omitted real input identity");
+  }
+  if (!evidence.engine.render.sha256 || !evidence.engine.core.sha256) {
+    throw new Error("render evidence omitted engine identity");
+  }
+  if (evidence.options.skipValidate !== false || !evidence.validation || evidence.validation === "skipped") {
+    throw new Error("render evidence omitted its validation record");
+  }
+  if (evidence.output.probe.codec !== "h264" || evidence.output.probe.width !== 320) {
+    throw new Error(`render probe unexpected: ${JSON.stringify(evidence.output.probe)}`);
+  }
+  if (evidence.output.sha256 !== sha256File(output)) throw new Error("render evidence hash does not match the file on disk");
+});
+
+await testIn("whiteboard", "scene QC gates paper purity coverage and merge integrity", () => {
+  ensureWhiteboardEngine();
+  const image = makeWhiteboardLineArt(path.join(temporary, "whiteboard-qc.png"));
+  const canvas = { width: 640, height: 360 };
+  const annotationFile = path.join(temporary, "whiteboard-qc-annotation.json");
+  fs.writeFileSync(annotationFile, JSON.stringify(whiteboardAnnotation(canvas)), "utf8");
+  const output = path.join(temporary, "whiteboard-qc-scene.mp4");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "whiteboard", "render",
+    "--image", image, "--annotation", annotationFile,
+    "--output", output, "--fps", "12", "--cap-long-edge", "320",
+  ]);
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "whiteboard", "qc",
+    "--video", output, "--annotation", annotationFile, "--image", image,
+  ]);
+  // 幽灵元素：时序合法（不触发排序/越界错误），但区域永远不会有笔迹，
+  // 唯一失败原因必须是收尾覆盖检查——单独验证覆盖门禁本身。
+  const ghostAnnotation = whiteboardAnnotation(canvas, {
+    elements: [{
+      id: "ghost", label: "空区域", sequence: 4,
+      narrativeRole: "QC 探针", subtitle: "不存在的内容", type: "structure",
+      region: { x: 300, y: 20, width: 60, height: 40 },
+      reveal: { direction: "left_to_right", startMs: 3400, durationMs: 500, maskPaddingPx: 0, protectedRegions: [] },
+      handPath: { start: [300, 20], end: [360, 60], easing: "linear" },
+    }],
+  });
+  const ghostFile = path.join(temporary, "whiteboard-qc-ghost.json");
+  fs.writeFileSync(ghostFile, JSON.stringify(ghostAnnotation), "utf8");
+  const ghostFailure = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "whiteboard", "qc",
+    "--video", output, "--annotation", ghostFile, "--image", image,
+  ]);
+  if (!ghostFailure.stderr.includes("final-frame-covered")) {
+    throw new Error(`coverage gate failure lost its report: ${ghostFailure.stderr.slice(0, 200)}`);
+  }
+  if (ghostFailure.stderr.includes("annotation-valid\",\"pass\":false")) {
+    throw new Error("ghost annotation unexpectedly failed the annotation contract instead of coverage");
+  }
+  // 合并：两段真实渲染拼成一条，证据保留双输入身份。
+  const second = path.join(temporary, "whiteboard-qc-scene-2.mp4");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "whiteboard", "render",
+    "--image", image, "--annotation", annotationFile,
+    "--output", second, "--fps", "12", "--cap-long-edge", "320", "--bare-tip",
+  ]);
+  const merged = path.join(temporary, "whiteboard-qc-merged.mp4");
+  execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "whiteboard", "merge",
+    "--inputs", `${output},${second}`, "--output", merged,
+  ]);
+  const evidence = readJson(`${merged}.whiteboard-evidence.json`);
+  if (evidence.kind !== "kacha_whiteboard_merge_evidence" || evidence.inputs.length !== 2) {
+    throw new Error("merge evidence lost its input identity chain");
+  }
+  const firstProbe = readJson(`${output}.whiteboard-evidence.json`).output.probe;
+  if (evidence.output.probe.durationMs < firstProbe.durationMs * 2 - 200) {
+    throw new Error(`merged duration looks wrong: ${evidence.output.probe.durationMs}`);
+  }
+});
+
+await test("kacha closeout hook enforces the release contract with escape hatches", () => {
+  const hook = path.join(skillDirectory, "hooks", "check_closeout.mjs");
+  const runHook = (cwd, stdin = "{}") => run(process.execPath, [hook], {
+    cwd,
+    input: stdin,
+    stdio: ["pipe", "pipe", "pipe"],
+    encoding: "utf8",
+  });
+  const blockReason = (result) => {
+    try {
+      const parsed = JSON.parse(result.stdout);
+      return parsed.decision === "block" ? parsed.reason ?? "" : null;
+    } catch {
+      return null;
+    }
+  };
+  // 非咔嚓目录必须静默放行。
+  const plain = path.join(temporary, "hook-plain");
+  fs.mkdirSync(plain, { recursive: true });
+  const plainResult = runHook(plain);
+  if (plainResult.status !== 0 || plainResult.stdout.trim() !== "") {
+    throw new Error(`hook blocked a non-kacha directory: ${plainResult.stdout}`);
+  }
+
+  const project = path.join(temporary, "hook-project");
+  const contracts = path.join(project, "contracts");
+  fs.mkdirSync(contracts, { recursive: true });
+  const finalVideo = path.join(project, "output", "final.mp4");
+  fs.mkdirSync(path.dirname(finalVideo), { recursive: true });
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "color=c=0x20242b:s=160x90:d=1",
+    "-c:v", "libx264", "-pix_fmt", "yuv420p", finalVideo,
+  ]);
+  const manifest = {
+    schemaVersion: "2.0",
+    kind: "kacha-project-manifest",
+    projectId: "hook-fixture",
+    outputs: {
+      finalVideo: { path: "output/final.mp4" },
+      releaseReport: { path: "contracts/release-review.json" },
+    },
+  };
+  fs.writeFileSync(path.join(contracts, "project-manifest.json"), JSON.stringify(manifest), "utf8");
+
+  // 成片在、报告缺：阻断。
+  const missingReport = runHook(project, JSON.stringify({ session_id: "scenario-missing-report" }));
+  if (missingReport.status !== 0 || !blockReason(missingReport).includes("release-review")) {
+    throw new Error(`closeout hook did not block on missing release report: ${missingReport.stdout}`);
+  }
+
+  // 报告过期（绑定旧成片）：阻断。
+  fs.writeFileSync(path.join(contracts, "release-review.json"), JSON.stringify({
+    status: "approved_local_release",
+    finalVideoSha256: "0".repeat(64),
+  }), "utf8");
+  const stale = runHook(project, JSON.stringify({ session_id: "scenario-stale" }));
+  if (!blockReason(stale).includes("不可验证") && !blockReason(stale).includes("过期")) {
+    throw new Error(`closeout hook did not block on a stale release report: ${stale.stdout}`);
+  }
+
+  // 未批准状态：阻断。
+  fs.writeFileSync(path.join(contracts, "release-review.json"), JSON.stringify({
+    status: "in_review",
+    finalVideoSha256: sha256File(finalVideo),
+  }), "utf8");
+  const unapproved = runHook(project, JSON.stringify({ session_id: "scenario-unapproved" }));
+  if (!unapproved.stdout.includes("approved_local_release") && !unapproved.stdout.includes("发布审片尚未批准")) {
+    throw new Error(`closeout hook did not surface the approval state: ${unapproved.stdout}`);
+  }
+
+  // 批准但报告未绑定成片 SHA：新鲜度不可验证，必须 fail-closed 阻断。
+  fs.writeFileSync(path.join(contracts, "release-review.json"), JSON.stringify({
+    status: "approved_local_release",
+  }), "utf8");
+  const unboundReport = runHook(project, JSON.stringify({ session_id: "scenario-unbound" }));
+  if (!blockReason(unboundReport).includes("不可验证")) {
+    throw new Error(`closeout hook did not fail closed on an unbound report: ${unboundReport.stdout}`);
+  }
+
+  // 批准且哈希新鲜：放行。
+  fs.writeFileSync(path.join(contracts, "release-review.json"), JSON.stringify({
+    status: "approved_local_release",
+    finalVideoSha256: sha256File(finalVideo),
+  }), "utf8");
+  const approved = runHook(project);
+  if (approved.status !== 0 || approved.stdout.trim() !== "") {
+    throw new Error(`closeout hook blocked an approved release: ${approved.stdout}`);
+  }
+
+  // 逃生门：unresolved.md 记录缺口即放行。
+  fs.writeFileSync(path.join(contracts, "release-review.json"), JSON.stringify({
+    status: "in_review",
+    finalVideoSha256: sha256File(finalVideo),
+  }), "utf8");
+  fs.writeFileSync(path.join(project, "unresolved.md"), "审片留到明天，缺口已记录。\n", "utf8");
+  const escaped = runHook(project);
+  if (escaped.status !== 0 || escaped.stdout.trim() !== "") {
+    throw new Error(`closeout hook ignored the unresolved.md escape hatch: ${escaped.stdout}`);
+  }
+  fs.rmSync(path.join(project, "unresolved.md"));
+
+  // 防死循环：同一会话连续 3 次阻断后放行并记违规。
+  for (let index = 0; index < 2; index += 1) {
+    runHook(project, JSON.stringify({ session_id: "hook-strike-test" }));
+  }
+  const released = runHook(project, JSON.stringify({ session_id: "hook-strike-test" }));
+  if (blockReason(released) !== null) {
+    throw new Error("closeout hook did not release after the strike limit");
+  }
+  const violations = path.join(project, ".kacha", "hook-state", "violations.jsonl");
+  if (!fs.existsSync(violations) || !fs.readFileSync(violations, "utf8").includes("hook-strike-test")) {
+    throw new Error("released strikes were not recorded as violations");
+  }
+});
+
+await test("visual evidence watch windows deduplicate via the ledger and support forced rewatch", () => {
+  const watchCli = path.join(scripts, "visual_evidence_watch.mjs");
+  const sourceVideo = path.join(temporary, "watch-source.mp4");
+  execute("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "lavfi", "-i", "testsrc=size=160x90:rate=12:duration=4",
+    "-c:v", "libx264", "-pix_fmt", "yuv420p", sourceVideo,
+  ]);
+  const ledger = path.join(temporary, "watch-ledger.json");
+  const firstOutput = path.join(temporary, "watch-first.json");
+  execute(process.execPath, [
+    watchCli, "watch",
+    "--video", sourceVideo, "--start", "1", "--end", "2.5", "--fps", "4",
+    "--ledger", ledger, "--output", firstOutput,
+  ]);
+  const first = readJson(firstOutput);
+  if (first.status !== "pass" || first.kind !== "kacha_visual_watch_evidence") {
+    throw new Error(`first watch failed: ${first.status}`);
+  }
+  if (!fs.existsSync(first.contactSheet.path) || first.framePaths.length < 4) {
+    throw new Error(`watch produced insufficient frames: ${first.framePaths.length}`);
+  }
+  if (first.transcriptSegments !== null) throw new Error("watch fabricated transcript without a transcript file");
+  const secondOutput = path.join(temporary, "watch-second.json");
+  const second = JSON.parse(execute(process.execPath, [
+    watchCli, "watch",
+    "--video", sourceVideo, "--start", "1", "--end", "2.5", "--fps", "4",
+    "--ledger", ledger, "--output", secondOutput,
+  ]).stdout);
+  if (second.status !== "skipped_duplicate") {
+    throw new Error(`identical watch window was not deduplicated: ${second.status}`);
+  }
+  const forcedOutput = path.join(temporary, "watch-forced.json");
+  const forced = JSON.parse(execute(process.execPath, [
+    watchCli, "watch",
+    "--video", sourceVideo, "--start", "1", "--end", "2.5", "--fps", "4", "--force",
+    "--ledger", ledger, "--output", forcedOutput,
+  ]).stdout);
+  if (forced.status !== "pass") throw new Error(`forced rewatch failed: ${forced.status}`);
+  if (readJson(ledger).videos[Object.keys(readJson(ledger).videos)[0]].windows.length !== 2) {
+    throw new Error("ledger did not record the forced rewatch");
+  }
+  // P1-2 回归：第二次观察不得破坏第一次观察包引用的帧文件。
+  if (readJson(firstOutput).framePaths.some((frame) => !fs.existsSync(frame))) {
+    throw new Error("a later watch destroyed frame files referenced by an earlier evidence package");
+  }
+  // P1-1 回归：超出单次帧上限的窗口必须报错，不做静默截断。
+  expectFailure(process.execPath, [
+    watchCli, "watch",
+    "--video", sourceVideo, "--start", "0", "--end", "4", "--fps", "30",
+    "--ledger", ledger, "--output", path.join(temporary, "watch-oob-fps.json"),
+  ]);
+  // 毫秒转录字段（startMs/endMs）也要能对齐到窗口。
+  const msTranscript = path.join(temporary, "watch-transcript-ms.json");
+  fs.writeFileSync(msTranscript, JSON.stringify({
+    segments: [
+      { startMs: 800, endMs: 1600, text: "窗口内的话" },
+      { startMs: 3500, endMs: 3900, text: "窗口外的话" },
+      { startMs: "bad", endMs: 2000, text: "时间不可解析" },
+    ],
+  }), "utf8");
+  const alignedOutput = path.join(temporary, "watch-aligned.json");
+  execute(process.execPath, [
+    watchCli, "watch",
+    "--video", sourceVideo, "--start", "1", "--end", "2.5", "--fps", "4", "--force",
+    "--transcript", msTranscript, "--ledger", ledger, "--output", alignedOutput,
+  ]);
+  const aligned = readJson(alignedOutput);
+  if (aligned.transcriptSegments?.length !== 1 || aligned.transcriptSegments[0].text !== "窗口内的话") {
+    throw new Error(`ms-transcript alignment failed: ${JSON.stringify(aligned.transcriptSegments)}`);
+  }
+  expectFailure(process.execPath, [
+    watchCli, "watch",
+    "--video", sourceVideo, "--start", "3", "--end", "9", "--fps", "4",
+    "--ledger", ledger, "--output", path.join(temporary, "watch-oob.json"),
+  ]);
+});
+
+await test("doctor environment checks classify synthetic ffmpeg output correctly", async () => {
+  const { checkEncoders, checkAssBurn, summarizeFontCoverage } = await import(
+    pathToFileURL(path.join(scripts, "doctor_env_checks.mjs")).href
+  );
+  const fullEncoders = [
+    " V....D libx264              libx264 H.264",
+    " A....D aac                  AAC (Advanced Audio Coding)",
+    " A....D libmp3lame           libmp3lame MP3",
+  ].join("\n");
+  const encoderChecks = checkEncoders(fullEncoders);
+  if (encoderChecks.length !== 3 || encoderChecks.some((check) => !check.available)) {
+    throw new Error("encoder checks failed on a complete ffmpeg build");
+  }
+  // 名称列锚定：libx264rgb / aac_at 的存在不能替 base 编码器背书，
+  // 它们的描述列文本也不能被误当成编码器命中。
+  const trickyEncoders = [
+    " V....D libx264rgb           libx264 RGB",
+    " A....D aac_at               AAC (AudioToolbox)",
+  ].join("\n");
+  const trickyChecks = checkEncoders(trickyEncoders);
+  if (trickyChecks.some((check) => check.available)) {
+    throw new Error("encoder checks accepted variant names or description text as the base encoder");
+  }
+  const partialEncoders = checkEncoders(" V....D libx264              libx264 H.264");
+  const missingLame = partialEncoders.find((check) => check.id === "encoder:libmp3lame");
+  if (partialEncoders.find((check) => check.id === "encoder:libx264")?.available !== true
+    || missingLame?.available !== false
+    || !missingLame.evidence.includes("渲染到最后一步")) {
+    throw new Error("encoder checks did not flag a missing encoder with actionable impact");
+  }
+  const assAvailable = checkAssBurn(" .. TS subtitles        V       Render text subtitles using libass\n .. TS ass            V       ASS subtitles using libass");
+  const assMissing = checkAssBurn(" .. TS scale          V       Scale");
+  if (!assAvailable.available || assMissing.available) {
+    throw new Error("ass burn check misclassified libass presence");
+  }
+  if (!assMissing.evidence.includes("PNG 叠加字幕路径不受影响")) {
+    throw new Error("ass burn check lost the boundary note for the PNG caption path");
+  }
+  const coverageOk = summarizeFontCoverage([{ font: "zhenjingang.ttf", covered: 45, total: 45 }]);
+  const coverageGap = summarizeFontCoverage([{ font: "tofu.ttf", covered: 5, total: 45 }]);
+  const coverageEmpty = summarizeFontCoverage([]);
+  if (!coverageOk.available || coverageGap.available || !coverageEmpty.available) {
+    throw new Error("font coverage summary misclassified coverage results");
+  }
+  if (!coverageGap.evidence.includes("豆腐块")) {
+    throw new Error("font coverage gap lost the tofu failure mode");
+  }
+  // 探测失败（如 fontTools 缺失）必须与"覆盖不足"区分：修环境，不是换字体。
+  const probeFailed = summarizeFontCoverage([{ font: "mystery.ttf", probeFailed: true, detail: "ModuleNotFoundError: fontTools" }]);
+  if (probeFailed.available || probeFailed.required !== true || !probeFailed.evidence.includes("必需能力")) {
+    throw new Error("fontTools probe failure is not treated as a required capability");
+  }
+  if (!probeFailed.evidence.includes("不要据此更换字体")) {
+    throw new Error("fontTools probe failure lost the remedy boundary");
+  }
+  // 接线断言：doctor 报告必须真的包含环境深度检查项，纯函数不许是死代码。
+  const doctorReport = JSON.parse(execute(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "doctor", "--profile", "core",
+  ]).stdout);
+  const doctorIds = new Set(doctorReport.checks.map((check) => check.id));
+  for (const id of ["encoder:libx264", "encoder:aac", "encoder:libmp3lame", "ass-subtitle-burn"]) {
+    if (!doctorIds.has(id)) throw new Error(`doctor report omitted ${id}`);
+  }
+});
 
 try {
   if (listOnly) {

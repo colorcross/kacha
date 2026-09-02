@@ -58,3 +58,6 @@ node_modules/
 # Logs
 *.log
 npm-debug.log*
+
+# Whiteboard engine local Python environment
+scripts/whiteboard_engine/.venv/
