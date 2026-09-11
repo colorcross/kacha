@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-12 · Requirement-driven multi-material editing
+
+- Accept local video/image files and folders with natural-language requirements through `start --materials`.
+- Add actual preview extraction, agent-authored requirement coverage and source-range storyboards; reject missing required media, excluded media, unsafe duration, unexplained crops/mutes and unreadable caption holds.
+- Render mixed geometry/frame rates and silent or audible sources through lossless normalized clips and existing Timeline IR, with captions and optional local music.
+- Preserve revisioned plans/candidates and source mapping; reuse unchanged clips and support deduplicated background jobs, cancellation and explicit resume.
+- Expose material milestones through standard project status and agent references. Technical candidate checks remain separate from real editorial review and release.
+
 ## 2026-09-12 · Deep review of editing craft and review contracts
 
 - Budget decoration against annotated coverage and choose recipes by signal duration, excluding unannotated gaps and cue-fragmentation bias.

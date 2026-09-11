@@ -3452,6 +3452,7 @@ await test("production quality contract gates recurring editorial defects across
 }, "core");
 
 await test("V7 orchestrator starts source and script projects with recoverable milestones", () => {
+  execute(process.execPath, [path.join(skillDirectory, "tests", "material_project_tests.mjs")]);
   const registry = JSON.parse(execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
     "workflow", "validate",

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import os from "node:os";
+import fs from "node:fs";
 import {
   handoffContentProject,
   initializeProject,
@@ -9,7 +10,7 @@ import {
   runProject,
   validateRecipeRegistry,
 } from "./project_orchestrator.mjs";
-import { option } from "./agent_workspace_utils.mjs";
+import { option, repeated } from "./agent_workspace_utils.mjs";
 
 const args = process.argv.slice(2);
 const action = args[0];
@@ -18,6 +19,7 @@ function usage() {
   console.error(
     "用法：\n"
       + "  kacha.mjs start --brief BRIEF [--project-root DIR] [--confirm-execute]\n"
+      + "  kacha.mjs start --materials DIR --requirements TEXT --project-root DIR [--duration SEC --aspect 16:9|9:16]\n"
       + "  kacha.mjs start --source VIDEO --project-root DIR [options]\n"
       + "  kacha.mjs start --script FILE|--topic TEXT --task content_generation --project-root DIR\n"
       + "  kacha.mjs run PROJECT [--confirm-execute] [--include-render]\n"
@@ -36,7 +38,15 @@ function emit(value, exitCode = value.status === "blocked" ? 1 : 0) {
 
 try {
   if (action === "start") {
+    const materials = repeated(args, "--materials");
+    if (materials.length && option(args, "--task") && option(args, "--task") !== "material_edit") throw new Error("多素材入口的任务类型必须是 material_edit");
+    if (materials.length && ["--source", "--script", "--topic", "--brief"].some((name) => args.includes(name))) throw new Error("--materials 不能与单源或脚本入口混用");
+    if (args.includes("--requirements") && args.includes("--requirements-file")) throw new Error("剪辑要求只能指定文本或文件之一");
     emit(initializeProject({
+      materials: materials.length ? materials : null,
+      requirements: option(args, "--requirements-file") ? fs.readFileSync(option(args, "--requirements-file"), "utf8") : option(args, "--requirements"),
+      duration: Number(option(args, "--duration", "60")), aspect: option(args, "--aspect", "16:9"),
+      fps: Number(option(args, "--fps", "25")), width: args.includes("--width") ? Number(option(args, "--width")) : null,
       briefPath: option(args, "--brief"),
       source: option(args, "--source"),
       script: option(args, "--script"),

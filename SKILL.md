@@ -1,7 +1,7 @@
 ---
 name: kacha
 description: |
-  “咔嚓”本地专业视频策划、精剪、包装、增量返工与验收 Skill。用于真人口播、字幕、音频、BGM/SFX、插镜、画中画、美颜、FaceFusion、蒙版、信息图、效果模板、生成镜头、封面和完整 QC。先锁定内容与输出合同，再按变化范围渲染和验收；默认本地处理，不上传、不发布。
+  “咔嚓”本地专业视频策划、精剪、包装、增量返工与验收 Skill。用于多视频/图片按要求成片、真人口播、字幕、音频、BGM/SFX、插镜、画中画、美颜、FaceFusion、蒙版、信息图、效果模板、生成镜头、封面和完整 QC。先锁定内容与输出合同，再按变化范围渲染和验收；默认本地处理，不上传、不发布。
 ---
 
 # 咔嚓
@@ -92,9 +92,22 @@ node scripts/kacha.mjs run /path/to/content-project --confirm-execute
 事实或素材未解决、内容未人工批准时，`handoff` 不得建立正式视频项目。完整
 合同见 `docs/PRODUCTION_ORCHESTRATION_V7.md`。
 
+## 多素材按要求成片
+
+用户提供一批视频、图片和剪辑要求时，使用 `material_edit` 流程。先读
+`references/material-editing.md`，再用 `start --materials DIR --requirements TEXT
+--duration SEC --aspect 9:16 --project-root DIR --confirm-execute` 建立项目。
+Agent 负责实际查看素材、按需转写、拆解要求和编排分镜，通过 `materials
+inspect/compose` 与 `run --include-render` 完成候选。不能让用户写 JSON，
+不能在建立项目或提交任务后停止，也不能把文件名匹配当成画面理解。
+
+此流程使用四个素材生产里程碑、独立的版本化素材合同和片段缓存；下述 V8
+十三阶段及 efficiency 文件自动建立规则适用于单源视频入口。多素材候选经
+Timeline IR 统一渲染，技术通过后仍需正常速度审片与正式发布验收。
+
 ## V8 质量不降级效率合同
 
-每个视频项目在 `start` 时自动建立 `.kacha/efficiency-plan.json` 和
+单源视频项目在 `start` 时自动建立 `.kacha/efficiency-plan.json` 和
 `.kacha/efficiency-inputs.json`、`.kacha/cache-audit.json`。输入登记独立保存当前
 cues/delta 身份和缓存适用种类/预期 key，计划与登记同时损坏时必须补证据或显式
 清除，不能静默降级。

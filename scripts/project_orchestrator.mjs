@@ -1,3 +1,4 @@
+import { isMaterialProject, initializeMaterialProject, materialProjectStatus, runMaterialProject } from "./material_project.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -368,6 +369,7 @@ function appendEvent(projectRoot, event) {
 }
 
 export function initializeProject({
+  materials = null, requirements = null, duration = 60, aspect = "16:9", fps = 25, width = null,
   briefPath = null,
   source = null,
   script = null,
@@ -384,6 +386,7 @@ export function initializeProject({
   enforceRuntime = true,
   home = os.homedir(),
 } = {}) {
+  if (materials) return initializeMaterialProject({ materials, requirements, duration, aspect, fps, width, projectRoot, projectId: projectId ?? "material-film", show, style, development, confirmExecute, runtime: inspectRuntime({ home }) });
   const briefResolved = briefPath ? path.resolve(briefPath) : null;
   const fromBrief = briefResolved ? sourceFromBrief(briefResolved) : null;
   const resolvedTask = task ?? fromBrief?.brief?.task
@@ -801,6 +804,7 @@ function deriveNextAction(projectRoot, orchestration, runtime, inputCheck) {
 }
 
 export function projectStatus(input, { refreshRuntime = true, home = os.homedir() } = {}) {
+  if (isMaterialProject(input)) return materialProjectStatus(input, { runtime: refreshRuntime ? inspectRuntime({ home }) : null });
   const projectRoot = resolveProjectRoot(input);
   const { value: orchestration } = readOrchestration(projectRoot);
   const runtime = refreshRuntime ? inspectRuntime({ home }) : {
@@ -939,7 +943,7 @@ export function summarizeProjectStatus(report) {
     nextAction: next ? { id: next.id, owner: next.owner, state: next.state, summary: next.summary, safeToAutoExecute: next.safeToAutoExecute === true, diagnostics: next.diagnostics ?? [] } : null,
     attention: report.status === "blocked" ? "blocked" : next?.owner === "human" ? "needs_your_review" : "agent_next_step",
     inputIdentity: report.input?.identityStatus,
-    assets: report.assetInbox?.summary ?? null,
+    assets: report.assetInbox?.summary ?? report.assets ?? null,
     evidenceBoundary: "阶段进度不是成片质量、人工审片或发布结论；完整合同见 status 不带 --summary 的输出",
   };
 }
@@ -1174,6 +1178,7 @@ export function runProject(input, {
   home = os.homedir(),
   maxAutomaticSteps = 8,
 } = {}) {
+  if (isMaterialProject(input)) return runMaterialProject(input, { runtime: inspectRuntime({ home }), confirmExecute, includeRender, resume });
   const projectRoot = resolveProjectRoot(input);
   const lock = path.join(projectRoot, ".kacha", "orchestrator.lock");
   const release = acquireFileLock(lock, { purpose: resume ? "kacha-resume" : "kacha-run" });

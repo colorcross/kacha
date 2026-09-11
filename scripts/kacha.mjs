@@ -61,6 +61,8 @@ function usage() {
       + "  kacha.mjs delivery profiles|plan|bundle [options]\n"
       + "  kacha.mjs mcp serve --root /absolute/project\n"
       + "  kacha.mjs mcp-config show|validate|install --client codex|claude --root /absolute/project\n"
+      + "  kacha.mjs materials inspect|compose|render|status --project-root DIR [options]\n"
+      + "  kacha.mjs start --materials DIR --requirements TEXT --project-root DIR [--duration SEC --aspect 9:16]\n"
       + "  kacha.mjs media index|search [options]\n"
       + "  kacha.mjs capabilities validate|list|probe|rank [options]\n"
       + "  kacha.mjs cost init|estimate|reserve|approve|consume|reconcile|refund|status|validate [options]\n"
@@ -192,6 +194,7 @@ const delegatedCommands = {
   mcp: "kacha_mcp_server.mjs",
   "mcp-config": "kacha_mcp_config.mjs",
   media: "kacha_media.mjs",
+  materials: "kacha_materials.mjs",
   capabilities: "capability_broker.mjs",
   cost: "cost_ledger.mjs",
   reference: "reference_intelligence.mjs",

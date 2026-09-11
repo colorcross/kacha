@@ -12,6 +12,7 @@ const skillDirectory = path.resolve(
 const TASKS = new Set([
   "proposal_review",
   "source_edit",
+  "material_edit",
   "content_generation",
   "local_optimization",
 ]);
@@ -23,6 +24,7 @@ const STAGES = new Set([
   "release",
 ]);
 const MODULE_REFERENCES = {
+  materials: ["references/material-editing.md"],
   audio: ["references/audio.md"],
   dialogue: ["references/audio.md"],
   bgm: ["references/audio.md"],
@@ -204,7 +206,7 @@ const output = option(args, "--output");
 if (!TASKS.has(task)) {
   console.error(
     "用法：route_references.mjs --task "
-      + "proposal_review|source_edit|content_generation|local_optimization "
+      + "proposal_review|source_edit|material_edit|content_generation|local_optimization "
       + "[--stage inventory|content|edit|visual_audio|release] "
       + "[--modules audio,sfx,beauty,covers,...] [--release] [--output FILE]",
   );
@@ -224,11 +226,16 @@ for (const module of modules) {
 }
 
 const selected = new Set();
+if (task === "material_edit") selected.add("references/material-editing.md");
 if (stage) {
   selected.add(`references/stages/${stage}.md`);
 } else {
   selected.add("SKILL.md");
-  if (task === "local_optimization") {
+  if (task === "material_edit") {
+    selected.add("references/editing-theory.md");
+    selected.add("references/professional-editing-craft.md");
+    if (release) selected.add("references/qc-release.md");
+  } else if (task === "local_optimization") {
     selected.add("references/incremental-workflow.md");
     if (release) selected.add("references/qc-release.md");
   } else {
