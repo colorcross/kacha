@@ -19,6 +19,11 @@ function immutableJson(file, value) {
     if (sha256Value(readJson(file)) !== sha256Value(value)) throw new Error(`拒绝覆盖已有版本：${file}`);
   } else json(file, value);
 }
+function freshTemporary(root, file) {
+  const resolved = resolveContainedPath(root, file);
+  if (fs.existsSync(resolved)) throw new Error(`临时文件已存在，拒绝覆盖或清理：${resolved}`);
+  return resolved;
+}
 function guardProjectPaths(root) {
   for (const entry of [marker, ".kacha/material-project.lock", ".kacha/material-submit.lock", ".kacha/material-active-plan.json", ".kacha/material-clips", ".kacha/material-job.json", "contracts", "previews", "output"]) {
     resolveContainedPath(root, path.join(root, entry));
@@ -129,32 +134,88 @@ export function initializeMaterialProject({ materials, requirements, projectRoot
   return materialProjectStatus(root);
 }
 
-export function inspectMaterial(root, assetId, { timestamps = [] } = {}) {
-  const { project } = load(root); const asset = project.assets.find((item) => item.id === assetId);
-  if (!asset) throw new Error("未知素材 ID");
-  const dir = resolveContainedPath(project.projectRoot, path.join(project.projectRoot, "previews", asset.id)); fs.mkdirSync(dir, { recursive: true });
-  let times = asset.kind === "image" ? [0] : [.1, .5, .9].map((fraction) => Math.max(0, Math.min(asset.duration - .05, asset.duration * fraction)));
-  if (timestamps.length) {
-    if (timestamps.length > 12 || timestamps.some((time) => !numeric(time) || time < 0 || (asset.kind === "image" ? time !== 0 : time >= asset.duration))) throw new Error("抽帧时间超出素材范围或超过 12 帧");
-    times = [...new Set(timestamps)];
+function checkFields(value, allowed, label) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`${label} 必须是对象`);
+  const unknown = Object.keys(value).filter((key) => !allowed.includes(key));
+  if (unknown.length) throw new Error(`${label} 包含不支持的字段：${unknown.join(", ")}；请使用已实现的分镜参数`);
+}
+function validateInspection(project, asset, evidence) {
+  verifySigned(evidence, "素材审阅帧");
+  if (evidence.kind !== "kacha_material_inspection" || evidence.assetId !== asset.id
+    || sha256Value(evidence.source) !== sha256Value(asset.identity) || !current(evidence.source)
+    || !Array.isArray(evidence.frames) || !evidence.frames.length) throw new Error("素材审阅帧已失效或为空");
+  const seen = new Set();
+  for (const frame of evidence.frames) {
+    const directory = path.join(project.projectRoot, "previews", asset.id);
+    if (!numeric(frame.time) || frame.time < 0 || (asset.kind === "image" ? frame.time !== 0 : frame.time >= asset.duration)
+      || seen.has(frame.time) || !text(frame.path) || !inside(directory, frame.path)
+      || !current(frame)) throw new Error("素材审阅帧已失效或越界");
+    resolveContainedPath(project.projectRoot, frame.path); seen.add(frame.time);
   }
-  resolveContainedPath(project.projectRoot, dir);
-  const frames = times.map((time, index) => {
-    const file = resolveContainedPath(project.projectRoot, path.join(dir, `${asset.identity.sha256.slice(0, 12)}-${Math.round(time * 1000000)}.jpg`));
-    if (!fs.existsSync(file)) command("ffmpeg", ["-hide_banner", "-loglevel", "error", "-nostdin", "-n", ...(asset.kind === "video" ? ["-ss", String(time)] : []), "-i", asset.path,
-      "-frames:v", "1", "-vf", "scale=960:960:force_original_aspect_ratio=decrease", "-update", "1", file]);
-    return { time, ...fileIdentity(file) };
-  });
-  if (!current(asset.identity)) throw new Error("抽帧期间源素材变化");
-  const previousFile = resolveContainedPath(project.projectRoot, path.join(dir, "inspection.json"));
-  const previous = fs.existsSync(previousFile) ? readJson(previousFile) : null;
-  const allFrames = [...new Map([...(previous?.source?.sha256 === asset.identity.sha256 ? previous.frames.filter(current) : []), ...frames].map((frame) => [frame.time, frame])).values()];
-  const evidence = signed({ kind: "kacha_material_inspection", assetId, source: asset.identity, frames: allFrames,
-    audioPresent: asset.hasAudio, boundary: "代表帧仅供 Agent 查看，不代表已经理解全片或听过人声；有对白须转写并核对选段" });
-  json(path.join(dir, "inspection.json"), evidence); return evidence;
+}
+export function inspectMaterial(root, assetId, { timestamps = [] } = {}) {
+  const loaded = load(root); root = loaded.root; const { project } = loaded;
+  const unlock = acquireFileLock(path.join(root, ".kacha/material-project.lock"), { purpose: "inspect-materials" });
+  try {
+    const asset = project.assets.find((item) => item.id === assetId);
+    if (!asset) throw new Error("未知素材 ID");
+    const dir = resolveContainedPath(root, path.join(root, "previews", asset.id)); fs.mkdirSync(dir, { recursive: true });
+    let times = asset.kind === "image" ? [0] : [.1, .5, .9].map((fraction) => Math.max(0, Math.min(asset.duration - .05, asset.duration * fraction)));
+    if (!Array.isArray(timestamps) || timestamps.length > 12 || timestamps.some((time) => !numeric(time) || time < 0 || (asset.kind === "image" ? time !== 0 : time >= asset.duration))) throw new Error("抽帧时间超出素材范围或超过 12 帧");
+    if (timestamps.length) times = [...new Set(timestamps)];
+    const previousFile = resolveContainedPath(root, path.join(dir, "inspection.json"));
+    const previous = fs.existsSync(previousFile) ? readJson(previousFile) : null;
+    if (previous) validateInspection(project, asset, previous);
+    const allFrames = [...(previous?.frames ?? [])];
+    for (const time of times) {
+      if (allFrames.some((frame) => frame.time === time)) continue;
+      // The exact timestamp hash avoids sub-microsecond filename collisions.
+      const file = resolveContainedPath(root, path.join(dir, `${asset.identity.sha256.slice(0, 12)}-${sha256Value(time).slice(0, 16)}.jpg`));
+      if (fs.existsSync(file)) throw new Error("审阅帧缺少归属记录，拒绝接纳已有文件");
+      const temporary = freshTemporary(root, path.join(dir, `frame-${process.pid}.partial.jpg`));
+      try {
+        command("ffmpeg", ["-hide_banner", "-loglevel", "error", "-nostdin", "-n", ...(asset.kind === "video" ? ["-ss", String(time)] : []), "-i", asset.path,
+          "-frames:v", "1", "-vf", "scale=w='max(2,trunc(iw*if(gt(sar,0),sar,1)/2)*2)':h=ih,setsar=1,scale=960:960:force_original_aspect_ratio=decrease", "-update", "1", temporary]);
+        if (!fs.existsSync(temporary) || !fs.statSync(temporary).size) throw new Error("未能提取有效审阅帧");
+        fs.renameSync(temporary, file);
+        allFrames.push({ time, ...fileIdentity(file) });
+      } finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
+    }
+    if (!current(asset.identity)) throw new Error("抽帧期间源素材变化");
+    allFrames.sort((a, b) => a.time - b.time);
+    const evidence = signed({ kind: "kacha_material_inspection", assetId, source: asset.identity, frames: allFrames,
+      audioPresent: asset.hasAudio, boundary: "代表帧仅供 Agent 查看，不代表已经理解全片或听过人声；有对白须转写并核对选段" });
+    const snapshot = resolveContainedPath(root, path.join(dir, `inspection-${evidence.digest}.json`));
+    immutableJson(snapshot, evidence);
+    if (!previous || previous.digest !== evidence.digest) json(previousFile, evidence);
+    return evidence;
+  } finally { unlock(); }
 }
 
-function validateStoryboard(project, brief, storyboard) {
+function subtitleContract(root, segments) {
+  if (!segments.some((segment) => segment.caption)) return null;
+  const loaded = loadKachaConfig({ args: [], anchorPath: root, includeSecrets: false });
+  const design = resolveDesignSystem(loaded.config.style);
+  const role = design.style.typography.subtitlePrimary;
+  const sizeRatio = role.sizeRatio ?? .042;
+  if (!numeric(sizeRatio) || sizeRatio <= 0 || sizeRatio > .2) throw new Error("字幕字号比例无效");
+  if (role.fontFile) {
+    const file = path.resolve(scripts, "..", role.fontFile);
+    if (!fs.existsSync(file) || !/^[a-f0-9]{64}$/.test(role.fontSha256 ?? "") || sha256File(file) !== role.fontSha256) throw new Error("字幕字体文件缺失或 SHA-256 不匹配，请修复字体配置后重新编排");
+    const scanner = ["/opt/homebrew/bin/fc-scan", "/usr/local/bin/fc-scan", "/usr/bin/fc-scan"].find((file) => fs.existsSync(file)) ?? "fc-scan";
+    const families = command(scanner, ["--format", "%{family}", file]).stdout.split(",").map((name) => name.replaceAll("\\-", "-").trim());
+    const family = role.families.find((name) => families.includes(name));
+    if (!family) throw new Error("字幕字体文件内部名称与品牌配置不一致");
+    return { family, sizeRatio, source: fileIdentity(file) };
+  }
+  const font = design.fonts.roles.subtitlePrimary;
+  if (!font.verified) throw new Error("字幕字体尚未验证，请配置字体文件或安装当前品牌字体后重试");
+  return { family: font.resolved, sizeRatio, source: null };
+}
+
+function validateStoryboard(project, brief, storyboard, { frozen = false } = {}) {
+  checkFields(storyboard, ["schemaVersion", "kind", "projectDigest", "briefDigest", "interpretation", "requirements", "segments", "notes", "soundtrack",
+    ...(frozen ? ["target", "unselected", "quality", "digest", "subtitle"] : [])], "分镜");
   if (storyboard.schemaVersion !== "1.0" || storyboard.kind !== "kacha_material_storyboard"
     || storyboard.projectDigest !== project.digest || storyboard.briefDigest !== brief.digest) throw new Error("分镜未绑定当前素材与剪辑要求");
   if (!text(storyboard.interpretation)) throw new Error("分镜缺少对剪辑要求的理解");
@@ -163,6 +224,7 @@ function validateStoryboard(project, brief, storyboard) {
   const ids = new Set(); const assets = new Map(project.assets.map((asset) => [asset.id, asset]));
   const rules = new Map();
   for (const requirement of storyboard.requirements) {
+    checkFields(requirement, ["id", "text", "check", "assetIds"], "剪辑要求");
     if (!text(requirement.id) || rules.has(requirement.id) || !text(requirement.text)
       || !["semantic", "include_assets", "exclude_assets"].includes(requirement.check)
       || !Array.isArray(requirement.assetIds) || requirement.assetIds.some((id) => !assets.has(id))) throw new Error("剪辑要求的 ID、检查类型或素材引用无效");
@@ -171,6 +233,8 @@ function validateStoryboard(project, brief, storyboard) {
   }
   let cursorFrames = 0;
   const segments = storyboard.segments.map((segment) => {
+    checkFields(segment, ["id", "assetId", "sourceIn", "duration", "fit", "audio", "role", "reason", "observation", "satisfies", "caption", "cropReason", "muteReason",
+      ...(frozen ? ["frames", "start", "end", "source", "kind", "hasAudio", "inspection"] : [])], "镜头");
     const asset = assets.get(segment.assetId);
     if (!text(segment.id) || !/^[a-zA-Z0-9_-]+$/.test(segment.id) || ids.has(segment.id) || !asset) throw new Error("镜头 ID 重复/无效或引用未知素材");
     ids.add(segment.id);
@@ -186,16 +250,23 @@ function validateStoryboard(project, brief, storyboard) {
     if (!Array.isArray(segment.satisfies) || segment.satisfies.some((id) => !rules.has(id))) throw new Error(`${segment.id} 要求覆盖引用无效`);
     if (segment.caption !== undefined && (!text(segment.caption) || [...segment.caption].length > 60)) throw new Error(`${segment.id} 字幕须为 1–60 字`);
     if (segment.caption && duration < Math.max(1.2, [...segment.caption.replace(/\s/g, "")].length / 5 + .4)) throw new Error(`${segment.id} 字幕停留不足，需减字或选更长区间`);
-    const inspected = path.join(project.projectRoot, "previews", asset.id, "inspection.json");
+    const directory = path.join(project.projectRoot, "previews", asset.id);
+    let inspected = frozen ? segment.inspection?.path : path.join(directory, "inspection.json");
+    if (!text(inspected) || !inside(directory, inspected)) throw new Error(`${segment.id} 审阅帧身份缺失或越界`);
+    inspected = resolveContainedPath(project.projectRoot, inspected);
     if (!fs.existsSync(inspected)) throw new Error(`${segment.id} 尚未提取审阅帧，请先 materials inspect`);
-    const evidence = readJson(inspected); verifySigned(evidence, "素材审阅帧");
-    if (!current(evidence.source) || evidence.source.sha256 !== asset.identity.sha256 || evidence.frames.some((frame) => !current(frame))) throw new Error(`${segment.id} 审阅帧已失效`);
+    if (frozen && !current(segment.inspection)) throw new Error(`${segment.id} 审阅帧已失效`);
+    const evidence = readJson(inspected); validateInspection(project, asset, evidence);
+    if (!frozen) {
+      inspected = resolveContainedPath(project.projectRoot, path.join(directory, `inspection-${evidence.digest}.json`));
+      immutableJson(inspected, evidence);
+    }
     if (asset.kind === "video" && !evidence.frames.some((frame) => frame.time >= sourceIn && frame.time < sourceIn + duration)) throw new Error(`${segment.id} 没有选段内的审阅帧，请用 --timestamp 补充`);
     const start = cursorFrames / brief.target.fps; cursorFrames += frames;
     return { ...segment, sourceIn, duration, frames, start, end: cursorFrames / brief.target.fps, source: asset.identity, kind: asset.kind, hasAudio: asset.hasAudio,
       inspection: fileIdentity(inspected) };
   });
-  if (Math.abs(cursorFrames / brief.target.fps - brief.target.durationSeconds) > 1 / brief.target.fps + .0001) throw new Error("分镜总时长与目标时长不一致（允许 1 帧误差）");
+  if (cursorFrames !== Math.round(brief.target.durationSeconds * brief.target.fps)) throw new Error("分镜总时长与目标时长不一致：各镜头按帧舍入后，总帧数须与目标完全一致");
   const selected = new Set(segments.map((segment) => segment.assetId));
   for (const requirement of rules.values()) {
     if (requirement.check === "include_assets" && requirement.assetIds.some((id) => !selected.has(id))) throw new Error(`缺少必须出现的素材：${requirement.id}`);
@@ -216,13 +287,14 @@ export function composeMaterialProject(root, storyboardFile) {
     let soundtrack = null;
     if (storyboard.soundtrack) {
       const music = storyboard.soundtrack;
+      checkFields(music, ["path", "reason", "levelBelowDialogueDb"], "配乐");
       if (!text(music.path) || !text(music.reason) || !numeric(music.levelBelowDialogueDb) || music.levelBelowDialogueDb < 8 || music.levelBelowDialogueDb > 30) throw new Error("配乐须声明本地文件、叙事理由和 8–30 dB 人声下方电平");
       const file = fs.realpathSync(path.resolve(music.path));
       if (!mediaSummary(file).audio) throw new Error("配乐文件没有可用音轨");
       soundtrack = { ...music, path: file, identity: fileIdentity(file) };
     }
     const proposal = signed({ schemaVersion: "1.0", kind: "kacha_material_edit_plan", projectDigest: project.digest, briefDigest: brief.digest,
-      soundtrack, interpretation: storyboard.interpretation, requirements: storyboard.requirements, target: brief.target, segments,
+      subtitle: subtitleContract(root, segments), soundtrack, interpretation: storyboard.interpretation, requirements: storyboard.requirements, target: brief.target, segments,
       unselected: project.assets.filter((asset) => !segments.some((segment) => segment.assetId === asset.id)).map((asset) => asset.id),
       quality: { status: "requires_render_and_human_review", semanticAssessment: "agent_authored_not_automatic_visual_proof" } });
     const dir = resolveContainedPath(root, path.join(root, "contracts", `edit-${proposal.digest.slice(0, 16)}`)); fs.mkdirSync(dir, { recursive: true });
@@ -238,6 +310,19 @@ export function composeMaterialProject(root, storyboardFile) {
     return materialProjectStatus(root);
   } finally { unlock(); }
 }
+function verifyProjectFonts(root, active, { required = false } = {}) {
+  if (!active.plan.subtitle?.source) return;
+  const directory = resolveContainedPath(root, path.join(active.dir, "fonts"));
+  if (!fs.existsSync(directory)) {
+    if (required) throw new Error("工程字幕字体已缺失");
+    return;
+  }
+  const source = active.plan.subtitle.source;
+  const font = resolveContainedPath(root, path.join(directory, path.basename(source.path)));
+  const entries = fs.readdirSync(directory);
+  if ((required && !fs.existsSync(font)) || entries.some((entry) => entry !== path.basename(font))
+    || (fs.existsSync(font) && sha256File(font) !== source.sha256)) throw new Error("工程字幕字体已变化或包含未声明文件");
+}
 function activePlan(root, project) {
   const pointer = path.join(root, ".kacha/material-active-plan.json");
   if (!fs.existsSync(pointer)) return null;
@@ -246,7 +331,12 @@ function activePlan(root, project) {
   const plan = readJson(identity.path); verifySigned(plan, "分镜计划");
   if (plan.soundtrack && !current(plan.soundtrack.identity)) throw new Error("配乐文件已变化");
   if (!current(project.brief) || plan.projectDigest !== project.digest || plan.briefDigest !== readJson(project.brief.path).digest) throw new Error("分镜与当前素材或剪辑要求不一致");
-  const segments = validateStoryboard(project, readJson(project.brief.path), { ...plan, kind: "kacha_material_storyboard" });
+  if (plan.kind !== "kacha_material_edit_plan" || sha256Value(plan.target) !== sha256Value(readJson(project.brief.path).target)) throw new Error("分镜目标与冻结剪辑要求不一致");
+  if (plan.segments.some((segment) => segment.caption)) {
+    if (!text(plan.subtitle?.family) || !numeric(plan.subtitle?.sizeRatio) || plan.subtitle.sizeRatio <= 0 || plan.subtitle.sizeRatio > .2) throw new Error("字幕合同缺失或无效，请重新 compose 冻结字体");
+    if (plan.subtitle.source && !current(plan.subtitle.source)) throw new Error("字幕字体文件已变化");
+  }
+  const segments = validateStoryboard(project, readJson(project.brief.path), { ...plan, kind: "kacha_material_storyboard" }, { frozen: true });
   if (sha256Value(segments) !== sha256Value(plan.segments)) throw new Error("分镜派生时间或素材身份不一致");
   return { plan, identity, dir: path.dirname(identity.path), outputDir: resolveContainedPath(root, path.join(root, "output", `edit-${plan.digest.slice(0, 16)}`)) };
 }
@@ -258,10 +348,17 @@ export function materialProjectStatus(root, { runtime = null } = {}) {
   const active = activePlan(root, project);
   let receipt = null;
   if (active) {
+    verifyProjectFonts(root, active);
     const file = resolveContainedPath(root, path.join(active.outputDir, "material-render.json"));
     if (fs.existsSync(file)) {
       receipt = readJson(file); verifySigned(receipt, "成片记录");
-      if (receipt.planDigest !== active.plan.digest || receipt.output?.path !== path.join(active.outputDir, "candidate.mp4") || !current(receipt.output) || !current(receipt.timeline) || !current(receipt.assembly)) throw new Error("成片已变化，不能沿用旧验收结果");
+      verifyProjectFonts(root, active, { required: true });
+      if (receipt.schemaVersion !== "1.0" || receipt.kind !== "kacha_material_render"
+        || ["decode", "geometry", "duration", "audioTrack", "frameCount"].some((key) => receipt.qc?.[key] !== "pass")
+        || receipt.qc?.decodedFrames !== Math.round(active.plan.target.durationSeconds * active.plan.target.fps)
+        || receipt.qc?.humanReviewComplete !== false || receipt.qc?.semanticCoverage !== "agent_declared_requires_human_review"
+        || receipt.timeline?.path !== path.join(active.outputDir, "timeline.json") || receipt.assembly?.path !== path.join(active.outputDir, "assembly.mkv")
+        || receipt.planDigest !== active.plan.digest || receipt.output?.path !== path.join(active.outputDir, "candidate.mp4") || !current(receipt.output) || !current(receipt.timeline) || !current(receipt.assembly)) throw new Error("成片已变化，不能沿用旧验收结果");
     }
   }
   const jobFile = path.join(root, ".kacha/material-job.json");
@@ -292,7 +389,7 @@ export function materialProjectStatus(root, { runtime = null } = {}) {
 
 function assTime(time) { const centis = Math.round(time * 100); return `${Math.floor(centis / 360000)}:${String(Math.floor(centis / 6000) % 60).padStart(2, "0")}:${String(Math.floor(centis / 100) % 60).padStart(2, "0")}.${String(centis % 100).padStart(2, "0")}`; }
 function captions(plan, file, fontFamily) {
-  const { width, height } = plan.target; const size = Math.round(height * .042);
+  const { width, height } = plan.target; const size = Math.round(height * plan.subtitle.sizeRatio);
   const escape = (value) => value.replaceAll("\\", "＼").replaceAll("{", "｛").replaceAll("}", "｝").replace(/\r?\n/g, "\\N");
   const lines = ["[Script Info]", "ScriptType: v4.00+", `PlayResX: ${width}`, `PlayResY: ${height}`, "WrapStyle: 0", "[V4+ Styles]",
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
@@ -306,14 +403,27 @@ function captions(plan, file, fontFamily) {
 
 export function renderMaterialProject(root, { runtime, confirmExecute = false, expectedPlanDigest = null } = {}) {
   const loaded = load(root); root = loaded.root; const project = loaded.project; runtimeCheck(project, runtime);
-  const active = activePlan(root, project); if (!active) throw new Error("请先完成素材审阅与分镜");
-  const { plan, outputDir } = active;
   if (!confirmExecute && !project.confirmExecute) throw new Error("渲染需要本地执行授权");
-  if (expectedPlanDigest && expectedPlanDigest !== plan.digest) throw new Error("排队后分镜版本发生变化，请为新版本重新提交任务");
   const unlock = acquireFileLock(path.join(root, ".kacha/material-project.lock"), { purpose: "render-materials" });
   try {
+    const active = activePlan(root, project); if (!active) throw new Error("请先完成素材审阅与分镜");
+    const { plan, outputDir } = active;
+    if (expectedPlanDigest && expectedPlanDigest !== plan.digest) throw new Error("排队后分镜版本发生变化，请为新版本重新提交任务");
     if (materialProjectStatus(root).candidate) return materialProjectStatus(root);
     fs.mkdirSync(outputDir, { recursive: true });
+    let fontsDirectory = null;
+    if (plan.subtitle?.source) {
+      fontsDirectory = resolveContainedPath(root, path.join(active.dir, "fonts")); fs.mkdirSync(fontsDirectory, { recursive: true });
+      const font = resolveContainedPath(root, path.join(fontsDirectory, path.basename(plan.subtitle.source.path)));
+      if (fs.readdirSync(fontsDirectory).some((name) => name !== path.basename(font))) throw new Error("工程字体目录含未声明文件");
+      if (fs.existsSync(font)) {
+        if (sha256File(font) !== plan.subtitle.source.sha256) throw new Error("工程字幕字体已变化");
+      } else fs.copyFileSync(plan.subtitle.source.path, font, fs.constants.COPYFILE_EXCL);
+    } else if (plan.subtitle) {
+      const config = loadKachaConfig({ args: [], anchorPath: root, includeSecrets: false });
+      const font = resolveDesignSystem(config.config.style).fonts.roles.subtitlePrimary;
+      if (!font.verified || font.resolved !== plan.subtitle.family) throw new Error("系统字幕字体与冻结合同不一致，请重新配置并 compose");
+    }
     const cache = path.join(root, ".kacha/material-clips"); fs.mkdirSync(cache, { recursive: true });
     for (const leaf of ["assembly.mkv", "assembly.json", "captions.ass", "timeline.json", "candidate.mp4", "material-render.json"]) resolveContainedPath(root, path.join(outputDir, leaf));
     const parts = []; const { width, height, fps } = plan.target;
@@ -326,7 +436,7 @@ export function renderMaterialProject(root, { runtime, confirmExecute = false, e
       resolveContainedPath(root, file); resolveContainedPath(root, receipt);
       if (!reusable) {
         if (fs.existsSync(file) && !fs.existsSync(receipt)) throw new Error("缓存文件缺少归属记录，拒绝覆盖");
-        const temporary = resolveContainedPath(root, path.join(cache, `${key}-${process.pid}.partial.mkv`));
+        const temporary = freshTemporary(root, path.join(cache, `${key}-${process.pid}.partial.mkv`));
         const keepAudio = segment.hasAudio && segment.audio === "source";
         const filter = segment.fit === "cover"
           ? `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`
@@ -336,7 +446,7 @@ export function renderMaterialProject(root, { runtime, confirmExecute = false, e
             ...(segment.kind === "image" ? ["-loop", "1", "-framerate", String(fps)] : ["-ss", String(segment.sourceIn)]), "-i", segment.source.path,
             ...(!keepAudio ? ["-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo"] : []),
             "-map", "0:v:0", "-map", keepAudio ? "0:a:0" : "1:a:0",
-            "-vf", `${filter},setsar=1,fps=${fps},format=yuv420p`,
+            "-vf", `scale=w='max(2,trunc(iw*if(gt(sar,0),sar,1)/2)*2)':h=ih,setsar=1,${filter},setsar=1,fps=${fps},format=yuv420p`,
             "-af", `${keepAudio ? "loudnorm=I=-16:TP=-2:LRA=11," : ""}aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${segment.duration},asetpts=PTS-STARTPTS,afade=t=in:d=0.01,afade=t=out:st=${Math.max(0,segment.duration-.01)}:d=0.01`,
             "-t", String(segment.duration), "-c:v", "ffv1", "-level", "3", "-c:a", "pcm_s16le", "-ar", "48000", temporary]);
           if (!current(segment.source)) throw new Error("转码期间源素材发生变化");
@@ -354,32 +464,31 @@ export function renderMaterialProject(root, { runtime, confirmExecute = false, e
     const reusableMaster = fs.existsSync(masterReceipt) && readJson(masterReceipt).output?.path === master && current(readJson(masterReceipt).output) && readJson(masterReceipt).planDigest === plan.digest;
     if (!reusableMaster) {
       if (fs.existsSync(master) && !fs.existsSync(masterReceipt)) throw new Error("拼接母版缺少归属记录，拒绝覆盖");
-      const temporary = resolveContainedPath(root, path.join(outputDir, `assembly-${process.pid}.partial.mkv`));
+      const temporary = freshTemporary(root, path.join(outputDir, `assembly-${process.pid}.partial.mkv`));
       try { command("ffmpeg", ["-hide_banner", "-loglevel", "error", "-nostdin", "-n", "-f", "concat", "-safe", "1", "-i", concat, "-c", "copy", temporary]); fs.renameSync(temporary, master); }
       finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
       json(masterReceipt, { planDigest: plan.digest, output: fileIdentity(master), parts });
     }
     const subtitleFile = path.join(outputDir, "captions.ass");
     if (plan.segments.some((segment) => segment.caption)) {
-      const loadedConfig = loadKachaConfig({ args: [], anchorPath: root, includeSecrets: false });
-      const font = resolveDesignSystem(loadedConfig.config.style).fonts.roles.subtitlePrimary;
-      if (!font.verified) throw new Error("字幕字体尚未验证，请安装当前品牌字体后重试");
-      captions(plan, subtitleFile, font.resolved);
+      captions(plan, subtitleFile, plan.subtitle.family);
     }
     const timelineFile = path.join(outputDir, "timeline.json");
     const candidate = path.join(outputDir, "candidate.mp4");
     immutableJson(timelineFile, { schemaVersion: "1.0", projectId: project.projectId, mode: "preview", source: fileIdentity(master),
       contracts: { materialPlan: active.identity }, edl: [{ id: "material-assembly", sourceStart: 0, sourceEnd: plan.target.durationSeconds }],
-      visual: { overlays: [], ...(plan.segments.some((segment) => segment.caption) ? { subtitles: { path: subtitleFile, kind: "ass" } } : {}) },
+      visual: { overlays: [], ...(plan.segments.some((segment) => segment.caption) ? { subtitles: { path: subtitleFile, kind: "ass", ...(fontsDirectory ? { fontsDirectory } : {}) } } : {}) },
       audio: { masterTruePeakDb: -2, sfx: [], ...(plan.soundtrack ? { bgm: { path: plan.soundtrack.path, sha256: plan.soundtrack.identity.sha256, levelBelowDialogueDb: plan.soundtrack.levelBelowDialogueDb, sidechain: true } } : {}) }, output: { path: candidate, width, height, fps } });
     cli("timeline_ir.mjs", ["render", "--plan", timelineFile]);
-    command("ffmpeg", ["-hide_banner", "-v", "error", "-nostdin", "-i", candidate, "-map", "0:v:0", "-map", "0:a:0", "-f", "null", "-"]);
+    const decoded = command("ffmpeg", ["-hide_banner", "-v", "error", "-nostdin", "-i", candidate, "-map", "0:v:0", "-map", "0:a:0", "-progress", "pipe:1", "-nostats", "-f", "null", "-"]);
+    const decodedFrames = Number([...decoded.stdout.matchAll(/^frame=(\d+)/gm)].at(-1)?.[1]);
+    if (decodedFrames !== Math.round(plan.target.durationSeconds * fps)) throw new Error("成片视频帧数与分镜目标不一致");
     const summary = mediaSummary(candidate);
-    if (summary.width !== width || summary.height !== height || Math.abs(summary.duration-plan.target.durationSeconds)>2/fps+.02 || !summary.audio) throw new Error("成片几何、时长或音轨不符合合同");
-    load(root); activePlan(root, project);
+    if (summary.width !== width || summary.height !== height || Math.abs(summary.fps-fps) > .001 || Math.abs(summary.duration-plan.target.durationSeconds)>2/fps+.02 || !summary.audio) throw new Error("成片几何、时长或音轨不符合合同");
+    load(root); if (activePlan(root, project)?.plan.digest !== plan.digest) throw new Error("渲染期间当前分镜发生变化");
     json(path.join(outputDir, "material-render.json"), signed({ schemaVersion: "1.0", kind: "kacha_material_render", planDigest: plan.digest,
       output: fileIdentity(candidate), timeline: fileIdentity(timelineFile), assembly: fileIdentity(master), parts,
-      qc: { decode: "pass", geometry: "pass", duration: "pass", audioTrack: "pass", semanticCoverage: "agent_declared_requires_human_review", humanReviewComplete: false },
+      qc: { frameCount: "pass", decodedFrames, decode: "pass", geometry: "pass", duration: "pass", audioTrack: "pass", semanticCoverage: "agent_declared_requires_human_review", humanReviewComplete: false },
       finalVideoEncodes: 1, losslessPreparation: true, createdAt: new Date().toISOString() }));
     return materialProjectStatus(root);
   } finally { unlock(); }
