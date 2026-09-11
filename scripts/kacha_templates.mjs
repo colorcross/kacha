@@ -401,6 +401,7 @@ let config;
 let resolved;
 let expanded;
 let catalogs;
+let craft;
 try {
   loaded = loadKachaConfig({
     args,
@@ -431,6 +432,7 @@ try {
     }
     catalogs.push(privateCatalog);
   }
+  craft = loadEditingCraft();
   const errors = validateAll(config, expanded, resolved, catalogs);
   if (errors.length > 0) throw new Error(errors.join("\n"));
 } catch (error) {
@@ -471,7 +473,6 @@ if (action === "validate") {
   process.exit(0);
 }
 if (action === "recipes") {
-  const craft = loadEditingCraft();
   const requested = option("--recipe");
   const recipes = requested ? craft.recipes.filter((item) => item.id === requested) : craft.recipes;
   if (!recipes.length) fail(`剪辑模板不存在：${requested}`, 2);

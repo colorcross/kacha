@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "id": "kacha-editing-craft",
   "evidencePolicy": "作者提供的语义与素材标注，只是候选依据；不是自动视觉理解或实际执行证明",
   "timing": {
@@ -382,7 +382,7 @@
       "picture": "完成上一段问题，再用新问题、地点或观察位置建立下一段",
       "audio": "在乐句或自然停顿处换挡，不按固定秒数换音乐",
       "templateIds": [
-        "opening-cold_open_marker",
+        "transition-clean_cut",
         "caption-edge_annotation"
       ],
       "protectFromDecoration": false,

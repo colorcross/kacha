@@ -89,6 +89,19 @@ function timedCues(value) {
     throw new Error("输入必须包含非空 cues/segments");
   }
   const result = candidates.map((cue, index) => {
+    if (!cue || typeof cue !== "object" || Array.isArray(cue)) throw new Error(`cues[${index}] 必须是对象`);
+    if (cue.confidence !== undefined && (typeof cue.confidence !== "number"
+      || !Number.isFinite(cue.confidence) || cue.confidence < 0 || cue.confidence > 1)) {
+      throw new Error(`cues[${index}].confidence 必须为 0 到 1 的有限数`);
+    }
+    if (cue.signals !== undefined && (!Array.isArray(cue.signals)
+      || cue.signals.some((signal) => typeof signal !== "string" || !signal.trim()))) {
+      throw new Error(`cues[${index}].signals 必须为非空字符串组成的数组`);
+    }
+    if (cue.id !== undefined && !(typeof cue.id === "string" && cue.id.trim())
+      && !(Number.isSafeInteger(cue.id) && cue.id >= 0)) {
+      throw new Error(`cues[${index}].id 必须为非空字符串或非负整数`);
+    }
     const start = number(cue.start ?? cue.startSeconds);
     const end = number(cue.end ?? cue.endSeconds);
     if (start === null || end === null || start < 0 || end <= start) {
@@ -99,8 +112,8 @@ function timedCues(value) {
       start,
       end,
       text: String(cue.text ?? cue.transcript ?? "").trim(),
-      signals: [...new Set((cue.signals ?? []).map(String))].sort(),
-      confidence: clamp(number(cue.confidence, 1), 0, 1),
+      signals: [...new Set((cue.signals ?? []).map((signal) => signal.trim()))].sort(),
+      confidence: cue.confidence ?? 1,
       source: cue,
     };
   }).sort((left, right) => left.start - right.start || left.end - right.end);
@@ -188,12 +201,16 @@ function visualIntent(role, cue) {
   return "hold_live_action";
 }
 
+function needsFactualAsset(role, cue) {
+  // A hook is a narrative position, not permission to replace its proof with
+  // illustrative/generated media. Explicit evidence survives role selection.
+  return role === "evidence" || ["evidence", "fact", "data", "test_result", "comparison",
+    "external_evidence", "screen_demo", "operation", "workflow_demo"].some((signal) => cue.signals.includes(signal));
+}
+
 function needsAsset(role, cue) {
   const signals = new Set(cue.signals);
-  return role === "evidence"
-    || signals.has("illustration_required")
-    || signals.has("external_evidence")
-    || signals.has("screen_demo");
+  return needsFactualAsset(role, cue) || signals.has("illustration_required");
 }
 
 function styleMechanism(config, styleId, intent, highImpact, cue) {
@@ -221,12 +238,14 @@ export function buildDirectorPlan(cuesFile, options = {}) {
   const showId = options.showId ?? "tool-share";
   const editingCraft = buildEditingCraft(cues, { recipeId: options.recipeId ?? "auto", showId });
   const protectedBeats = new Set(editingCraft.decisions.filter((item) => item.protectFromDecoration).map((item) => item.beatId));
-  const craftReviewBeats = new Set(editingCraft.decisions.filter((item) => item.treatments.length > 0).map((item) => item.beatId));
+  const craftReviewBeats = new Set([...editingCraft.decisions.filter((item) => item.treatments.length > 0).map((item) => item.beatId),
+    ...editingCraft.issues.map((item) => item.beatId)]);
   const minimumQuietRatio = Math.max(config.director.minimumQuietRatio, editingCraft.minimumQuietRatio);
-  const duration = Math.max(...cues.map((cue) => cue.end));
+  const duration = cues[cues.length - 1].end;
+  const coveredSeconds = cues.reduce((seconds, cue) => seconds + (cue.end - cue.start), 0);
   const maximumHighImpact = Math.max(
     1,
-    Math.floor((duration / 60) * config.director.maximumHighImpactDecisionsPerMinute),
+    Math.floor((coveredSeconds / 60) * config.director.maximumHighImpactDecisionsPerMinute),
   );
   const candidates = cues.map((cue, index) => {
     const role = narrativeRole(cue, index, cues.length);
@@ -236,7 +255,7 @@ export function buildDirectorPlan(cuesFile, options = {}) {
   const ranked = [...candidates]
     .sort((left, right) => right.score - left.score || left.index - right.index);
   const selected = new Set();
-  let remainingImpactSeconds = duration * (1 - minimumQuietRatio);
+  let remainingImpactSeconds = coveredSeconds * (1 - minimumQuietRatio);
   for (const item of ranked) {
     if (selected.size >= maximumHighImpact) break;
     const impactSeconds = Math.min(item.cue.end - item.cue.start, config.director.maximumImpactSecondsPerDecision);
@@ -267,7 +286,7 @@ export function buildDirectorPlan(cuesFile, options = {}) {
       emphasisScore: round(score),
       attentionClass: highImpact ? "high_impact" : "quiet",
       impactDurationSeconds: highImpact
-        ? round(Math.min(cue.end - cue.start, config.director.maximumImpactSecondsPerDecision))
+        ? Math.min(cue.end - cue.start, config.director.maximumImpactSecondsPerDecision)
         : 0,
       visualIntent: intent,
       styleMechanism: styleMechanism(config, styleId, intent, highImpact, cue),
@@ -282,7 +301,7 @@ export function buildDirectorPlan(cuesFile, options = {}) {
         ? {
             required: true,
             query: cue.text,
-            evidenceType: role === "evidence" ? "factual" : "illustrative",
+            evidenceType: needsFactualAsset(role, cue) ? "factual" : "illustrative",
           }
         : { required: false },
       humanReviewRequired: cue.confidence < 0.65 || cue.signals.includes("low_confidence") || craftReviewBeats.has(cue.id),
@@ -294,7 +313,7 @@ export function buildDirectorPlan(cuesFile, options = {}) {
       start: beat.start,
       end: Math.min(beat.end, beat.start + beat.impactDurationSeconds),
     })), duration);
-  const quietSeconds = Math.max(0, duration - impactSeconds);
+  const quietSeconds = Math.max(0, coveredSeconds - impactSeconds);
   const highImpactCount = beats.filter((beat) => beat.attentionClass === "high_impact").length;
   const plan = {
     schemaVersion: "1.0",
@@ -306,7 +325,7 @@ export function buildDirectorPlan(cuesFile, options = {}) {
       showId,
       styleId,
       styleGrammar: config.director.styles[styleId]?.grammar,
-      durationSeconds: round(duration, 3),
+      durationSeconds: duration,
     },
     source: fileIdentity(sourceFile),
     narrativeSpine: beats
@@ -315,7 +334,10 @@ export function buildDirectorPlan(cuesFile, options = {}) {
     attentionBudget: {
       maximumHighImpactDecisions: maximumHighImpact,
       selectedHighImpactDecisions: highImpactCount,
-      quietRatio: round(quietSeconds / duration),
+      quietRatio: round(quietSeconds / coveredSeconds),
+      coveredSeconds,
+      unannotatedSeconds: Math.max(0, duration - coveredSeconds),
+      basis: "annotated_cue_coverage",
       minimumQuietRatio,
       deliberateNoneCount: beats.filter((beat) => beat.effectDecision === "deliberate_none").length,
     },
@@ -332,7 +354,7 @@ export function buildDirectorPlan(cuesFile, options = {}) {
         ? "low_confidence_or_explicit_review" : "editing_craft_candidate_review" }))
       .concat(editingCraft.issues.map((issue) => ({ ...issue, module: "editing_craft" }))),
     quality: {
-      quietRatioPass: quietSeconds / duration >= minimumQuietRatio,
+      quietRatioPass: quietSeconds / coveredSeconds >= minimumQuietRatio,
       singleOpeningPass: true,
       globalBudgetPass: highImpactCount <= maximumHighImpact,
       status: "requires_human_review",
@@ -380,7 +402,8 @@ export function validateDirectorPlan(plan) {
       start: Number(beat.start),
       end: Math.min(Number(beat.end), Number(beat.start) + Number(beat.impactDurationSeconds ?? 0)),
     })), duration);
-    const quietRatio = round(Math.max(0, duration - impactSeconds) / duration);
+    const coveredSeconds = beats.reduce((seconds, beat) => seconds + (Number(beat.end) - Number(beat.start)), 0);
+    const quietRatio = round(Math.max(0, coveredSeconds - impactSeconds) / coveredSeconds);
     if (Math.abs(quietRatio - Number(plan.attentionBudget?.quietRatio)) > 0.0001) {
       errors.push("attentionBudget.quietRatio 与真实强调区间不一致");
     }
@@ -503,6 +526,13 @@ function hasUsableProvenance(value) {
   );
 }
 
+function declaresGeneratedMedia(provenance) {
+  if (!provenance || typeof provenance !== "object") return false;
+  return /generated|synthetic|ai[_ -]?created/i.test(provenance.kind ?? "")
+    || Boolean(provenance.generator)
+    || (Array.isArray(provenance.sources) && provenance.sources.some(declaresGeneratedMedia));
+}
+
 export function buildAssetGapPlan(directorFile, mediaIndexFile = null) {
   const planFile = assertFile(directorFile, "director plan");
   const director = readJson(planFile);
@@ -536,17 +566,20 @@ export function buildAssetGapPlan(directorFile, mediaIndexFile = null) {
             staleSinceIndex: identity === null,
           };
         });
+      const identitySensitive = /(?:本人|真实人物|原始截图|官方数据|具体研究|证件|产品实拍)/
+        .test(beat.text);
+      const factual = identitySensitive || beat.assetNeed.evidenceType === "factual";
       const usable = candidates.find((candidate) => (
         candidate.score >= 0.25
         && candidate.identity
         && !["unknown", "unverified"].includes(candidate.license)
         && hasUsableProvenance(candidate.provenance)
+        && (!factual || (!/generated|synthetic/i.test(candidate.license)
+          && !declaresGeneratedMedia(candidate.provenance)))
       ));
-      const identitySensitive = /(?:本人|真实人物|原始截图|官方数据|具体研究|证件|产品实拍)/
-        .test(beat.text);
       const resolution = usable
         ? "local_candidate"
-        : identitySensitive || beat.assetNeed.evidenceType === "factual"
+        : factual
           ? "user_or_source_evidence_required"
           : "generated_visual_candidate";
       return {
@@ -1241,6 +1274,9 @@ export function runIntelligenceCli(args = process.argv.slice(2)) {
       && value.summary?.productionReady !== true
     ) {
       errors.push("素材缺口计划仍有必须由用户或真实来源补充的证据");
+    }
+    if (args.includes("--for-execution") && value.kind === "kacha_global_director_plan") {
+      errors.push("导演计划仅提供剪辑候选，尚未编译到 Timeline IR；不能作为手法已执行的证明");
     }
     if (errors.length > 0) throw new Error(errors.join("\n"));
     outputJson({ schemaVersion: "1.0", status: "pass", plan: fileIdentity(file), kind: value.kind });

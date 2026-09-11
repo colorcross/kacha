@@ -1,5 +1,7 @@
 import { escapeHtml, studioHeaders, jsonErrorMessage } from "/shared.js";
 
+import { formatReviewProposal } from "/review-format.js";
+
 const state = {
   bundlePath: null,
   bundle: null,
@@ -75,7 +77,7 @@ function renderDecision() {
   $("decisionTitle").textContent = decision.title;
   $("decisionRationale").textContent = decision.rationale;
   $("rangeMeta").textContent = `${formatSeconds(decision.range.start)} — ${formatSeconds(decision.range.end)}`;
-  $("proposedValue").textContent = JSON.stringify(decision.proposed);
+  $("proposedValue").textContent = formatReviewProposal(decision.proposed);
   $("confidenceValue").textContent = `${Math.round(Number(decision.confidence) * 100)}%`;
   $("fallbackValue").textContent = decision.fallback;
   const record = sessionRecord(decision.id);

@@ -575,6 +575,7 @@ function safeStaticFile(urlPath) {
     "/review.html": path.join(studioRoot, "review.html"),
     "/review.css": path.join(studioRoot, "review.css"),
     "/review.js": path.join(studioRoot, "review.js"),
+    "/review-format.js": path.join(studioRoot, "review-format.js"),
     "/project": path.join(studioRoot, "project.html"),
     "/project.html": path.join(studioRoot, "project.html"),
     "/project.css": path.join(studioRoot, "project.css"),

@@ -10532,6 +10532,11 @@ await test("V6 review workbench is local-only and exposes the new review assets"
       }
     }
     if (!ready) throw new Error(`studio review server did not start\n${stderr}`);
+    const formatter = await fetch(`${origin}/review-format.js`);
+    if (!formatter.ok || !formatter.headers.get("content-type")?.includes("javascript")
+      || !(await formatter.text()).includes("export function formatReviewProposal")) {
+      throw new Error("review formatter module is not served as JavaScript");
+    }
     const rebindingStatus = await new Promise((resolve, reject) => {
       const request = http.request({
         hostname: "127.0.0.1",

@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-12 · Deep review of editing craft and review contracts
+
+- Budget decoration against annotated coverage and choose recipes by signal duration, excluding unannotated gaps and cue-fragmentation bias.
+- Reject malformed confidence and craft metadata; check every matching technique, including deferred candidates.
+- Preserve factual-source requirements in opening hooks and demonstrations; prevent declared generated or mixed synthetic provenance from satisfying factual asset gaps.
+- Separate reading, reaction and natural-sound timing; preserve sync audio when foreground location sound lacks evidence, time or confidence.
+- Validate craft template references on every catalog entry point and use a motivated cut for chapter resets.
+- Bind semantic review records to craft decisions and issues, exclude unexecuted or suppressed techniques from style learning, and show readable review guidance.
+- Reject director plans presented as execution evidence; advance craft registry to 1.0.1 and require regeneration of previous plans.
+
 ## 2026-09-12 · Professional editing recipes and director craft
 
 - Add four narrative recipes and twelve evidence-aware editing techniques, bound to the existing effect templates.

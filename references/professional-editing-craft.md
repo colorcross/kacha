@@ -20,7 +20,8 @@ node scripts/kacha.mjs intelligence validate-plan --plan director-plan.json
 | `field-journal` 沉浸式现场记录 | 地点/意图 → 行动 → 细节 → 反应 → 变化 → 反思 | 旅行、训练、真实事件；环境声不可用时保持干净剪接并记录缺口 |
 | `reflective-talk` 观点与思考留白 | 问题 → 观点 → 文本/经历 → 反例 → 边界 → 收束 | 解读好书、闲聊；没有变化时保留讲述，不自动制造冲突 |
 
-默认先数可靠 cues 中的显式信号；平局按栏目，仍平局按注册顺序。没有内容信号时
+默认按可靠 cues 中显式信号覆盖的时长选择模板，同一拍只计一次；平局按栏目，
+仍平局按注册顺序。拆分同一段不会增加该模板的权重。没有内容信号时
 只给栏目默认，标记为待内容复核。`confidence < 0.65` 或 `low_confidence` 不能驱动
 自动模板选择或高影响包装。显式 `--recipe` 优先；未知 ID 报错，不静默替换。
 
@@ -46,7 +47,8 @@ node scripts/kacha.mjs intelligence validate-plan --plan director-plan.json
 | 阅读停稳 | 实际可见文字、完整出现时刻 | 从完整落位后计时；读完前不换镜、不持续推拉 |
 
 默认一个语义拍最多返回三个手法候选，保护阅读、反应和现场声优先；其余放到
-`deferredTechniqueIds`，不能理解为同时执行全部候选。同一时刻仍只有一个主焦点。
+`deferredTechniqueIds`；所有匹配手法仍检查证据，展示上限不会隐藏缺口。
+不能理解为同时执行全部候选。同一时刻仍只有一个主焦点。
 
 ## cues 如何携带真实依据
 
@@ -76,6 +78,11 @@ node scripts/kacha.mjs intelligence validate-plan --plan director-plan.json
 `reading_content_not_measured`。真实反应默认至少 0.8 秒、现场声至少 1.5 秒；这些
 也是可调起点，不能拉长表情、重复帧或生成环境声冒充现场。
 
+阅读、反应、现场声在 `hold.windows` 中独立计时；文字落位延迟只影响阅读，
+不扣减同时存在的反应或现场声。`hold.minimumSeconds` 是从本拍开始算起的总需求。
+只有现场声依据齐全、置信度合格、时长足够且已进入候选列表时，才建议前景现场声；
+否则保留同期声并记录缺口，不指示使用未经确认的录音。
+
 区间不足返回 `insufficient_hold`，不会偷偷延长片段或改变 PTS。处理顺序是：
 减字/分步揭示 → 选更长真实源段 → 获批重排时间线 → 用代表片段复核。
 
@@ -85,6 +92,8 @@ node scripts/kacha.mjs intelligence validate-plan --plan director-plan.json
 2. 从最终时间轴生成带时间 cues，解析段落模板。导演计划中的
    `editingCraft.decisions` 记录每拍触发、缺口、候选、保护和声音意图。
 3. 先处理 `editingCraft.issues`；证据不足时执行干净原镜回退，不能按候选硬做。
+   开场中的事实、测试结果、对比与操作演示同样要求真实来源；已声明为生成或合成
+   的素材，包括合并来源里包含生成记录的素材，不能填补 factual 缺口。
 4. 对拟采用手法制作真实素材的局部 A/B。镜头处理走现有 Timeline IR / Render
    Graph，视觉效果走 `templates resolve`，每条使用记录保留 cue ID、源区间、理由、
    最简回退、源文件 SHA 和正常速度预览。
@@ -98,6 +107,9 @@ node scripts/kacha.mjs intelligence validate-plan --plan director-plan.json
 8. 核对渲染的真实声画结果，再跑连接、字幕、组件混音与完整 QC。候选手法和导演
    计划校验通过，不等于 J/L-cut、音效或现场声已经写入成片。
 
+安静比例与高影响次数预算只按 cues 覆盖的时长计算，未标注的前导和中间空隙
+在 `attentionBudget.unannotatedSeconds` 中单列，不能充当已设计的留白。
+
 当前保护会实际降低导演计划的装饰性强调预算，保留原有开场计数但不强制高影响
 开场。它不重写时间线，也不自动跳过生产包门禁；若内容与生产包配额冲突，应在
 方案阶段明确处理，不为了过门禁虚构语义触发。
@@ -108,6 +120,15 @@ node scripts/kacha.mjs intelligence validate-plan --plan director-plan.json
 问题必须能够落到时间码：是否不知身在何处、动作是否重复、条件是否丢失、结果
 是否读完、包袱是否提前、环境是否被音乐抹平、每次放大是否有信息增量。
 不要用“高级”“电影感”“网感”作为唯一验收标准。
+
+审片建议直接显示手法名称、候选状态、分项时长与修复建议。审片摘要同时绑定
+手法、缺口和目录身份；手法变化必须重建审片包。仅作规划或主动停用的手法不进入
+长期风格学习。导演计划使用 `validate-plan --for-execution` 会明确失败，只有普通
+结构校验可通过；这不阻止预览渲染，实际执行和成片仍走已有 Timeline/QC/审片门禁。
+
+目录升级到 `1.0.1` 后须从当前 cues 重建旧导演计划及其素材/审片证据；不要手改
+旧 digest。`confidence` 仅接受 0–1 的有限数字，省略才默认 1；显式 null、非数字、
+未知证据键与错误的 `craft` 结构报错，不静默提升置信度或忽略标注。
 
 代码入口：`scripts/editing_craft.mjs`；配置：`config/editing-craft.json`；回归：
 `tests/editing_craft_tests.mjs`（纳入现有 V6 核心测试，独立安装包同样执行）。

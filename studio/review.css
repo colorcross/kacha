@@ -234,3 +234,5 @@ main { width: min(1720px, 94vw); margin: 0 auto; padding-bottom: 80px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }
+
+#proposedValue { white-space: pre-line; overflow-wrap: anywhere; }

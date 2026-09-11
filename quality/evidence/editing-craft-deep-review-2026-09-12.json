@@ -1,0 +1,124 @@
+{
+  "schemaVersion": "1.0",
+  "task": "editing_craft_deep_review",
+  "date": "2026-09-12",
+  "baseCommit": "0c5817c031812f252e5949d331070d27425d7f98",
+  "status": "source_checks_passed",
+  "resolvedIssueGroups": 12,
+  "craftVersion": "1.0.1",
+  "checks": {
+    "core": {
+      "passed": 171,
+      "failed": 0
+    },
+    "focusedGroups": 21,
+    "v6Cases": 8,
+    "static": "pass",
+    "jobReliability": "pass",
+    "mcp": "pass",
+    "workbenchDistribution": "pass",
+    "installer": "pass",
+    "browser": "not_used"
+  },
+  "sourceFingerprint": {
+    "config/editing-craft.json": "8c0815c291a50a1f1086a3ba946c8a351122349753e14073de42814092e26f0d",
+    "scripts/editing_craft.mjs": "cc123256d4008f036f310699f956cb4c328b6b265bb02c1b4d39b09aace71e13",
+    "scripts/kacha_intelligence.mjs": "fec3bdf6e15bd70345a221cef7ed700171c84b61c0e0da5adcc7e64b4895f729",
+    "scripts/kacha_review.mjs": "e106549e0a08ba5a3099ae3e1f977ac8474edd1993d8fad2ef7a931a55392b36",
+    "scripts/kacha_studio_server.mjs": "323db425417674838da1c9b9e11d6c83f1b078100aabb91b24dda9e7af09b84f",
+    "scripts/kacha_templates.mjs": "a90ec6b0cca94bcc3209dc4fe7d0ed31a7ab0ff6e8c25292d8eaac1fe4dc5cd6",
+    "studio/review-format.js": "8e7d73715a295bb6f0f026b43668ad21f940134419cb5e6f22ea03f36899f640",
+    "studio/review.css": "820602d95dfb822f3bdbdecff7bd83c5b9be08315c8cfdf8cde0f0bc787e87ba",
+    "studio/review.js": "0a788bca46dbd352430bd306d4d1b1d7823d1f78594b308e762861f7333a0c67",
+    "tests/editing_craft_tests.mjs": "6a238070aa5d7b8050cd9f00862758279741ac34785074f5e5d3258c7e894ab1",
+    "tests/run_tests.mjs": "47feecc91d10560e8932e435aa16653cdc193800a7354a6610cf75c10ad6f281"
+  },
+  "comparison": {
+    "baseline": "0c5817c031812f252e5949d331070d27425d7f98",
+    "kind": "local_synthetic_regression_comparison",
+    "before": {
+      "malformedConfidence": 1,
+      "sparseBudget": {
+        "highImpact": 2,
+        "quietRatio": 0.99
+      },
+      "fragmentedRecipe": "field-journal",
+      "unprovenAmbientIntent": "foreground_location_audio_no_bgm",
+      "independentHolds": 1,
+      "missingEvidenceTechniques": [
+        "proof-reveal",
+        "demo-chain",
+        "matched-comparison"
+      ],
+      "unexecutedStylePreference": {
+        "key": "opening.strategy",
+        "value": "clean_live_action"
+      },
+      "directorExecutionValidationExit": 0
+    },
+    "after": {
+      "malformedConfidence": "rejected",
+      "sparseBudget": {
+        "highImpact": 0,
+        "quietRatio": 1
+      },
+      "fragmentedRecipe": "product-demo",
+      "unprovenAmbientIntent": "preserve_sync_and_phrase",
+      "independentHolds": 0,
+      "missingEvidenceTechniques": [
+        "proof-reveal",
+        "demo-chain",
+        "matched-comparison",
+        "natural-sound",
+        "reading-hold"
+      ],
+      "unexecutedStylePreference": null,
+      "directorExecutionValidationExit": 1
+    }
+  },
+  "receipts": {
+    "focused.json": {
+      "path": "output/review-2026-09-12-deep/focused.json",
+      "sha256": "7f2efabcfd02145f040bae810111cd58b1f8640b4f54387881f06943c8638901"
+    },
+    "before-after.json": {
+      "path": "output/review-2026-09-12-deep/before-after.json",
+      "sha256": "91d8b64b4558ff3426ce739da25a841220eebc7561702ccbbebe86e68b11a9b3"
+    },
+    "full.log": {
+      "path": "output/review-2026-09-12-deep/full.log",
+      "sha256": "90add1350f4b2224951dd8178407e0074942823ecbbbedb5468c31550ce209a3"
+    },
+    "v6.log": {
+      "path": "output/review-2026-09-12-deep/v6.log",
+      "sha256": "3281b6ca727fc42807448ad1cf4823fcc1cad5ba1dd2761b2e8dfc57d4ec3b66"
+    },
+    "static.log": {
+      "path": "output/review-2026-09-12-deep/static.log",
+      "sha256": "2301213b485f6e99cf7dfced1141c93f1fa36eeb0dd819aad38b3f23f4771341"
+    },
+    "reviewed-source.json": {
+      "path": "output/review-2026-09-12-deep/reviewed-source.json",
+      "sha256": "5f99c012ccc8751cf7c20c20cb4e80830df30d4a21b5c5d6c7a815e348181055"
+    },
+    "intelligence-validation.json": {
+      "path": "output/review-2026-09-12-deep/intelligence-validation.json",
+      "sha256": "4c8a49031e92e6be126a23107c0f1fc220b8b850a00b29746a824ba1c5b2e87f"
+    },
+    "template-validation.json": {
+      "path": "output/review-2026-09-12-deep/template-validation.json",
+      "sha256": "4504268c15b3dbc0b9e4c2f07dccc460593d0bda32f7533bb349a8eeb790e6f0"
+    }
+  },
+  "installation": {
+    "status": "separate_receipt_required",
+    "syncReceipt": "output/review-2026-09-12-deep/install-sync.json",
+    "readbackReceipt": "output/review-2026-09-12-deep/install-status.json"
+  },
+  "boundaries": [
+    "Synthetic regression input is not creator video observation or artistic acceptance.",
+    "Craft remains planning-only; actual edits require Timeline IR execution and current media review.",
+    "Existing plans and dependent review bundles must be regenerated against craft 1.0.1.",
+    "No browser validation, external publishing or remote push."
+  ]
+}

@@ -138,6 +138,23 @@ function preferenceMetadata(category, value) {
   return { key: keys[category] ?? `review.${category}`, value };
 }
 
+// Planned craft is reviewed as a proposal. Accepting its preview must not teach
+// a decorative mechanism that was deliberately suppressed or never compiled.
+function beatProposal(director, beat, category) {
+  const editingCraft = director.editingCraft?.decisions.find((item) => item.beatId === beat.id) ?? null;
+  const editingCraftIssues = director.editingCraft?.issues.filter((item) => item.beatId === beat.id) ?? [];
+  return {
+    proposed: {
+      intent: beat.visualIntent, mechanism: beat.styleMechanism,
+      effectDecision: beat.effectDecision, editingCraft, editingCraftIssues,
+    },
+    sourceDigest: sha256Value({ beat, editingCraft, editingCraftIssues, registry: director.editingCraft?.registry ?? null }),
+    preference: beat.effectDecision === "candidate" && beat.confidence >= 0.65
+      && !editingCraft?.treatments.length && !editingCraftIssues.length
+      ? preferenceMetadata(category, beat.styleMechanism) : null,
+  };
+}
+
 export function buildReviewBundle(timelineFile, directorFile, options = {}) {
   const timelinePath = ensureFile(timelineFile, "Timeline IR");
   const directorPath = ensureFile(directorFile, "全片导演计划");
@@ -169,14 +186,8 @@ export function buildReviewBundle(timelineFile, directorFile, options = {}) {
       range: { start: beat.start, end: beat.end },
       rationale: beat.effectReason,
       confidence: beat.confidence,
-      proposed: {
-        intent: beat.visualIntent,
-        mechanism: beat.styleMechanism,
-        effectDecision: beat.effectDecision,
-        editingCraft: director.editingCraft?.decisions.find((item) => item.beatId === beat.id) ?? null,
-      },
+      ...beatProposal(director, beat, category),
       fallback: beat.simplerAlternative,
-      sourceDigest: sha256Value(beat),
       preview: {
         before: existingPreview(previewRoot, [`${beat.id}-before.mp4`, `${id}-before.mp4`]),
         after: existingPreview(previewRoot, [`${beat.id}-after.mp4`, `${id}-after.mp4`, `${beat.id}.mp4`]),
@@ -186,7 +197,6 @@ export function buildReviewBundle(timelineFile, directorFile, options = {}) {
       // 该高影响决定的实际画面。时间字段非有限时不给建议（NaN 窗口会让
       // watch 直接报错），由 requiresHuman 的正常速度审片兜底。
       suggestedWatch: buildSuggestedWatch(beat.start, beat.end),
-      preference: preferenceMetadata(category, beat.styleMechanism),
       requiresHuman: true,
     });
   }
@@ -430,15 +440,8 @@ function reviewBundleErrors(bundle) {
         range: { start: beat.start, end: beat.end },
         rationale: beat.effectReason,
         confidence: beat.confidence,
-        proposed: {
-          intent: beat.visualIntent,
-          mechanism: beat.styleMechanism,
-          effectDecision: beat.effectDecision,
-          editingCraft: director.editingCraft?.decisions.find((item) => item.beatId === beat.id) ?? null,
-        },
+        ...beatProposal(director, beat, category),
         fallback: beat.simplerAlternative,
-        sourceDigest: sha256Value(beat),
-        preference: preferenceMetadata(category, beat.styleMechanism),
         requiresHuman: true,
         preview: { normalSpeedRequired: true },
       }));
