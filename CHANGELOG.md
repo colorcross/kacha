@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-12 · Professional editing recipes and director craft
+
+- Add four narrative recipes and twelve evidence-aware editing techniques, bound to the existing effect templates.
+- Route by reliable semantic signals; protect reading, reactions and location sound from decorative emphasis and budget by actual impact duration.
+- Allow restrained openings, report insufficient holds without retiming source footage, and require real evidence for action matches and split edits.
+- Advance director configuration to 6.1.0; rebuild plans deterministically against source cues and the craft registry. Keep candidate guidance distinct from rendered execution.
+- Document creator references with explicit access limitations and add CLI regression coverage without browser validation.
+
 ## 2026-09-11 · Reliable execution and clearer editing workflow
 
 - Protect job outputs with execution locks and ownership checks; isolate child command flags, propagate foreground failures, stop POSIX process groups, and refuse recovery while old processes remain alive.

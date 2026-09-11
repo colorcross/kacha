@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "1.0",
+  "exampleOnly": true,
+  "evidenceStatus": "synthetic_contract_example_not_media_evidence",
+  "cues": [
+    {
+      "id": "question",
+      "start": 0,
+      "end": 6,
+      "text": "这个观点在哪些情况下不成立？",
+      "signals": [
+        "hook"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "",
+        "evidence": []
+      }
+    },
+    {
+      "id": "quote",
+      "start": 6,
+      "end": 15,
+      "text": "先把原文看完整。",
+      "signals": [
+        "quote"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "观点成立需要条件，而不是一句口号",
+        "evidence": [
+          "text_visible"
+        ]
+      }
+    },
+    {
+      "id": "argument",
+      "start": 15,
+      "end": 25,
+      "text": "用完整论证交代原因和反例。",
+      "signals": [
+        "long_form_argument"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "",
+        "evidence": []
+      }
+    },
+    {
+      "id": "pause",
+      "start": 25,
+      "end": 29,
+      "text": "保留真实思考停顿。",
+      "signals": [
+        "reflection"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "",
+        "evidence": [
+          "reaction_visible"
+        ]
+      }
+    },
+    {
+      "id": "ending",
+      "start": 29,
+      "end": 36,
+      "text": "回到最初的问题，保留判断边界。",
+      "signals": [
+        "conclusion"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "",
+        "evidence": [
+          "opening_question_answered"
+        ]
+      }
+    }
+  ]
+}

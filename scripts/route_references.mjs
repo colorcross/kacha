@@ -72,6 +72,7 @@ const MODULE_REFERENCES = {
     "docs/VIDEO_DESIGN_SYSTEM_V1.md",
   ],
   templates: [
+    "references/professional-editing-craft.md",
     "references/style-effects-library.md",
     "references/effect-templates-resources.md",
     "docs/VIDEO_DESIGN_SYSTEM_V1.md",
@@ -81,6 +82,7 @@ const MODULE_REFERENCES = {
     "references/effect-templates-resources.md",
   ],
   opening: ["references/style-effects-library.md"],
+  editing_craft: ["references/editing-theory.md", "references/professional-editing-craft.md"],
   netstyle: [
     "references/editing-theory.md",
     "references/visuals-masks.md",

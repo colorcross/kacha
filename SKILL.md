@@ -164,6 +164,9 @@ node scripts/kacha.mjs efficiency compare BASELINE-COHORT.json CANDIDATE-COHORT.
 - 首剪/结构重做：先读 `references/project-workflow.md`、
   `references/editing-theory.md`；进入最终 QC/release 阶段再读
   `references/qc-release.md`
+- 剪辑模板、博主参考与专业镜头组接：`references/professional-editing-craft.md`；
+  用 `templates recipes` 取段落模板，`intelligence director --recipe auto` 将手法、
+  结果阅读、人物反应与现场声保护写入全片计划。效果风格继续由五套视觉语法决定。
 - 局部返工：`references/incremental-workflow.md`；涉及最终交付时再读
   `references/qc-release.md`
 - 人声/BGM/SFX/同步：`references/audio.md`；本地音效库另读
@@ -321,6 +324,12 @@ Codex/Claude Code 可选用根目录受限的本地 stdio MCP。所有路径必�
 
 完整首剪在最终带时间语义 cues 稳定后，先编译全片导演计划与素材缺口，不得
 继续只按局部 cue 堆效果：
+
+导演计划会按显式内容信号选择实验与证据、操作演示、现场记录或观点留白模板；
+需要指定时使用 `--recipe evidence-story|product-demo|field-journal|reflective-talk`。
+每拍的 `craft` 标注真实证据与画面文字，详见专业剪辑 reference。阅读不足不自动
+延长原片，动作/声音 handle 不足不假装执行匹配切或 J/L-cut；先补源段或回退。
+`editingCraft` 的候选手法必须通过当前素材预览并编入 Timeline IR 才算实际使用。
 
 ```bash
 node scripts/kacha.mjs intelligence director \

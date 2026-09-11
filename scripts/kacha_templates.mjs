@@ -12,6 +12,7 @@ import {
 } from "./kacha_utils.mjs";
 import { deepMerge, resolveDesignSystem } from "./design_system.mjs";
 import { firstPositional, loadKachaConfig } from "./kacha_config.mjs";
+import { loadEditingCraft } from "./editing_craft.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(scriptDirectory, "..");
@@ -21,6 +22,7 @@ const action = firstPositional(args, [
   "--template",
   "--signal",
   "--category",
+  "--recipe",
   "--output",
   "--config",
   "--secrets",
@@ -468,6 +470,27 @@ if (action === "validate") {
   console.log(JSON.stringify(report, null, 2));
   process.exit(0);
 }
+if (action === "recipes") {
+  const craft = loadEditingCraft();
+  const requested = option("--recipe");
+  const recipes = requested ? craft.recipes.filter((item) => item.id === requested) : craft.recipes;
+  if (!recipes.length) fail(`剪辑模板不存在：${requested}`, 2);
+  const ids = new Set(expanded.map((item) => item.id));
+  for (const technique of craft.techniques) {
+    for (const id of technique.templateIds) if (!ids.has(id)) fail(`剪辑手法引用未知效果模板：${id}`, 2);
+  }
+  const result = {
+    schemaVersion: "1.0", status: "pass", kind: "kacha_editorial_recipes",
+    registry: craft.registry, evidencePolicy: craft.evidencePolicy,
+    executionStatus: "planning_only_requires_source_cues_and_timeline",
+    recipes: recipes.map((recipe) => ({ ...recipe,
+      techniques: recipe.techniques.map((id) => craft.techniques.find((item) => item.id === id)),
+    })),
+  };
+  if (option("--output")) writeJsonAtomic(path.resolve(option("--output")), result);
+  console.log(JSON.stringify(result, null, 2));
+  process.exit(0);
+}
 if (action === "list") {
   const category = option("--category");
   const list = category
@@ -498,7 +521,7 @@ if (requestedTemplate) {
 if (!selected) {
   if (!["show", "resolve"].includes(action)) {
     console.error(
-      "用法：kacha.mjs templates validate|list|show|resolve "
+      "用法：kacha.mjs templates validate|list|show|resolve|recipes [--recipe ID] "
         + "[--template ID | --signal SIGNAL] [--output FILE]",
     );
     process.exit(2);

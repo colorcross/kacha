@@ -1,0 +1,443 @@
+{
+  "schemaVersion": "1.0",
+  "version": "1.0.0",
+  "id": "kacha-editing-craft",
+  "evidencePolicy": "作者提供的语义与素材标注，只是候选依据；不是自动视觉理解或实际执行证明",
+  "timing": {
+    "readingUnitsPerSecond": 5,
+    "readingLeadSeconds": 0.4,
+    "minimumReadingSeconds": 1.2,
+    "minimumReactionSeconds": 0.8,
+    "minimumNaturalSoundSeconds": 1.5
+  },
+  "recipes": [
+    {
+      "id": "evidence-story",
+      "label": "实验与证据推进",
+      "signals": [
+        "experiment",
+        "hypothesis",
+        "test_result"
+      ],
+      "shows": [
+        "very-ai"
+      ],
+      "sequence": [
+        "问题或异常",
+        "测试条件",
+        "尝试与真实失败",
+        "可读证据",
+        "有限定的结论"
+      ],
+      "techniques": [
+        "proof-reveal",
+        "matched-comparison",
+        "action-match",
+        "reaction-hold",
+        "j-cut",
+        "l-cut",
+        "chapter-reset",
+        "payoff-return",
+        "reading-hold",
+        "natural-sound"
+      ],
+      "avoid": [
+        "提前揭示未经证据支持的结论",
+        "用素材蒙太奇伪装实测",
+        "持续高密度冲击"
+      ],
+      "minimumQuietRatio": 0.45
+    },
+    {
+      "id": "product-demo",
+      "label": "AI 与工具操作演示",
+      "signals": [
+        "screen_demo",
+        "operation",
+        "workflow_demo"
+      ],
+      "shows": [
+        "tool-share"
+      ],
+      "sequence": [
+        "实际卡点与结果预览",
+        "输入与环境",
+        "关键操作",
+        "真实反馈与失败",
+        "结果对比",
+        "适用边界"
+      ],
+      "techniques": [
+        "demo-chain",
+        "proof-reveal",
+        "matched-comparison",
+        "l-cut",
+        "j-cut",
+        "reading-hold",
+        "chapter-reset",
+        "payoff-return",
+        "reaction-hold"
+      ],
+      "avoid": [
+        "假打字和假点击",
+        "结果未出现就切走",
+        "剪掉全部失败和等待却声称即时完成"
+      ],
+      "minimumQuietRatio": 0.45
+    },
+    {
+      "id": "field-journal",
+      "label": "沉浸式现场记录",
+      "signals": [
+        "location_change",
+        "travel",
+        "action_continuation",
+        "ambient_sound"
+      ],
+      "shows": [
+        "infinite-game"
+      ],
+      "sequence": [
+        "地点与出发意图",
+        "行动全过程中的必要节点",
+        "手部和物件细节",
+        "人物反应",
+        "到达或变化",
+        "简短反思"
+      ],
+      "techniques": [
+        "location-bridge",
+        "action-match",
+        "natural-sound",
+        "reaction-hold",
+        "j-cut",
+        "l-cut",
+        "chapter-reset",
+        "payoff-return",
+        "reading-hold"
+      ],
+      "avoid": [
+        "音乐覆盖所有现场声",
+        "把补拍伪装成真实事件",
+        "每次切镜都加转场"
+      ],
+      "minimumQuietRatio": 0.65
+    },
+    {
+      "id": "reflective-talk",
+      "label": "观点与思考留白",
+      "signals": [
+        "reflection",
+        "quote",
+        "long_form_argument"
+      ],
+      "shows": [
+        "book-talk",
+        "casual-chat",
+        "talking-head"
+      ],
+      "sequence": [
+        "一个真实问题",
+        "清楚的观点",
+        "文本或经历证据",
+        "反例与犹豫",
+        "判断边界",
+        "自然收束"
+      ],
+      "techniques": [
+        "reading-hold",
+        "reaction-hold",
+        "proof-reveal",
+        "l-cut",
+        "j-cut",
+        "chapter-reset",
+        "payoff-return"
+      ],
+      "avoid": [
+        "短视频式连续推拉",
+        "删掉所有思考停顿",
+        "为固定配额添加无动机效果"
+      ],
+      "minimumQuietRatio": 0.7
+    }
+  ],
+  "techniques": [
+    {
+      "id": "proof-reveal",
+      "label": "先给问题，再让证据落地",
+      "signals": [
+        "evidence",
+        "fact",
+        "data",
+        "test_result"
+      ],
+      "requiredEvidence": [
+        "source_visible"
+      ],
+      "picture": "先交代测试条件，再展示可读结果，最后给有限定的判断",
+      "audio": "读结果时降低配乐；数据字幕不加提示音",
+      "templateIds": [
+        "effect-semantic_evidence_insert",
+        "caption-edge_annotation"
+      ],
+      "protectFromDecoration": true,
+      "fallback": "保持原镜头与原始同期声；补齐证据后再选择手法",
+      "review": [
+        "正常速度检查语义、动作相位与声音连续性",
+        "检查当前素材与画幅中的文字和人物安全区"
+      ]
+    },
+    {
+      "id": "demo-chain",
+      "label": "输入—操作—反馈—结果",
+      "signals": [
+        "screen_demo",
+        "operation"
+      ],
+      "requiredEvidence": [
+        "input_visible",
+        "operation_visible",
+        "result_visible"
+      ],
+      "picture": "一次只放大一个操作区，保留鼠标起点和反馈；等待段可压缩但须标记",
+      "audio": "真实点击只在发生时保留；不为每个字幕配音",
+      "templateIds": [
+        "effect-semantic_mask_emphasis",
+        "effect-process_light_overlay"
+      ],
+      "protectFromDecoration": true,
+      "fallback": "保持原镜头与原始同期声；补齐证据后再选择手法",
+      "review": [
+        "正常速度检查语义、动作相位与声音连续性",
+        "检查当前素材与画幅中的文字和人物安全区"
+      ]
+    },
+    {
+      "id": "matched-comparison",
+      "label": "同条件并列对比",
+      "signals": [
+        "comparison"
+      ],
+      "requiredEvidence": [
+        "matched_conditions",
+        "both_sources_visible"
+      ],
+      "picture": "对齐尺度、时间、单位、裁切与曝光；先看共同标准再看差异",
+      "audio": "AB 声音比较先同响度；不以音量制造优势",
+      "templateIds": [
+        "caption-left_right_contrast",
+        "effect-parallel_full_bleed_bands"
+      ],
+      "protectFromDecoration": true,
+      "fallback": "保持原镜头与原始同期声；补齐证据后再选择手法",
+      "review": [
+        "正常速度检查语义、动作相位与声音连续性",
+        "检查当前素材与画幅中的文字和人物安全区"
+      ]
+    },
+    {
+      "id": "action-match",
+      "label": "在动作中接镜头",
+      "signals": [
+        "action_continuation"
+      ],
+      "requiredEvidence": [
+        "action_phase_match",
+        "screen_direction_match"
+      ],
+      "picture": "在可感知的动作相位连接全景与细节；不重复动作、不跳过关键结果",
+      "audio": "保留落地、关门等真实动作声；不自动叠 whoosh",
+      "templateIds": [
+        "transition-clean_cut"
+      ],
+      "protectFromDecoration": false,
+      "fallback": "保持原镜头与原始同期声；补齐证据后再选择手法",
+      "review": [
+        "正常速度检查语义、动作相位与声音连续性",
+        "检查当前素材与画幅中的文字和人物安全区"
+      ]
+    },
+    {
+      "id": "location-bridge",
+      "label": "地点建立—行动—细节",
+      "signals": [
+        "location_change"
+      ],
+      "requiredEvidence": [
+        "location_established"
+      ],
+      "picture": "先建立新地点和人物关系，再进入动作细节；方向变化先给中性重建镜头",
+      "audio": "用下一场真实环境声短暂预入；无录音时使用干净切",
+      "templateIds": [
+        "transition-clean_cut",
+        "caption-edge_annotation"
+      ],
+      "protectFromDecoration": false,
+      "fallback": "保持原镜头与原始同期声；补齐证据后再选择手法",
+      "review": [
+        "正常速度检查语义、动作相位与声音连续性",
+        "检查当前素材与画幅中的文字和人物安全区"
+      ]
+    },
+    {
+      "id": "reaction-hold",
+      "label": "留住反应再落包袱",
+      "signals": [
+        "reaction",
+        "humor",
+        "reflection"
+      ],
+      "requiredEvidence": [
+        "reaction_visible"
+      ],
+      "picture": "保留反应起点、停顿和恢复；字幕不提前泄露包袱",
+      "audio": "优先干燥留白，真实反差成立时才选一枚短声",
+      "templateIds": [
+        "breathing-still_hold",
+        "caption-plain_single"
+      ],
+      "protectFromDecoration": true,
+      "fallback": "保持原镜头与原始同期声；补齐证据后再选择手法",
+      "review": [
+        "正常速度检查语义、动作相位与声音连续性",
+        "检查当前素材与画幅中的文字和人物安全区"
+      ]
+    },
+    {
+      "id": "natural-sound",
+      "label": "给现场声音独立空间",
+      "signals": [
+        "ambient_sound",
+        "sync_sound"
+      ],
+      "requiredEvidence": [
+        "usable_location_audio"
+      ],
+      "picture": "让观众看清声音的真实来源；不插无关素材抢焦点",
+      "audio": "暂停 BGM 和装饰 SFX，保留独立环境声轨；禁止把分离 residual 当环境轨",
+      "templateIds": [
+        "breathing-still_hold"
+      ],
+      "protectFromDecoration": true,
+      "fallback": "保持原镜头与原始同期声；补齐证据后再选择手法",
+      "review": [
+        "正常速度检查语义、动作相位与声音连续性",
+        "检查当前素材与画幅中的文字和人物安全区"
+      ]
+    },
+    {
+      "id": "j-cut",
+      "label": "下一场声音先到",
+      "signals": [
+        "audio_lead"
+      ],
+      "requiredEvidence": [
+        "incoming_audio_handle",
+        "no_lip_sync_conflict"
+      ],
+      "picture": "画面暂留上一场，下一场声音提前进入，再切入其来源",
+      "audio": "音频先切、画面后切；不是全片声画偏移，也不是画面溶解",
+      "templateIds": [
+        "transition-clean_cut"
+      ],
+      "protectFromDecoration": false,
+      "fallback": "保持原镜头与原始同期声；补齐证据后再选择手法",
+      "review": [
+        "正常速度检查语义、动作相位与声音连续性",
+        "检查当前素材与画幅中的文字和人物安全区"
+      ]
+    },
+    {
+      "id": "l-cut",
+      "label": "当前声音延续到下一镜",
+      "signals": [
+        "audio_carry"
+      ],
+      "requiredEvidence": [
+        "outgoing_audio_handle",
+        "no_lip_sync_conflict"
+      ],
+      "picture": "当前讲述继续，画面切入其所指证据或反应",
+      "audio": "画面先切、音频后切；独立铺轨并核对口型和字幕时轴",
+      "templateIds": [
+        "transition-clean_cut",
+        "effect-semantic_evidence_insert"
+      ],
+      "protectFromDecoration": false,
+      "fallback": "保持原镜头与原始同期声；补齐证据后再选择手法",
+      "review": [
+        "正常速度检查语义、动作相位与声音连续性",
+        "检查当前素材与画幅中的文字和人物安全区"
+      ]
+    },
+    {
+      "id": "chapter-reset",
+      "label": "章节换挡与注意力重置",
+      "signals": [
+        "chapter_change"
+      ],
+      "requiredEvidence": [
+        "chapter_boundary"
+      ],
+      "picture": "完成上一段问题，再用新问题、地点或观察位置建立下一段",
+      "audio": "在乐句或自然停顿处换挡，不按固定秒数换音乐",
+      "templateIds": [
+        "opening-cold_open_marker",
+        "caption-edge_annotation"
+      ],
+      "protectFromDecoration": false,
+      "fallback": "保持原镜头与原始同期声；补齐证据后再选择手法",
+      "review": [
+        "正常速度检查语义、动作相位与声音连续性",
+        "检查当前素材与画幅中的文字和人物安全区"
+      ]
+    },
+    {
+      "id": "payoff-return",
+      "label": "回到开头的问题",
+      "signals": [
+        "payoff",
+        "conclusion"
+      ],
+      "requiredEvidence": [
+        "opening_question_answered"
+      ],
+      "picture": "展示结果及其限制，回到片头的同一对象或问题，不伪造成功",
+      "audio": "允许主题动机轻回归，结论后给自然收束",
+      "templateIds": [
+        "breathing-slow_pull_back",
+        "caption-logic_emphasis_inline"
+      ],
+      "protectFromDecoration": true,
+      "fallback": "保持原镜头与原始同期声；补齐证据后再选择手法",
+      "review": [
+        "正常速度检查语义、动作相位与声音连续性",
+        "检查当前素材与画幅中的文字和人物安全区"
+      ]
+    },
+    {
+      "id": "reading-hold",
+      "label": "先看清，再继续",
+      "signals": [
+        "reading",
+        "quote",
+        "dense_information"
+      ],
+      "requiredEvidence": [
+        "text_visible"
+      ],
+      "picture": "关键文字全部出现后开始计阅读时间；禁止边读边持续缩放",
+      "audio": "核心论证保留干净人声；不以音乐重拍压缩阅读时间",
+      "templateIds": [
+        "caption-quote_field",
+        "breathing-still_hold"
+      ],
+      "protectFromDecoration": true,
+      "fallback": "保持原镜头与原始同期声；补齐证据后再选择手法",
+      "review": [
+        "正常速度检查语义、动作相位与声音连续性",
+        "检查当前素材与画幅中的文字和人物安全区"
+      ]
+    }
+  ]
+}

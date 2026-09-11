@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "1.0",
+  "exampleOnly": true,
+  "evidenceStatus": "synthetic_contract_example_not_media_evidence",
+  "cues": [
+    {
+      "id": "question",
+      "start": 0,
+      "end": 5,
+      "text": "同一项任务，两个方案会得到相同结果吗？",
+      "signals": [
+        "experiment",
+        "hook"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "",
+        "evidence": []
+      }
+    },
+    {
+      "id": "conditions",
+      "start": 5,
+      "end": 12,
+      "text": "先确认测试条件。",
+      "signals": [
+        "reading"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "同一输入、同一版本、同一输出标准",
+        "evidence": [
+          "text_visible"
+        ]
+      }
+    },
+    {
+      "id": "result",
+      "start": 12,
+      "end": 20,
+      "text": "现在看实际结果，包括失败。",
+      "signals": [
+        "test_result",
+        "evidence"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "方案甲失败，方案乙完成",
+        "evidence": [
+          "source_visible"
+        ]
+      }
+    },
+    {
+      "id": "compare",
+      "start": 20,
+      "end": 28,
+      "text": "用同一标准看两边。",
+      "signals": [
+        "comparison"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "输出完整性：甲缺失，乙完整",
+        "evidence": [
+          "matched_conditions",
+          "both_sources_visible"
+        ]
+      }
+    },
+    {
+      "id": "limit",
+      "start": 28,
+      "end": 36,
+      "text": "这个结果只适用于这次任务。",
+      "signals": [
+        "conclusion"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "",
+        "evidence": [
+          "opening_question_answered"
+        ]
+      }
+    }
+  ]
+}

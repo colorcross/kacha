@@ -9627,6 +9627,7 @@ await test("incremental telemetry blocks repeated full previews, final encodes a
 }, "incremental");
 
 await test("V6 global director budgets attention and routes factual asset gaps", () => {
+  execute(process.execPath, [path.join(skillDirectory, "tests", "editing_craft_tests.mjs")]);
   const root = path.join(temporary, "v6-director");
   fs.mkdirSync(root, { recursive: true });
   const cues = path.join(root, "cues.json");
@@ -9921,7 +9922,7 @@ await test("V6 semantic review records every decision and learns only explicit v
       { id: "hook", start: 0, end: 2, text: "先看问题", signals: ["hook"], confidence: 0.99 },
       { id: "quiet", start: 2, end: 8, text: "解释背景", signals: ["ordinary_speech"], confidence: 0.99 },
       { id: "contrast", start: 8, end: 12, text: "但关键不是效果", signals: ["contrast"], confidence: 0.99 },
-      { id: "quiet-2", start: 12, end: 20, text: "继续解释", signals: ["ordinary_speech"], confidence: 0.99 },
+      { id: "quiet-2", start: 12, end: 20, text: "不过另一种情况也要考虑", signals: ["contrast"], confidence: 0.99 },
       { id: "conclusion", start: 20, end: 25, text: "判断决定上限", signals: ["conclusion"], confidence: 0.99 }
     ]
   });
@@ -9988,7 +9989,7 @@ await test("V6 semantic review records every decision and learns only explicit v
     "--session", missingPreviewBuild.session.path,
     "--output", path.join(root, "invalid-incomplete-preference.json"),
   ]);
-  for (const id of ["contrast", "conclusion", "callout-a", "callout-b"]) {
+  for (const id of ["contrast", "quiet-2", "conclusion", "callout-a", "callout-b"]) {
     fs.copyFileSync(previewFixture, path.join(previewDirectory, `${id}-after.mp4`));
   }
   const built = JSON.parse(execute(process.execPath, [

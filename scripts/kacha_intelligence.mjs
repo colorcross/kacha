@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { observeJob } from "./job_runtime.mjs";
+import { buildEditingCraft, loadEditingCraft } from "./editing_craft.mjs";
 
 import fs from "node:fs";
 import path from "node:path";
@@ -218,6 +219,10 @@ export function buildDirectorPlan(cuesFile, options = {}) {
   const config = readJson(configFile);
   const styleId = options.styleId ?? "light-warm-overlay";
   const showId = options.showId ?? "tool-share";
+  const editingCraft = buildEditingCraft(cues, { recipeId: options.recipeId ?? "auto", showId });
+  const protectedBeats = new Set(editingCraft.decisions.filter((item) => item.protectFromDecoration).map((item) => item.beatId));
+  const craftReviewBeats = new Set(editingCraft.decisions.filter((item) => item.treatments.length > 0).map((item) => item.beatId));
+  const minimumQuietRatio = Math.max(config.director.minimumQuietRatio, editingCraft.minimumQuietRatio);
   const duration = Math.max(...cues.map((cue) => cue.end));
   const maximumHighImpact = Math.max(
     1,
@@ -230,15 +235,19 @@ export function buildDirectorPlan(cuesFile, options = {}) {
   });
   const ranked = [...candidates]
     .sort((left, right) => right.score - left.score || left.index - right.index);
-  const selected = new Set([candidates[0].cue.id]);
+  const selected = new Set();
+  let remainingImpactSeconds = duration * (1 - minimumQuietRatio);
   for (const item of ranked) {
     if (selected.size >= maximumHighImpact) break;
-    if (item.index > 0 && item.score >= 0.58) selected.add(item.cue.id);
+    const impactSeconds = Math.min(item.cue.end - item.cue.start, config.director.maximumImpactSecondsPerDecision);
+    if (!protectedBeats.has(item.cue.id) && item.score >= 0.58 && impactSeconds <= remainingImpactSeconds) {
+      selected.add(item.cue.id);
+      remainingImpactSeconds -= impactSeconds;
+    }
   }
   let consecutiveHigh = 0;
   const beats = candidates.map(({ cue, index, role, score }) => {
     let highImpact = selected.has(cue.id) && score >= 0.58;
-    if (index === 0) highImpact = true;
     if (highImpact) consecutiveHigh += 1;
     else consecutiveHigh = 0;
     if (consecutiveHigh > config.director.maximumConsecutiveHighImpactBeats) {
@@ -265,7 +274,9 @@ export function buildDirectorPlan(cuesFile, options = {}) {
       effectDecision: highImpact ? "candidate" : "deliberate_none",
       effectReason: highImpact
         ? `全片强调预算内的 ${role} 语义拍`
-        : "保留真人与信息呼吸，不为局部热闹消耗全片注意力",
+        : protectedBeats.has(cue.id)
+          ? "保护结果阅读、人物反应、现场声或低置信度区间，停止装饰性强调"
+          : "保留真人与信息呼吸，不为局部热闹消耗全片注意力",
       simplerAlternative: "clean_live_action_or_motivated_cut",
       assetNeed: needsAsset(role, cue)
         ? {
@@ -274,7 +285,7 @@ export function buildDirectorPlan(cuesFile, options = {}) {
             evidenceType: role === "evidence" ? "factual" : "illustrative",
           }
         : { required: false },
-      humanReviewRequired: cue.confidence < 0.65 || cue.signals.includes("low_confidence"),
+      humanReviewRequired: cue.confidence < 0.65 || cue.signals.includes("low_confidence") || craftReviewBeats.has(cue.id),
     };
   });
   const impactSeconds = intervalCoverage(beats
@@ -305,7 +316,7 @@ export function buildDirectorPlan(cuesFile, options = {}) {
       maximumHighImpactDecisions: maximumHighImpact,
       selectedHighImpactDecisions: highImpactCount,
       quietRatio: round(quietSeconds / duration),
-      minimumQuietRatio: config.director.minimumQuietRatio,
+      minimumQuietRatio,
       deliberateNoneCount: beats.filter((beat) => beat.effectDecision === "deliberate_none").length,
     },
     opening: {
@@ -314,11 +325,14 @@ export function buildDirectorPlan(cuesFile, options = {}) {
       contract: "必须从首个有效声音或动作建立变化，并在 3 秒内兑现内容承诺",
     },
     beats,
+    editingCraft,
     unresolved: beats
       .filter((beat) => beat.humanReviewRequired)
-      .map((beat) => ({ beatId: beat.id, reason: "low_confidence_or_explicit_review" })),
+      .map((beat) => ({ beatId: beat.id, reason: beat.confidence < 0.65 || beat.signals.includes("low_confidence")
+        ? "low_confidence_or_explicit_review" : "editing_craft_candidate_review" }))
+      .concat(editingCraft.issues.map((issue) => ({ ...issue, module: "editing_craft" }))),
     quality: {
-      quietRatioPass: quietSeconds / duration >= config.director.minimumQuietRatio,
+      quietRatioPass: quietSeconds / duration >= minimumQuietRatio,
       singleOpeningPass: true,
       globalBudgetPass: highImpactCount <= maximumHighImpact,
       status: "requires_human_review",
@@ -385,6 +399,7 @@ export function validateDirectorPlan(plan) {
         projectId: plan.project?.id,
         showId: plan.project?.showId,
         styleId: plan.project?.styleId,
+        recipeId: plan.editingCraft?.requestedRecipe ?? "auto",
       });
       if (plan.digest !== expected.digest) {
         errors.push("director plan 与当前语义 cues 和 V6 导演规则的确定性结果不一致");
@@ -1139,7 +1154,7 @@ export function observeProject(projectRoot) {
 function validateConfig() {
   const config = readJson(configFile);
   const errors = [];
-  if (config.schemaVersion !== "1.0" || config.version !== "6.0.0") {
+  if (config.schemaVersion !== "1.0" || config.version !== "6.1.0") {
     errors.push("intelligence-v6 配置版本无效");
   }
   if (Object.keys(config.director?.styles ?? {}).length !== 5) {
@@ -1163,6 +1178,7 @@ function validateConfig() {
 export function runIntelligenceCli(args = process.argv.slice(2)) {
   const action = args[0];
   if (action === "validate") {
+    loadEditingCraft();
     const { config, errors } = validateConfig();
     if (errors.length > 0) throw new Error(errors.join("\n"));
     outputJson({
@@ -1180,8 +1196,13 @@ export function runIntelligenceCli(args = process.argv.slice(2)) {
       projectId: option(args, "--project-id"),
       showId: option(args, "--show", "tool-share"),
       styleId: option(args, "--style", "light-warm-overlay"),
+      recipeId: option(args, "--recipe", "auto"),
     });
     outputJson(plan, option(args, "--output"));
+    return;
+  }
+  if (action === "recipes") {
+    outputJson(loadEditingCraft(), option(args, "--output"));
     return;
   }
   if (action === "assets") {
@@ -1226,7 +1247,7 @@ export function runIntelligenceCli(args = process.argv.slice(2)) {
     return;
   }
   throw new Error(
-    "用法：kacha.mjs intelligence validate|director|assets|perception|observe|validate-plan [options]",
+    "用法：kacha.mjs intelligence validate|recipes|director|assets|perception|observe|validate-plan [--recipe ID] [options]",
   );
 }
 

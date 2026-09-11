@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "1.0",
+  "exampleOnly": true,
+  "evidenceStatus": "synthetic_contract_example_not_media_evidence",
+  "cues": [
+    {
+      "id": "problem",
+      "start": 0,
+      "end": 5,
+      "text": "这段重复操作，可以怎样减少？",
+      "signals": [
+        "hook"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "",
+        "evidence": []
+      }
+    },
+    {
+      "id": "input",
+      "start": 5,
+      "end": 11,
+      "text": "先导入同一份输入。",
+      "signals": [
+        "screen_demo"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "导入 → 确认内容",
+        "evidence": [
+          "input_visible",
+          "operation_visible",
+          "result_visible"
+        ]
+      }
+    },
+    {
+      "id": "operation",
+      "start": 11,
+      "end": 18,
+      "text": "操作后先等真实反馈。",
+      "signals": [
+        "operation"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "点击执行，等待反馈",
+        "evidence": [
+          "input_visible",
+          "operation_visible",
+          "result_visible"
+        ]
+      }
+    },
+    {
+      "id": "read-result",
+      "start": 18,
+      "end": 25,
+      "text": "先看清结果，再做下一步。",
+      "signals": [
+        "reading"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "第一次失败，修改参数后完成",
+        "evidence": [
+          "text_visible"
+        ]
+      }
+    },
+    {
+      "id": "limit",
+      "start": 25,
+      "end": 34,
+      "text": "适用条件和限制同样重要。",
+      "signals": [
+        "conclusion"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "",
+        "evidence": [
+          "opening_question_answered"
+        ]
+      }
+    }
+  ]
+}

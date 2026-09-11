@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "1.0",
+  "exampleOnly": true,
+  "evidenceStatus": "synthetic_contract_example_not_media_evidence",
+  "cues": [
+    {
+      "id": "arrive",
+      "start": 0,
+      "end": 5,
+      "text": "先建立地点与出发方向。",
+      "signals": [
+        "location_change",
+        "travel"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "",
+        "evidence": [
+          "location_established"
+        ]
+      }
+    },
+    {
+      "id": "walk",
+      "start": 5,
+      "end": 11,
+      "text": "全景到脚步细节保持同一方向。",
+      "signals": [
+        "action_continuation"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "",
+        "evidence": [
+          "action_phase_match",
+          "screen_direction_match"
+        ]
+      }
+    },
+    {
+      "id": "sound",
+      "start": 11,
+      "end": 15,
+      "text": "保留这段真实环境声。",
+      "signals": [
+        "ambient_sound"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "",
+        "evidence": [
+          "usable_location_audio"
+        ]
+      }
+    },
+    {
+      "id": "react",
+      "start": 15,
+      "end": 20,
+      "text": "动作结束后保留真实反应。",
+      "signals": [
+        "reaction"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "",
+        "evidence": [
+          "reaction_visible"
+        ]
+      }
+    },
+    {
+      "id": "reflect",
+      "start": 20,
+      "end": 28,
+      "text": "再回到人物此刻的判断。",
+      "signals": [
+        "reflection"
+      ],
+      "confidence": 0.98,
+      "craft": {
+        "screenText": "",
+        "evidence": [
+          "reaction_visible"
+        ]
+      }
+    }
+  ]
+}

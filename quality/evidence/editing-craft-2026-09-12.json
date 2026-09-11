@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "1.0",
+  "task": "professional_editing_recipes",
+  "date": "2026-09-12",
+  "baseCommit": "c06db165706405121c80166ccd65ca581811d6c7",
+  "status": "source_checks_passed",
+  "recipes": 4,
+  "techniques": 12,
+  "checks": {
+    "core": 171,
+    "focusedGroups": 10,
+    "v6Cases": 8,
+    "static": "pass",
+    "mcp": "pass",
+    "workbenchDistribution": "pass",
+    "installer": "pass",
+    "browser": "not_used",
+    "finalSignalAliases": "covered_by_final_focused_and_V6_checks; independent bundle rechecks the complete committed suite"
+  },
+  "creatorMediaAccess": {
+    "status": "blocked_http_412",
+    "observationScope": "official_work_descriptions_and_professional_editing_documentation_only",
+    "shotByShotAnalysisCompleted": false
+  },
+  "examples": {
+    "count": 4,
+    "type": "synthetic_contract_examples_not_media_evidence",
+    "report": "output/review-2026-09-12/recipe-examples.json"
+  },
+  "receipts": {
+    "full": {
+      "path": "output/review-2026-09-12/full.log",
+      "sha256": "4efbc0b5ff81231bbbb03ff2351565bc8a6f1d638e1c0b9265719952a321170d"
+    },
+    "focused": {
+      "path": "output/review-2026-09-12/focused.log",
+      "sha256": "5a4defe95700abef2fd4822a9c4f742341de0dd13f811cd8247d3338d33d0913"
+    },
+    "v6": {
+      "path": "output/review-2026-09-12/v6.log",
+      "sha256": "3281b6ca727fc42807448ad1cf4823fcc1cad5ba1dd2761b2e8dfc57d4ec3b66"
+    },
+    "static": {
+      "path": "output/review-2026-09-12/static.log",
+      "sha256": "2301213b485f6e99cf7dfced1141c93f1fa36eeb0dd819aad38b3f23f4771341"
+    },
+    "reference-routing": {
+      "path": "output/review-2026-09-12/reference-routing.json",
+      "sha256": "6c8d938b1d656ec72e22026104f49b4bae6938707d3e8a7683d9fb61d3e59fc7"
+    }
+  },
+  "delivery": "local_commit_and_atomic_install_receipts_recorded_separately",
+  "claimsExcluded": [
+    "creator_shot_by_shot_style_measurement",
+    "automatic_split_edit_rendering",
+    "real_episode_human_acceptance",
+    "retention_or_efficiency_improvement",
+    "public_release"
+  ]
+}
