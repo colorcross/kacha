@@ -12414,6 +12414,7 @@ await testIn("whiteboard", "scene QC gates paper purity coverage and merge integ
 });
 
 await test("install sync strips test-bootstrapped runtime artifacts from the bundle", () => {
+  execute(process.execPath, [path.join(skillDirectory, "tests", "installed_runtime_identity_tests.mjs")]);
   const source = fs.readFileSync(path.join(scripts, "sync_skill_installs.mjs"), "utf8");
   if (!source.includes("stripRuntimeArtifacts(bundle)")) {
     throw new Error("install sync does not strip runtime artifacts after bundle verification");

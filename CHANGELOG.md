@@ -7,6 +7,7 @@
 - Render mixed geometry/frame rates and silent or audible sources through lossless normalized clips and existing Timeline IR, with captions and optional local music.
 - Preserve revisioned plans/candidates and source mapping; reuse unchanged clips and support deduplicated background jobs, cancellation and explicit resume.
 - Expose material milestones through standard project status and agent references. Technical candidate checks remain separate from real editorial review and release.
+- Preserve installed revision metadata during read-only status checks without Git; continue detecting changed target contents and invalid version records.
 
 ## 2026-09-12 · Deep review of editing craft and review contracts
 

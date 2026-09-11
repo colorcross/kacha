@@ -304,9 +304,29 @@ try {
   copyCore(source, bundle);
   run("python3", [path.join(bundle, "scripts", "scan_secrets.py")], bundle);
   const coreContentDigest = treeDigest(bundle);
-  const overlayId = overlay ? applyOverlay(overlay, bundle) : "none";
+  let overlayId = overlay ? applyOverlay(overlay, bundle) : "none";
   const identity = coreIdentity(source);
-  fs.writeFileSync(
+  // An installed bundle has no .git. Read-only comparison must preserve its
+  // version envelope rather than inventing a not-a-git-checkout revision.
+  const installedEnvelope = path.join(source, ".kacha-version");
+  if (verifyOnly && identity.ref === "not-a-git-checkout" && fs.existsSync(installedEnvelope)) {
+    const envelope = fs.readFileSync(installedEnvelope, "utf8");
+    const fields = Object.fromEntries(envelope.trim().split(/\r?\n/).map((line) => {
+      const separator = line.indexOf("=");
+      return [line.slice(0, separator), line.slice(separator + 1)];
+    }));
+    if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(fields.core_ref ?? "") || !["true", "false"].includes(fields.core_dirty)
+      || !/^[a-f0-9]{64}$/.test(fields.core_content_sha256 ?? "") || !fields.overlay) {
+      throw new Error("已安装版本记录无效，无法确认运行版本");
+    }
+    if (fields.overlay === "none" && coreContentDigest !== fields.core_content_sha256) {
+      throw new Error("已安装内容与冻结源码摘要不一致");
+    }
+    overlayId = fields.overlay;
+    identity.ref = fields.core_ref;
+    identity.dirty = fields.core_dirty === "true";
+    fs.writeFileSync(path.join(bundle, ".kacha-version"), envelope);
+  } else fs.writeFileSync(
     path.join(bundle, ".kacha-version"),
     [
       `core_ref=${identity.ref}`,
