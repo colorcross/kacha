@@ -15,6 +15,18 @@ const ff = (args) => { const result = run("ffmpeg", ["-hide_banner", "-loglevel"
 const write = (file, value) => fs.writeFileSync(file, JSON.stringify(value, null, 2)+"\n");
 try {
   fs.mkdirSync(temp, { recursive: true });
+  // Public checkouts exclude private brand assets. Exercise the same file-backed
+  // font contract with a real system font, without weakening production rules.
+  const publicFont = process.argv.includes("--public-font") || !fs.existsSync(path.join(repository,"assets/private/fonts/FZCuJinLJW.ttf"));
+  if (publicFont) {
+    const match=run("fc-match",["--format","%{file}","DejaVu Sans"]);
+    assert.equal(match.status,0,match.stderr);
+    const fontFile=match.stdout.trim();assert.ok(fs.existsSync(fontFile),"public regression requires a real system font");
+    const scan=run("fc-scan",["--format","%{family}",fontFile]);assert.equal(scan.status,0,scan.stderr);
+    const families=scan.stdout.split(",").map(name=>name.replaceAll("\\-","-").trim()).filter(Boolean);
+    assert.ok(families.length);
+    write(path.join(temp,"kacha.config.json"),{schemaVersion:"1.0",style:{overrides:{typography:{subtitlePrimary:{families,fontFile,fontSha256:sha256File(fontFile)}}}}});
+  }
   const inputs = path.join(temp, "输入素材"); fs.mkdirSync(inputs);
   const video = path.join(inputs, "red ' source.mp4"), image = path.join(inputs, "blue.png"), portrait = path.join(inputs, "portrait.mp4");
   ff(["-f", "lavfi", "-i", "color=c=red:s=320x180:r=30:d=2", "-f", "lavfi", "-i", "color=c=yellow:s=320x180:r=30:d=2", "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=4", "-filter_complex", "[0:v][1:v]concat=n=2:v=1:a=0[v]", "-map", "[v]", "-map", "2:a", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", video]);
@@ -259,7 +271,7 @@ try {
   assert.throws(()=>materialProjectStatus(projectRoot),/工程字幕字体已变化/);fs.writeFileSync(activeFont,savedFont);
   assert.equal(materialProjectStatus(projectRoot).status,"candidate_ready");
   checks.push("candidate-status-revalidates-project-font-content");
-  const report={status:"pass",passed:checks.length,checks,fixture:"synthetic_local_media_not_real_editorial_acceptance",candidate:rendered.candidate.path};
+  const report={status:"pass",passed:checks.length,checks,fontFixture:publicFont?"public_system_font":"private_brand_font",fixture:"synthetic_local_media_not_real_editorial_acceptance",candidate:rendered.candidate.path};
   if(persistent)write(path.join(temp,"demo-result.json"),report);
   console.log(JSON.stringify(report,null,2));
 } finally { if(!persistent)fs.rmSync(temp,{recursive:true,force:true}); }

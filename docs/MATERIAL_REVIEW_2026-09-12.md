@@ -39,6 +39,8 @@ Agent 根据实际素材组织叙事、Timeline IR 执行最终合成、本地�
 ## 验证入口与结论边界
 
 - 专项：`node tests/material_project_tests.mjs`，并入既有 V7 回归。
+- 公开检出不含私有品牌字体时，专项使用真实系统字体并冻结文件 SHA；
+  `--public-font` 可强制验证此分支。私有字体不进入仓库，生产字体配置与检查不变。
 - 全量：`make check-full`，含静态检查、任务可靠性、核心、MCP、分发、隔离安装。
 - 双端更新：全量通过后经 `install sync --agent both --apply` 原子安装与回读。
 - 日志和候选保存在本地 `output/material-review-2026-09-12/`，不打入公开工具包。
