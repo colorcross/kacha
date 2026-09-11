@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "kacha-product-reliability-verification",
+  "status": "pass",
+  "baseRevision": "74983cb680afdf9e6e3d7079ec689999f280e043",
+  "checkedAt": "2026-09-11T15:42:48.737035+00:00",
+  "checks": {
+    "core": {
+      "passed": 171,
+      "skipped": 0,
+      "failed": 0
+    },
+    "jobReliabilityGroups": 10,
+    "mcp": "pass",
+    "workbenchDistribution": "pass",
+    "installer": "pass",
+    "staticAndSecrets": "pass",
+    "productTruthNegativeTest": "pass",
+    "websiteSSR": 5,
+    "websitePages": 3,
+    "dependencyVulnerabilities": 0,
+    "browserChecks": 8
+  },
+  "localEvidence": {
+    "full": {
+      "path": "output/review-2026-09-11/full.log",
+      "sha256": "333e6110ffd58bb2b1be38569fd0fcf8cd562d826ed99b376dc3b7dc88740fdf"
+    },
+    "jobs": {
+      "path": "output/review-2026-09-11/jobs.log",
+      "sha256": "778760001da8c0ced4e1ff260ba03f48fc281f73fe57ba91a1ae35ca7608533f"
+    },
+    "website": {
+      "path": "output/review-2026-09-11/website.log",
+      "sha256": "69bc29f90476fcb4c7f7b0e4a510acbd82dc2d3beb18e7847c7d348e9a73a22e"
+    },
+    "static": {
+      "path": "output/review-2026-09-11/static.log",
+      "sha256": "2301213b485f6e99cf7dfced1141c93f1fa36eeb0dd819aad38b3f23f4771341"
+    },
+    "browser": {
+      "path": "output/review-2026-09-11/browser.log",
+      "sha256": "f29ed297addb522f78b38113a9c332217655b4400982b35197a62ebe7b978fef"
+    }
+  },
+  "boundaries": [
+    "No browser checks started after the user requested CLI-first verification.",
+    "No public push, deployment or video publication.",
+    "Local synthetic media and automatic checks do not establish creator acceptance or quality improvement.",
+    "Installation synchronization is recorded separately."
+  ]
+}

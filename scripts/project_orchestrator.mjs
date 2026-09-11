@@ -671,15 +671,14 @@ function stageViews(projectRoot, orchestration) {
 function contractsReady(orchestration) {
   if (!orchestration.files?.manifest) return false;
   const manifest = readJson(orchestration.files.manifest);
-  const resolveEntry = (entry) => path.resolve(
-    path.dirname(orchestration.files.manifest),
-    typeof entry === "string" ? entry : entry?.path ?? "",
-  );
-  return Boolean(
-    manifest.intelligenceV6?.required === true
-    && fs.existsSync(resolveEntry(manifest.plans?.proposal))
-    && fs.existsSync(resolveEntry(manifest.plans?.editPlan)),
-  );
+  const present = (entry) => {
+    const candidate = typeof entry === "string" ? entry : entry?.path;
+    if (typeof candidate !== "string" || !candidate.trim()) return false;
+    const resolved = path.resolve(path.dirname(orchestration.files.manifest), candidate);
+    return fs.existsSync(resolved) && fs.statSync(resolved).isFile();
+  };
+  return manifest.intelligenceV6?.required === true
+    && present(manifest.plans?.proposal) && present(manifest.plans?.editPlan);
 }
 
 function deriveNextAction(projectRoot, orchestration, runtime, inputCheck) {
@@ -783,7 +782,10 @@ function deriveNextAction(projectRoot, orchestration, runtime, inputCheck) {
   ]);
   if (next.stdout.trim()) {
     try {
-      return JSON.parse(next.stdout).nextAction;
+      const parsed = JSON.parse(next.stdout);
+      const candidate = parsed.nextAction;
+      if (candidate && typeof candidate.id === "string" && typeof candidate.state === "string"
+        && (next.status === 0 || candidate.state === "blocked")) return candidate;
     } catch {
       // Fall through to the explicit failure below.
     }
@@ -815,8 +817,8 @@ export function projectStatus(input, { refreshRuntime = true, home = os.homedir(
     diagnostics: orchestration.runtimeDiagnostics ?? [],
   };
   const inputCheck = verifyInput(orchestration.input);
-  const views = stageViews(projectRoot, orchestration);
   const derivedNextAction = deriveNextAction(projectRoot, orchestration, runtime, inputCheck);
+  const views = stageViews(projectRoot, orchestration);
   const assetInbox = orchestration.files?.assetInbox
     && fs.existsSync(orchestration.files.assetInbox)
     ? readJson(orchestration.files.assetInbox)
@@ -856,6 +858,7 @@ export function projectStatus(input, { refreshRuntime = true, home = os.homedir(
     }
   }
   const nextAction = efficiencyValidation?.status === "blocked"
+    && !["restore_input", "synchronize_runtime", "revalidate_runtime_change", "confirm_local_execution"].includes(derivedNextAction?.id)
     ? {
         id: "refresh_efficiency_evidence",
         owner: "agent",
@@ -920,6 +923,24 @@ export function projectStatus(input, { refreshRuntime = true, home = os.homedir(
       evidenceBoundary: efficiencyPlan?.evidenceBoundary ?? null,
     } : null,
     authorityBoundary: orchestration.executionAuthorization,
+  };
+}
+
+export function summarizeProjectStatus(report) {
+  const milestones = (report.milestones ?? []).map(({ id, label, title, status, completedStages, totalStages }) => ({
+    id, label: label ?? title ?? id, status, completedStages, totalStages,
+  }));
+  const next = report.nextAction;
+  return {
+    schemaVersion: "1.0", kind: "kacha-project-summary", status: report.status,
+    projectId: report.projectId, projectRoot: report.projectRoot, task: report.task,
+    milestones,
+    progress: { complete: (report.stages ?? []).filter((stage) => stage.status === "complete").length, total: (report.stages ?? []).length },
+    nextAction: next ? { id: next.id, owner: next.owner, state: next.state, summary: next.summary, safeToAutoExecute: next.safeToAutoExecute === true, diagnostics: next.diagnostics ?? [] } : null,
+    attention: report.status === "blocked" ? "blocked" : next?.owner === "human" ? "needs_your_review" : "agent_next_step",
+    inputIdentity: report.input?.identityStatus,
+    assets: report.assetInbox?.summary ?? null,
+    evidenceBoundary: "阶段进度不是成片质量、人工审片或发布结论；完整合同见 status 不带 --summary 的输出",
   };
 }
 
@@ -1195,6 +1216,10 @@ export function runProject(input, {
       orchestration = writeOrchestration(loaded.file, orchestration);
     }
     const inputCheck = verifyInput(orchestration.input);
+    const prerequisite = deriveNextAction(projectRoot, orchestration, runtime, inputCheck);
+    if (["restore_input", "synchronize_runtime", "revalidate_runtime_change", "confirm_local_execution"].includes(prerequisite?.id)) {
+      return projectStatus(projectRoot, { home });
+    }
     const currentEfficiency = refreshEfficiencyEvidence(projectRoot, orchestration);
     if (currentEfficiency.efficiency.plan.status !== "pass") {
       throw new Error(
@@ -1272,7 +1297,9 @@ export function runProject(input, {
     };
     writeOrchestration(loaded.file, orchestration);
     refreshEfficiencyEvidence(projectRoot, readOrchestration(projectRoot).value);
-    return { ...projectStatus(projectRoot, { home }), executed, nextAction: action };
+    const finalStatus = projectStatus(projectRoot, { home });
+    const finalAction = action?.state === "blocked" ? action : finalStatus.nextAction;
+    return { ...finalStatus, status: finalAction?.state === "blocked" ? "blocked" : finalStatus.status, executed, nextAction: finalAction };
   } finally {
     release();
   }

@@ -47,8 +47,9 @@ npm run audit:dependencies
 `npm test` 会重新构建并验证中英文服务端渲染内容、Logo 和社交分享图。官网
 通过不代表咔嚓 skill 本体通过；正式提交仍需在仓库根目录运行完整回归、安装器
 测试与隐私扫描。当前 lint 使用 Oxlint；生产依赖必须保持 `0 vulnerabilities`。
-开发链只允许 `scripts/audit-dependencies.mjs` 中登记的 vinext/image-size 精确
-例外；包版本、依赖路径、GHSA 或修复状态发生任何变化都会重新阻断。
+生产与开发依赖均须通过 `scripts/audit-dependencies.mjs` 的零漏洞检查。已升级到
+vinext 1.0.0-beta.9，移除旧 image-size 例外；任何新增漏洞或审计失败都会阻断。
+Pages 打包同时验证新版 `/_next/static/` 和兼容的 `/assets/` 路径。
 
 首页的“五种剪辑语法”区块直接对应
 [`docs/FIVE_STYLE_EDITING_GRAMMARS.md`](../docs/FIVE_STYLE_EDITING_GRAMMARS.md)：

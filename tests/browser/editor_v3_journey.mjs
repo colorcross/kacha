@@ -16,16 +16,23 @@ const executablePath = process.env.KACHA_CHROMIUM_EXECUTABLE || undefined;
 const browser = await chromium.launch({ headless: true, executablePath });
 const errors = [];
 const checks = [];
+const mutations = [];
 let page;
 try {
   page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   page.on("pageerror", (error) => errors.push(`pageerror:${error.message}`));
+  page.on("request", (request) => { if (request.url().includes('/api/editor/command')) mutations.push(request.url()); });
   page.on("console", (message) => { if (message.type() === "error") errors.push(`console:${message.text()}`); });
   await page.goto(`${origin}/editor`, { waitUntil: "networkidle" });
   await page.locator("#timelinePath").fill(workspacePath);
   await page.locator("#openForm button[type=submit]").click();
   await page.locator("#workspace:not([hidden])").waitFor();
   await page.locator("#timelineSwitcher:not([disabled])").waitFor();
+  await page.waitForFunction(() => document.querySelector('#video').readyState >= 2, null, { timeout: 15000 });
+  await page.locator('#video').evaluate(async (video) => { video.muted = true; await video.play(); });
+  await page.waitForFunction(() => document.querySelector('#video').currentTime > 0.1);
+  await page.locator('#video').evaluate((video) => video.pause());
+  checks.push({ id: "source-media-decode-and-playback", status: "pass" });
   checks.push({ id: "workspace-open", status: "pass", options: await page.locator("#timelineSwitcher option").count() });
 
   await page.locator("#capabilitiesButton").click();
@@ -55,6 +62,20 @@ try {
 
   await page.locator("#duplicateTimelineButton").click();
   await page.locator("#duplicateDialog[open]").waitFor();
+  const dialogButton = page.locator('#duplicateDialog button').first();
+  await dialogButton.focus();
+  const mutationCount = mutations.length;
+  await page.keyboard.press("m");
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+  if (mutations.length !== mutationCount) throw new Error("modal shortcut mutated the timeline");
+  if (!(await page.locator('#video').evaluate((video) => video.paused))) throw new Error("modal keyboard changed playback");
+  if (!(await page.locator('#duplicateDialog').evaluate((dialog) => dialog.open))) throw new Error("editor shortcut interfered with the modal");
+  await page.keyboard.press("Space");
+  await page.locator('#duplicateDialog').waitFor({ state: 'hidden' });
+  if (!(await page.locator('#video').evaluate((video) => video.paused))) throw new Error("Space on a modal button toggled playback");
+  await page.locator('#duplicateTimelineButton').click();
+  await page.locator('#duplicateDialog[open]').waitFor();
+  checks.push({ id: "modal-keyboard-scope", status: "pass" });
   await page.locator("#duplicateId").fill("browser-vertical");
   await page.locator("#duplicateLabel").fill("Browser Vertical");
   await page.locator("#duplicatePath").fill("versions/browser-vertical.json");
@@ -79,9 +100,15 @@ try {
   if (!mobileDrawer || mobileDrawer.height > 844 * 0.74) throw new Error("390px capability drawer displaced the full workbench instead of scrolling internally");
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   if (overflow > 1) throw new Error(`390px document overflowed by ${overflow}px`);
+  for (const label of ['内容', '配置', '项目', '调整', '审片']) {
+    if (!(await page.getByRole('navigation', { name: '生产台页面' }).getByRole('link', { name: label, exact: true }).isVisible())) {
+      throw new Error(`mobile navigation hid ${label}`);
+    }
+  }
   if (!(await page.locator("#timelineViewport").isVisible()) || !(await page.locator(".capability-card").first().isVisible())) {
     throw new Error("390px full workbench or capability evidence is not visible");
   }
+  await page.waitForFunction(() => document.querySelector('#video').readyState >= 2);
   await page.screenshot({ path: path.join(artifactDirectory, "editor-v3-mobile.png"), fullPage: true });
   checks.push({ id: "mobile-390-full-workbench", status: "pass", overflow, drawerHeight: Math.round(mobileDrawer.height) });
 } finally {

@@ -57,7 +57,11 @@ export function validateJobContract(jobFile, value) {
       [value.logs?.stdout, path.join(jobDirectory, "stdout.log"), "stdout log"],
       [value.logs?.stderr, path.join(jobDirectory, "stderr.log"), "stderr log"],
     ];
-    for (const [actual, expected, label] of exactPaths) {
+    for (const [actual, expected, label] of [...exactPaths, [resolvedJobFile, resolvedJobFile, "job file"]]) {
+      try {
+        resolveContainedPath(projectRoot, actual);
+        if (fs.lstatSync(actual, { throwIfNoEntry: false })?.isSymbolicLink()) errors.push(`${label} 不能是符号链接`);
+      } catch (error) { errors.push(`${label} 边界无效：${error.message}`); }
       if (path.resolve(actual ?? "") !== path.resolve(expected)) {
         errors.push(`${label} 路径与任务目录不一致`);
       }

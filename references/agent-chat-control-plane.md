@@ -126,6 +126,19 @@ placeholder。stdout/stderr 写入任务目录，不回填上下文；Agent 只�
 旧的部分产物先移动到任务目录的 `partial/attempt-*` 留证，再启动新 attempt，
 不能让旧文件冒充新任务产物。
 
+提交时拒绝已经存在的输出，执行前再次核验并持有输出路径锁，两个任务不能
+同时认领同一路径。输出冲突任务不拥有该产物，恢复时不能隔离其他任务的文件。
+`--` 后的所有参数只交给子命令，不参与 jobs 选项解析。使用 `--foreground`
+时，JSON 保留终态，失败同时返回非零退出码；子进程因非取消信号退出按失败处理。
+macOS/Linux 对任务子进程组发送取消信号，覆盖正常继承进程组的后代；自行脱离
+进程组的外部程序不在这一保证内。恢复前再次确认旧进程退出。
+
+`jobs list --limit 20 --offset 0 --status failed` 支持有界返回和状态筛选，limit
+允许 1–200。`responseWindow` 提供总数和下一页位置；损坏记录通过 warnings
+单独报告，不能执行，也不会隐藏其余可用任务。状态和列表提供 `recovery`
+建议，但不自动重试。观察面板同时显示 `recordedStatus` 与当前进程状态，
+发现孤儿任务时提示 interrupted；只读观察不修改记录。
+
 提交时还会冻结 `submissionDigest`：job id/ref、命令 argv 与 argvDigest、cwd、
 预期产物、placeholder、日志和 pid 路径必须与 `.kacha/jobs/ID/` 目录合同一致。
 `status/list/cancel/resume`、worker 启动、每次 worker 状态写入和生产台观察都会

@@ -22,10 +22,14 @@ import {
   resolveRuntimeCommand,
   sha256Value,
 } from "./kacha_utils.mjs";
+import { jobProcessTargets, jobRecovery, targetAlive } from "./job_runtime.mjs";
 import { jobSubmissionDigest, validateJobContract } from "./job_contract.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
-const args = process.argv.slice(2);
+const rawArgs = process.argv.slice(2);
+const separator = rawArgs.indexOf("--");
+const args = separator < 0 ? rawArgs : rawArgs.slice(0, separator);
+const commandArgs = separator < 0 ? [] : rawArgs.slice(separator + 1);
 const action = args[0];
 
 function usage() {
@@ -41,11 +45,12 @@ function usage() {
 
 function queueRoot() {
   const requested = ensureDirectory(option(args, "--project-root", process.cwd()), {
-    create: true,
+    create: action === "submit",
   });
   const project = fs.realpathSync(requested);
-  const root = path.join(project, ".kacha", "jobs");
-  fs.mkdirSync(root, { recursive: true });
+  const root = resolveContainedPath(project, path.join(project, ".kacha", "jobs"));
+  resolveContainedPath(project, path.join(project, ".kacha", "placeholders"));
+  if (action === "submit") fs.mkdirSync(root, { recursive: true });
   return { project, root };
 }
 
@@ -61,44 +66,13 @@ function resolveId(value) {
 
 function loadJob(root, input) {
   const id = resolveId(input);
+  if ([".", ".."].includes(id)) fail("KACHA-E140", "任务 ID 无效", 2);
   const file = jobPath(root, id);
   if (!fs.existsSync(file)) fail("KACHA-E100", `任务不存在：@job:${id}`, 2);
   const value = readJson(file);
   const errors = validateJobContract(file, value);
   if (errors.length > 0) fail("KACHA-E120", `任务合同完整性检查失败：${errors.join("; ")}`);
   return { file, value };
-}
-
-function alive(pid) {
-  if (!Number.isInteger(pid)) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function runtimePid(job) {
-  try {
-    if (!job.runtimePidFile || !fs.existsSync(job.runtimePidFile)) return null;
-    const raw = fs.readFileSync(job.runtimePidFile, "utf8").trim();
-    if (raw.startsWith("{")) {
-      const value = JSON.parse(raw);
-      const belongsToActiveRun = value.runId === job.activeRunId;
-      const workerStartingQueuedRun = (
-        job.status === "queued"
-        && !job.activeRunId
-        && String(value.runId ?? "").startsWith(`${job.id}-a`)
-      );
-      if (!belongsToActiveRun && !workerStartingQueuedRun) return null;
-      return Number.isInteger(value.pid) ? value.pid : null;
-    }
-    const value = Number(raw);
-    return Number.isInteger(value) && !job.activeRunId ? value : null;
-  } catch {
-    return null;
-  }
 }
 
 function compact(job) {
@@ -115,6 +89,7 @@ function compact(job) {
     outputs: job.outputs ?? [],
     error: job.error ?? null,
     logs: job.logs,
+    recovery: jobRecovery(job),
   };
 }
 
@@ -125,6 +100,8 @@ function stateLock(file) {
 function updateState(file, purpose, updater) {
   return withOperationLock(stateLock(file), purpose, () => {
     const current = readJson(file);
+    const errors = validateJobContract(file, current);
+    if (errors.length) throw new Error(`任务合同在状态变更前失效：${errors.join("; ")}`);
     const next = updater(current);
     if (next) writeJson(file, next);
     return next ?? current;
@@ -154,12 +131,7 @@ function sensitiveArgument(argv) {
   return false;
 }
 
-function processPids(job) {
-  return [...new Set(
-    [job.childPid, job.workerPid, runtimePid(job)]
-      .filter((pid) => Number.isInteger(pid) && pid !== process.pid),
-  )];
-}
+const processPids = jobProcessTargets;
 
 function sleepSync(milliseconds) {
   const signal = new Int32Array(new SharedArrayBuffer(4));
@@ -169,11 +141,11 @@ function sleepSync(milliseconds) {
 function waitForExit(pids, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const remaining = pids.filter(alive);
+    const remaining = pids.filter(targetAlive);
     if (remaining.length === 0) return [];
     sleepSync(25);
   }
-  return pids.filter(alive);
+  return pids.filter(targetAlive);
 }
 
 function setPlaceholder(job, state, extra = {}) {
@@ -195,11 +167,12 @@ function setPlaceholder(job, state, extra = {}) {
 
 function reconcileJob(file, value) {
   if (!["queued", "running", "cancelling"].includes(value.status)) return value;
-  const hasProcess = processPids(value).some(alive);
+  const hasProcess = processPids(value).some(targetAlive);
   const ageMs = Date.now() - Date.parse(value.updatedAt ?? value.createdAt ?? 0);
   if (hasProcess || (value.status === "queued" && ageMs < 2000)) return value;
   return updateState(file, "job-reconcile", (current) => {
     if (!["queued", "running", "cancelling"].includes(current.status)) return current;
+    if (processPids(current).some(targetAlive)) return current;
     const status = current.status === "cancelling" ? "cancelled" : "interrupted";
     const next = {
       ...current,
@@ -211,11 +184,13 @@ function reconcileJob(file, value) {
         : null,
       workerPid: null,
       childPid: null,
+      childProcessGroupId: null,
       activeRunId: null,
     };
     setPlaceholder(next, status, {
       workerPid: null,
       childPid: null,
+      childProcessGroupId: null,
       activeRunId: null,
     });
     return next;
@@ -223,6 +198,7 @@ function reconcileJob(file, value) {
 }
 
 function quarantinePartialOutputs(job) {
+  if (job.outputsOwned === false) return [];
   const existing = (job.expectedOutputs ?? []).filter(
     (file) => fs.existsSync(file) && fs.statSync(file).isFile(),
   );
@@ -272,15 +248,14 @@ if (!["submit", "status", "list", "cancel", "resume"].includes(action)) usage();
 const { project, root } = queueRoot();
 
 if (action === "submit") {
-  const separator = args.indexOf("--");
-  const argv = separator >= 0 ? args.slice(separator + 1) : [];
+  const argv = commandArgs;
   const kind = safeId(option(args, "--kind"), "task");
   if (argv.length === 0 || !option(args, "--kind")) usage();
   if (sensitiveArgument(argv)) {
     fail("KACHA-E120", "后台任务参数不能持久化密钥；请通过受控环境或 secrets 文件传递");
   }
   const executable = resolveRuntimeCommand(argv[0]);
-  const expectedOutputs = repeated(args.slice(0, separator), "--expected-output")
+  const expectedOutputs = repeated(args, "--expected-output")
     .map((file) => {
       try {
         return resolveContainedPath(project, file);
@@ -289,6 +264,12 @@ if (action === "submit") {
       }
       return null;
     });
+  if (new Set(expectedOutputs).size !== expectedOutputs.length) fail("KACHA-E140", "预期产物路径不能重复", 2);
+  for (const output of expectedOutputs) {
+    if (fs.existsSync(output) || fs.lstatSync(output, { throwIfNoEntry: false })) {
+      fail("KACHA-E120", `预期产物已存在，必须选择新输出：${output}`);
+    }
+  }
   if (expectedOutputs.length === 0 && !args.includes("--allow-no-output")) {
     fail(
       "KACHA-E140",
@@ -312,9 +293,10 @@ if (action === "submit") {
     option(args, "--id", `${kind}-${Date.now().toString(36)}-${shortDigest(argv, 6)}`),
     "job",
   );
+  if ([".", ".."].includes(id)) fail("KACHA-E140", "任务 ID 不能是 . 或 ..", 2);
   const directory = path.join(root, id);
   if (fs.existsSync(directory)) fail("KACHA-E140", `任务已存在：@job:${id}`, 2);
-  fs.mkdirSync(directory, { recursive: true });
+  fs.mkdirSync(directory, { mode: 0o700 });
   const file = path.join(directory, "job.json");
   const placeholder = path.join(project, ".kacha", "placeholders", `${id}.json`);
   const job = {
@@ -326,6 +308,7 @@ if (action === "submit") {
     createdAt,
     updatedAt: createdAt,
     attempt: 0,
+    outputsOwned: false,
     activeRunId: null,
     projectRoot: project,
     command: {
@@ -370,30 +353,41 @@ if (action === "submit") {
     expectedOutputs,
     poll: `node scripts/kacha.mjs jobs status ${job.ref} --project-root ${JSON.stringify(project)}`,
   }, null, 2));
-  process.exit(0);
+  process.exit(foreground && readJson(file).status !== "succeeded" ? 1 : 0);
 }
 
 if (action === "list") {
-  const jobs = fs.readdirSync(root, { withFileTypes: true })
+  const limit = Number(option(args, "--limit", 20));
+  const offset = Number(option(args, "--offset", 0));
+  const filter = option(args, "--status");
+  const statuses = ["queued", "running", "cancelling", "cancelled", "succeeded", "failed", "interrupted", "cancellation_failed"];
+  if (!Number.isInteger(limit) || limit < 1 || limit > 200 || !Number.isInteger(offset) || offset < 0
+    || (filter && !statuses.includes(filter))) fail("KACHA-E140", "limit 必须是 1–200，offset 必须是非负整数，status 必须是合法任务状态", 2);
+  const warnings = [];
+  const jobs = (fs.existsSync(root) ? fs.readdirSync(root, { withFileTypes: true }) : [])
     .filter((entry) => entry.isDirectory() && fs.existsSync(jobPath(root, entry.name)))
-    .map((entry) => {
+    .flatMap((entry) => {
       const file = jobPath(root, entry.name);
-      const value = readJson(file);
-      const errors = validateJobContract(file, value);
-      if (errors.length > 0) {
-        fail("KACHA-E120", `任务合同完整性检查失败：${errors.join("; ")}`);
+      try {
+        const value = readJson(file);
+        const errors = validateJobContract(file, value);
+        if (errors.length) throw new Error(errors.join("; "));
+        return [reconcileJob(file, value)];
+      } catch (error) {
+        warnings.push({ id: entry.name, status: "invalid", summary: "任务记录损坏；修复合同后才可执行", detail: error.message });
+        return [];
       }
-      return reconcileJob(file, value);
     })
-    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    .sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)) || left.id.localeCompare(right.id));
+  const filtered = filter ? jobs.filter((job) => job.status === filter) : jobs;
   console.log(JSON.stringify({
     schemaVersion: "1.0",
-    status: "pass",
-    jobs: jobs.map(compact),
-    counts: Object.fromEntries(
-      [...new Set(jobs.map((job) => job.status))]
-        .map((status) => [status, jobs.filter((job) => job.status === status).length]),
-    ),
+    status: warnings.length ? "pass_with_warnings" : "pass",
+    jobs: filtered.slice(offset, offset + limit).map(compact),
+    counts: Object.fromEntries(statuses.map((status) => [status, jobs.filter((job) => job.status === status).length])),
+    responseWindow: { total: filtered.length, offset, limit, hasMore: offset + limit < filtered.length, nextOffset: offset + limit < filtered.length ? offset + limit : null },
+    warnings: warnings.slice(0, limit),
+    invalidJobs: warnings.length,
   }, null, 2));
   process.exit(0);
 }
@@ -408,7 +402,7 @@ if (action === "status") {
     schemaVersion: "1.0",
     status: "pass",
     job: compact(job),
-    processAlive: alive(job.workerPid) || alive(job.childPid) || alive(runtimePid(job)),
+    processAlive: processPids(job).some(targetAlive),
   }, null, 2));
   process.exit(0);
 }
@@ -434,7 +428,7 @@ if (action === "cancel") {
   });
   const pids = processPids(job);
   for (const pid of pids) {
-    if (alive(pid)) {
+    if (targetAlive(pid)) {
       try { process.kill(pid, "SIGTERM"); } catch {}
     }
   }
@@ -465,6 +459,7 @@ if (action === "cancel") {
       updatedAt: now(),
       workerPid: null,
       childPid: null,
+      childProcessGroupId: null,
       activeRunId: null,
       error: null,
       outputs: [],
@@ -476,6 +471,7 @@ if (action === "cancel") {
     setPlaceholder(next, "cancelled", {
       workerPid: null,
       childPid: null,
+      childProcessGroupId: null,
       activeRunId: null,
     });
     return next;
@@ -494,6 +490,7 @@ job = updateState(loaded.file, "job-resume", (current) => {
   if (!["failed", "interrupted", "cancelled", "cancellation_failed"].includes(current.status)) {
     throw new Error(`任务当前不可恢复：${current.status}`);
   }
+  if (processPids(current).some(targetAlive)) throw new Error("旧任务进程仍在运行，禁止恢复或隔离其产物");
   const quarantinedOutputs = quarantinePartialOutputs(current);
   const next = {
     ...current,
@@ -528,3 +525,5 @@ console.log(JSON.stringify({
   ref: job.ref,
   workerPid: foreground ? null : child.pid,
 }, null, 2));
+
+process.exitCode = foreground && readJson(loaded.file).status !== "succeeded" ? 1 : 0;

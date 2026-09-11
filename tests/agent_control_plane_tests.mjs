@@ -379,7 +379,7 @@ try {
     process.execPath,
     "-e",
     resumableCode,
-  ]);
+  ], 1);
   assert.equal(failedJob.status, "failed");
   assert.equal(fs.readFileSync(resumableOutput, "utf8"), "partial");
   const resumedJob = run([
@@ -414,7 +414,7 @@ try {
     process.execPath,
     "-e",
     "process.exit(7)",
-  ]);
+  ], 1);
   assert.equal(tamperJob.status, "failed");
   const tamperJobFile = path.join(
     project,

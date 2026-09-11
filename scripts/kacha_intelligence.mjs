@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { observeJob } from "./job_runtime.mjs";
 
 import fs from "node:fs";
 import path from "node:path";
@@ -967,7 +968,11 @@ export function observeProject(projectRoot) {
         }
       })
       .filter(Boolean)
+      .map(observeJob)
       .map((job) => ({
+        recordedStatus: job.recordedStatus,
+        processAlive: job.processAlive,
+        recovery: job.recovery,
         ref: job.ref,
         kind: job.kind,
         status: job.status,

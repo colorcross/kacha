@@ -1000,8 +1000,26 @@ dialog::backdrop {
   .stage {
     min-height:240px
   }
+  .topbar {
+    height:auto;
+    min-height:56px;
+    flex-wrap:wrap;
+    row-gap:6px;
+    padding:10px
+  }
   .topbar nav {
-    display:none
+    display:flex;
+    order:3;
+    flex-basis:100%;
+    overflow-x:auto
+  }
+  .topbar nav a {
+    flex:1;
+    min-height:40px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    white-space:nowrap
   }
   :root {
     --track-label:94px

@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
+const productTruth = JSON.parse(await readFile(new URL("../app/product-truth.json", import.meta.url), "utf8"));
+const regressionMetric = new RegExp(`>${productTruth.regressionChecks}<`);
+
 async function render(pathname = "/") {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
@@ -37,7 +40,7 @@ test("server-renders the Chinese Kacha product page", async () => {
   assert.match(html, /先看变化，再看功能/);
   assert.match(html, /五种风格，不是同一套卡片换颜色/);
   assert.match(html, /2400 张峰值帧/);
-  assert.match(html, />171</);
+  assert.match(html, regressionMetric);
   assert.match(html, /--agent both --channel canary/);
   assert.match(html, /项目编排与全片导演/);
   assert.match(html, /统一审片与发布检查/);
@@ -65,7 +68,7 @@ test("server-renders the English product page", async () => {
   assert.match(html, /See the change before the feature list/);
   assert.match(html, /Five styles, five editing grammars/);
   assert.match(html, /2,400 peak frames/);
-  assert.match(html, />170</);
+  assert.match(html, regressionMetric);
   assert.match(html, /--agent both --channel canary/);
   assert.match(html, /four milestones/i);
   assert.match(html, /Asset gap inbox/);

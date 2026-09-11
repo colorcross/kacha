@@ -129,10 +129,12 @@ function renderDeliveryProfiles(value) {
 
 async function refreshActivity() {
   if (!state.sessionId) return;
-  const result = await api("/api/editor/history", { sessionId: state.sessionId });
+  const sessionId = state.sessionId;
+  const result = await api("/api/editor/history", { sessionId });
+  if (state.sessionId !== sessionId) return;
   const list = $("#activityList"); list.innerHTML = "";
   const records = [...(result.records ?? [])].reverse().slice(0, 50);
-  if (!records.length) { list.innerHTML = '<p class="empty compact">Command Journal 尚无写入。</p>'; return; }
+  if (!records.length) { list.innerHTML = '<p class="empty compact">暂时没有修改记录。</p>'; return; }
   for (const record of records) {
     const row = document.createElement("article"); row.className = "activity-item";
     const at = document.createElement("span"); at.textContent = record.at;
@@ -534,7 +536,7 @@ async function openProjectPath(timelinePath, timelineId = null) {
     renderCapabilities(capabilities); renderDeliveryProfiles(profiles);
     $("#capabilitiesButton").disabled = false; $("#deliveryButton").disabled = false;
     refreshActivity().catch(() => {});
-    setStatus(`已打开 ${result.projection.projectId}；近似预览与正式终渲染边界有效。`);
+    setStatus(`已打开 ${result.projection.projectId}。选择片段可以调整，预览供校正参考。`);
   } catch (error) { if (generation === state.openGeneration) setStatus(error.message, true); }
 }
 
@@ -618,7 +620,13 @@ $("#video").addEventListener("loadedmetadata", () => { seekOutputTick(state.outp
 window.addEventListener("resize", () => { renderOverlayProjection(); updateDeliveryGuide(); renderTimelineOverlays(); });
 window.addEventListener("beforeunload", () => state.eventSource?.close());
 window.addEventListener("keydown", (event) => {
-  if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName)) return;
+  const target = document.activeElement;
+  if (!projection() || event.defaultPrevented || event.isComposing || event.repeat
+    || target?.closest('input, select, textarea, [contenteditable]:not([contenteditable="false"]), dialog[open], [role="dialog"]')
+    || document.querySelector("dialog[open]")) return;
+  const modified = event.metaKey || event.ctrlKey || event.altKey;
+  if (modified && !((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === "z")) return;
+  if (event.code === "Space" && target?.closest('button, a, [role="button"], video')) return;
   if (event.code === "Space") { event.preventDefault(); const video = $("#video"); if (video.paused) video.play().catch(() => {}); else video.pause(); }
   else if (event.key.toLowerCase() === "m") $("#markerButton").click();
   else if (event.key.toLowerCase() === "s") $("#splitButton").click();

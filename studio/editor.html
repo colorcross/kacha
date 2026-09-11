@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
   <link rel="icon" href="data:,">
-  <title>咔嚓 · Human–Agent Workbench</title>
+  <title>咔嚓 · 剪辑工作台</title>
   <link rel="stylesheet" href="/editor.css">
 </head>
 <body>
@@ -22,35 +22,35 @@
   <main>
     <section class="open-panel" aria-labelledby="open-title">
       <div>
-        <p class="eyebrow">TIMELINE IR · SHA-LOCKED · REVERSIBLE</p>
-        <h1 id="open-title">Professional Human–Agent Workbench</h1>
-        <p>项目、素材、智能能力、时间线与交付在同一个工作区协同。每次改动都进入 Command Journal，不绕过终渲染、QC 和人工审片。</p>
+        <p class="eyebrow">本地剪辑 · 版本校验 · 可撤销</p>
+        <h1 id="open-title">剪辑工作台</h1>
+        <p>预览片段，调整画面，比较版本。每一步修改都有记录，可以撤销。</p>
       </div>
       <form id="openForm">
-        <label for="timelinePath">Timeline IR 或 Kacha Workspace 绝对路径</label>
+        <label for="timelinePath">剪辑工程路径（Timeline 或 Workspace）</label>
         <div class="path-row"><input id="timelinePath" autocomplete="off" spellcheck="false" placeholder="/absolute/path/.kacha/editor-workspace.json" required><button type="submit">打开项目</button></div>
       </form>
-      <p id="status" class="status" role="status" aria-live="polite">等待打开本机 Timeline IR。</p>
+      <p id="status" class="status" role="status" aria-live="polite">打开工程后，选择时间线上的片段开始调整。</p>
     </section>
 
     <section id="workspace" class="workspace" hidden>
       <section class="project-strip" aria-label="项目与时间线">
-        <div class="project-identity"><span class="eyebrow">PROJECT / TIMELINE</span><strong id="workspaceLabel">独立 Timeline</strong></div>
+        <div class="project-identity"><span class="eyebrow">项目与版本</span><strong id="workspaceLabel">独立 Timeline</strong></div>
         <label for="timelineSwitcher">当前版本 <select id="timelineSwitcher" disabled><option value="">独立 Timeline</option></select></label>
         <button id="duplicateTimelineButton" type="button" disabled>复制版本 / 画幅</button>
         <button id="capabilitiesButton" type="button" aria-expanded="false" disabled>能力地图</button>
         <button id="deliveryButton" type="button" aria-expanded="false" disabled>交付中心</button>
-        <button id="activityButton" type="button" aria-expanded="false" disabled>Agent Activity</button>
+        <button id="activityButton" type="button" aria-expanded="false" disabled>修改记录</button>
       </section>
 
       <section id="capabilityDrawer" class="drawer panel" hidden aria-labelledby="capability-title">
-        <div class="panel-heading"><div><span class="panel-index">MAP</span><h2 id="capability-title">PROFESSIONAL CAPABILITY MAP</h2></div><span id="capabilityMeta" class="mono"></span></div>
+        <div class="panel-heading"><div><span class="panel-index">MAP</span><h2 id="capability-title">当前可用能力</h2></div><span id="capabilityMeta" class="mono"></span></div>
         <p class="drawer-intro">每项能力都显示当前状态、实现证据、局限和入口。<code>partial</code>、<code>planned</code> 与 <code>blocked</code> 不伪装成可执行功能。</p>
         <div id="capabilityGrid" class="capability-grid"></div>
       </section>
 
       <section id="deliveryDrawer" class="drawer panel" hidden aria-labelledby="delivery-title">
-        <div class="panel-heading"><div><span class="panel-index">OUT</span><h2 id="delivery-title">DELIVERY CENTER</h2></div><span class="mono">PLAN ≠ RENDERED</span></div>
+        <div class="panel-heading"><div><span class="panel-index">OUT</span><h2 id="delivery-title">交付中心</h2></div><span class="mono">PLAN ≠ RENDERED</span></div>
         <div class="delivery-grid">
           <form id="deliveryPlanForm" class="drawer-form"><h3>编码交付计划</h3><label>Profile <select id="deliveryProfile"></select></label><label>成片输出绝对路径 <input id="deliveryOutput" placeholder="/absolute/path/final.mp4" required></label><button type="submit">生成交付计划</button></form>
           <form id="nleExportForm" class="drawer-form"><h3>NLE 交换</h3><label>格式 <select id="nleFormat"><option value="otio">OTIO</option><option value="fcpxml">FCPXML</option><option value="premiere-xml">Premiere XML (xmeml v5)</option><option value="cmx3600">CMX3600</option></select></label><label>输出绝对路径 <input id="nleOutput" placeholder="/absolute/path/timeline.otio" required></label><button type="submit">导出交换候选</button></form>
@@ -72,14 +72,14 @@
       </section>
 
       <aside class="bin-panel panel" aria-labelledby="bin-title">
-        <div class="panel-heading"><div><span class="panel-index">01</span><h2 id="bin-title">PROJECT BIN</h2></div><button id="refreshBin" class="icon-button" type="button" title="刷新">↻</button></div>
+        <div class="panel-heading"><div><span class="panel-index">01</span><h2 id="bin-title">素材</h2></div><button id="refreshBin" class="icon-button" type="button" title="刷新">↻</button></div>
         <form id="binSearch" class="bin-search"><input id="binQuery" placeholder="搜索素材 / 标签"><select id="binKind" aria-label="素材类型"><option value="">全部</option><option value="video">视频</option><option value="image">图像</option><option value="audio">音频</option></select></form>
         <p id="binMeta" class="microcopy">打开时间线后读取项目索引。</p>
         <div id="binItems" class="bin-items"><div class="empty compact">尚无素材。</div></div>
       </aside>
 
       <section class="preview-panel panel" aria-label="近似画面预览">
-        <div class="panel-heading"><div><span class="panel-index">02</span><h2>PROGRAM</h2></div><div class="heading-actions"><select id="deliveryFrame" aria-label="交付构图"><option value="">原始画布</option></select><span id="projectMeta" class="mono"></span></div></div>
+        <div class="panel-heading"><div><span class="panel-index">02</span><h2>画面预览</h2></div><div class="heading-actions"><select id="deliveryFrame" aria-label="交付构图"><option value="">原始画布</option></select><span id="projectMeta" class="mono"></span></div></div>
         <div id="stage" class="stage">
           <video id="video" controls preload="metadata"></video>
           <div id="deliveryGuide" class="delivery-guide" hidden><span></span></div>
@@ -89,7 +89,7 @@
       </section>
 
       <aside class="inspector-panel panel" aria-labelledby="inspector-title">
-        <div class="panel-heading"><div><span class="panel-index">03</span><h2 id="inspector-title">INSPECTOR</h2></div></div>
+        <div class="panel-heading"><div><span class="panel-index">03</span><h2 id="inspector-title">调整</h2></div></div>
         <div id="emptyInspector" class="empty">从时间线选择一个条目。<br><kbd>Shift</kbd> 可多选。</div>
         <form id="inspector" hidden>
           <div class="object-head"><strong id="itemLabel"></strong><code id="itemType"></code></div>
@@ -97,7 +97,7 @@
           <div id="fieldList" class="field-list"></div>
           <p id="readonlyReason" class="notice" hidden></p>
           <label for="reason">修改理由</label><input id="reason" value="人工调整工作台校正">
-          <button id="applyButton" class="primary" type="submit">原子应用</button>
+          <button id="applyButton" class="primary" type="submit">应用修改</button>
         </form>
         <section id="keyframePanel" class="subpanel" hidden>
           <div class="subpanel-title"><span>POSITION KEYFRAMES</span><span class="mono">FFMPEG FINAL</span></div>
@@ -105,11 +105,11 @@
           <div class="keyframe-actions"><button data-keyframe="x" type="button">+ X</button><button data-keyframe="y" type="button">+ Y</button><button id="removeKeyframe" type="button">移除当前</button></div>
           <div id="keyframeList" class="keyframe-list"></div>
         </section>
-        <div id="qcNotice" class="qc-notice">修改后仍需重新运行对应 Timeline/QC 门禁。</div>
+        <div id="qcNotice" class="qc-notice">修改后需要重新检查受影响的画面、字幕或声音。</div>
       </aside>
 
       <section class="timeline-panel panel" aria-labelledby="timeline-title">
-        <div class="panel-heading timeline-heading"><div><span class="panel-index">04</span><h2 id="timeline-title">Timeline Projection</h2></div><div class="transport"><span id="timecode" class="mono">00:00:00.000</span><label>缩放 <input id="zoom" type="range" min="1" max="8" step=".5" value="1"></label></div></div>
+        <div class="panel-heading timeline-heading"><div><span class="panel-index">04</span><h2 id="timeline-title" title="Timeline Projection">时间线</h2></div><div class="transport"><span id="timecode" class="mono">00:00:00.000</span><label>缩放 <input id="zoom" type="range" min="1" max="8" step=".5" value="1"></label></div></div>
         <div id="timelineViewport" class="timeline-viewport">
           <div id="ruler" class="ruler"></div>
           <div id="waveform" class="waveform"><span class="track-label">WAVEFORM</span><div class="waveform-lane"><img id="waveformImage" alt="源音频波形" hidden><span id="waveformState">波形尚未生成</span></div></div>

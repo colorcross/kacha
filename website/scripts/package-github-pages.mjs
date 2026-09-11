@@ -60,6 +60,8 @@ await Promise.all(
     let rewritten = html;
     for (const [rootPath, marker] of [
       ["/assets/", "__KACHA_ASSET_PREFIX__"],
+      ["/_next/static/", "__KACHA_NEXT_ASSET_PREFIX__"],
+      ["/social/", "__KACHA_SOCIAL_PREFIX__"],
       ["/brand/", "__KACHA_BRAND_PREFIX__"],
       ["/og.png", "__KACHA_OG_IMAGE__"],
     ]) {
@@ -76,13 +78,13 @@ await writeFile(path.join(outputRoot, ".nojekyll"), "");
 
 for (const relativePath of ["index.html", "en/index.html", "404.html"]) {
   const html = await readFile(path.join(outputRoot, relativePath), "utf8");
-  if (!html.includes(`${basePath}/assets/`)) {
+  if (!html.includes(`${basePath}/_next/static/`) && !html.includes(`${basePath}/assets/`)) {
     throw new Error(`${relativePath} is missing the GitHub Pages asset prefix`);
   }
-  if (html.includes('href="/assets/') || html.includes('src="/assets/')) {
+  if (/(?:href|src)="\/(?:assets|_next\/static)\//.test(html)) {
     throw new Error(`${relativePath} contains a root-relative asset URL`);
   }
-  if (html.includes('import("/assets/')) {
+  if (/import\("\/(?:assets|_next\/static)\//.test(html)) {
     throw new Error(`${relativePath} contains a root-relative module import`);
   }
 }

@@ -17,15 +17,16 @@ check-core:
 	node tests/run_tests.mjs --suite core
 
 check-full: check-static
+	node tests/job_reliability_tests.mjs
 	node tests/run_tests.mjs
 	node tests/mcp_server_tests.mjs
 	node tests/workbench_distribution_tests.mjs
 	bash tests/test_installer.sh
 
 check-website:
-	cd website && npm run lint && npm run typecheck && npm run test:pages && npm run audit:dependencies
+	cd website && npm run lint && npm run typecheck && npm test && npm run test:pages && npm run audit:dependencies
 
 # Optional real-browser journey for the editor workbench. Requires a local
 # Playwright module; point KACHA_PLAYWRIGHT_MODULE at it and run `make check-browser`.
 check-browser:
-	node tests/browser/editor_v3_journey.mjs
+	node tests/browser/run_editor_journey.mjs

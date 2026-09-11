@@ -21,7 +21,9 @@ delta、本地素材索引、异步任务、placeholder、对象级 `@` 引用�
 `media search` 返回少量带许可证据的 `@asset`；耗时生成、分离、跟踪、渲染
 和 QC 用 `jobs submit`，只有 placeholder 为 `ready` 才可接入正式时间线。
 macOS 素材搜索优先使用本地 NaturalLanguage 句向量，回退关键词时必须明示；
-后台任务取消要确认进程退出，失败产物恢复前先隔离。Timeline IR 会核对
+后台任务取消要确认进程退出，失败产物恢复前先隔离。任务列表默认限量，
+用 `jobs list --status failed` 查看恢复建议；输出必须是新路径，`--foreground`
+失败会返回非零退出码。Timeline IR 会核对
 Placeholder 的 ready 状态与产物 SHA；重复对象 ID 必须使用确定性后缀，
 不能依赖索引输入顺序。
 源码开发态先用 `install status` 检查 Codex/Claude 安装，但通过测试前不得
@@ -67,7 +69,7 @@ Placeholder 的 ready 状态与产物 SHA；重复对象 ID 必须使用确定�
 ```bash
 node scripts/kacha.mjs start --source /path/to/source.mov \
   --project-root /path/to/project
-node scripts/kacha.mjs status /path/to/project
+node scripts/kacha.mjs status /path/to/project --summary
 node scripts/kacha.mjs run /path/to/project --confirm-execute
 node scripts/kacha.mjs resume /path/to/project --confirm-execute
 ```
@@ -829,7 +831,7 @@ node tests/workbench_distribution_tests.mjs
 ```
 
 可用套件见 `node tests/run_tests.mjs --list`；也可用 `--match 关键词`。
-MCP 控制面与 Workbench 分发不在 `run_tests.mjs` 的 162 项之内，修改
+任务可靠性、MCP 控制面与 Workbench 分发使用独立测试入口；修改
 `kacha_mcp_server`、`mcp-config` 或编辑器分发时必须单独运行；`make
-check-full` 会覆盖全部三层。公开 core 与机器专属 overlay 必须分别测试，
+check-full` 会覆盖核心回归与这些独立套件。公开 core 与机器专属 overlay 必须分别测试，
 组合通过后再原子同步到 Codex 和 Claude，不能直接覆盖当前可用安装。

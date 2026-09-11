@@ -3547,6 +3547,18 @@ await test("V7 orchestrator starts source and script projects with recoverable m
     || readJson(efficiencyPlanFile).status !== "pass"
   ) throw new Error("orchestrator did not recover a corrupt efficiency plan from current inputs");
 
+  const compact = JSON.parse(execute(process.execPath, [path.join(scripts, "kacha.mjs"), "status", sourceRoot, "--summary"]).stdout);
+  if (compact.kind !== "kacha-project-summary" || compact.milestones.length !== 4 || compact.progress.total !== 13
+    || compact.nextAction.id !== recoveredStatus.nextAction.id || compact.runtime || compact.files) {
+    throw new Error("compact status is not a faithful bounded projection");
+  }
+  fs.appendFileSync(source, "changed");
+  fs.writeFileSync(efficiencyPlanFile, "{invalid-json");
+  for (const action of ["status", "run", "resume"]) {
+    const blocked = JSON.parse(expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), action, sourceRoot]).stdout);
+    if (blocked.status !== "blocked" || blocked.nextAction?.id !== "restore_input") throw new Error(`${action} masked the input identity blocker`);
+  }
+
   const scriptInput = path.join(temporary, "orchestrator-script.md");
   fs.writeFileSync(scriptInput, "# 中心问题\n\n用真实证据解释一个问题。\n");
   const contentRoot = path.join(temporary, "orchestrated-content-project");
@@ -10673,7 +10685,7 @@ await test("V6 review workbench is local-only and exposes the new review assets"
       })}\n{truncated-json\n`,
     );
     const failedJobOutput = path.join(root, "failed-job-output.txt");
-    const failedJobResult = JSON.parse(execute(process.execPath, [
+    const failedJobResult = JSON.parse(expectFailure(process.execPath, [
       path.join(scripts, "kacha.mjs"), "jobs", "submit",
       "--project-root", root,
       "--kind", "render",

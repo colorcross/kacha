@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-11 · Reliable execution and clearer editing workflow
+
+- Protect job outputs with execution locks and ownership checks; isolate child command flags, propagate foreground failures, stop POSIX process groups, and refuse recovery while old processes remain alive.
+- Add bounded job lists, status filters, corruption diagnostics, recovery hints, and live process observations.
+- Add compact project summaries; prioritize input/runtime blockers and preserve failed action status. Reject missing or directory-valued plan references.
+- Simplify the Chinese editor interface, guard keyboard shortcuts in dialogs, and prevent old history responses from replacing the current project.
+- Make browser verification self-contained, including media playback, modal controls, version duplication, delivery planning and 390px layout.
+- Upgrade website dependencies, remove audit exceptions, support the new static asset layout, and use one regression metric in both language tests.
+
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 的结构。
 
 ## [Unreleased]

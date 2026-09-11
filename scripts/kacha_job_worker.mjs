@@ -14,10 +14,15 @@ import {
   acquireFileLock,
   fileIdentity,
   readJson,
+  sha256Value,
 } from "./kacha_utils.mjs";
+
+import { targetAlive } from "./job_runtime.mjs";
 
 const jobFile = path.resolve(process.argv[2] ?? "");
 if (!jobFile || !fs.existsSync(jobFile)) process.exit(2);
+
+const outputLocks = [];
 const stateLockFile = `${jobFile}.state.lock`;
 const runLockFile = `${jobFile}.run.lock`;
 let releaseRunLock = null;
@@ -107,6 +112,7 @@ function clearRuntimePid() {
 function releaseWorker() {
   clearRuntimePid();
   if (terminationTimer) clearTimeout(terminationTimer);
+  for (const release of outputLocks.splice(0).reverse()) { try { release(); } catch {} }
   try { releaseRunLock?.(); } catch {}
   releaseRunLock = null;
 }
@@ -144,6 +150,30 @@ if (job.status !== "running" || job.activeRunId !== runId) {
   process.exit(0);
 }
 
+try {
+  const lockDirectory = resolveContainedPath(job.projectRoot, ".kacha/jobs/.output-locks");
+  fs.mkdirSync(lockDirectory, { recursive: true, mode: 0o700 });
+  for (const expected of [...new Set(job.expectedOutputs)].sort()) {
+    const safeOutput = resolveContainedPath(job.projectRoot, expected);
+    outputLocks.push(acquireFileLock(path.join(lockDirectory, `${sha256Value(safeOutput)}.lock`), {
+      purpose: `job-output:${job.id}`,
+    }));
+    if (fs.lstatSync(safeOutput, { throwIfNoEntry: false })) {
+      throw new Error(`预期产物已存在，拒绝覆盖或认领：${safeOutput}`);
+    }
+  }
+} catch (error) {
+  mutateState("job-output-conflict", (current) => {
+    const next = { ...current, outputsOwned: false, status: "failed", error: error.message, finishedAt: now(), updatedAt: now(), workerPid: null, childPid: null, activeRunId: null };
+    placeholder(next, "failed", { error: error.message, outputs: [], workerPid: null, childPid: null, activeRunId: null });
+    return next;
+  });
+  releaseWorker();
+  process.exit(0); // CLI reads the persisted terminal result and propagates failure.
+}
+
+job = mutateState("job-output-claimed", (current) => ({ ...current, outputsOwned: true }));
+
 const stdout = fs.openSync(stdoutFile, "a", 0o600);
 const stderr = fs.openSync(stderrFile, "a", 0o600);
 const child = spawn(job.command.argv[0], job.command.argv.slice(1), {
@@ -151,23 +181,27 @@ const child = spawn(job.command.argv[0], job.command.argv.slice(1), {
   env: { ...process.env, KACHA_JOB_ID: job.id, KACHA_JOB_RUN_ID: runId },
   stdio: ["ignore", stdout, stderr],
   shell: false,
+  detached: process.platform !== "win32",
 });
 job = mutateState("job-worker-child", (current) => {
   if (current.activeRunId !== runId || current.status !== "running") return current;
   const next = {
     ...current,
-    childPid: child.pid,
+    childPid: child.pid ?? null,
+    childProcessGroupId: process.platform !== "win32" ? child.pid ?? null : null,
     updatedAt: now(),
   };
   placeholder(next, "running", {
     workerPid: process.pid,
-    childPid: child.pid,
+    childPid: child.pid ?? null,
+    childProcessGroupId: process.platform !== "win32" ? child.pid ?? null : null,
     activeRunId: runId,
   });
   return next;
 });
 
 function quarantineCancelledOutputs(current) {
+  if (current.outputsOwned === false) return [];
   const existing = (current.expectedOutputs ?? []).filter(
     (file) => fs.existsSync(file) && fs.statSync(file).isFile(),
   );
@@ -207,7 +241,7 @@ function finish(requestedStatus, extra = {}) {
     if (["cancelled", "cancellation_failed"].includes(current.status)) {
       return current;
     }
-    if (current.status === "cancelling") {
+    if (current.status === "cancelling" && requestedStatus !== "cancellation_failed") {
       const quarantinedOutputs = quarantineCancelledOutputs(current);
       const next = {
         ...current,
@@ -216,6 +250,7 @@ function finish(requestedStatus, extra = {}) {
         updatedAt: now(),
         workerPid: null,
         childPid: null,
+        childProcessGroupId: null,
         activeRunId: null,
         outputs: [],
         error: null,
@@ -227,13 +262,14 @@ function finish(requestedStatus, extra = {}) {
       placeholder(next, "cancelled", {
         workerPid: null,
         childPid: null,
+        childProcessGroupId: null,
         activeRunId: null,
         outputs: [],
         error: null,
       });
       return next;
     }
-    if (current.status !== "running") return current;
+    if (!["running", "cancelling"].includes(current.status)) return current;
     const next = {
       ...current,
       status: requestedStatus,
@@ -241,6 +277,7 @@ function finish(requestedStatus, extra = {}) {
       updatedAt: now(),
       workerPid: null,
       childPid: null,
+      childProcessGroupId: null,
       activeRunId: null,
       ...extra,
     };
@@ -248,6 +285,7 @@ function finish(requestedStatus, extra = {}) {
       ...extra,
       workerPid: null,
       childPid: null,
+      childProcessGroupId: null,
       activeRunId: null,
     });
     return next;
@@ -271,14 +309,20 @@ child.on("close", (code, signal) => {
     finished = true;
     return;
   }
-  if (current.status === "cancelling" || signal) {
+  const group = current.childProcessGroupId;
+  if (group && targetAlive(-group)) {
+    try { process.kill(-group, "SIGKILL"); } catch {}
+    finish("cancellation_failed", { exitCode: code, signal, error: "主进程退出后仍有子进程存活；已请求终止，确认退出后才可恢复", childProcessGroupId: group });
+    return;
+  }
+  if (current.status === "cancelling") {
     finish("cancelled", {
       exitCode: code,
       signal: signal ?? null,
     });
     return;
   }
-  if (code !== 0) {
+  if (code !== 0 || signal) {
     finish("failed", {
       exitCode: code,
       signal: signal ?? null,
@@ -335,9 +379,9 @@ child.on("close", (code, signal) => {
 });
 
 function requestTermination() {
-  try { child.kill("SIGTERM"); } catch {}
+  try { if (process.platform !== "win32" && child.pid) process.kill(-child.pid, "SIGTERM"); else child.kill("SIGTERM"); } catch {}
   terminationTimer = setTimeout(() => {
-    try { child.kill("SIGKILL"); } catch {}
+    try { if (process.platform !== "win32" && child.pid) process.kill(-child.pid, "SIGKILL"); else child.kill("SIGKILL"); } catch {}
   }, 700);
 }
 

@@ -94,7 +94,11 @@ requireText("README.en.md", `All ${actual.assignableEffects} assignable effects 
 requireText("docs/product/metrics-and-learning.md", `完整回归 ${actual.regressionChecks} 项`);
 requireText("website/app/site-content.ts", "String(productTruth.regressionChecks)");
 requireText("website/app/components/SiteShell.tsx", "--agent both --channel canary");
-requireText("website/tests/rendered-html.test.mjs", `/>${actual.regressionChecks}</`);
+requireText("website/tests/rendered-html.test.mjs", "productTruth.regressionChecks");
+const renderedTests = fs.readFileSync(path.join(root, "website/tests/rendered-html.test.mjs"), "utf8");
+if ((renderedTests.match(/assert\.match\(html, regressionMetric\)/g) ?? []).length !== 2) {
+  throw new Error("both website languages must verify the shared regression metric");
+}
 
 if (process.argv.includes("--self-test")) {
   let rejected = false;

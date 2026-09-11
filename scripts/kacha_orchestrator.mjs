@@ -5,6 +5,7 @@ import {
   handoffContentProject,
   initializeProject,
   projectStatus,
+  summarizeProjectStatus,
   runProject,
   validateRecipeRegistry,
 } from "./project_orchestrator.mjs";
@@ -22,13 +23,13 @@ function usage() {
       + "  kacha.mjs run PROJECT [--confirm-execute] [--include-render]\n"
       + "  kacha.mjs resume PROJECT [--confirm-execute] [--include-render]\n"
       + "  kacha.mjs handoff PROJECT --source VIDEO --confirm-content-approved [options]\n"
-      + "  kacha.mjs status PROJECT\n"
+      + "  kacha.mjs status PROJECT [--summary]\n"
       + "  kacha.mjs workflow validate",
   );
   process.exit(2);
 }
 
-function emit(value, exitCode = 0) {
+function emit(value, exitCode = value.status === "blocked" ? 1 : 0) {
   console.log(JSON.stringify(value, null, 2));
   process.exit(exitCode);
 }
@@ -81,7 +82,7 @@ try {
     const report = projectStatus(project, {
       home: option(args, "--home", os.homedir()),
     });
-    emit(report, report.status === "blocked" ? 1 : 0);
+    emit(args.includes("--summary") ? summarizeProjectStatus(report) : report, report.status === "blocked" ? 1 : 0);
   }
   if (action === "validate") emit(validateRecipeRegistry());
   usage();
