@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { acquireFileLock } from "./kacha_utils.mjs";
 
 import { runtimeToolchain } from "./runtime_bundle.mjs";
+import { activateInstallations, assertOverlayPreserved } from "./install_transaction.mjs";
 
 function option(args, name, fallback = null) {
   const index = args.indexOf(name);
@@ -115,7 +116,8 @@ function applyOverlay(overlay, bundle) {
   }
   rejectSymlinks(overlay, "overlay");
   const manifest = JSON.parse(fs.readFileSync(manifestFile, "utf8"));
-  if (manifest.schemaVersion !== "1.0" || !manifest.id) {
+  if (manifest.schemaVersion !== "1.0" || typeof manifest.id !== "string"
+    || !manifest.id.trim() || /[\r\n=]/.test(manifest.id)) {
     throw new Error("overlay manifest 必须包含 schemaVersion=1.0 和 id");
   }
   for (const entry of manifest.files ?? []) {
@@ -235,6 +237,7 @@ function verifyBundle(bundle, source) {
   for (const test of fs.readdirSync(path.join(bundle, "tests")).filter(name => /^optimization_.*_tests\.mjs$/.test(name)).sort()) {
     run(process.execPath, [path.join(bundle, "tests", test)], bundle, { env: verificationEnvironment });
   }
+  run(process.execPath, [path.join(bundle, "tests", "audio_fallback_review_tests.mjs")], bundle, { env: verificationEnvironment });
   const privateTests = path.join(bundle, "tests", "private");
   if (fs.existsSync(privateTests)) {
     for (const entry of fs.readdirSync(privateTests).sort()) {
@@ -266,6 +269,7 @@ const overlay = overlayInput ? path.resolve(overlayInput) : null;
 const agent = option(args, "--agent", "both");
 const apply = args.includes("--apply");
 const verifyOnly = args.includes("--verify-only");
+if (verifyOnly && apply) fail("--verify-only 是只读校验，不能与 --apply 合用；安装须执行完整 bundle 验证", 2);
 const home = path.resolve(option(args, "--home", os.homedir()));
 const outputInput = option(args, "--output");
 const output = outputInput ? path.resolve(outputInput) : null;
@@ -311,6 +315,7 @@ try {
   run("python3", [path.join(bundle, "scripts", "scan_secrets.py")], bundle);
   const coreContentDigest = treeDigest(bundle);
   let overlayId = overlay ? applyOverlay(overlay, bundle) : "none";
+  if (apply) assertOverlayPreserved(targets, overlayId);
   const identity = coreIdentity(source);
   // An installed bundle has no .git. Read-only comparison must preserve its
   // version envelope rather than inventing a not-a-git-checkout revision.
@@ -404,44 +409,7 @@ try {
       staged.push({ ...target, stage });
     }
 
-    const replaced = [];
-    try {
-      for (const target of staged) {
-        fs.mkdirSync(backupRoot, { recursive: true });
-        const backup = path.join(backupRoot, target.agent);
-        if (target.exists) fs.renameSync(target.path, backup);
-        fs.renameSync(target.stage, target.path);
-        replaced.push({ ...target, backup: target.exists ? backup : null });
-      }
-      for (const target of targets) {
-        if (treeDigest(target.path) !== bundleDigest) {
-          throw new Error(`安装后 bundle hash 不一致：${target.path}`);
-        }
-      }
-    } catch (error) {
-      for (const target of [...replaced].reverse()) {
-        if (fs.existsSync(target.path)) {
-          const failed = path.join(
-            backupRoot,
-            `failed-new-${target.agent}`,
-          );
-          fs.renameSync(target.path, failed);
-        }
-        if (target.backup && fs.existsSync(target.backup)) {
-          fs.renameSync(target.backup, target.path);
-        }
-      }
-      for (const target of staged) {
-        if (fs.existsSync(target.stage)) {
-          fs.mkdirSync(backupRoot, { recursive: true });
-          fs.renameSync(
-            target.stage,
-            path.join(backupRoot, `unapplied-${target.agent}`),
-          );
-        }
-      }
-      throw error;
-    }
+    const replaced = activateInstallations({ staged, targets, backupRoot, bundleDigest, treeDigest });
 
     emit({
       status: "applied",

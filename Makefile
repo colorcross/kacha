@@ -17,6 +17,7 @@ check-core:
 	node tests/run_tests.mjs --suite core
 
 check-full: check-static
+	node tests/audio_fallback_review_tests.mjs
 	node tests/optimization_telemetry_tests.mjs
 	node tests/optimization_observation_tests.mjs
 	node tests/optimization_runtime_tests.mjs

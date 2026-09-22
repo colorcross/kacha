@@ -1,8 +1,18 @@
 {
   "schemaVersion": "1.0",
   "id": "kacha-deterministic-decision-rules",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "rules": [
+    {
+      "id": "audio-generation-fallback",
+      "stages": ["content", "visual_audio"],
+      "modules": ["audio_generation", "audio", "bgm", "sfx", "minimax"],
+      "signals": ["always"],
+      "priority": "required",
+      "decision": "仅需生成 BGM/缺失音效时：先查本地库与缓存，按 references/minimax-audio-fallback.md 执行 mmx → 默认浏览器 MiniMax 音频网页版 → MiniMax Design；渠道异常不等于任务失败，已提交结果未知先查状态，禁止跨渠道重复提交。",
+      "candidates": [{"recipe": "minimax_audio_agent_fallback", "score": 100}],
+      "fallback": "preserve_unknown_attempt_and_required_asset_gap"
+    },
     {
       "id": "cut-information-change",
       "stages": ["edit"],
@@ -173,12 +183,12 @@
       "modules": ["sfx"],
       "signals": ["effect_peak"],
       "priority": "required",
-      "decision": "音效必须与动作/文字落位/转折同峰，且语义匹配。",
+      "decision": "音效必须与动作/文字落位/转折同峰，且语义匹配；本地库缺失时按音频生成回退合同补齐，用户点名或叙事必需的声音不得静默省略。",
       "candidates": [
         {"recipe": "local_preferred_semantic_sfx", "score": 100},
         {"recipe": "licensed_fallback_sfx", "score": 82}
       ],
-      "fallback": "no_sfx"
+      "fallback": "omit_only_if_optional_and_allowed_otherwise_block"
     },
     {
       "id": "beauty-default-off",

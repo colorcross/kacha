@@ -55,6 +55,11 @@ SHA、时长、精确语义路由与分发边界，并重建试听索引。字�
 建立 `aliases`，不制造重复资产。来源与公开再分发许可未记录的文件统一标为
 `project_private_only`。
 
+生成来源通过 mapping 的 `provenance` 保留（字段见
+`references/minimax-audio-fallback.md`），不自动授予公开分发许可。导入在库锁内
+完成，拒绝路径越界、符号链接输出、重复批次 ID 和来源记录冲突；元数据写入
+失败会恢复原 manifest/profile/试听索引，并清理本次新增文件。
+
 ## 时间与混音
 
 - 文字逐字出现时，每个音效绑定字符实际落位帧；

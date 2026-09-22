@@ -4,11 +4,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import {
+  acquireFileLock,
   mediaSummary,
   readJson,
   resolveRuntimeCommand,
   sha256File,
-  writeJsonAtomic,
 } from "./kacha_utils.mjs";
 
 const args = process.argv.slice(2);
@@ -36,6 +36,8 @@ function fail(message) {
   console.error(`私有音效导入失败：${message}`);
   process.exit(1);
 }
+
+process.once("uncaughtException", error => fail(error.message));
 
 function escapeHtml(value) {
   return String(value)
@@ -107,7 +109,7 @@ ${sections}</main><script>
 const input=document.querySelector("#search");const cards=[...document.querySelectorAll("article")];
 input.addEventListener("input",()=>{const q=input.value.trim().toLowerCase();for(const card of cards)card.hidden=q&&!card.dataset.search.includes(q)});
 </script></body></html>`;
-  fs.writeFileSync(path.join(root, "试听索引.html"), html);
+  return html;
 }
 
 const libraryRoot = option("--library");
@@ -123,6 +125,25 @@ const profileFile = path.join(root, "kacha-profile.json");
 if (!fs.existsSync(manifestFile) || !fs.existsSync(profileFile)) {
   fail("library 必须包含 manifest.json 与 kacha-profile.json");
 }
+// Serialize the read/modify/write cycle, not just the final manifest write.
+const releaseLibraryLock = acquireFileLock(path.join(root, ".kacha-sfx-import.lock"), { purpose: "sfx-import" });
+process.once("exit", releaseLibraryLock);
+
+function libraryTarget(relative) {
+  if (typeof relative !== "string" || !relative.trim() || path.isAbsolute(relative)
+    || relative.split(/[\\/]/).some(part => !part || part === ".." || part === ".")) {
+    fail(`音效输出路径必须是库内相对路径：${relative}`);
+  }
+  let current = root;
+  for (const part of relative.split(/[\\/]/)) {
+    current = path.join(current, part);
+    try {
+      if (fs.lstatSync(current).isSymbolicLink()) fail(`音效输出路径不允许符号链接：${relative}`);
+    } catch (error) { if (error.code !== "ENOENT") throw error; }
+  }
+  return path.join(root, relative);
+}
+for (const file of ["manifest.json", "kacha-profile.json", "试听索引.html"]) libraryTarget(file);
 
 let mapping;
 let manifest;
@@ -154,16 +175,23 @@ for (const asset of manifest.assets) {
   }
 }
 const operations = [];
+const plannedIds = new Set(), plannedNames = new Set(), plannedOutputs = new Set();
 for (const [index, item] of mapping.assets.entries()) {
   const label = `assets[${index}]`;
   if (!item.title || typeof item.title !== "string") fail(`${label}.title 缺失`);
+  if (plannedNames.has(item.title)) fail(`${label}.title 在本批次重复`);
+  plannedNames.add(item.title);
+  if (typeof item.source !== "string" || !item.source.trim()) fail(`${label}.source 缺失`);
   if (item.duplicateOf) {
     const target = ids.get(item.duplicateOf);
     if (!target) fail(`${label}.duplicateOf 不存在：${item.duplicateOf}`);
     const source = path.resolve(path.dirname(path.resolve(mappingFile)), item.source);
-    if (!fs.existsSync(source)) fail(`${label}.source 不存在：${source}`);
+    if (!fs.existsSync(source) || !fs.statSync(source).isFile()) fail(`${label}.source 不是文件：${source}`);
     if (sha256File(source) !== target.source_sha256) {
       fail(`${label} 声明为重复项，但 source SHA 与 ${item.duplicateOf} 不同`);
+    }
+    if (item.provenance && JSON.stringify(target.provenance) !== JSON.stringify(item.provenance)) {
+      fail(`${label}.provenance 与重复项不同，不能静默丢弃`);
     }
     if (names.has(item.title) && names.get(item.title) !== target.id) {
       fail(`${label}.title 与其他资产冲突：${item.title}`);
@@ -173,6 +201,18 @@ for (const [index, item] of mapping.assets.entries()) {
   }
   for (const field of ["id", "category", "source", "readyFile", "use", "route"]) {
     if (!item[field]) fail(`${label}.${field} 缺失`);
+  }
+  if (!/^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(item.id) || plannedIds.has(item.id)) fail(`${label}.id 无效或重复`);
+  plannedIds.add(item.id);
+  libraryTarget(item.readyFile);
+  if (plannedOutputs.has(item.readyFile)) fail(`${label}.readyFile 在本批次重复`);
+  plannedOutputs.add(item.readyFile);
+  if (item.provenance !== undefined && (!item.provenance || typeof item.provenance !== "object"
+    || Array.isArray(item.provenance) || typeof item.provenance.provider !== "string"
+    || !item.provenance.provider.trim() || !["mmx", "web", "desktop"].includes(item.provenance.transport)
+    || !/^[a-f0-9]{64}$/i.test(item.provenance.promptSha256 ?? "")
+    || typeof item.provenance.logicalAssetId !== "string" || !item.provenance.logicalAssetId.trim())) {
+    fail(`${label}.provenance 需要 provider、transport、promptSha256 和 logicalAssetId`);
   }
   const existing = ids.get(item.id);
   const source = path.resolve(path.dirname(path.resolve(mappingFile)), item.source);
@@ -220,21 +260,27 @@ for (const operation of operations) {
     if (operation.existing.source_sha256 !== sourceSha256) {
       fail(`已有 ${item.id} 的 source SHA 与待导入文件不同`);
     }
+    if (item.provenance && JSON.stringify(operation.existing.provenance) !== JSON.stringify(item.provenance)) {
+      fail(`已有 ${item.id} 的 provenance 与待导入记录不同，不能静默丢弃或覆盖`);
+    }
     continue;
   }
   const sourceExtension = path.extname(operation.source).toLowerCase() || ".bin";
   const sourceRelative = `_source/project-private/${item.id}${sourceExtension}`;
-  const sourceTarget = path.join(root, sourceRelative);
-  const readyTarget = path.join(root, item.readyFile);
+  const sourceTarget = libraryTarget(sourceRelative);
+  const readyTarget = libraryTarget(item.readyFile);
   for (const target of [sourceTarget, readyTarget]) {
     if (fs.existsSync(target)) fail(`拒绝覆盖已有文件：${target}`);
     fs.mkdirSync(path.dirname(target), { recursive: true });
   }
   fs.copyFileSync(operation.source, sourceTarget, fs.constants.COPYFILE_EXCL);
   createdDuringRun.push(sourceTarget);
+  // Reserve the output exclusively before ffmpeg; cleanup must never unlink a
+  // file created by another writer between the existence check and conversion.
+  fs.closeSync(fs.openSync(readyTarget, "wx"));
   createdDuringRun.push(readyTarget);
   const result = spawnSync(ffmpeg, [
-    "-hide_banner", "-loglevel", "error", "-nostdin",
+    "-hide_banner", "-loglevel", "error", "-nostdin", "-xerror", "-y",
     "-i", sourceTarget,
     "-vn", "-af", "volume=-1dB",
     "-ar", "48000", "-ac", "2", "-c:a", "pcm_s24le",
@@ -256,6 +302,8 @@ for (const operation of operations) {
     license_ref: "project_private",
     distribution: "project_private_only",
     rights_status: "project_use_authorized_by_user_source_provenance_unrecorded",
+    ...(item.provenance ? { provenance: structuredClone(item.provenance),
+      rights_status: "source_provenance_recorded_license_review_required" } : {}),
     source_file: sourceRelative,
     source_sha256: sourceSha256,
     ready_file: item.readyFile,
@@ -271,10 +319,10 @@ for (const operation of operations) {
 manifest.schemaVersion ??= "1.0";
 manifest.id ??= "xingzhe-dahui-private-sfx-library";
 manifest.additional_sources ??= {};
-manifest.additional_sources.user_project_private = {
-  description: "用户提供并明确要求用于当前项目的私有音效；来源与公开再分发许可未记录",
-  rights_status: "project_use_authorized_source_provenance_unrecorded",
-  confirmed_at: "2026-07-30",
+manifest.additional_sources.user_project_private ??= {
+  description: "项目私有音效；每项来源、生成渠道和许可按资产记录核实",
+  rights_status: "per_asset_license_review_required",
+  registered_at: new Date().toISOString().slice(0, 10),
   distribution: "project_private_only",
   license_ref: "project_private",
   source_archive: "_source/project-private",
@@ -348,13 +396,46 @@ const profileChanged = JSON.stringify(contentWithoutRevision(profile))
 if (manifestChanged) {
   manifest.version = Number(originalManifest.version ?? 0) + 1;
   manifest.updated_at = new Date().toISOString();
-  writeJsonAtomic(manifestFile, manifest);
 }
 if (profileChanged) {
   profile.version = Number(originalProfile.version ?? 0) + 1;
-  writeJsonAtomic(profileFile, profile);
 }
-if (manifestChanged) rebuildAudition(root, manifest);
+// Restore all metadata if any step fails so the manifest never points to files
+// removed by failed-import cleanup. Each individual replacement is atomic.
+const updates = [
+  ...(manifestChanged ? [[manifestFile, `${JSON.stringify(manifest, null, 2)}\n`]] : []),
+  ...(profileChanged ? [[profileFile, `${JSON.stringify(profile, null, 2)}\n`]] : []),
+  ...(manifestChanged ? [[path.join(root, "试听索引.html"), rebuildAudition(root, manifest)]] : []),
+];
+const previous = updates.map(([file]) => [file, fs.existsSync(file) ? fs.readFileSync(file) : null]);
+const written = [];
+function replaceText(file, content) {
+  const temporary = `${file}.tmp-${process.pid}`;
+  let created = false;
+  try {
+    fs.writeFileSync(temporary, content, { flag: "wx" });
+    created = true;
+    fs.renameSync(temporary, file);
+  } finally {
+    if (created && fs.existsSync(temporary)) fs.unlinkSync(temporary);
+  }
+}
+try {
+  for (const [file, content] of updates) { replaceText(file, content); written.push(file); }
+} catch (error) {
+  const restorationErrors = [];
+  for (const [file, content] of previous.reverse()) {
+    if (!written.includes(file)) continue;
+    try { if (content === null) fs.unlinkSync(file); else replaceText(file, content); }
+    catch (restoreError) { restorationErrors.push(restoreError.message); }
+  }
+  if (restorationErrors.length) {
+    // Keep audio referenced by metadata that could not be restored.
+    createdDuringRun.length = 0;
+    fail(`元数据恢复未完成，保留音频待恢复：${restorationErrors.join("; ")}`);
+  }
+  fail(error.message);
+}
 createdDuringRun.length = 0;
 console.log(JSON.stringify({
   schemaVersion: "1.0",

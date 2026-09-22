@@ -27,8 +27,9 @@ const MODULE_REFERENCES = {
   materials: ["references/material-editing.md"],
   audio: ["references/audio.md"],
   dialogue: ["references/audio.md"],
-  bgm: ["references/audio.md"],
-  sfx: ["references/audio.md", "references/sfx-library.md"],
+  bgm: ["references/audio.md", "references/minimax-audio-fallback.md"],
+  sfx: ["references/audio.md", "references/sfx-library.md", "references/minimax-audio-fallback.md"],
+  audio_generation: ["references/minimax-audio-fallback.md"],
   shows: [
     "references/shows/README.md",
     "references/shows/tool-sharing.md",
@@ -133,7 +134,7 @@ const MODULE_REFERENCES = {
   brand: ["references/subtitles-covers-brand.md"],
   series: ["references/subtitles-covers-brand.md"],
   generated: ["references/generated-media-assets.md"],
-  minimax: ["references/generated-media-assets.md"],
+  minimax: ["references/generated-media-assets.md", "references/minimax-audio-fallback.md"],
   seedance: ["references/generated-media-assets.md"],
   network_assets: ["references/generated-media-assets.md"],
   cleanup: ["references/cleanup-retention.md"],
@@ -230,6 +231,12 @@ if (!stage) selected.add("references/optimization-execution.md");
 if (task === "material_edit") selected.add("references/material-editing.md");
 if (stage) {
   selected.add(`references/stages/${stage}.md`);
+  // Explicit generation requests retain the paid-call recovery contract even in
+  // compact packets. Other stages keep their existing bounded context.
+  if (modules.some(module => ["audio_generation", "bgm", "sfx", "minimax"].includes(module))
+    || (stage === "visual_audio" && modules.includes("audio"))) {
+    selected.add("references/minimax-audio-fallback.md");
+  }
 } else {
   selected.add("SKILL.md");
   if (task === "material_edit") {
