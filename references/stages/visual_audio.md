@@ -15,6 +15,9 @@
   决定段落、编配、留白、频段与动态；禁止单一循环铺满全片。正式交付必须有
   专业提示词、`audio.bgm.segments[]`、组件/mix stems、计划区间相对人声差、
   组件重建和最终成片匹配证据。SFX 必须语义匹配、峰值对齐、丰富但不盖人声。
+- 生成 BGM 或本地库缺失的 SFX，必读 `references/minimax-audio-fallback.md`：
+  mmx 异常后用默认浏览器已登录的 MiniMax 音频网页版，网页版也不可用再用
+  MiniMax Design 桌面版。提交结果未知先对账，不跨渠道重复提交；本地音效库仍优先。
 - Demucs、ASR、蒙版、跟踪、Beauty、样式帧和生成素材一律使用内容指纹缓存；
   Demucs/ASR 额外冻结真实模型内容与服务实现 SHA。
 - `production-quality` execution 门禁按项目政策版本执行：legacy 保留原主开场与逐项 SFX 要求；

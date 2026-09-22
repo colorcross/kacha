@@ -54,7 +54,7 @@ node scripts/kacha.mjs resume PROJECT --confirm-execute
 | --- | --- |
 | Agent 控制、对象引用、mutation、异步任务 | `references/agent-chat-control-plane.md` |
 | 开场、导演、专业剪辑与 J/L-cut | `references/professional-editing-craft.md`、`references/production/agent-and-review.md` |
-| 人声、BGM、SFX、同步 | `references/audio.md`；SFX 另读 `references/sfx-library.md` |
+| 人声、BGM、SFX、同步 | `references/audio.md`；SFX 另读 `references/sfx-library.md`；生成 BGM/缺失音效按 `references/minimax-audio-fallback.md` 执行 mmx → 已登录默认浏览器 → MiniMax Design |
 | 视觉、PIP、蒙版、调色 | `references/visuals-masks.md` |
 | 信息图、空间/语义动效、字景 | `references/visual-design-preflight.md`、`references/production/visual-execution.md` |
 | 风格、效果合同 | `references/style-effects-library.md`、`references/effect-templates-resources.md` |
