@@ -8,6 +8,8 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { acquireFileLock } from "./kacha_utils.mjs";
 
+import { runtimeToolchain } from "./runtime_bundle.mjs";
+
 function option(args, name, fallback = null) {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : fallback;
@@ -63,6 +65,7 @@ function copyCore(source, output) {
         ".git",
         ".DS_Store",
         ".kacha-version",
+        ".kacha-runtime.json",
         ".playwright-cli",
         "node_modules",
         "output",
@@ -229,6 +232,9 @@ function verifyBundle(bundle, source) {
     bundle,
     { env: verificationEnvironment },
   );
+  for (const test of fs.readdirSync(path.join(bundle, "tests")).filter(name => /^optimization_.*_tests\.mjs$/.test(name)).sort()) {
+    run(process.execPath, [path.join(bundle, "tests", test)], bundle, { env: verificationEnvironment });
+  }
   const privateTests = path.join(bundle, "tests", "private");
   if (fs.existsSync(privateTests)) {
     for (const entry of fs.readdirSync(privateTests).sort()) {
@@ -341,6 +347,25 @@ try {
     stripRuntimeArtifacts(bundle);
   }
   const bundleDigest = treeDigest(bundle);
+  const exportDirectory = option(args, "--export-dir");
+  if (exportDirectory) {
+    if (!verifyOnly || apply || identity.dirty || !/^[a-f0-9]{40,64}$/.test(identity.ref)) throw new Error("runtime export requires a clean verified revision and --verify-only");
+    const destination = path.resolve(exportDirectory);
+    if (fs.existsSync(destination)) throw new Error("runtime export destination exists");
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    const staging = `${destination}.staging-${process.pid}`;
+    if (fs.existsSync(staging)) throw new Error("runtime export staging exists");
+    try {
+      fs.cpSync(bundle, staging, { recursive: true, errorOnExist: true });
+      fs.writeFileSync(path.join(staging, ".kacha-runtime.json"), JSON.stringify({schemaVersion:"1.0",kind:"kacha-frozen-runtime",sourceRef:identity.ref,sourceDirty:false,bundleDigest,toolchain:runtimeToolchain(),createdAt:new Date().toISOString()}, null, 2));
+      fs.renameSync(staging, destination);
+    } finally {
+      fs.rmSync(staging, { recursive: true, force: true });
+    }
+    emit({status:"exported",source,bundle:destination,bundleDigest,core:identity});
+    fs.rmSync(temporary, { recursive: true, force: true });
+    process.exit(0);
+  }
   const before = targets.map((target) => ({
     ...target,
     exists: fs.existsSync(target.path),

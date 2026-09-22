@@ -17,16 +17,19 @@
   组件重建和最终成片匹配证据。SFX 必须语义匹配、峰值对齐、丰富但不盖人声。
 - Demucs、ASR、蒙版、跟踪、Beauty、样式帧和生成素材一律使用内容指纹缓存；
   Demucs/ASR 额外冻结真实模型内容与服务实现 SHA。
-- `production-quality` execution 门禁要求：一个主开场、同屏最多一个主效果；
-  清单按口播逐项出现且每项有独立 SFX 峰值；多行字幕只表达对比/因果/层级/
+- `production-quality` execution 门禁按项目政策版本执行：legacy 保留原主开场与逐项 SFX 要求；
+  narrative-v1 允许真实叙事开场，清单按口播逐项出现，音效按实际语义触发；同屏最多一个主效果；多行字幕只表达对比/因果/层级/
   递进并逐行出；人物身后文字不超过 7 字；PIP 有信息差和三态避碰；外部素材
   有对象/动作/状态/角色/时态与来源；BGM 提示词覆盖乐器、风格、节奏、音色、
   和弦与高低频控制。电影级 3D 封面默认只用获批三视图作为生成身份锚点，真人
   正面照只做生成后辨识 QC，禁止进入生成或混合输入。人物动作、表情和服装必须
   按当期场景适配，任何模式都不得直接把三视图站姿作为正式海报姿态。
-- 前 60 秒独立门禁：至少 5 个有真实语义触发的效果、4 种机制和 3 个实测峰值
-  SFX；任意 10 秒不超过 3 个主效果；人物在场比例不少于 55%，全屏接管不超过
-  35%，呼吸区间不少于 20%。必须提交正常速度代表预览，静态帧不能放行。
+- 前 60 秒数量下限只适用于 legacy 工程，按其 production pack 的栏目规则校验。新版
+  narrative-v1 检查必需表达、触发理由与实际执行，不凑效果/机制/SFX 数。两版均保留
+  密度上限、人物在场、呼吸空间及正常速度代表预览，静态帧不能放行。
+- 复杂效果允许带完整依赖身份的局部合成缓存；普通间隙不重复编码。高位深/HDR
+  未验证组合必须阻断，不以 yuv420p 默默替换源规格。
+- 真实局部预览使用 `real-preview request` 或 Studio 按钮；Canvas 只辅助定位。
 
 稳定入口：
 
@@ -34,3 +37,5 @@
 node scripts/kacha.mjs timeline validate --plan timeline-ir.json
 node scripts/kacha.mjs render project-manifest.json
 ```
+
+新版能力按项目 `editorialPolicy.version` 选择，细节按需读 `references/optimization-execution.md`。legacy 工程不自动改政策。

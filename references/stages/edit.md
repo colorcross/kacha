@@ -19,3 +19,5 @@
   掩盖错误剪点。
 
 完成条件：EDL、连接审计、确定性 decision plan、局部预览范围和升级项全部明确。
+
+新版能力按项目 `editorialPolicy.version` 选择，细节按需读 `references/optimization-execution.md`。legacy 工程不自动改政策。

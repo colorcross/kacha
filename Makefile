@@ -17,6 +17,12 @@ check-core:
 	node tests/run_tests.mjs --suite core
 
 check-full: check-static
+	node tests/optimization_telemetry_tests.mjs
+	node tests/optimization_observation_tests.mjs
+	node tests/optimization_runtime_tests.mjs
+	node tests/optimization_preview_tests.mjs
+	node tests/optimization_execution_tests.mjs
+	node tests/optimization_render_tests.mjs
 	node tests/job_reliability_tests.mjs
 	node tests/run_tests.mjs
 	node tests/mcp_server_tests.mjs

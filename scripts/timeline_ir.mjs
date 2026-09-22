@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import { renderMediaContract, colorArguments } from "./render_media_contract.mjs";
+import { previewClosure } from "./preview_range.mjs";
 import path from "node:path";
 import {
   acquireFileLock,
@@ -32,6 +34,7 @@ const action = firstPositional(args, [
   "--graph",
   "--output",
   "--mode",
+  "--expected-graph-digest",
   "--range-start",
   "--range-end",
   "--config",
@@ -473,6 +476,7 @@ function sliceTimedEvents(events, range, startField = "start", endField = "end")
       ...event,
       [startField]: start - range.start,
       [endField]: end - range.start,
+      sourceOffsetSeconds: Number(event.sourceOffsetSeconds ?? 0) + start - Number(event[startField]),
     }];
   });
 }
@@ -803,6 +807,9 @@ function validatePlan(planFile) {
       errors.push(`${label} SHA-256 已失效`);
     }
   }
+  for (const window of plan.audio?.bgm?.silences ?? []) {
+    if (typeof window.start !== "number" || typeof window.end !== "number" || !between(window.start, 0, duration) || !between(window.end, window.start, duration) || window.end <= window.start || !window.reason) errors.push("BGM 留白范围或理由无效");
+  }
   const bgmSegments = plan.audio?.bgm?.segments;
   if (bgmSegments !== undefined && !Array.isArray(bgmSegments)) {
     errors.push("audio.bgm.segments 必须是数组");
@@ -1007,14 +1014,17 @@ function compileGraph(validated, loadedConfig) {
     output,
   } = validated;
   const mode = option("--mode", plan.mode);
-  const range = previewRange(duration, mode);
+  const requestedRange = previewRange(duration, mode);
+  // Stateful ducking must see the same audio history as the final mix. Until a
+  // frozen mix-stem is available, explicitly render the prefix then output-trim.
+  const needsAudioHistory = requestedRange && plan.audio?.bgm && plan.audio.bgm.sidechain !== false;
+  const range = needsAudioHistory ? { ...requestedRange, start: 0, duration: requestedRange.end } : requestedRange;
   const hasExecutedTransitions = transitions.some(
     (entry) => Number(entry.durationFrames) > 0,
   );
-  const renderEdl = range && !hasExecutedTransitions
-    ? sliceEdl(edl, range)
-    : edl;
-  const renderTransitions = range && !hasExecutedTransitions ? [] : transitions;
+  const closure = range && hasExecutedTransitions ? previewClosure(edl, transitions, range, Number(plan.output?.fps) || summary.averageFps || summary.declaredFps || summary.fps) : null;
+  const renderEdl = closure?.edl ?? (range ? sliceEdl(edl, range) : edl);
+  const renderTransitions = closure?.transitions ?? (range ? [] : transitions);
   const renderDuration = range?.duration ?? duration;
   const configured = loadedConfig.config.execution.unifiedRender;
   const sourceDisplay = displayGeometry(summary);
@@ -1032,7 +1042,7 @@ function compileGraph(validated, loadedConfig) {
   const width = Math.max(2, Math.round((desiredWidth * previewScale) / 2) * 2);
   const height = Math.max(2, Math.round((desiredHeight * previewScale) / 2) * 2);
   const fps = finite(plan.output?.fps) ? Number(plan.output.fps) : sourceFps;
-  const breathing = sliceTimedEvents(plan.visual?.breathing ?? [], range);
+  const breathing = (plan.visual?.breathing ?? []).filter(e => !range || (e.end > range.start && e.start < range.end)).map(e => ({...e,start:e.start-(range?.start??0),end:e.end-(range?.start??0)}));
   const overlays = sliceTimedEvents(plan.visual?.overlays ?? [], range);
   const resolvedSfx = (plan.audio?.sfx ?? []).map((entry) => {
     const file = existingFile(validated.planFile, entry);
@@ -1053,16 +1063,13 @@ function compileGraph(validated, loadedConfig) {
   });
   const sfx = resolvedSfx.flatMap((entry) => {
     if (!range) return [entry];
-    const referenceTime = finite(entry.targetLandingSeconds)
-      ? Number(entry.targetLandingSeconds)
-      : Number(entry.fileStartSeconds);
-    return referenceTime >= range.start && referenceTime <= range.end
-      ? [{
-          ...entry,
-          time: Math.max(0, Number(entry.fileStartSeconds) - range.start),
-          fileStartSeconds: Math.max(0, Number(entry.fileStartSeconds) - range.start),
-        }]
-      : [];
+    const start = Number(entry.fileStartSeconds);
+    const file = existingFile(validated.planFile, entry);
+    const soundDuration = mediaSummary(file).duration;
+    const offset = Number(entry.sourceTrimSeconds ?? 0);
+    if (start >= range.end || start + soundDuration - offset <= range.start) return [];
+    return [{ ...entry, time: Math.max(0,start-range.start), fileStartSeconds: Math.max(0,start-range.start),
+      sourceTrimSeconds: offset + Math.max(0,range.start-start) }];
   });
   const bgm = plan.audio?.bgm?.segments
     ? {
@@ -1077,6 +1084,8 @@ function compileGraph(validated, loadedConfig) {
             ...entry,
             start: round(intersectionStart - (range?.start ?? 0), 6),
             end: round(intersectionEnd - (range?.start ?? 0), 6),
+            envelopeOffsetSeconds: intersectionStart - originalStart,
+            envelopeDurationSeconds: originalEnd - originalStart,
             sourceStart: round(
               Number(entry.sourceStart ?? 0) + intersectionStart - originalStart,
               6,
@@ -1104,6 +1113,8 @@ function compileGraph(validated, loadedConfig) {
         return [name, { ...entry, path: file, identity: fileIdentity(file) }];
       }),
     ),
+    craft: plan.craft ?? null,
+    mediaContract: renderMediaContract(summary.video, mode, { complex: Boolean(plan.visual?.overlays?.length || plan.visual?.subtitles || plan.visual?.breathing?.length || hasExecutedTransitions) }),
     source: fileIdentity(source),
     sourceMedia: {
       width: sourceWidth,
@@ -1117,14 +1128,17 @@ function compileGraph(validated, loadedConfig) {
     },
     edl: renderEdl,
     transitions: renderTransitions,
-    compositionDurationSeconds: duration,
-    videoTrimRange: range && hasExecutedTransitions
-      ? { start: range.start, end: range.end }
-      : null,
-    sourceSeekSeconds: range && !hasExecutedTransitions
+    compositionDurationSeconds: outputDuration(renderEdl, renderTransitions),
+    videoTrimRange: closure?.trim ?? null,
+    rangeEvidence: closure?.evidence ?? null,
+    sourceSeekSeconds: range
       ? Math.max(0, Math.min(...renderEdl.map((segment) => segment.sourceStart)))
       : 0,
-    durationSeconds: renderDuration,
+    durationSeconds: requestedRange?.duration ?? renderDuration,
+    processingDurationSeconds: renderDuration,
+    requestedPreviewRange: requestedRange,
+    finalTrimSeconds: (requestedRange?.start ?? 0) - (range?.start ?? 0),
+    rangeExpansionReason: needsAudioHistory ? "stateful_audio_history" : null,
     previewRange: range,
     geometry: { width, height, fps },
     visual: {
@@ -1256,6 +1270,7 @@ function keyframeExpression(points, fallback) {
 }
 
 function buildRenderCommand(graph, { hardwareDecode = process.platform === "darwin" } = {}) {
+  const processingDuration = graph.processingDurationSeconds ?? graph.durationSeconds;
   const command = ["-hide_banner", "-loglevel", "error", "-nostdin", "-y"];
   if (hardwareDecode) command.push("-hwaccel", "videotoolbox");
   if (Number(graph.sourceSeekSeconds ?? 0) > 0) {
@@ -1422,7 +1437,7 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
     const input = inputIndexes.overlays[index];
     const label = `overlay${index}`;
     filters.push(
-      `[${input}:v]scale=${Math.round(Number(overlay.width))}:`
+      `[${input}:v]trim=start=${formatNumber(overlay.sourceOffsetSeconds ?? 0)},setpts=PTS-STARTPTS,scale=${Math.round(Number(overlay.width))}:`
         + `${Math.round(Number(overlay.height))}:force_original_aspect_ratio=decrease,`
         + `pad=${Math.round(Number(overlay.width))}:${Math.round(Number(overlay.height))}:`
         + "(ow-iw)/2:(oh-ih)/2:color=black@0,format=rgba,"
@@ -1470,7 +1485,7 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
     );
     currentVideo = "vsub";
   }
-  filters.push(`[${currentVideo}]fps=${graph.geometry.fps},format=yuv420p[vout]`);
+  filters.push(`[${currentVideo}]fps=${graph.geometry.fps},format=${graph.mediaContract.pixelFormat}[vout]`);
 
   const hasVoice = audioSegments.length > 0 || inputIndexes.dialogue !== null;
   let voiceForMix = null;
@@ -1487,8 +1502,8 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
       ? `[${branches[0]}]`
       : `,asplit=${branches.length}${branches.map((label) => `[${label}]`).join("")}`;
     filters.push(
-      `[voiceRaw]aresample=48000:async=0:first_pts=0,`
-        + `atrim=0:${formatNumber(graph.durationSeconds)},`
+      `[voiceRaw]` + (graph.videoTrimRange && inputIndexes.dialogue === null ? `atrim=start=${formatNumber(graph.videoTrimRange.start)}:end=${formatNumber(graph.videoTrimRange.end)},asetpts=PTS-STARTPTS,` : "") + `aresample=48000:async=0:first_pts=0,`
+        + `atrim=0:${formatNumber(processingDuration)},`
         + `aformat=sample_rates=48000:channel_layouts=stereo`
         + branchFilter,
     );
@@ -1502,9 +1517,11 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
       const segmentLabels = [];
       graph.audio.bgm.segments.forEach((segment, index) => {
         const duration = Number(segment.end) - Number(segment.start);
-        const sourceStart = Number(segment.sourceStart ?? 0);
-        const fadeIn = Math.min(Number(segment.fadeInSeconds ?? 0.8), duration / 2);
-        const fadeOut = Math.min(Number(segment.fadeOutSeconds ?? 0.8), duration / 2);
+        const envelopeOffset = Number(segment.envelopeOffsetSeconds ?? 0);
+        const envelopeDuration = Number(segment.envelopeDurationSeconds ?? duration);
+        const sourceStart = Number(segment.sourceStart ?? 0) - envelopeOffset;
+        const fadeIn = Math.min(Number(segment.fadeInSeconds ?? 0.8), envelopeDuration / 2);
+        const fadeOut = Math.min(Number(segment.fadeOutSeconds ?? 0.8), envelopeDuration / 2);
         const level = -Math.abs(Number(segment.levelBelowDialogueDb ?? 18));
         const delay = Math.max(0, Math.round(Number(segment.start) * 1000));
         const fades = [
@@ -1512,7 +1529,7 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
             ? `afade=t=in:st=0:d=${formatNumber(fadeIn)}`
             : null,
           fadeOut > 0
-            ? `afade=t=out:st=${formatNumber(Math.max(0, duration - fadeOut))}:`
+            ? `afade=t=out:st=${formatNumber(Math.max(0, envelopeDuration - fadeOut))}:`
               + `d=${formatNumber(fadeOut)}`
             : null,
         ].filter(Boolean);
@@ -1520,17 +1537,17 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
         const label = `bgmSegment${index}`;
         filters.push(
           `[${inputIndexes.bgm[index]}:a]atrim=start=${formatNumber(sourceStart)}:`
-            + `end=${formatNumber(sourceStart + duration)},asetpts=PTS-STARTPTS,`
+            + `end=${formatNumber(sourceStart + envelopeDuration)},asetpts=PTS-STARTPTS,`
             + "aresample=48000:async=0:first_pts=0,"
             + "aformat=sample_rates=48000:channel_layouts=stereo,"
-            + `${fadeFilters}volume=${level}dB,adelay=${delay}|${delay}[${label}]`,
+            + `${fadeFilters}atrim=start=${formatNumber(envelopeOffset)}:end=${formatNumber(envelopeOffset + duration)},asetpts=PTS-STARTPTS,volume=${level}dB,adelay=${delay}|${delay}[${label}]`,
         );
         segmentLabels.push(`[${label}]`);
       });
       filters.push(
         `${segmentLabels.join("")}amix=inputs=${segmentLabels.length}:normalize=0:`
           + `duration=longest:dropout_transition=0,apad,`
-          + `atrim=0:${formatNumber(graph.durationSeconds)}[bgmRaw]`,
+          + `atrim=0:${formatNumber(processingDuration)}[bgmRaw]`,
       );
     } else {
       const level = -Math.abs(Number(graph.audio.bgm.levelBelowDialogueDb ?? 16));
@@ -1557,6 +1574,11 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
       bgmForMix = "bgmDucked";
     } else {
       bgmForMix = "bgmRaw";
+    }
+    if (graph.audio.bgm.silences?.length) {
+      const silenceExpression = graph.audio.bgm.silences.map(window => `between(t,${formatNumber(window.start - (graph.previewRange?.start ?? 0))},${formatNumber(window.end - (graph.previewRange?.start ?? 0))})`).join("+");
+      filters.push(`[${bgmForMix}]volume='if(${silenceExpression},0,1)':eval=frame[bgmQuiet]`);
+      bgmForMix = "bgmQuiet";
     }
     if (graph.output.bgmStem) {
       filters.push(`[${bgmForMix}]asplit=2[bgmMix][bgmStem]`);
@@ -1585,7 +1607,7 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
   if (sfxLabels.length > 0) {
     filters.push(
       `${sfxLabels.join("")}amix=inputs=${sfxLabels.length}:normalize=0:`
-        + `duration=longest,atrim=0:${formatNumber(graph.durationSeconds)}[sfxRaw]`,
+        + `duration=longest,atrim=0:${formatNumber(processingDuration)}[sfxRaw]`,
     );
     sfxForMix = "sfxRaw";
     if (graph.output.sfxStem) {
@@ -1604,7 +1626,7 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
     filters.push(
       `${mixLabels.join("")}amix=inputs=${mixLabels.length}:normalize=0:`
         + `duration=longest:dropout_transition=0,`
-        + `atrim=0:${formatNumber(graph.durationSeconds)},`
+        + `atrim=0:${formatNumber(processingDuration)},`
         + `alimiter=limit=${formatNumber(masterLimit)}:level=false[mixLimited]`,
     );
     if (graph.output.mixStem) {
@@ -1617,13 +1639,20 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
 
   command.push("-filter_complex", filters.join(";"), "-map", "[vout]");
   if (mixLabels.length > 0) command.push("-map", "[aout]");
-  let encoder = graph.encoding.requested;
+  let encoder = graph.mediaContract.encoder ?? graph.encoding.requested;
+  if (graph.mediaContract.encoder && !codecAvailable(encoder)) throw new Error(`保真编码器不可用：${encoder}`);
   if (!codecAvailable(encoder)) encoder = graph.encoding.fallback;
+  if (graph.finalTrimSeconds > 0) command.push("-ss", formatNumber(graph.finalTrimSeconds));
   command.push("-c:v", encoder);
   if (encoder === "libx264" || encoder === "libx265") {
     command.push("-preset", graph.encoding.preset, "-crf", String(graph.encoding.crf));
   } else {
     command.push("-b:v", "0", "-q:v", graph.mode === "preview" ? "60" : "75");
+  }
+  if (encoder === "libx265") {
+    const names = { color_primaries: "colorprim", color_transfer: "transfer", color_space: "colormatrix" };
+    const metadata = Object.entries(graph.mediaContract.color).filter(([key]) => names[key]).map(([key, value]) => `${names[key]}=${value}`);
+    if (metadata.length) command.push("-x265-params", metadata.join(":"));
   }
   if (
     ["hevc_videotoolbox", "libx265"].includes(encoder)
@@ -1634,7 +1663,11 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
     // the real-world failure mode "audio plays but video is unavailable".
     command.push("-tag:v", "hvc1");
   }
-  command.push("-pix_fmt", "yuv420p");
+  command.push("-pix_fmt", graph.mediaContract.pixelFormat, ...colorArguments(graph.mediaContract));
+  if (["tv", "pc"].includes(graph.mediaContract.color.color_range)) {
+    const codec = ["libx265", "hevc_videotoolbox"].includes(encoder) ? "hevc" : ["libx264", "h264_videotoolbox"].includes(encoder) ? "h264" : null;
+    if (codec) command.push("-bsf:v", `${codec}_metadata=video_full_range_flag=${graph.mediaContract.color.color_range === "pc" ? 1 : 0}`);
+  }
   if (mixLabels.length > 0) {
     command.push("-c:a", "aac", "-b:a", "256k", "-ar", "48000");
   } else {
@@ -1730,6 +1763,18 @@ function render(validated, graph, graphFile, loadedConfig) {
       if (fs.existsSync(output)) fs.unlinkSync(output);
       throw new Error(result.stderr.trim() || "统一时间线渲染失败");
     }
+    const verifyDependencies = (value) => {
+      if (!value || typeof value !== "object") return;
+      if (value.path && value.sha256) {
+        const current = fs.existsSync(value.path) && (fs.statSync(value.path).isDirectory() ? directoryIdentity(value.path).sha256 : sha256File(value.path));
+        if (current !== value.sha256) throw new Error(`渲染期间依赖已改变：${value.path}`);
+      }
+      Object.values(value).forEach(verifyDependencies);
+    };
+    try { verifyDependencies(graph); } catch (error) {
+      for (const file of [output, ...built.stemMaps.map(item => item.path)]) if (fs.existsSync(file)) fs.renameSync(file, `${file}.invalid-${Date.now()}`);
+      throw error;
+    }
     const rendered = mediaSummary(output);
     const durationTolerance = 1.5 / graph.geometry.fps;
     if (
@@ -1737,9 +1782,11 @@ function render(validated, graph, graphFile, loadedConfig) {
       || rendered.height !== graph.geometry.height
       || Math.abs(rendered.averageFps - graph.geometry.fps) > 0.02
       || Math.abs(rendered.videoDuration - graph.durationSeconds) > durationTolerance
+      || (graph.mode === "final" && rendered.video.pix_fmt.replace("yuvj", "yuv") !== graph.mediaContract.pixelFormat.replace("yuvj", "yuv"))
+      || Object.entries(graph.mediaContract.color).some(([field, value]) => rendered.video[field] !== value)
     ) {
       fs.unlinkSync(output);
-      throw new Error("统一渲染未保持几何、有效帧率或时长合同");
+      throw new Error(`统一渲染未保持几何、帧率、时长或色彩合同：${JSON.stringify({expected:{geometry:graph.geometry,duration:graph.durationSeconds,media:graph.mediaContract},actual:{width:rendered.width,height:rendered.height,fps:rendered.averageFps,duration:rendered.videoDuration,pixelFormat:rendered.video.pix_fmt,color:Object.fromEntries(Object.keys(graph.mediaContract.color).map(key=>[key,rendered.video[key]??null]))}})}`);
     }
     const manifest = {
       schemaVersion: "1.0",
@@ -1759,6 +1806,7 @@ function render(validated, graph, graphFile, loadedConfig) {
         durationSeconds: rendered.videoDuration,
       },
       outputStems: built.stemMaps.map((item) => fileIdentity(item.path)),
+      craft: graph.craft ? { ...graph.craft, executionStatus: "rendered_requires_review", graphDigest: graph.digest } : null,
       execution: {
         requestedEncoder: graph.encoding.requested,
         fallbackEncoder: graph.encoding.fallback,
@@ -1867,6 +1915,7 @@ try {
   fail(`配置无效：${error.message}`, 2);
 }
 const graph = compileGraph(validated, loadedConfig);
+if (option("--expected-graph-digest") && graph.digest !== option("--expected-graph-digest")) fail("预览依赖或配置已经改变，拒绝执行旧图");
 const graphFile = path.resolve(
   option("--graph", `${validated.output}.render-graph.json`),
 );

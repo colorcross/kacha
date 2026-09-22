@@ -17,10 +17,17 @@ import {
   loadKachaConfig,
 } from "./kacha_config.mjs";
 
+import { extractUsage, tokenEvidence, accountingEvents, ledgerAccounting } from "./telemetry_usage.mjs";
+
 const args = process.argv.slice(2);
 const delimiter = args.indexOf("--");
 const wrapperArgs = delimiter >= 0 ? args.slice(0, delimiter) : args;
 const action = firstPositional(wrapperArgs, [
+  "--operation-id",
+  "--attempt",
+  "--usage-scope",
+  "--cost-entry",
+  "--cost-ledger",
   "--project-root",
   "--metrics",
   "--stage",
@@ -132,45 +139,6 @@ function appendJsonLine(file, value) {
   fs.appendFileSync(file, `${JSON.stringify(value)}\n`, { mode: 0o600 });
 }
 
-function firstFinite(...values) {
-  for (const value of values) {
-    const number = Number(value);
-    if (Number.isFinite(number) && number >= 0) return number;
-  }
-  return null;
-}
-
-function extractUsage(value) {
-  const candidates = [
-    value?.usage,
-    value?.result?.usage,
-    value?.response?.usage,
-    value?.metrics?.usage,
-  ].filter((candidate) => candidate && typeof candidate === "object");
-  for (const usage of candidates) {
-    const input = firstFinite(
-      usage.input_tokens,
-      usage.inputTokens,
-      usage.prompt_tokens,
-      usage.promptTokens,
-    );
-    const output = firstFinite(
-      usage.output_tokens,
-      usage.outputTokens,
-      usage.completion_tokens,
-      usage.completionTokens,
-    );
-    if (input !== null || output !== null) {
-      return {
-        input,
-        output,
-        references: firstFinite(usage.reference_tokens, usage.referenceTokens),
-      };
-    }
-  }
-  return null;
-}
-
 function estimatePacketTokens(packetFile) {
   if (!packetFile) return null;
   const resolved = path.resolve(packetFile);
@@ -189,7 +157,11 @@ function loadEvents(file) {
     .map((line) => JSON.parse(line));
 }
 
-function aggregate(events, eventFile) {
+function aggregate(rawEvents, eventFile) {
+  const accounting = accountingEvents(rawEvents);
+  const events = accounting.events;
+  const usageEvents = new Set(accounting.usage);
+  const workEvents = new Set(accounting.work);
   const stageSeconds = {};
   const stageDetails = {};
   const statusCounts = {};
@@ -201,12 +173,15 @@ function aggregate(events, eventFile) {
     measuredEvents: 0,
     estimatedEvents: 0,
     unavailableEvents: 0,
+    mixedEvents: 0,
+    fields: Object.fromEntries(["input", "output", "references"].map(key => [key, { measured: 0, estimated: 0, knownEvents: 0, unavailableEvents: 0 }])),
   };
   let videoEncodes = 0;
   let renderedSeconds = 0;
   let sourceSeconds = 0;
   let artifacts = 0;
-  for (const event of events) {
+  for (const original of events) {
+    const event = { ...original, tokens: usageEvents.has(original) ? original.tokens : {}, media: workEvents.has(original) ? original.media : {}, timing: workEvents.has(original) ? original.timing : { wallSeconds: 0 } };
     stageSeconds[event.stage] = Number(
       ((stageSeconds[event.stage] ?? 0) + Number(event.timing?.wallSeconds ?? 0))
         .toFixed(6),
@@ -241,14 +216,26 @@ function aggregate(events, eventFile) {
     artifacts += event.artifacts?.length ?? 0;
     for (const key of ["input", "output", "references"]) {
       tokens[key] += Number(event.tokens?.[key] ?? 0);
+      if (usageEvents.has(original)) {
+        const measurement = event.tokens?.fields?.[key]?.measurement ?? (event.tokens?.[key] == null ? "unavailable" : event.tokens?.measurement === "actual" ? "measured" : event.tokens?.measurement === "estimated" ? "estimated" : "unavailable");
+        if (measurement === "measured" || measurement === "estimated") { tokens.fields[key][measurement] += Number(event.tokens?.[key] ?? 0); tokens.fields[key].knownEvents += 1; }
+        else tokens.fields[key].unavailableEvents += 1;
+      }
     }
-    if (event.tokens?.measurement === "actual") {
+    if (!usageEvents.has(original)) continue;
+    if (event.tokens?.measurement === "mixed") {
+      tokens.mixedEvents += 1;
+    } else if (event.tokens?.measurement === "actual") {
       tokens.measuredEvents += 1;
     } else if (event.tokens?.measurement === "estimated") {
       tokens.estimatedEvents += 1;
     } else {
       tokens.unavailableEvents += 1;
     }
+  }
+  for (const key of ["input", "output", "references"]) {
+    if (tokens.fields[key].knownEvents === 0) tokens[key] = null;
+    tokens.fields[key].complete = tokens.fields[key].knownEvents > 0 && tokens.fields[key].unavailableEvents === 0;
   }
   const complete = events.length > 0
     && events.every((event) => event.status === "pass");
@@ -281,7 +268,7 @@ function aggregate(events, eventFile) {
     recommendations.push("检测到多次视频编码：合并到统一 Timeline IR/Render Graph。");
   }
   if (cacheCounts.miss > cacheCounts.hit) {
-    recommendations.push("缓存 miss 多于 hit：先预热 ASR/分离/蒙版/美颜/生成素材缓存。");
+    recommendations.push("缓存 miss 多于 hit：仅复用或预热已经确定会使用的 ASR/分离/蒙版/美颜/生成资产。");
   }
   if (tokens.references > tokens.input + tokens.output && tokens.references > 0) {
     recommendations.push("reference token 占主导：改用阶段 packet 和按需规则检索。");
@@ -295,6 +282,10 @@ function aggregate(events, eventFile) {
     status: complete ? "pass" : events.length > 0 ? "has_failures" : "empty",
     eventLog: path.resolve(eventFile),
     events: events.length,
+    duplicateEvents: accounting.duplicateEvents,
+    timing: accounting.timing,
+    accounting: { usageEvents: accounting.usage.length, workEvents: accounting.work.length, referencesMayOverlapInput: true },
+    cash: ledgerAccounting(events, readJson),
     stages: stageSeconds,
     stageDetails: normalizedStageDetails,
     statuses: statusCounts,
@@ -414,6 +405,11 @@ if (
 }
 
 try {
+  if (!Number.isInteger(numberOption("--attempt", null, 1)) || numberOption("--attempt", null, 1) < 1) throw new Error("attempt 必须为正整数");
+  if (!["self", "subtree"].includes(option("--usage-scope", "subtree"))) throw new Error("usage-scope 必须为 self 或 subtree");
+  const ledgerPath = option("--cost-ledger") ? path.resolve(projectRoot, option("--cost-ledger")) : null;
+  const cashReference = ledgerAccounting([{ cost: { ledger: ledgerPath, entries: repeated("--cost-entry") } }], readJson);
+  if (cashReference.errors.length) throw new Error("现金引用不对应有效账本条目");
   if (workflow === "incremental") {
     if (!versionId || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(versionId)) {
       throw new Error("增量返工的每次运行必须提供安全的 --version-id");
@@ -476,11 +472,13 @@ try {
   const eventId = crypto.createHash("sha256").update(eventSeed).digest("hex").slice(0, 16);
   const stdoutFile = path.join(logDirectory, `${eventId}.stdout.log`);
   const stderrFile = path.join(logDirectory, `${eventId}.stderr.log`);
+  const childEnvironment = { ...runtimeEnvironment(), KACHA_TELEMETRY_PARENT_EVENT_ID: eventId, KACHA_TELEMETRY_OPERATION_ID: option("--operation-id", process.env.KACHA_TELEMETRY_OPERATION_ID ?? eventId) };
+  for (const field of ["KACHA_INPUT_TOKENS", "KACHA_OUTPUT_TOKENS", "KACHA_REFERENCE_TOKENS"]) delete childEnvironment[field];
   const result = spawnSync(resolveRuntimeCommand(command[0]), command.slice(1), {
     cwd: projectRoot,
     encoding: "utf8",
     maxBuffer: telemetryConfig.maxLogBytes,
-    env: runtimeEnvironment(),
+    env: childEnvironment,
   });
   const endedNs = process.hrtime.bigint();
   fs.writeFileSync(stdoutFile, redactText(result.stdout), { mode: 0o600 });
@@ -497,14 +495,18 @@ try {
   }
   let usageResult = null;
   const usageFile = option("--usage-file");
+  let usageError = null;
   if (usageFile) {
+    try {
     const resolvedUsage = path.resolve(projectRoot, usageFile);
     if (!fs.existsSync(resolvedUsage) || !fs.statSync(resolvedUsage).isFile()) {
       throw new Error(`usage 文件不存在：${resolvedUsage}`);
     }
     usageResult = readJson(resolvedUsage);
+    } catch (error) { usageError = error.message; }
   }
-  const runtimeUsage = extractUsage(usageResult) ?? extractUsage(childResult);
+  const fileUsage = extractUsage(usageResult), childUsage = extractUsage(childResult);
+  const runtimeUsage = Object.fromEntries(["input", "output", "references"].map(key => [key, fileUsage?.[key] ?? childUsage?.[key] ?? null]));
   const explicitInput = numberOption("--input-tokens", "KACHA_INPUT_TOKENS");
   const explicitOutput = numberOption("--output-tokens", "KACHA_OUTPUT_TOKENS");
   const explicitReferences = numberOption(
@@ -512,23 +514,8 @@ try {
     "KACHA_REFERENCE_TOKENS",
   );
   const packetEstimate = estimatePacketTokens(option("--agent-packet"));
-  const tokenValues = {
-    input: explicitInput ?? runtimeUsage?.input ?? null,
-    output: explicitOutput ?? runtimeUsage?.output ?? null,
-    references: explicitReferences
-      ?? runtimeUsage?.references
-      ?? packetEstimate
-      ?? null,
-  };
-  const hasActual = explicitInput !== null
-    || explicitOutput !== null
-    || explicitReferences !== null
-    || Boolean(runtimeUsage);
-  const tokenMeasurement = hasActual
-    ? "actual"
-    : packetEstimate !== null
-      ? "estimated"
-      : "unavailable";
+  const tokenValues = tokenEvidence({ explicit: { input: explicitInput, output: explicitOutput, references: explicitReferences },
+    usage: runtimeUsage, estimate: packetEstimate, usageSources: Object.fromEntries(["input", "output", "references"].map(key => [key, fileUsage?.[key] != null ? "usage_file" : "child_result_usage"])) });
   const childArtifactCandidates = childResult && typeof childResult === "object"
     ? [
         childResult.output,
@@ -572,6 +559,12 @@ try {
   const event = {
     schemaVersion: "1.0",
     eventId,
+    parentEventId: process.env.KACHA_TELEMETRY_PARENT_EVENT_ID ?? null,
+    operationId: option("--operation-id", process.env.KACHA_TELEMETRY_OPERATION_ID ?? eventId),
+    attempt: numberOption("--attempt", null, 1),
+    accounting: { usageScope: option("--usage-scope", explicitInput !== null || explicitOutput !== null ? "self" : "subtree") },
+    usageError,
+    cost: { ledger: ledgerPath, entries: repeated("--cost-entry"), authority: "cost_ledger_reconciliation" },
     host: os.hostname(),
     pid: process.pid,
     stage,
@@ -593,19 +586,7 @@ try {
         ? path.resolve(projectRoot, option("--approval-evidence"))
         : null,
     },
-    tokens: {
-      ...tokenValues,
-      measurement: tokenMeasurement,
-      source: explicitInput !== null || explicitOutput !== null || explicitReferences !== null
-        ? "cli_or_runtime_environment"
-        : runtimeUsage
-          ? usageFile
-            ? "usage_file"
-            : "child_result_usage"
-          : packetEstimate !== null
-            ? "agent_packet_estimate"
-            : "unavailable",
-    },
+    tokens: { ...tokenValues, source: [...new Set(Object.values(tokenValues.fields).map(field => field.source).filter(value => value !== "unavailable"))].join(",") || "unavailable" },
     cache: { status: inferredCacheStatus },
     media: {
       renderedSeconds: inferredRenderedSeconds,

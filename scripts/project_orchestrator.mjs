@@ -1,5 +1,6 @@
 import { isMaterialProject, initializeMaterialProject, materialProjectStatus, runMaterialProject } from "./material_project.mjs";
 import fs from "node:fs";
+import { inspectBundle, freezeProjectRuntime, bindRuntime, callBoundProject } from "./runtime_bundle.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -64,6 +65,7 @@ function installedVersion(root = skillRoot) {
 }
 
 export function inspectRuntime({ home = os.homedir() } = {}) {
+  if (fs.existsSync(path.join(skillRoot, ".kacha-runtime.json"))) return inspectBundle(skillRoot);
   const gitRef = run("git", ["-C", skillRoot, "rev-parse", "HEAD"]);
   const gitStatus = run("git", ["-C", skillRoot, "status", "--short"]);
   const installed = installedVersion();
@@ -386,7 +388,13 @@ export function initializeProject({
   enforceRuntime = true,
   home = os.homedir(),
 } = {}) {
-  if (materials) return initializeMaterialProject({ materials, requirements, duration, aspect, fps, width, projectRoot, projectId: projectId ?? "material-film", show, style, development, confirmExecute, runtime: inspectRuntime({ home }) });
+  if (materials) {
+    let runtime = inspectRuntime({ home });
+    if (!development && runtime.productionReady) runtime = freezeProjectRuntime(runtime, { home });
+    const result = initializeMaterialProject({ materials, requirements, duration, aspect, fps, width, projectRoot, projectId: projectId ?? "material-film", show, style, development, confirmExecute, runtime });
+    if (!development && runtime.mode === "frozen_bundle") bindRuntime(projectRoot, runtime.skillRoot);
+    return result;
+  }
   const briefResolved = briefPath ? path.resolve(briefPath) : null;
   const fromBrief = briefResolved ? sourceFromBrief(briefResolved) : null;
   const resolvedTask = task ?? fromBrief?.brief?.task
@@ -412,7 +420,8 @@ export function initializeProject({
   fs.mkdirSync(path.join(baseRoot, "output"), { recursive: true });
   ensureProjectGitignore(baseRoot);
 
-  const runtime = inspectRuntime({ home });
+  let runtime = inspectRuntime({ home });
+  if (!development && runtime.productionReady) runtime = freezeProjectRuntime(runtime, { home });
   const runtimeAllowed = development || runtime.productionReady || !enforceRuntime;
   const resolvedProjectId = slug(
     projectId ?? fromBrief?.brief?.projectName ?? path.parse(input.path ?? "content").name,
@@ -450,6 +459,7 @@ export function initializeProject({
     const productionQuality = run(process.execPath, [
       path.join(scriptDirectory, "production_quality_contract.mjs"),
       "template",
+      "--editorial-policy", "narrative-v1",
       "--project-id",
       resolvedProjectId,
       "--pack",
@@ -541,6 +551,7 @@ export function initializeProject({
   };
   state.digest = sha256Value({ ...state, digest: undefined, updatedAt: undefined });
   writeJsonAtomic(orchestrationFile, state);
+  if (!development && runtime.mode === "frozen_bundle") bindRuntime(baseRoot, runtime.skillRoot);
   buildEfficiencyPlan({
     projectRoot: baseRoot,
     outputPath: state.files.efficiencyPlan,
@@ -804,6 +815,7 @@ function deriveNextAction(projectRoot, orchestration, runtime, inputCheck) {
 }
 
 export function projectStatus(input, { refreshRuntime = true, home = os.homedir() } = {}) {
+  if (refreshRuntime) { const bound = callBoundProject(input, "status", ["--home", home]); if (bound) return bound; }
   if (isMaterialProject(input)) return materialProjectStatus(input, { runtime: refreshRuntime ? inspectRuntime({ home }) : null });
   const projectRoot = resolveProjectRoot(input);
   const { value: orchestration } = readOrchestration(projectRoot);
@@ -1178,6 +1190,8 @@ export function runProject(input, {
   home = os.homedir(),
   maxAutomaticSteps = 8,
 } = {}) {
+  const bound = callBoundProject(input, resume ? "resume" : "run", ["--home", home, ...(confirmExecute ? ["--confirm-execute"] : []), ...(includeRender ? ["--include-render"] : []), ...(acceptRuntimeUpdate ? ["--accept-runtime-update"] : [])]);
+  if (bound) return bound;
   if (isMaterialProject(input)) return runMaterialProject(input, { runtime: inspectRuntime({ home }), confirmExecute, includeRender, resume });
   const projectRoot = resolveProjectRoot(input);
   const lock = path.join(projectRoot, ".kacha", "orchestrator.lock");

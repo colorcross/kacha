@@ -13,7 +13,12 @@
     "assetLicenseAndProvenanceRequired": true
   },
   "risk": {
-    "levels": ["low", "standard", "high", "critical"],
+    "levels": [
+      "low",
+      "standard",
+      "high",
+      "critical"
+    ],
     "thresholds": {
       "standard": 2,
       "high": 5,
@@ -71,7 +76,8 @@
       "requireImplementationSha256": true,
       "disallowNetworkResource": true,
       "allowedScripts": [
-        "route_references.mjs"
+        "route_references.mjs",
+        "deterministic_task.mjs"
       ]
     }
   },
@@ -92,7 +98,12 @@
       "operationVersion",
       "outputs"
     ],
-    "requiredOutputFields": ["name", "type", "sha256", "sizeBytes"],
+    "requiredOutputFields": [
+      "name",
+      "type",
+      "sha256",
+      "sizeBytes"
+    ],
     "warmCoverageTarget": 0.8
   },
   "efficiencyClaim": {

@@ -35,6 +35,17 @@ try {
   checks.push({ id: "source-media-decode-and-playback", status: "pass" });
   checks.push({ id: "workspace-open", status: "pass", options: await page.locator("#timelineSwitcher option").count() });
 
+  await page.locator("#realPreviewButton").click();
+  await page.locator("#realPreviewVideo:not([hidden])").waitFor({ timeout: 60000 });
+  await page.waitForFunction(() => document.querySelector('#realPreviewVideo').readyState >= 2, null, { timeout: 15000 });
+  await page.locator('#video').evaluate(async video => { await video.play(); });
+  await page.locator('#realPreviewVideo').evaluate(async video => { video.muted = true; await video.play(); });
+  await page.waitForFunction(() => document.querySelector('#realPreviewVideo').currentTime > 0.1);
+  if (!(await page.locator('#video').evaluate(video => video.paused))) throw new Error('source and real preview audio played together');
+  await page.locator('#realPreviewVideo').evaluate(video => video.pause());
+  checks.push({ id: "canonical-preview-job-and-playback", status: "pass" });
+  await page.screenshot({ path: path.join(artifactDirectory, "editor-real-preview.png"), fullPage: true });
+
   await page.locator("#capabilitiesButton").click();
   await page.locator("#capabilityDrawer:not([hidden])").waitFor();
   await page.locator(".capability-card").first().waitFor({ state: "attached" });
@@ -86,7 +97,10 @@ try {
   await page.locator("#timelineSwitcher option").nth(1).waitFor({ state: "attached" });
   if (await page.locator("#timelineSwitcher").inputValue() !== "browser-vertical") throw new Error("duplicated timeline was not opened as the active candidate");
   checks.push({ id: "timeline-duplicate-switch", status: "pass" });
+  if (!(await page.locator("#realPreviewVideo").evaluate(video => video.hidden))) throw new Error("old timeline preview remained visible after switch");
+  checks.push({ id: "stale-preview-hidden-on-switch", status: "pass" });
 
+  await page.waitForFunction(() => document.querySelector("#video").readyState >= 2, null, { timeout: 15000 });
   await page.screenshot({ path: path.join(artifactDirectory, "editor-v3-desktop.png"), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload({ waitUntil: "networkidle" });

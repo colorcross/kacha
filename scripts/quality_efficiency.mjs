@@ -14,6 +14,8 @@ import {
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
 
+import { ADAPTERS, validateTaskSpec } from "./deterministic_task.mjs";
+
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(scriptDirectory, "..");
 const policyFile = path.join(skillRoot, "config", "efficiency-policy.json");
@@ -41,7 +43,7 @@ const REQUIRED_GUARDRAILS = [
   "semanticIntegrity", "connectionPlayback", "subtitleAccuracy",
   "visualContinuity", "audioQuality", "fullCandidatePlayback",
 ];
-const REQUIRED_EXECUTION_SCRIPTS = ["route_references.mjs"];
+const REQUIRED_EXECUTION_SCRIPTS = ["route_references.mjs", "deterministic_task.mjs"];
 
 export function validateEfficiencyPolicy() {
   const errors = [];
@@ -744,6 +746,18 @@ function optionValues(argv, name) {
 
 function validateRegisteredTaskArguments(task, projectRoot, scriptName) {
   const errors = [];
+  if (scriptName === "deterministic_task.mjs") {
+    try {
+      const argv = task.argv.slice(2);
+      if (argv.length !== 6 || ["--spec", "--spec-sha", "--output"].some(flag => argv.filter(value => value === flag).length !== 1)) throw new Error("deterministic adapter requires exactly spec, spec-sha and output");
+      const value = flag => argv[argv.indexOf(flag) + 1];
+      const specFile = path.resolve(projectRoot, value("--spec"));
+      const spec = validateTaskSpec(specFile, value("--spec-sha"));
+      const output = safeProjectOutput(projectRoot, value("--output"));
+      if (task.outputs?.length !== 1 || safeProjectOutput(projectRoot, task.outputs[0]) !== output) throw new Error("adapter output differs from declared output");
+      if (ADAPTERS[spec.adapter].resources.some(resource => !task.resources?.includes(resource))) throw new Error("adapter required resources missing");
+    } catch (error) { errors.push(`task ${task.id}: ${error.message}`); }
+  }
   if (scriptName === "route_references.mjs") {
     const outputValues = optionValues(task.argv, "--output");
     if (outputValues.length !== 1 || !outputValues[0]) {
@@ -872,7 +886,10 @@ function runTask(task, projectRoot) {
     ...task.argv,
   );
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, telemetry, {
+    const jobId = `eff-${String(task.id).replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 40)}-${Date.now().toString(36)}`;
+    const managed = [path.join(scriptDirectory, "kacha_jobs.mjs"), "submit", "--foreground", "--project-root", projectRoot, "--kind", "deterministic", "--id", jobId,
+      ...outputs.flatMap(output => ["--expected-output", output]), ...(outputs.length ? [] : ["--allow-no-output"]), "--", process.execPath, ...telemetry];
+    const child = spawn(process.execPath, managed, {
       cwd: projectRoot,
       stdio: ["ignore", "pipe", "pipe"],
       env: process.env,
@@ -882,6 +899,8 @@ function runTask(task, projectRoot) {
     child.stdout.on("data", (chunk) => { stdout += chunk.toString(); });
     child.stderr.on("data", (chunk) => { stderr += chunk.toString(); });
     child.once("close", (status) => {
+      const jobLog = path.join(projectRoot, ".kacha", "jobs", jobId, "stdout.log");
+      if (fs.existsSync(jobLog)) stdout = fs.readFileSync(jobLog, "utf8");
       const missing = outputs.filter((output) => {
         try {
           return executionOutputIdentity(projectRoot, output).missing === true;

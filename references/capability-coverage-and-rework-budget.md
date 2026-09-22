@@ -1,3 +1,5 @@
+> 政策版本说明：narrative-v1 的需求分层与已实现手法以 `references/optimization-execution.md` 为准；下文通用数量下限仅适用于 legacy 工程。
+
 # 可感知能力覆盖与返工渲染预算
 
 ## 为什么需要这一层

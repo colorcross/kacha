@@ -13,7 +13,7 @@ import {
   saveCustomStyle,
 } from "./kacha_studio.mjs";
 import { loadKachaConfig } from "./kacha_config.mjs";
-import { fastIdentityMatches, fileIdentityMatches, readJson, sha256File } from "./kacha_utils.mjs";
+import { fastIdentityMatches, fileIdentity, fileIdentityMatches, readJson, sha256File } from "./kacha_utils.mjs";
 import { buildFlightSnapshot } from "./production_flight_recorder.mjs";
 import {
   buildPreferenceCandidate,
@@ -36,6 +36,7 @@ import {
   redoEditorCommand,
   undoEditorCommand,
 } from "./editor_command_journal.mjs";
+import { requestRealPreview, realPreviewStatus } from "./real_preview.mjs";
 import { listPreviewProviders } from "./preview_provider.mjs";
 import { listProjectBin } from "./project_bin.mjs";
 import { professionalCapabilityMap } from "./professional_capabilities.mjs";
@@ -639,6 +640,14 @@ async function handleApi(request, response, url, port) {
     serveMedia(request, response, media);
     return;
   }
+  if (["GET", "HEAD"].includes(request.method) && pathname === "/api/editor/real-preview-media") {
+    if (!sameOrigin(request, port)) throw new Error("拒绝跨站预览读取");
+    const session = activeEditorSession(url.searchParams.get("session"));
+    const preview = realPreviewStatus(session.timelinePath, url.searchParams.get("key"));
+    if (!preview.ready) throw new Error("预览未完成或版本已过期");
+    serveMedia(request, response, { path: preview.output, identity: fileIdentity(preview.output) });
+    return;
+  }
   if (["GET", "HEAD"].includes(request.method) && pathname === "/api/editor/media") {
     const session = activeEditorSession(url.searchParams.get("session"));
     if (!session?.source) throw new Error("Editor session 或源视频不存在");
@@ -848,6 +857,15 @@ async function handleApi(request, response, url, port) {
   }
   if (pathname.startsWith("/api/editor/")) {
     const session = activeEditorSession(body.sessionId);
+    if (pathname === "/api/editor/real-preview") {
+      assertEditorSourceCurrent(session);
+      json(response, 202, requestRealPreview(session.timelinePath, { start: body.start, end: body.end, expectedSha256: body.baseSha256 }));
+      return;
+    }
+    if (pathname === "/api/editor/real-preview-status") {
+      json(response, 200, realPreviewStatus(session.timelinePath, body.key));
+      return;
+    }
     if (pathname === "/api/editor/project") {
       json(response, 200, browserEditorProject(session));
       return;

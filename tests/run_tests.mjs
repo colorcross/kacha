@@ -10,6 +10,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   acquireFileLock,
   fileIdentity,
+  writeJsonAtomic,
   mediaIndexDigest,
   mediaSummary,
   readJson,
@@ -3505,6 +3506,16 @@ await test("V7 orchestrator starts source and script projects with recoverable m
     sourceQualityContract.policies?.productionProfile?.packId !== "xingzhe-dahui"
     || sourceQualityContract.policies?.productionProfile?.showId !== sourceManifest.show
   ) throw new Error("orchestrator did not propagate the selected show into production quality");
+  if (sourceQualityContract.editorialPolicy?.version !== "narrative-v1") throw new Error("new source project did not select narrative requirements");
+  const missingRequirements = expectFailure(process.execPath, [
+    path.join(scripts, "kacha.mjs"), "production-quality", "validate",
+    "--contract", path.join(sourceRoot, "contracts", "production-quality-contract.json"), "--stage", "plan",
+  ]);
+  if (!missingRequirements.stderr.includes("叙事需求缺少")) throw new Error("unplanned narrative requirements were accepted");
+  const requirementsFile = path.join(sourceRoot, "contracts", "editorial-requirements.json");
+  writeJsonAtomic(requirementsFile, { version: "narrative-v1", requirements: [{id:"opening",priority:"required",origin:"editorial",reason:"establish the source topic",timelineIds:["opening"]}] });
+  sourceQualityContract.editorialPolicy.requirements = fileIdentity(requirementsFile);
+  writeJsonAtomic(path.join(sourceRoot, "contracts", "production-quality-contract.json"), sourceQualityContract);
   execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
     "production-quality", "validate",
@@ -5506,8 +5517,11 @@ await test("unified timeline renders EDL, motion, overlays, subtitles and audio 
     || rangeSummary.height !== 180
     || Math.abs(rangeSummary.videoDuration - 0.6) > 0.06
     || rangeGraphValue.edl.length !== 1
-    || rangeGraphValue.sourceSeekSeconds !== 0.75
-    || rangeGraphValue.previewRange?.start !== 0.75
+    || rangeGraphValue.sourceSeekSeconds !== 0
+    || rangeGraphValue.previewRange?.start !== 0
+    || rangeGraphValue.requestedPreviewRange?.start !== 0.75
+    || rangeGraphValue.finalTrimSeconds !== 0.75
+    || rangeGraphValue.rangeExpansionReason !== "stateful_audio_history"
     || rangeGraphValue.visual.overlays[0]?.x !== 115
     || rangeGraphValue.visual.overlays[0]?.width !== 35
     || rangeManifest.execution.previewRange?.end !== 1.35

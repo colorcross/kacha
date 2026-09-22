@@ -80,6 +80,8 @@
 
       <section class="preview-panel panel" aria-label="近似画面预览">
         <div class="panel-heading"><div><span class="panel-index">02</span><h2>画面预览</h2></div><div class="heading-actions"><select id="deliveryFrame" aria-label="交付构图"><option value="">原始画布</option></select><span id="projectMeta" class="mono"></span></div></div>
+        <div class="heading-actions"><button id="realPreviewButton" type="button">生成真实声画预览</button><span id="realPreviewStatus" role="status">预览播放头附近 8 秒</span></div>
+        <video id="realPreviewVideo" controls preload="metadata" hidden aria-label="当前版本真实声画预览" style="width:100%"></video>
         <div id="stage" class="stage">
           <video id="video" controls preload="metadata"></video>
           <div id="deliveryGuide" class="delivery-guide" hidden><span></span></div>

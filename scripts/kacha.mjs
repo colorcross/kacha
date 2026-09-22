@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import { dispatchBoundRuntime } from "./runtime_bundle.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -38,7 +39,10 @@ function usage() {
       + "  kacha.mjs whiteboard parse-srt|scaffold|validate|preview|render|qc|merge|env-check|env-prepare [options]\n"
       + "  kacha.mjs studio catalog|validate|probe|save-style|compile|serve [options]\n"
       + "  kacha.mjs start --brief BRIEF|--source VIDEO|--script FILE [options]\n"
-      + "  kacha.mjs run|resume|status PROJECT [options]\n"
+      + "  kacha.mjs run|resume|status|observe PROJECT [options]\n"
+      + "  kacha.mjs runtime create|inspect|bind [options]\n"
+      + "  kacha.mjs real-preview request|status --timeline FILE [options]\n"
+      + "  kacha.mjs craft compile --timeline FILE --operations FILE --output NEW_FILE\n"
       + "  kacha.mjs handoff PROJECT --source VIDEO --confirm-content-approved [options]\n"
       + "  kacha.mjs content status|record-fact|record-asset|approve PROJECT [options]\n"
       + "  kacha.mjs workflow validate\n"
@@ -137,14 +141,16 @@ function invoke(script, args, options = {}) {
 }
 
 const [, , command, projectInput, ...remainingArguments] = process.argv;
+try { if (dispatchBoundRuntime(process.argv.slice(2))) process.exit(process.exitCode ?? 0); } catch (error) { console.error(error.message); process.exit(1); }
 if (
   command === "netstyle"
-  && ["plan", "validate-plan", "render-plan"].includes(projectInput)
+  && ["plan", "validate-plan", "render-plan", "compile-unified"].includes(projectInput)
 ) {
   const timelineAction = {
     plan: "plan",
     "validate-plan": "validate",
     "render-plan": "render",
+    "compile-unified": "compile-unified",
   }[projectInput];
   invoke("netstyle_timeline.mjs", [timelineAction, ...remainingArguments]);
   process.exit(0);
@@ -173,6 +179,9 @@ const delegatedCommands = {
   run: "kacha_orchestrator.mjs",
   resume: "kacha_orchestrator.mjs",
   status: "kacha_orchestrator.mjs",
+  observe: "project_observation.mjs",
+  "real-preview": "real_preview.mjs",
+  craft: "craft_compile.mjs",
   handoff: "kacha_orchestrator.mjs",
   workflow: "kacha_orchestrator.mjs",
   content: "content_project.mjs",
@@ -213,6 +222,7 @@ const delegatedCommands = {
   nle: "kacha_nle.mjs",
   "nle-app": "nle_application_validation.mjs",
   install: "kacha_install.mjs",
+  runtime: "runtime_bundle.mjs",
   cache: "artifact_cache.mjs",
   efficiency: "quality_efficiency.mjs",
   transcribe: "transcribe_local.mjs",

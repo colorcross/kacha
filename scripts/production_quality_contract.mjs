@@ -13,6 +13,8 @@ import {
 import { alignSfxPeak } from "./sfx_peak_alignment.mjs";
 import { loadProductionPack } from "./production_pack.mjs";
 
+import { NARRATIVE_POLICY, editorialVersion, firstMinutePolicy, validateEditorialRequirements } from "./editorial_policy.mjs";
+
 const STAGES = new Set(["plan", "execution", "release"]);
 const JOIN_TYPES = new Set([
   "clean_cut",
@@ -58,12 +60,16 @@ function option(name, fallback = null) {
 export function template(projectId, {
   packId = "xingzhe-dahui",
   showId = "tool-share",
+  editorialPolicy = "legacy",
+  requirements = null,
 } = {}) {
+  editorialVersion(editorialPolicy);
   const productionPack = loadProductionPack(packId, showId);
   return {
     schemaVersion: "1.0",
     kind: "kacha-production-quality-contract",
     projectId,
+    editorialPolicy: { version: editorialPolicy, requirements },
     policies: {
       productionProfile: {
         packId: productionPack.id,
@@ -83,7 +89,8 @@ export function template(projectId, {
         wrongCutMustBeReedited: true,
       },
       opening: {
-        exactlyOnePrimaryEffect: true,
+        exactlyOnePrimaryEffect: editorialPolicy === "legacy",
+        exactlyOneNarrativeOpening: true,
         firstVisibleChangeBySeconds: 0.5,
         promiseBySeconds: 3,
         frameZeroFullCoverForClosedReveal: true,
@@ -93,7 +100,7 @@ export function template(projectId, {
         semanticTriggerRequired: true,
         maxConcurrentPrimary: 1,
         progressiveLists: true,
-        individualSfxPerItem: true,
+        individualSfxPerItem: editorialPolicy === "legacy",
         behindSubjectDefaultChineseCharacters: 4,
         behindSubjectMaxChineseCharacters: 7,
       },
@@ -121,7 +128,7 @@ export function template(projectId, {
         sfxPeakToleranceFrames: 1,
       },
       cover: structuredClone(productionPack.policies.cover),
-      firstMinute: structuredClone(productionPack.policies.firstMinute),
+      firstMinute: firstMinutePolicy(productionPack.policies.firstMinute, editorialPolicy),
       cinematicEditorial: structuredClone(productionPack.cinematicEditorial),
       review: {
         representativeNormalSpeedRequired: true,
@@ -326,6 +333,7 @@ function identityFile(contractFile, identity, label, errors) {
 }
 
 function validatePolicies(contract, errors) {
+  const narrative = contract.editorialPolicy?.version === NARRATIVE_POLICY;
   const policy = contract.policies ?? {};
   let expectedPack = null;
   try {
@@ -352,7 +360,7 @@ function validatePolicies(contract, errors) {
   const firstVisibleBy = Number(policy.opening?.firstVisibleChangeBySeconds);
   const promiseBy = Number(policy.opening?.promiseBySeconds);
   if (
-    policy.opening?.exactlyOnePrimaryEffect !== true
+    (narrative ? policy.opening?.exactlyOneNarrativeOpening !== true || policy.opening?.exactlyOnePrimaryEffect !== false : policy.opening?.exactlyOnePrimaryEffect !== true)
     || !Number.isFinite(firstVisibleBy)
     || firstVisibleBy < 0
     || firstVisibleBy > 0.5
@@ -366,7 +374,7 @@ function validatePolicies(contract, errors) {
     policy.effects?.semanticTriggerRequired !== true
     || Number(policy.effects?.maxConcurrentPrimary) !== 1
     || policy.effects?.progressiveLists !== true
-    || policy.effects?.individualSfxPerItem !== true
+    || policy.effects?.individualSfxPerItem !== !narrative
     || Number(policy.effects?.behindSubjectMaxChineseCharacters) > 7
   ) errors.push("policies.effects 未落实语义触发、单主效果、逐项清单或人物身后短词限制");
   if (
@@ -415,7 +423,7 @@ function validatePolicies(contract, errors) {
     || !Number.isInteger(Number(firstMinute.minimumPeakAlignedSfx))
     || !Number.isInteger(Number(firstMinute.minimumHumanReactionWindows))
     || !expectedPack
-    || JSON.stringify(firstMinute) !== JSON.stringify(expectedPack.policies.firstMinute)
+    || JSON.stringify(firstMinute) !== JSON.stringify(firstMinutePolicy(expectedPack.policies.firstMinute, contract.editorialPolicy?.version ?? "legacy"))
     || Number(firstMinute.maximumPrimaryEventsPer10Seconds) > 3
     || Number(firstMinute.maximumPrimaryEventsPer10Seconds) < 1
     || Number(firstMinute.minimumHumanPresenceRatio) < 0.5
@@ -633,13 +641,15 @@ function validateExecution(contractFile, contract, errors) {
   }
 
   const opening = execution.opening ?? {};
+  const naturalOpening = contract.editorialPolicy?.version === NARRATIVE_POLICY && opening.mode === "natural";
+  if (naturalOpening && (!hasValue(opening.narrativeReason) || opening.primaryNarrativeCount !== 1)) errors.push("真实开场必须绑定唯一叙事落点与表达理由");
   if (
-    Number(opening.primaryEffectCount) !== 1
+    Number(opening.primaryEffectCount) !== (naturalOpening ? 0 : 1)
     || Number(opening.firstVisibleChangeSeconds) < 0
     || Number(opening.firstVisibleChangeSeconds) > 0.5
     || Number(opening.promiseSeconds) <= 0
     || Number(opening.promiseSeconds) > 3
-    || !hasValue(opening.effectId)
+    || (!naturalOpening && !hasValue(opening.effectId))
   ) errors.push("execution.opening 未落实唯一开场、0.5 秒变化或 3 秒承诺");
   identityFile(contractFile, opening.dynamicPreview, "execution.opening.dynamicPreview", errors);
   if (
@@ -660,7 +670,8 @@ function validateExecution(contractFile, contract, errors) {
       !Number.isInteger(group.itemCount)
       || group.itemCount < 1
       || itemCues.length !== group.itemCount
-      || sfxPeaks.length !== group.itemCount
+      || (contract.policies.effects.individualSfxPerItem && sfxPeaks.length !== group.itemCount)
+      || (sfxPeaks.length > 0 && sfxPeaks.length !== group.itemCount)
       || !increasing(itemCues)
       || !increasing(sfxPeaks)
       || sfxPeaks.some((peak, cueIndex) => Math.abs(peak - itemCues[cueIndex]) > 0.25)
@@ -913,7 +924,9 @@ export function validateProductionQualityContract(contractFile, stage = "plan") 
   if (contract.schemaVersion !== "1.0") errors.push("schemaVersion 必须为 1.0");
   if (contract.kind !== "kacha-production-quality-contract") errors.push("kind 无效");
   if (!hasValue(contract.projectId)) errors.push("projectId 缺失");
-  validatePolicies(contract, errors);
+  try { editorialVersion(contract.editorialPolicy?.version ?? "legacy"); validatePolicies(contract, errors); } catch (error) { errors.push(error.message); }
+  if (contract.editorialPolicy?.version === NARRATIVE_POLICY && stage !== "plan") identityFile(resolved, contract.execution?.timeline, "execution.timeline", errors);
+  if (contract.editorialPolicy?.version === NARRATIVE_POLICY) errors.push(...validateEditorialRequirements(resolved, contract.editorialPolicy.requirements, { execution: stage !== "plan", timeline: contract.execution?.timeline?.path ? resolveFrom(resolved, contract.execution.timeline.path) : null }));
   if (["execution", "release"].includes(stage)) validateExecution(resolved, contract, errors);
   if (stage === "release") validateRelease(resolved, contract, errors);
   return { status: errors.length === 0 ? "pass" : "fail", stage, contract: resolved, errors };
@@ -929,7 +942,7 @@ if (command === "template") {
     usage();
     process.exit(2);
   }
-  writeJsonAtomic(output, template(projectId, { packId, showId }));
+  writeJsonAtomic(output, template(projectId, { packId, showId, editorialPolicy: option("--editorial-policy", "legacy"), requirements: option("--requirements") ? { path: path.resolve(option("--requirements")), sha256: sha256File(option("--requirements")) } : null }));
   console.log(JSON.stringify({
     status: "pass",
     output: path.resolve(output),

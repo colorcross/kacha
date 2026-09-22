@@ -16,3 +16,5 @@
   BGM 覆盖率或逐段有意留白原因，并要求代表段正常速度复核、全片正常速度通看、
   设备试听三项均为 `pass` 且各有当前文件 SHA-256 证据。静态截图、峰值帧和测试
   报告不能替代这三项。
+
+新版能力按项目 `editorialPolicy.version` 选择，细节按需读 `references/optimization-execution.md`。legacy 工程不自动改政策。

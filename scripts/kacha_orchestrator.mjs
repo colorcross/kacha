@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import os from "node:os";
+import { observeProject } from "./project_observation.mjs";
 import fs from "node:fs";
 import {
   handoffContentProject,
@@ -89,6 +90,7 @@ try {
   if (action === "status") {
     const project = args[1];
     if (!project || project.startsWith("--")) usage();
+    if (args.includes("--quick")) emit(observeProject(project), 0);
     const report = projectStatus(project, {
       home: option(args, "--home", os.homedir()),
     });

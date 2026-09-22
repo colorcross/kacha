@@ -432,6 +432,10 @@ function updateDeliveryGuide() {
 }
 
 function renderProject(project) {
+  if (state.project?.session?.currentSha256 !== project.session?.currentSha256) {
+    $("#realPreviewVideo").pause(); $("#realPreviewVideo").hidden = true;
+    $("#realPreviewStatus").textContent = "时间线已更新，可生成当前版本预览";
+  }
   if (project.workspace === undefined && state.workspace) project = { ...project, workspace: state.workspace };
   state.project = project; const value = project.projection; state.outputTick = Math.min(state.outputTick, value.durationTick);
   $("#workspace").hidden = false; $("#projectMeta").textContent = `${value.projectId} · ${value.timebase.frameRate} · ${timecode(value.durationSeconds)}`;
@@ -688,4 +692,37 @@ $("#bundleForm").addEventListener("submit", async (event) => {
     const result = await api("/api/editor/delivery-bundle", { sessionId: state.sessionId, outputPath: $("#bundleOutput").value.trim(), includeMedia: $("#bundleMedia").checked });
     status.classList.remove("error"); status.textContent = `工程包已写入 ${result.output}；状态 ${result.status}。`;
   } catch (error) { status.classList.add("error"); status.textContent = error.message; }
+});
+
+// Coalesce rapid clicks, and never install a response from an older session or revision.
+let realPreviewTimer = null;
+let realPreviewGeneration = 0;
+$("#realPreviewVideo").addEventListener("play", () => $("#video").pause());
+$("#video").addEventListener("play", () => $("#realPreviewVideo").pause());
+$("#realPreviewButton").addEventListener("click", () => {
+  clearTimeout(realPreviewTimer);
+  const generation = ++realPreviewGeneration;
+  realPreviewTimer = setTimeout(async () => {
+    if (!state.project || !state.sessionId) return;
+    const sessionId = state.sessionId, revision = state.project.session.currentSha256;
+    const current = () => generation === realPreviewGeneration && sessionId === state.sessionId && revision === state.project?.session?.currentSha256;
+    const duration = ticksToSeconds(projection().durationTick);
+    const start = Math.max(0, ticksToSeconds(state.outputTick) - 2), end = Math.min(duration, start + 8);
+    $("#realPreviewVideo").pause(); $("#realPreviewVideo").hidden = true;
+    $("#realPreviewStatus").textContent = "正在生成真实声画…";
+    try {
+      let result = await api("/api/editor/real-preview", { sessionId, baseSha256: revision, start, end });
+      while (current() && !result.ready && !result.stale && ["queued", "running", "submitted"].includes(result.status)) {
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        if (!current()) return;
+        result = await api("/api/editor/real-preview-status", { sessionId, key: result.key });
+      }
+      if (!current()) return;
+      if (!result.ready) throw new Error(result.stale ? "时间线已更新，请重新生成预览" : result.error?.message ?? `预览${result.status}；可重新生成或查看任务日志`);
+      const video = $("#realPreviewVideo");
+      video.src = `/api/editor/real-preview-media?session=${encodeURIComponent(sessionId)}&key=${result.key}`;
+      video.hidden = false;
+      $("#realPreviewStatus").textContent = `${timecode(start)}–${timecode(end)} · 当前版本真实声画`;
+    } catch (error) { if (current()) $("#realPreviewStatus").textContent = error.message; }
+  }, 350);
 });

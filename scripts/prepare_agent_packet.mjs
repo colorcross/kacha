@@ -89,14 +89,14 @@ const release = args.includes("--release");
 const fullHash = args.includes("--full-hash");
 
 if (
-  !["proposal_review", "source_edit", "content_generation", "local_optimization"]
+  !["proposal_review", "source_edit", "content_generation", "local_optimization", "material_edit"]
     .includes(task)
   || !["codex", "claude"].includes(agent)
   || !Object.hasOwn(MODEL_TOKEN_LIMITS, modelTier)
   || !(Number.isInteger(referenceTokenLimit) && referenceTokenLimit > 0)
 ) {
   console.error(
-    "用法：kacha.mjs prepare --task proposal_review|source_edit|content_generation|local_optimization "
+    "用法：kacha.mjs prepare --task proposal_review|source_edit|content_generation|local_optimization|material_edit "
       + "[--modules audio,beauty,...] [--agent codex|claude] "
       + "[--stage inventory|content|edit|visual_audio|release] "
       + "[--model-tier economy|balanced|frontier] [--max-reference-tokens N] "

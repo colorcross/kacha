@@ -16,6 +16,8 @@ import { resolveDesignSystem } from "./design_system.mjs";
 import { loadKachaConfig } from "./kacha_config.mjs";
 import { measureSfxPeak } from "./sfx_peak_alignment.mjs";
 
+import { compileNetstyleUnified } from "./netstyle_unified.mjs";
+
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const skillDirectory = path.resolve(scriptDirectory, "..");
 const registryFile = path.join(
@@ -798,7 +800,7 @@ function renderTimeline(planFile, output) {
   }
 }
 
-if (!["plan", "validate", "render"].includes(action)) {
+if (!["plan", "validate", "render", "compile-unified"].includes(action)) {
   fail(
     "用法：netstyle_timeline.mjs plan --input VIDEO --transcript JSON|SRT "
     + "--output PLAN.json [--mask MASK]\n"
@@ -831,6 +833,12 @@ try {
       effects: plan.events.map((event) => event.effectId),
       digest: plan.digest,
     }, null, 2));
+  } else if (action === "compile-unified") {
+    const planFile = path.resolve(option("--plan", ""));
+    const checked = validatePlan(planFile);
+    if (checked.errors.length) throw new Error(checked.errors.join("\n"));
+    if (!option("--output")) throw new Error("compile-unified 需要 --output NEW_TIMELINE.json");
+    console.log(JSON.stringify(compileNetstyleUnified(checked.plan, planFile, path.resolve(option("--output")), { sfxRoot: option("--sfx-root"), noSfx: has("--no-sfx") }), null, 2));
   } else if (action === "validate") {
     const planFile = path.resolve(option("--plan", ""));
     if (!fs.existsSync(planFile)) fail(`计划不存在：${planFile}`, 2);

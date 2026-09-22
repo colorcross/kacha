@@ -84,7 +84,7 @@ const MODULE_REFERENCES = {
     "references/effect-templates-resources.md",
   ],
   opening: ["references/style-effects-library.md"],
-  editing_craft: ["references/editing-theory.md", "references/professional-editing-craft.md"],
+  editing_craft: ["references/optimization-execution.md", "references/editing-theory.md", "references/professional-editing-craft.md"],
   netstyle: [
     "references/editing-theory.md",
     "references/visuals-masks.md",
@@ -226,6 +226,7 @@ for (const module of modules) {
 }
 
 const selected = new Set();
+if (!stage) selected.add("references/optimization-execution.md");
 if (task === "material_edit") selected.add("references/material-editing.md");
 if (stage) {
   selected.add(`references/stages/${stage}.md`);
@@ -281,7 +282,7 @@ const report = {
     ),
   },
   note: stage
-    ? "阶段包是完整 SKILL 已加载后的紧凑执行合同；详细规则由确定性规则检索按需返回"
+    ? "阶段包是轻量 SKILL 入口已加载后的紧凑执行合同；详细规则由确定性规则检索按需返回"
     : "token 为保守启发式预算：非 ASCII 字符按 1 token、ASCII 按 4 字符/token；不是实际计费结果",
 };
 if (output) writeJsonAtomic(path.resolve(output), report);

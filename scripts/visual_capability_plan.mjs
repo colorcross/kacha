@@ -11,6 +11,8 @@ import {
 } from "./kacha_utils.mjs";
 import { loadStyleProfile } from "./style_profile.mjs";
 
+import { NARRATIVE_POLICY, editorialVersion, validateEditorialRequirements } from "./editorial_policy.mjs";
+
 const args = process.argv.slice(2);
 const action = args[0];
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -143,7 +145,9 @@ function loadProductionMotionPolicy() {
   return policy;
 }
 
-function coveragePolicy(profileId, durationSeconds, requestedShowId = null) {
+function coveragePolicy(profileId, durationSeconds, requestedShowId = null, version = "legacy") {
+  editorialVersion(version);
+  const narrative = version === NARRATIVE_POLICY;
   const loaded = loadStyleProfile(profileId);
   const usageFile = path.join(
     skillDirectory,
@@ -183,7 +187,7 @@ function coveragePolicy(profileId, durationSeconds, requestedShowId = null) {
       {
         minimum: family === "opening"
           ? Number(productionMotionPolicy.opening.primaryEffectCount)
-          : active ? requiredCount(policy, durationSeconds) : 0,
+          : active && !narrative ? requiredCount(policy, durationSeconds) : 0,
         maximum: maximumCount(policy, durationSeconds),
       },
     ]),
@@ -196,6 +200,7 @@ function coveragePolicy(profileId, durationSeconds, requestedShowId = null) {
     );
   }
   return {
+    editorialPolicy: version,
     profileId,
     showId,
     styleDigest: loaded.digest,
@@ -207,9 +212,9 @@ function coveragePolicy(profileId, durationSeconds, requestedShowId = null) {
     active,
     families,
     resourceRules,
-    diversity: selected.diversity,
+    diversity: narrative ? { ...selected.diversity, minimumDistinctFamilies: 1, maximumSingleImplementationShare: 1 } : selected.diversity,
     perceptual: selected.perceptual,
-    longFormRequirements: selected.longFormRequirements,
+    longFormRequirements: narrative ? { captionRelationLayouts: [], minimumPipLayoutKinds: 0, minimumTransitionKinds: 0 } : selected.longFormRequirements,
     openingContract: productionMotionPolicy.opening,
     semanticRouting: productionMotionPolicy.semanticRouting,
     spatialRouting: productionMotionPolicy.spatialRouting,
@@ -242,7 +247,9 @@ function validateOpeningEvent(event, label, policy, errors) {
   ) {
     errors.push(`${label}.implementation.promiseBySeconds 必须在开场后且不晚于 3 秒`);
   }
-  if (implementation.openingMode === "registered") {
+  if (implementation.openingMode === "natural" && policy.editorialPolicy === NARRATIVE_POLICY) {
+    requireContractFields(implementation, ["sourceReason", "sourceCueId"], `${label}.implementation`, errors);
+  } else if (implementation.openingMode === "registered") {
     const allowed = new Set([
       ...(contract.registeredCoreEffects ?? []),
       ...(contract.registeredNetstyleEffects ?? []),
@@ -344,6 +351,7 @@ function validatePlan(planFile, forExecution = false, timelineFile = null) {
       plan.styleProfile ?? "xingzhe",
       duration,
       plan.showId ?? null,
+      plan.editorialPolicy?.version ?? "legacy",
     );
   } catch (error) {
     errors.push(error.message);
@@ -360,6 +368,7 @@ function validatePlan(planFile, forExecution = false, timelineFile = null) {
   ) {
     errors.push("能力使用策略或行者风摘要已失效，必须重新规划");
   }
+  if (plan.editorialPolicy?.version === NARRATIVE_POLICY) errors.push(...validateEditorialRequirements(planFile, plan.editorialPolicy.requirements, { execution: forExecution, timeline: timelineFile }));
   const events = Array.isArray(plan.events) ? plan.events : [];
   if (events.length === 0) errors.push("events 必须是非空数组");
   const ids = new Set();
@@ -632,12 +641,14 @@ function validatePlan(planFile, forExecution = false, timelineFile = null) {
 }
 
 function writeTemplate(output, profileId, durationSeconds, showId, openingId) {
-  const policy = coveragePolicy(profileId, durationSeconds, showId);
+  const version = editorialVersion(option("--editorial-policy", "legacy"));
+  const policy = coveragePolicy(profileId, durationSeconds, showId, version);
   const allowedOpeningIds = new Set([
     ...policy.openingContract.registeredCoreEffects,
     ...policy.openingContract.registeredNetstyleEffects,
   ]);
-  if (!allowedOpeningIds.has(openingId)) {
+  const naturalOpening = version === NARRATIVE_POLICY && openingId === "natural";
+  if (!allowedOpeningIds.has(openingId) && !naturalOpening) {
     throw new Error(`--opening 不是已注册生产开场：${openingId}`);
   }
   const events = [];
@@ -659,9 +670,11 @@ function writeTemplate(output, profileId, durationSeconds, showId, openingId) {
           id: family === "opening"
             ? `opening-${openingId.replaceAll("_", "-")}`
             : `replace-${family}-${index + 1}`,
-          openingMode: family === "opening" ? "registered" : undefined,
+          openingMode: family === "opening" ? (naturalOpening ? "natural" : "registered") : undefined,
+          sourceReason: family === "opening" && naturalOpening ? "replace_with_real_opening_reason" : undefined,
+          sourceCueId: family === "opening" && naturalOpening ? "replace_with_real_source_cue" : undefined,
           effectId: family === "opening"
-            ? openingId
+            ? (naturalOpening ? undefined : openingId)
             : DEFAULT_DECISION_RULE_BY_FAMILY[family]
               ? [
                   ...policy.semanticRouting,
@@ -722,6 +735,7 @@ function writeTemplate(output, profileId, durationSeconds, showId, openingId) {
     styleProfile: profileId,
     showId: policy.showId,
     durationSeconds,
+    editorialPolicy: { version, requirements: option("--requirements") ? { path: path.resolve(option("--requirements")), sha256: sha256File(option("--requirements")) } : null },
     policy,
     events: events.sort((left, right) => left.startSeconds - right.startSeconds),
   }));
