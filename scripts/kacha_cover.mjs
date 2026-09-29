@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   fileIdentity,
   hasValue,
@@ -12,7 +13,8 @@ import {
 } from "./kacha_utils.mjs";
 
 const args = process.argv.slice(2);
-const action = args[0];
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const action = isMain ? args[0] : null;
 function option(name, fallback = null) {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : fallback;
@@ -96,6 +98,17 @@ export function validateCoverIdentityContract(contractFile, { requireQcPass = fa
   const resolved = path.resolve(contractFile);
   const contract = readJson(resolved);
   const errors = [];
+  if (contract.kind === "kacha-editorial-cover-contract") {
+    if (contract.schemaVersion !== "1.0" || contract.productionPack !== "dahui-ai" || !hasValue(contract.projectId)) errors.push("大灰AI封面合同身份无效");
+    for (const key of ["question", "headline", "composition"]) if (!hasValue(contract[key])) errors.push(`${key} 缺失`);
+    if (!Array.isArray(contract.sources) || !contract.sources.length) errors.push("封面须关联本人实拍、真实书籍、产品或结果证据");
+    for (const source of contract.sources ?? []) {
+      verifyIdentity(resolved, source, "封面实际来源", errors);
+      if (!["real_photo", "real_evidence"].includes(source.role)) errors.push("不可使用合成人物或伪造证据冒充实际来源");
+    }
+    if (requireQcPass && contract.qc?.thumbnailStatus !== "pass") errors.push("手机缩略图尚未验收");
+    return { status: errors.length ? "fail" : "pass", contract: resolved, errors };
+  }
   if (contract.schemaVersion !== "1.0") errors.push("schemaVersion 必须为 1.0");
   if (contract.kind !== "kacha-cinematic-3d-cover-identity-contract") errors.push("kind 无效");
   if (!hasValue(contract.projectId)) errors.push("projectId 缺失");
@@ -139,6 +152,11 @@ export function validateCoverIdentityContract(contractFile, { requireQcPass = fa
 }
 
 function promptFor(contract) {
+  if (contract.kind === "kacha-editorial-cover-contract") return {
+    mode: "editorial_2d", references: contract.sources,
+    layoutBrief: `${contract.composition}；核心问题：${contract.question}；主文字：${contract.headline}。手机缩略图可读，保留真实来源含义；系列名和期号可选，不增加3D人物或高密度拼贴。`,
+    generationRequired: false,
+  };
   const scene = contract.sceneAdaptation;
   return {
     generationInputMode: contract.generationInputMode,
@@ -169,11 +187,21 @@ if (action === "template") {
   const turnaround = option("--turnaround");
   const realPhoto = option("--real-photo");
   const output = option("--output");
-  if (!projectId || !turnaround || !output) {
+  const editorial = option("--pack") === "dahui-ai";
+  if (!projectId || (!editorial && !turnaround) || !output) {
     usage();
     process.exit(2);
   }
-  writeJsonAtomic(output, buildTemplate(projectId, turnaround, realPhoto));
+  if (fs.existsSync(output) && !args.includes("--overwrite")) throw new Error("拒绝覆盖已有封面合同");
+  writeJsonAtomic(output, editorial ? {
+    schemaVersion: "1.0", kind: "kacha-editorial-cover-contract", productionPack: "dahui-ai", projectId,
+    question: null, headline: null, composition: null,
+    sources: [
+      ...(realPhoto ? [{ ...fileIdentity(realPhoto), role: "real_photo" }] : []),
+      ...(option("--evidence") ? [{ ...fileIdentity(option("--evidence")), role: "real_evidence" }] : []),
+    ],
+    seriesLabel: null, issueNumber: null, qc: { thumbnailStatus: "pending" },
+  } : buildTemplate(projectId, turnaround, realPhoto));
   console.log(JSON.stringify({ status: "pass", output: path.resolve(output) }, null, 2));
 } else if (action === "validate") {
   const contractFile = option("--contract");
@@ -202,7 +230,7 @@ if (action === "template") {
   const prompt = promptFor(readJson(contractFile));
   if (output) writeJsonAtomic(output, prompt);
   console.log(JSON.stringify({ status: "pass", prompt, ...(output ? { output: path.resolve(output) } : {}) }, null, 2));
-} else {
+} else if (isMain) {
   usage();
   process.exit(2);
 }

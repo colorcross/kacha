@@ -42,3 +42,8 @@ $("startContent").addEventListener("click", async () => {
   } catch (error) { toast(error.message, true); }
   finally { button.disabled = false; button.textContent = "建立内容项目"; }
 });
+
+$("show").addEventListener("change", () => {
+  const legacy = ["tool-share", "book-talk", "infinite-game", "very-ai", "casual-chat"].includes($("show").value);
+  $("style").value = legacy ? "xingzhe-light-overlay" : "dahui-ai";
+});

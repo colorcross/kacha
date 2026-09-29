@@ -159,6 +159,309 @@
         "为固定配额添加无动机效果"
       ],
       "minimumQuietRatio": 0.7
+    },
+    {
+      "id": "dahui-practice",
+      "label": "AI实践",
+      "signals": [
+        "screen_demo",
+        "operation",
+        "workflow_demo"
+      ],
+      "shows": [
+        "ai-practice"
+      ],
+      "sequence": [
+        "problem",
+        "inputs",
+        "workflow",
+        "result",
+        "quality-cost",
+        "reuse"
+      ],
+      "techniques": [
+        "demo-chain",
+        "proof-reveal",
+        "matched-comparison",
+        "l-cut",
+        "j-cut",
+        "reading-hold",
+        "chapter-reset",
+        "payoff-return",
+        "reaction-hold"
+      ],
+      "avoid": [
+        "假打字和假点击",
+        "结果未出现就切走",
+        "剪掉全部失败和等待却声称即时完成"
+      ],
+      "minimumQuietRatio": 0.45,
+      "productionPack": "dahui-ai",
+      "editorialIntent": "真实任务→输入条件→关键操作→结果检查→总成本→可复用资料。"
+    },
+    {
+      "id": "dahui-review",
+      "label": "AI拆解室",
+      "signals": [
+        "experiment",
+        "hypothesis",
+        "test_result"
+      ],
+      "shows": [
+        "ai-review"
+      ],
+      "sequence": [
+        "question",
+        "criteria",
+        "normal-case",
+        "boundary-case",
+        "failure-case",
+        "verdict"
+      ],
+      "techniques": [
+        "proof-reveal",
+        "matched-comparison",
+        "action-match",
+        "reaction-hold",
+        "j-cut",
+        "l-cut",
+        "chapter-reset",
+        "payoff-return",
+        "reading-hold",
+        "natural-sound"
+      ],
+      "avoid": [
+        "提前揭示未经证据支持的结论",
+        "用素材蒙太奇伪装实测",
+        "持续高密度冲击"
+      ],
+      "minimumQuietRatio": 0.45,
+      "productionPack": "dahui-ai",
+      "editorialIntent": "先定任务与评价尺度，再展示正常、边界、失败样本；结论限定人群、版本与条件。"
+    },
+    {
+      "id": "dahui-talk",
+      "label": "AI访谈解读",
+      "signals": [
+        "reflection",
+        "quote",
+        "long_form_argument"
+      ],
+      "shows": [
+        "ai-interview"
+      ],
+      "sequence": [
+        "question",
+        "context",
+        "argument",
+        "evidence",
+        "my-view",
+        "action"
+      ],
+      "techniques": [
+        "reading-hold",
+        "reaction-hold",
+        "proof-reveal",
+        "l-cut",
+        "j-cut",
+        "chapter-reset",
+        "payoff-return"
+      ],
+      "avoid": [
+        "短视频式连续推拉",
+        "删掉所有思考停顿",
+        "为固定配额添加无动机效果"
+      ],
+      "minimumQuietRatio": 0.7,
+      "productionPack": "dahui-ai",
+      "editorialIntent": "原问题与上下文→嘉宾论证→事实核验→大灰判断；区别事实、嘉宾观点、预测和我的推断。"
+    },
+    {
+      "id": "dahui-news",
+      "label": "AI风向",
+      "signals": [
+        "reflection",
+        "quote",
+        "long_form_argument"
+      ],
+      "shows": [
+        "ai-news"
+      ],
+      "sequence": [
+        "change",
+        "source",
+        "availability",
+        "impact",
+        "my-view"
+      ],
+      "techniques": [
+        "reading-hold",
+        "reaction-hold",
+        "proof-reveal",
+        "l-cut",
+        "j-cut",
+        "chapter-reset",
+        "payoff-return"
+      ],
+      "avoid": [
+        "短视频式连续推拉",
+        "删掉所有思考停顿",
+        "为固定配额添加无动机效果"
+      ],
+      "minimumQuietRatio": 0.7,
+      "productionPack": "dahui-ai",
+      "editorialIntent": "讲清发生了什么、是否真正开放、影响什么任务及仍未知什么。"
+    },
+    {
+      "id": "dahui-debate",
+      "label": "灰常AI",
+      "signals": [
+        "reflection",
+        "quote",
+        "long_form_argument"
+      ],
+      "shows": [
+        "ai-debate"
+      ],
+      "sequence": [
+        "motion",
+        "positions",
+        "challenge",
+        "strongest-reply",
+        "conditions",
+        "my-view"
+      ],
+      "techniques": [
+        "reading-hold",
+        "reaction-hold",
+        "proof-reveal",
+        "l-cut",
+        "j-cut",
+        "chapter-reset",
+        "payoff-return"
+      ],
+      "avoid": [
+        "短视频式连续推拉",
+        "删掉所有思考停顿",
+        "为固定配额添加无动机效果"
+      ],
+      "minimumQuietRatio": 0.7,
+      "productionPack": "dahui-ai",
+      "editorialIntent": "真实语音辩论，保留双方强论点、承认与条件；等待、重连、补录不得制造胜负。"
+    },
+    {
+      "id": "dahui-book",
+      "label": "AI时代怎么读书",
+      "signals": [
+        "reflection",
+        "quote",
+        "long_form_argument"
+      ],
+      "shows": [
+        "ai-reading"
+      ],
+      "sequence": [
+        "question",
+        "book-map",
+        "reading-dialogue",
+        "whole-book",
+        "ai-limits",
+        "action"
+      ],
+      "techniques": [
+        "reading-hold",
+        "reaction-hold",
+        "proof-reveal",
+        "l-cut",
+        "j-cut",
+        "chapter-reset",
+        "payoff-return"
+      ],
+      "avoid": [
+        "短视频式连续推拉",
+        "删掉所有思考停顿",
+        "为固定配额添加无动机效果"
+      ],
+      "minimumQuietRatio": 0.7,
+      "productionPack": "dahui-ai",
+      "editorialIntent": "一本主书完整论证；围绕问题穿插原文、实际AI回答、核查和人的理解，不把长读书变成工具测评合集。"
+    },
+    {
+      "id": "dahui-build",
+      "label": "产品实践",
+      "signals": [
+        "screen_demo",
+        "operation",
+        "workflow_demo"
+      ],
+      "shows": [
+        "product-practice"
+      ],
+      "sequence": [
+        "need",
+        "decision",
+        "build",
+        "iteration",
+        "use",
+        "next"
+      ],
+      "techniques": [
+        "demo-chain",
+        "proof-reveal",
+        "matched-comparison",
+        "l-cut",
+        "j-cut",
+        "reading-hold",
+        "chapter-reset",
+        "payoff-return",
+        "reaction-hold"
+      ],
+      "avoid": [
+        "假打字和假点击",
+        "结果未出现就切走",
+        "剪掉全部失败和等待却声称即时完成"
+      ],
+      "minimumQuietRatio": 0.45,
+      "productionPack": "dahui-ai",
+      "editorialIntent": "自己的需求、取舍、制作、迭代、真实使用与效果；区分原型、交付和市场结果。"
+    },
+    {
+      "id": "dahui-life",
+      "label": "运动与自我迭代",
+      "signals": [
+        "location_change",
+        "travel",
+        "action_continuation",
+        "ambient_sound"
+      ],
+      "shows": [
+        "life-iteration"
+      ],
+      "sequence": [
+        "situation",
+        "choice",
+        "action",
+        "reflection"
+      ],
+      "techniques": [
+        "location-bridge",
+        "action-match",
+        "natural-sound",
+        "reaction-hold",
+        "j-cut",
+        "l-cut",
+        "chapter-reset",
+        "payoff-return",
+        "reading-hold"
+      ],
+      "avoid": [
+        "音乐覆盖所有现场声",
+        "把补拍伪装成真实事件",
+        "每次切镜都加转场"
+      ],
+      "minimumQuietRatio": 0.65,
+      "productionPack": "dahui-ai",
+      "editorialIntent": "真实情境、选择、行动与复盘，保留环境声，不强行绑定AI。"
     }
   ],
   "techniques": [

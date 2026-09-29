@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "id": "kacha-production-studio",
   "name": "咔嚓本地生产台",
-  "defaultStyleId": "xingzhe",
+  "defaultStyleId": "dahui-ai",
   "authorityBoundary": "页面生成的是本地剪辑意图与配置，不自动上传、付费生成、发布、覆盖源文件或跳过质量门禁。",
   "styleArchitecture": {
     "masterStyleId": "xingzhe",
@@ -529,5 +529,591 @@
       "高影响视觉模块先生成样式帧与进入、峰值、退出状态，再进入正式渲染。",
       "无法满足蒙版、素材、字体授权或真实handle条件时，回退到已注册的最简安全效果。"
     ]
-  }
+  },
+  "editorialPresets": [
+    {
+      "id": "dahui-ai",
+      "name": "大灰AI · AI实践",
+      "presetKind": "master-style",
+      "effectLibraryPolicy": "authoritative",
+      "tagline": "让观众照着做成一件事",
+      "description": "真实任务→输入条件→关键操作→结果检查→总成本→可复用资料。",
+      "builtIn": true,
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "dahui-ai",
+        "modes": {
+          "show": "ai-practice",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "footage",
+          "density": "standard"
+        },
+        "overrides": {
+          "palette": {
+            "canvas": "#F4F5F7",
+            "surface": "#FFFFFF",
+            "ink": "#202733",
+            "accent": "#E98A2B"
+          }
+        }
+      },
+      "caption": {
+        "templateId": "editorial-readable",
+        "fontRole": "subtitle_primary",
+        "preferredFontFamily": "PingFang SC",
+        "fontSizeRatio": 0.048,
+        "maxWidthRatio": 0.8,
+        "baselineYRatio": 0.72,
+        "primaryColor": "#FFF8EE",
+        "emphasisColor": "#E98A2B",
+        "shadowOpacity": 0.45,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "warm-soft",
+        "denoise": "light",
+        "targetLufs": -21,
+        "truePeakDbtp": -4,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": false,
+        "presetId": "quiet-knowledge",
+        "targetBelowDialogueDb": 18,
+        "ducking": "gentle"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 35,
+          "whitening": 22,
+          "toneEvening": 30,
+          "nasolabialSoftening": 24
+        }
+      },
+      "direction": {
+        "openingId": "natural",
+        "transitionBias": "semantic-minimal",
+        "effectDensity": "restrained",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      },
+      "baseStyleId": null
+    },
+    {
+      "id": "dahui-review",
+      "name": "大灰AI · AI拆解室",
+      "presetKind": "master-style",
+      "effectLibraryPolicy": "authoritative",
+      "tagline": "用同一任务看清优劣",
+      "description": "先定任务与评价尺度，再展示正常、边界、失败样本；结论限定人群、版本与条件。",
+      "builtIn": true,
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "dahui-ai",
+        "modes": {
+          "show": "ai-review",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "footage",
+          "density": "standard"
+        },
+        "overrides": {
+          "palette": {
+            "canvas": "#F4F5F7",
+            "surface": "#FFFFFF",
+            "ink": "#202733",
+            "accent": "#E98A2B"
+          }
+        }
+      },
+      "caption": {
+        "templateId": "editorial-readable",
+        "fontRole": "subtitle_primary",
+        "preferredFontFamily": "PingFang SC",
+        "fontSizeRatio": 0.048,
+        "maxWidthRatio": 0.8,
+        "baselineYRatio": 0.72,
+        "primaryColor": "#FFF8EE",
+        "emphasisColor": "#E98A2B",
+        "shadowOpacity": 0.45,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "warm-soft",
+        "denoise": "light",
+        "targetLufs": -21,
+        "truePeakDbtp": -4,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": false,
+        "presetId": "quiet-knowledge",
+        "targetBelowDialogueDb": 18,
+        "ducking": "gentle"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 35,
+          "whitening": 22,
+          "toneEvening": 30,
+          "nasolabialSoftening": 24
+        }
+      },
+      "direction": {
+        "openingId": "natural",
+        "transitionBias": "semantic-minimal",
+        "effectDensity": "restrained",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      },
+      "baseStyleId": null
+    },
+    {
+      "id": "dahui-talk",
+      "name": "大灰AI · AI访谈解读",
+      "presetKind": "master-style",
+      "effectLibraryPolicy": "authoritative",
+      "tagline": "先讲清对方，再说我的判断",
+      "description": "原问题与上下文→嘉宾论证→事实核验→大灰判断；区别事实、嘉宾观点、预测和我的推断。",
+      "builtIn": true,
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "dahui-ai",
+        "modes": {
+          "show": "ai-interview",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "footage",
+          "density": "standard"
+        },
+        "overrides": {
+          "palette": {
+            "canvas": "#F4F5F7",
+            "surface": "#FFFFFF",
+            "ink": "#202733",
+            "accent": "#E98A2B"
+          }
+        }
+      },
+      "caption": {
+        "templateId": "editorial-readable",
+        "fontRole": "subtitle_primary",
+        "preferredFontFamily": "PingFang SC",
+        "fontSizeRatio": 0.048,
+        "maxWidthRatio": 0.8,
+        "baselineYRatio": 0.72,
+        "primaryColor": "#FFF8EE",
+        "emphasisColor": "#E98A2B",
+        "shadowOpacity": 0.45,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "warm-soft",
+        "denoise": "light",
+        "targetLufs": -21,
+        "truePeakDbtp": -4,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": false,
+        "presetId": "quiet-knowledge",
+        "targetBelowDialogueDb": 18,
+        "ducking": "gentle"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 35,
+          "whitening": 22,
+          "toneEvening": 30,
+          "nasolabialSoftening": 24
+        }
+      },
+      "direction": {
+        "openingId": "natural",
+        "transitionBias": "semantic-minimal",
+        "effectDensity": "restrained",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      },
+      "baseStyleId": null
+    },
+    {
+      "id": "dahui-news",
+      "name": "大灰AI · AI风向",
+      "presetKind": "master-style",
+      "effectLibraryPolicy": "authoritative",
+      "tagline": "解释一项变化及其影响",
+      "description": "讲清发生了什么、是否真正开放、影响什么任务及仍未知什么。",
+      "builtIn": true,
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "dahui-ai",
+        "modes": {
+          "show": "ai-news",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "footage",
+          "density": "standard"
+        },
+        "overrides": {
+          "palette": {
+            "canvas": "#F4F5F7",
+            "surface": "#FFFFFF",
+            "ink": "#202733",
+            "accent": "#E98A2B"
+          }
+        }
+      },
+      "caption": {
+        "templateId": "editorial-readable",
+        "fontRole": "subtitle_primary",
+        "preferredFontFamily": "PingFang SC",
+        "fontSizeRatio": 0.048,
+        "maxWidthRatio": 0.8,
+        "baselineYRatio": 0.72,
+        "primaryColor": "#FFF8EE",
+        "emphasisColor": "#E98A2B",
+        "shadowOpacity": 0.45,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "warm-soft",
+        "denoise": "light",
+        "targetLufs": -21,
+        "truePeakDbtp": -4,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": false,
+        "presetId": "quiet-knowledge",
+        "targetBelowDialogueDb": 18,
+        "ducking": "gentle"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 35,
+          "whitening": 22,
+          "toneEvening": 30,
+          "nasolabialSoftening": 24
+        }
+      },
+      "direction": {
+        "openingId": "natural",
+        "transitionBias": "semantic-minimal",
+        "effectDensity": "restrained",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      },
+      "baseStyleId": null
+    },
+    {
+      "id": "dahui-debate",
+      "name": "大灰AI · 灰常AI",
+      "presetKind": "master-style",
+      "effectLibraryPolicy": "authoritative",
+      "tagline": "保留双方最强的理由",
+      "description": "真实语音辩论，保留双方强论点、承认与条件；等待、重连、补录不得制造胜负。",
+      "builtIn": true,
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "dahui-ai",
+        "modes": {
+          "show": "ai-debate",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "footage",
+          "density": "standard"
+        },
+        "overrides": {
+          "palette": {
+            "canvas": "#F4F5F7",
+            "surface": "#FFFFFF",
+            "ink": "#202733",
+            "accent": "#E98A2B"
+          }
+        }
+      },
+      "caption": {
+        "templateId": "editorial-readable",
+        "fontRole": "subtitle_primary",
+        "preferredFontFamily": "PingFang SC",
+        "fontSizeRatio": 0.048,
+        "maxWidthRatio": 0.8,
+        "baselineYRatio": 0.72,
+        "primaryColor": "#FFF8EE",
+        "emphasisColor": "#E98A2B",
+        "shadowOpacity": 0.45,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "warm-soft",
+        "denoise": "light",
+        "targetLufs": -21,
+        "truePeakDbtp": -4,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": false,
+        "presetId": "quiet-knowledge",
+        "targetBelowDialogueDb": 18,
+        "ducking": "gentle"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 35,
+          "whitening": 22,
+          "toneEvening": 30,
+          "nasolabialSoftening": 24
+        }
+      },
+      "direction": {
+        "openingId": "natural",
+        "transitionBias": "semantic-minimal",
+        "effectDensity": "restrained",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      },
+      "baseStyleId": null
+    },
+    {
+      "id": "dahui-book",
+      "name": "大灰AI · AI时代怎么读书",
+      "presetKind": "master-style",
+      "effectLibraryPolicy": "authoritative",
+      "tagline": "一本书、一条完整论证",
+      "description": "一本主书完整论证；围绕问题穿插原文、实际AI回答、核查和人的理解，不把长读书变成工具测评合集。",
+      "builtIn": true,
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "dahui-ai",
+        "modes": {
+          "show": "ai-reading",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "footage",
+          "density": "standard"
+        },
+        "overrides": {
+          "palette": {
+            "canvas": "#F4F5F7",
+            "surface": "#FFFFFF",
+            "ink": "#202733",
+            "accent": "#E98A2B"
+          }
+        }
+      },
+      "caption": {
+        "templateId": "editorial-readable",
+        "fontRole": "subtitle_primary",
+        "preferredFontFamily": "PingFang SC",
+        "fontSizeRatio": 0.048,
+        "maxWidthRatio": 0.8,
+        "baselineYRatio": 0.72,
+        "primaryColor": "#FFF8EE",
+        "emphasisColor": "#E98A2B",
+        "shadowOpacity": 0.45,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "warm-soft",
+        "denoise": "light",
+        "targetLufs": -21,
+        "truePeakDbtp": -4,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": false,
+        "presetId": "quiet-knowledge",
+        "targetBelowDialogueDb": 18,
+        "ducking": "gentle"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 35,
+          "whitening": 22,
+          "toneEvening": 30,
+          "nasolabialSoftening": 24
+        }
+      },
+      "direction": {
+        "openingId": "natural",
+        "transitionBias": "semantic-minimal",
+        "effectDensity": "restrained",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      },
+      "baseStyleId": null
+    },
+    {
+      "id": "dahui-build",
+      "name": "大灰AI · 产品实践",
+      "presetKind": "master-style",
+      "effectLibraryPolicy": "authoritative",
+      "tagline": "让真实取舍与迭代可见",
+      "description": "自己的需求、取舍、制作、迭代、真实使用与效果；区分原型、交付和市场结果。",
+      "builtIn": true,
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "dahui-ai",
+        "modes": {
+          "show": "product-practice",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "footage",
+          "density": "standard"
+        },
+        "overrides": {
+          "palette": {
+            "canvas": "#F4F5F7",
+            "surface": "#FFFFFF",
+            "ink": "#202733",
+            "accent": "#E98A2B"
+          }
+        }
+      },
+      "caption": {
+        "templateId": "editorial-readable",
+        "fontRole": "subtitle_primary",
+        "preferredFontFamily": "PingFang SC",
+        "fontSizeRatio": 0.048,
+        "maxWidthRatio": 0.8,
+        "baselineYRatio": 0.72,
+        "primaryColor": "#FFF8EE",
+        "emphasisColor": "#E98A2B",
+        "shadowOpacity": 0.45,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "warm-soft",
+        "denoise": "light",
+        "targetLufs": -21,
+        "truePeakDbtp": -4,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": false,
+        "presetId": "quiet-knowledge",
+        "targetBelowDialogueDb": 18,
+        "ducking": "gentle"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 35,
+          "whitening": 22,
+          "toneEvening": 30,
+          "nasolabialSoftening": 24
+        }
+      },
+      "direction": {
+        "openingId": "natural",
+        "transitionBias": "semantic-minimal",
+        "effectDensity": "restrained",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      },
+      "baseStyleId": null
+    },
+    {
+      "id": "dahui-life",
+      "name": "大灰AI · 运动与自我迭代",
+      "presetKind": "master-style",
+      "effectLibraryPolicy": "authoritative",
+      "tagline": "记录行动中的自己",
+      "description": "真实情境、选择、行动与复盘，保留环境声，不强行绑定AI。",
+      "builtIn": true,
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "dahui-ai",
+        "modes": {
+          "show": "life-iteration",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "footage",
+          "density": "standard"
+        },
+        "overrides": {
+          "palette": {
+            "canvas": "#F4F5F7",
+            "surface": "#FFFFFF",
+            "ink": "#202733",
+            "accent": "#E98A2B"
+          }
+        }
+      },
+      "caption": {
+        "templateId": "editorial-readable",
+        "fontRole": "subtitle_primary",
+        "preferredFontFamily": "PingFang SC",
+        "fontSizeRatio": 0.048,
+        "maxWidthRatio": 0.8,
+        "baselineYRatio": 0.72,
+        "primaryColor": "#FFF8EE",
+        "emphasisColor": "#E98A2B",
+        "shadowOpacity": 0.45,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "warm-soft",
+        "denoise": "light",
+        "targetLufs": -21,
+        "truePeakDbtp": -4,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": false,
+        "presetId": "quiet-knowledge",
+        "targetBelowDialogueDb": 18,
+        "ducking": "gentle"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 35,
+          "whitening": 22,
+          "toneEvening": 30,
+          "nasolabialSoftening": 24
+        }
+      },
+      "direction": {
+        "openingId": "natural",
+        "transitionBias": "semantic-minimal",
+        "effectDensity": "restrained",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      },
+      "baseStyleId": null
+    }
+  ]
 }

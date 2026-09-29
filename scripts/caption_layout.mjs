@@ -24,7 +24,8 @@ const registryFile = path.join(
   "effects",
   "spoken-caption-layouts.json",
 );
-const fontRoutingFile = path.join(skillDirectory, "config", "font-routing.json");
+const legacyFontRoutingFile = path.join(skillDirectory, "config", "font-routing.json");
+const dahuiFontRoutingFile = path.join(skillDirectory, "config", "font-routing-dahui-ai.json");
 const bundledSfxRoot = path.join(skillDirectory, "assets", "sfx");
 const args = process.argv.slice(2);
 const action = args[0];
@@ -709,12 +710,15 @@ function planCaptionLayout({ input, transcript, output, mask, fontRegistry }) {
     explicit: fontRegistry,
     config,
   });
-  const globalShowRequest = option("--show", null);
+  const globalShowRequest = option("--show", config.style.profile === "dahui-ai" ? config.style.modes.show : null);
   const globalShowProfile = globalShowRequest
     ? resolveShowProfile(String(globalShowRequest).trim(), registry, "--show")
     : null;
+  const isDahui = Boolean(globalShowProfile && globalShowProfile.id.includes("-"));
+  const fontRoutingFile = isDahui ? dahuiFontRoutingFile : legacyFontRoutingFile;
   const designResolverInput = {
     ...config.style,
+    ...(isDahui ? { profile: "dahui-ai" } : {}),
     modes: {
       ...config.style.modes,
       ...(globalShowProfile && globalShowProfile.id !== "neutral"
@@ -1037,6 +1041,7 @@ function planCaptionLayout({ input, transcript, output, mask, fontRegistry }) {
     registry: {
       id: registry.id,
       sha256: sha256File(registryFile),
+      fontRoutingId: routing.id,
       fontRoutingSha256: sha256File(fontRoutingFile),
     },
   };
@@ -1047,6 +1052,7 @@ function planCaptionLayout({ input, transcript, output, mask, fontRegistry }) {
 
 function validatePlan(planFile, strictTextScenes = false) {
   const plan = readJson(planFile);
+  const fontRoutingFile = plan.registry?.fontRoutingId === "dahui-ai-font-routing" ? dahuiFontRoutingFile : legacyFontRoutingFile;
   const registry = readJson(registryFile);
   const routing = readJson(fontRoutingFile);
   const layoutsById = new Map(registry.layouts.map((layout) => [layout.id, layout]));
@@ -1422,7 +1428,7 @@ function validatePlan(planFile, strictTextScenes = false) {
       errors.push(`${label}.textScene.showProfile 与当前栏目档案不一致`);
     }
     if (strictTextScenes && profileId === "neutral") {
-      errors.push(`${label} 严格模式必须选择行者大灰五个正式栏目之一`);
+      errors.push(`${label} 严格模式必须选择已注册的节目字景档案`);
     }
     if (
       strictTextScenes

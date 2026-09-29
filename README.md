@@ -1,5 +1,8 @@
 # 咔嚓（Kacha）
 
+当前“大灰AI”新节目入口已重构：[大灰AI剪辑系统 V1](docs/DAHUI_AI_EDITING_SYSTEM_V1.md)。工作台默认八类内容预设；真人、实际证据、长读书、真实辩论分别编排。下文“行者风3.0”、五种视觉语言和历史字体要求仅约束明确选择的旧生产包，新包不继承装饰配额。
+
+
 [![CI](https://github.com/colorcross/kacha/actions/workflows/ci.yml/badge.svg)](https://github.com/colorcross/kacha/actions/workflows/ci.yml)
 [![Website](https://github.com/colorcross/kacha/actions/workflows/pages.yml/badge.svg)](https://colorcross.github.io/kacha/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

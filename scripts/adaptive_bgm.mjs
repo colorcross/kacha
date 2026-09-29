@@ -519,7 +519,7 @@ export function buildAdaptiveBgmPlan(cuesFile, options = {}) {
     source: fileIdentity(sourceFile),
     policy: fileIdentity(policyFile),
     showId,
-    styleId: options.styleId ?? "xingzhe",
+    styleId: options.styleId ?? (showId.startsWith("ai-") || ["product-practice", "life-iteration"].includes(showId) ? "dahui-ai" : "xingzhe"),
     durationSeconds: round(duration),
     sharedMusicIdentity: {
       required: true,
@@ -670,7 +670,7 @@ function main() {
     }
     const plan = buildAdaptiveBgmPlan(cues, {
       showId: option(args, "--show", "tool-share"),
-      styleId: option(args, "--style", "xingzhe"),
+      styleId: option(args, "--style", null),
       durationSeconds: option(args, "--duration"),
       policyFile,
     });

@@ -32,6 +32,7 @@ function usage() {
       + "  kacha.mjs contracts validate|list|show|resolve [options]\n"
       + "  kacha.mjs visual-capabilities template|validate [options]\n"
       + "  kacha.mjs production-quality template|validate|anti-web-audit [options]\n"
+      + "  kacha.mjs episode list|template|bind|validate --show SHOW --output FILE [options]\n"
       + "  kacha.mjs cover template|validate|prompt [options]\n"
       + "  kacha.mjs fonts scan|validate|resolve|preview [options]\n"
       + "  kacha.mjs captions plan|validate|render [options]\n"
@@ -169,6 +170,7 @@ const delegatedCommands = {
   contracts: "kacha_motion_contracts.mjs",
   "visual-capabilities": "visual_capability_plan.mjs",
   "production-quality": "production_quality_contract.mjs",
+  episode: "kacha_episode.mjs",
   cover: "kacha_cover.mjs",
   fonts: "kacha_fonts.mjs",
   captions: "caption_layout.mjs",

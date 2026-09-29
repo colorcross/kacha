@@ -1,5 +1,6 @@
 import { isMaterialProject, initializeMaterialProject, materialProjectStatus, runMaterialProject } from "./material_project.mjs";
 import fs from "node:fs";
+import { resolveProductionSelection, loadProductionPack } from "./production_pack.mjs";
 import { inspectBundle, freezeProjectRuntime, bindRuntime, callBoundProject } from "./runtime_bundle.mjs";
 import os from "node:os";
 import path from "node:path";
@@ -220,7 +221,7 @@ function relativeFrom(ownerFile, target) {
   return path.relative(path.dirname(ownerFile), target).split(path.sep).join("/") || ".";
 }
 
-function outputContractFor(input) {
+function outputContractFor(input, options = {}) {
   if (input.type !== "video") return null;
   const media = input.media;
   const width = Number(media.width ?? media.displayWidth);
@@ -238,12 +239,12 @@ function outputContractFor(input) {
     integratedLufsMax: -19,
     truePeakMax: -3,
     audioMix: {
-      bgmRequired: true,
+      bgmRequired: options.productionPack !== "dahui-ai",
       adaptiveBgmRequired: true,
       masterTruePeakDb: -4,
       bgmBelowDialogueDbMin: 12,
       bgmBelowDialogueDbMax: 24,
-      bgmMinimumCoverageRatio: 0.95,
+      bgmMinimumCoverageRatio: options.productionPack === "dahui-ai" ? 0 : 0.95,
     },
   };
 }
@@ -281,6 +282,7 @@ function buildManifest({ projectId, projectRoot, input, runtimeLock, options }) 
     },
     runtimeLock,
     show: options.show,
+    productionPack: options.productionPack,
     style: options.style,
     platform: options.platform,
     language: options.language,
@@ -315,7 +317,7 @@ function buildManifest({ projectId, projectRoot, input, runtimeLock, options }) 
       "filter:silencedetect",
     ],
     source: input,
-    expectedMedia: outputContractFor(input),
+    expectedMedia: outputContractFor(input, options),
     requiredCoverAspectRatios: ["3:4", "4:3"],
     outputs: {
       finalVideo: { path: rel(path.join(projectRoot, "output", "final.mov")) },
@@ -346,6 +348,7 @@ function buildContentContract({ projectId, input, options, runtimeLock }) {
     task: "content_generation",
     input,
     show: options.show,
+    productionPack: options.productionPack,
     style: options.style,
     platform: options.platform,
     language: options.language,
@@ -379,7 +382,8 @@ export function initializeProject({
   projectRoot = null,
   projectId = null,
   task = null,
-  show = "tool-share",
+  pack = null,
+  show = null,
   style = "light-warm-overlay",
   platform = "general",
   language = "zh",
@@ -389,6 +393,9 @@ export function initializeProject({
   home = os.homedir(),
 } = {}) {
   if (materials) {
+    const selection = resolveProductionSelection(pack, show);
+    if (selection.packId === "dahui-ai") throw new Error("大灰AI须先用 episode template 建立栏目证据合同，再用单源主叙事工程添加录屏、原文与现场素材；当前 materials 自动拼接入口不支持栏目审片门禁，不能用于大灰AI正式交付");
+    show ??= "casual-chat";
     let runtime = inspectRuntime({ home });
     if (!development && runtime.productionReady) runtime = freezeProjectRuntime(runtime, { home });
     const result = initializeMaterialProject({ materials, requirements, duration, aspect, fps, width, projectRoot, projectId: projectId ?? "material-film", show, style, development, confirmExecute, runtime });
@@ -426,12 +433,23 @@ export function initializeProject({
   const resolvedProjectId = slug(
     projectId ?? fromBrief?.brief?.projectName ?? path.parse(input.path ?? "content").name,
   );
+  const selection = resolveProductionSelection(fromBrief?.brief?.target?.productionPack ?? pack, fromBrief?.brief?.target?.show ?? show);
+  loadProductionPack(selection.packId, selection.showId);
   const options = {
-    show: fromBrief?.brief?.target?.show ?? show,
-    style: fromBrief?.brief?.style?.id ?? style,
+    productionPack: selection.packId,
+    show: selection.showId,
+    style: fromBrief?.brief?.style?.id ?? (selection.packId === "dahui-ai" ? "dahui-ai" : style),
     platform: fromBrief?.brief?.target?.platform ?? platform,
     language: fromBrief?.brief?.target?.language ?? language,
   };
+  if (selection.packId === "dahui-ai") {
+    const configFile = path.join(baseRoot, "kacha.config.json");
+    if (!fs.existsSync(configFile)) writeJsonAtomic(configFile, {
+      schemaVersion: "1.0",
+      style: { system: "dahui-video-system", profile: "dahui-ai", modes: { show: selection.showId }, overrides: {} },
+      editingDefaults: { parameters: { audio: { dialogueFirst: true, bgm: { enabled: false } } } },
+    });
+  }
   const runtimeLock = {
     sourceRef: runtime.sourceRef,
     sourceDirty: runtime.sourceDirty,
@@ -463,7 +481,7 @@ export function initializeProject({
       "--project-id",
       resolvedProjectId,
       "--pack",
-      "xingzhe-dahui",
+      options.productionPack,
       "--show",
       options.show,
       "--output",
@@ -509,6 +527,7 @@ export function initializeProject({
     task: resolvedTask,
     input,
     show: options.show,
+    productionPack: options.productionPack,
     style: options.style,
     platform: options.platform,
     language: options.language,

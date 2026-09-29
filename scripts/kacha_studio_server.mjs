@@ -720,8 +720,9 @@ async function handleApi(request, response, url, port) {
     const visualLanguageIds = new Set(
       catalog.visualLanguages.map((language) => language.id),
     );
-    if (!visualLanguageIds.has(body.style)) {
-      throw new Error(`内容项目视觉语言不存在或不是当前五风格权威：${body.style}`);
+    const dahui = Object.hasOwn(catalog.shows, body.show);
+    if (dahui ? body.style !== "dahui-ai" : !visualLanguageIds.has(body.style)) {
+      throw new Error(`内容栏目与视觉风格不匹配：${body.style}`);
     }
     json(response, 201, initializeProject({
       script: body.scriptPath || null,

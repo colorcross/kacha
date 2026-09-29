@@ -1,0 +1,333 @@
+{
+  "schemaVersion": "1.0",
+  "id": "dahui-ai",
+  "version": "1.0.0",
+  "description": "大灰AI V6.1：真人判断、真实证据、八类叙事。旧行者大灰生产包独立保留。",
+  "base": {
+    "cinematicPolicyFile": "dahui-ai.json",
+    "typography": {
+      "allowedFonts": [
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN Medium",
+        "Source Han Sans CN Light"
+      ],
+      "regularSubtitle": {
+        "font": "PingFang SC",
+        "background": "none",
+        "outline": "none",
+        "shadowOpacity": 0.45
+      },
+      "displayFont": "PingFang SC",
+      "coverTitleFont": "PingFang SC",
+      "sequentialMultilineOnly": true
+    },
+    "cover": {
+      "mode": "editorial_2d",
+      "identityEvidenceRequired": false,
+      "sceneSpecificPoseContractRequired": false,
+      "poseReuseForbidden": false,
+      "allowedGenerationInputModes": [
+        "real_photo",
+        "real_evidence",
+        "none"
+      ],
+      "requiredPoseFields": [],
+      "seriesLabelRequired": false,
+      "issueNumberRequired": false,
+      "syntheticIdentityForbidden": true
+    },
+    "firstMinute": {
+      "windowSeconds": 60,
+      "minimumMotivatedEffects": 0,
+      "minimumDistinctMechanisms": 0,
+      "minimumPeakAlignedSfx": 0,
+      "maximumPrimaryEventsPer10Seconds": 2,
+      "minimumHumanPresenceRatio": 0,
+      "maximumFullScreenTakeoverRatio": 1,
+      "minimumBreathingRoomRatio": 0,
+      "minimumHumanReactionWindows": 0,
+      "openingHookRequired": true,
+      "audioVisualIntentMustMatch": true,
+      "normalSpeedPreviewRequired": true
+    },
+    "opening": {
+      "firstVisibleChangeBySeconds": 3,
+      "promiseBySeconds": 20,
+      "naturalOpeningDefault": true
+    },
+    "editorialPolicy": "narrative-v1"
+  },
+  "shows": {
+    "ai-practice": {
+      "editorialIntent": "真实任务→输入条件→关键操作→结果检查→总成本→可复用资料。",
+      "episode": {
+        "category": "PRACTICE",
+        "label": "AI实践",
+        "durationSeconds": [
+          300,
+          600
+        ],
+        "targetSeconds": 450,
+        "structure": [
+          "problem",
+          "inputs",
+          "workflow",
+          "result",
+          "quality-cost",
+          "reuse"
+        ],
+        "requiredEvidence": [
+          "task-input",
+          "tool-session",
+          "raw-output",
+          "quality-check",
+          "cost-log",
+          "reusable-artifact"
+        ],
+        "grammar": "screen_steps",
+        "audioPolicy": "dialogue_first",
+        "primaryBookCount": 0,
+        "aiLinkRequired": true,
+        "derivativeMayReplaceMaster": false,
+        "chaptersRequired": false,
+        "coverQuestionFirst": true
+      }
+    },
+    "ai-review": {
+      "editorialIntent": "先定任务与评价尺度，再展示正常、边界、失败样本；结论限定人群、版本与条件。",
+      "episode": {
+        "category": "REVIEW",
+        "label": "AI拆解室",
+        "durationSeconds": [
+          360,
+          720
+        ],
+        "targetSeconds": 540,
+        "structure": [
+          "question",
+          "criteria",
+          "normal-case",
+          "boundary-case",
+          "failure-case",
+          "verdict"
+        ],
+        "requiredEvidence": [
+          "test-protocol",
+          "tool-session",
+          "raw-output",
+          "normal-case",
+          "boundary-case",
+          "failure-case",
+          "cost-log"
+        ],
+        "grammar": "fair_comparison",
+        "audioPolicy": "quiet_during_comparison",
+        "primaryBookCount": 0,
+        "aiLinkRequired": true,
+        "derivativeMayReplaceMaster": false,
+        "chaptersRequired": false,
+        "coverQuestionFirst": true
+      }
+    },
+    "ai-interview": {
+      "editorialIntent": "原问题与上下文→嘉宾论证→事实核验→大灰判断；区别事实、嘉宾观点、预测和我的推断。",
+      "episode": {
+        "category": "TALK",
+        "label": "AI访谈解读",
+        "durationSeconds": [
+          480,
+          1200
+        ],
+        "targetSeconds": 840,
+        "structure": [
+          "question",
+          "context",
+          "argument",
+          "evidence",
+          "my-view",
+          "action"
+        ],
+        "requiredEvidence": [
+          "original-interview",
+          "source-timecodes",
+          "fact-check"
+        ],
+        "grammar": "attributed_extract",
+        "audioPolicy": "quiet_during_quotes",
+        "primaryBookCount": 0,
+        "aiLinkRequired": true,
+        "derivativeMayReplaceMaster": false,
+        "chaptersRequired": false,
+        "coverQuestionFirst": true
+      }
+    },
+    "ai-news": {
+      "editorialIntent": "讲清发生了什么、是否真正开放、影响什么任务及仍未知什么。",
+      "episode": {
+        "category": "NEWS",
+        "label": "AI风向",
+        "durationSeconds": [
+          180,
+          600
+        ],
+        "targetSeconds": 390,
+        "structure": [
+          "change",
+          "source",
+          "availability",
+          "impact",
+          "my-view"
+        ],
+        "requiredEvidence": [
+          "primary-source",
+          "event-dates",
+          "availability-check"
+        ],
+        "grammar": "event_explainer",
+        "audioPolicy": "dialogue_first",
+        "primaryBookCount": 0,
+        "aiLinkRequired": true,
+        "derivativeMayReplaceMaster": false,
+        "chaptersRequired": false,
+        "coverQuestionFirst": true
+      }
+    },
+    "ai-debate": {
+      "editorialIntent": "真实语音辩论，保留双方强论点、承认与条件；等待、重连、补录不得制造胜负。",
+      "episode": {
+        "category": "DEBATE",
+        "label": "灰常AI",
+        "durationSeconds": [
+          480,
+          900
+        ],
+        "targetSeconds": 690,
+        "structure": [
+          "motion",
+          "positions",
+          "challenge",
+          "strongest-reply",
+          "conditions",
+          "my-view"
+        ],
+        "requiredEvidence": [
+          "debate-prompt",
+          "full-session",
+          "tool-session",
+          "turn-log",
+          "edit-disclosure",
+          "fact-check"
+        ],
+        "grammar": "speaker_turns",
+        "audioPolicy": "no_music_under_debate",
+        "primaryBookCount": 0,
+        "aiLinkRequired": true,
+        "derivativeMayReplaceMaster": false,
+        "chaptersRequired": false,
+        "coverQuestionFirst": true
+      }
+    },
+    "ai-reading": {
+      "editorialIntent": "一本主书完整论证；围绕问题穿插原文、实际AI回答、核查和人的理解，不把长读书变成工具测评合集。",
+      "episode": {
+        "category": "BOOK",
+        "label": "AI时代怎么读书",
+        "durationSeconds": [
+          1800,
+          3600
+        ],
+        "targetSeconds": 2700,
+        "structure": [
+          "question",
+          "book-map",
+          "reading-dialogue",
+          "whole-book",
+          "ai-limits",
+          "action"
+        ],
+        "requiredEvidence": [
+          "primary-book",
+          "reading-scope",
+          "source-passages",
+          "tool-session",
+          "raw-output",
+          "interpretation-check"
+        ],
+        "grammar": "long_reading",
+        "audioPolicy": "chapters_only",
+        "primaryBookCount": 1,
+        "aiLinkRequired": true,
+        "derivativeMayReplaceMaster": false,
+        "chaptersRequired": true,
+        "coverQuestionFirst": true
+      },
+      "opening": {
+        "promiseBySeconds": 45
+      }
+    },
+    "product-practice": {
+      "editorialIntent": "自己的需求、取舍、制作、迭代、真实使用与效果；区分原型、交付和市场结果。",
+      "episode": {
+        "category": "BUILD",
+        "label": "产品实践",
+        "durationSeconds": [
+          300,
+          600
+        ],
+        "targetSeconds": 450,
+        "structure": [
+          "need",
+          "decision",
+          "build",
+          "iteration",
+          "use",
+          "next"
+        ],
+        "requiredEvidence": [
+          "product-version",
+          "development-record",
+          "usage-evidence",
+          "ai-role"
+        ],
+        "grammar": "product_change",
+        "audioPolicy": "dialogue_first",
+        "primaryBookCount": 0,
+        "aiLinkRequired": true,
+        "derivativeMayReplaceMaster": false,
+        "chaptersRequired": false,
+        "coverQuestionFirst": true
+      }
+    },
+    "life-iteration": {
+      "editorialIntent": "真实情境、选择、行动与复盘，保留环境声，不强行绑定AI。",
+      "episode": {
+        "category": "LIFE",
+        "label": "运动与自我迭代",
+        "durationSeconds": [
+          180,
+          360
+        ],
+        "targetSeconds": 270,
+        "structure": [
+          "situation",
+          "choice",
+          "action",
+          "reflection"
+        ],
+        "requiredEvidence": [
+          "dated-footage",
+          "personal-record"
+        ],
+        "grammar": "observational",
+        "audioPolicy": "natural_sound_first",
+        "primaryBookCount": 0,
+        "aiLinkRequired": false,
+        "derivativeMayReplaceMaster": false,
+        "chaptersRequired": false,
+        "coverQuestionFirst": true
+      }
+    }
+  }
+}

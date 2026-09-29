@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { resolveProductionSelection } from "./production_pack.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -313,6 +314,7 @@ function validateDesignPreflight(value, label, errors) {
   try {
     resolved = resolveDesignSystem({
       system: value.designSystemId,
+      profile: value.styleProfile ?? (resolveProductionSelection(null, value.modeSelection?.show).packId === "dahui-ai" ? "dahui-ai" : undefined),
       modes: value.modeSelection,
     });
   } catch (error) {

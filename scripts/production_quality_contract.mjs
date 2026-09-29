@@ -11,7 +11,9 @@ import {
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
 import { alignSfxPeak } from "./sfx_peak_alignment.mjs";
-import { loadProductionPack } from "./production_pack.mjs";
+import { validateCoverIdentityContract } from "./kacha_cover.mjs";
+import { episodeTemplate, validateEpisode } from "./episode_editorial.mjs";
+import { loadProductionPack, resolveProductionSelection } from "./production_pack.mjs";
 
 import { NARRATIVE_POLICY, editorialVersion, firstMinutePolicy, validateEditorialRequirements } from "./editorial_policy.mjs";
 
@@ -58,11 +60,14 @@ function option(name, fallback = null) {
 }
 
 export function template(projectId, {
-  packId = "xingzhe-dahui",
-  showId = "tool-share",
-  editorialPolicy = "legacy",
+  packId = null,
+  showId = null,
+  editorialPolicy = null,
   requirements = null,
 } = {}) {
+  ({ packId, showId } = resolveProductionSelection(packId, showId));
+  editorialPolicy ??= packId === "dahui-ai" ? NARRATIVE_POLICY : "legacy";
+  if (packId === "dahui-ai" && editorialPolicy !== NARRATIVE_POLICY) throw new Error("大灰AI必须使用 narrative-v1");
   editorialVersion(editorialPolicy);
   const productionPack = loadProductionPack(packId, showId);
   return {
@@ -70,6 +75,7 @@ export function template(projectId, {
     kind: "kacha-production-quality-contract",
     projectId,
     editorialPolicy: { version: editorialPolicy, requirements },
+    ...(productionPack.policies.episode ? { episodeEditorial: null } : {}),
     policies: {
       productionProfile: {
         packId: productionPack.id,
@@ -91,8 +97,8 @@ export function template(projectId, {
       opening: {
         exactlyOnePrimaryEffect: editorialPolicy === "legacy",
         exactlyOneNarrativeOpening: true,
-        firstVisibleChangeBySeconds: 0.5,
-        promiseBySeconds: 3,
+        firstVisibleChangeBySeconds: productionPack.policies.opening?.firstVisibleChangeBySeconds ?? 0.5,
+        promiseBySeconds: productionPack.policies.opening?.promiseBySeconds ?? 3,
         frameZeroFullCoverForClosedReveal: true,
         partialSubjectApertureForbidden: true,
       },
@@ -341,6 +347,7 @@ function validatePolicies(contract, errors) {
       policy.productionProfile?.packId,
       policy.productionProfile?.showId,
     );
+    if (expectedPack.id === "dahui-ai" && !narrative) errors.push("大灰AI不能回退 legacy 或移除叙事需求");
     if (
       policy.productionProfile?.packVersion !== expectedPack.version
       || policy.productionProfile?.packSha256 !== expectedPack.sha256
@@ -363,10 +370,10 @@ function validatePolicies(contract, errors) {
     (narrative ? policy.opening?.exactlyOneNarrativeOpening !== true || policy.opening?.exactlyOnePrimaryEffect !== false : policy.opening?.exactlyOnePrimaryEffect !== true)
     || !Number.isFinite(firstVisibleBy)
     || firstVisibleBy < 0
-    || firstVisibleBy > 0.5
+    || firstVisibleBy !== (expectedPack?.policies.opening?.firstVisibleChangeBySeconds ?? 0.5)
     || !Number.isFinite(promiseBy)
     || promiseBy <= 0
-    || promiseBy > 3
+    || promiseBy !== (expectedPack?.policies.opening?.promiseBySeconds ?? 3)
     || policy.opening?.frameZeroFullCoverForClosedReveal !== true
     || policy.opening?.partialSubjectApertureForbidden !== true
   ) errors.push("policies.opening 必须约束唯一开场、0.5 秒可见变化、3 秒承诺和闭合揭幕首帧完整覆盖");
@@ -426,11 +433,11 @@ function validatePolicies(contract, errors) {
     || JSON.stringify(firstMinute) !== JSON.stringify(firstMinutePolicy(expectedPack.policies.firstMinute, contract.editorialPolicy?.version ?? "legacy"))
     || Number(firstMinute.maximumPrimaryEventsPer10Seconds) > 3
     || Number(firstMinute.maximumPrimaryEventsPer10Seconds) < 1
-    || Number(firstMinute.minimumHumanPresenceRatio) < 0.5
+    || Number(firstMinute.minimumHumanPresenceRatio) < (expectedPack?.id === "dahui-ai" ? 0 : 0.5)
     || Number(firstMinute.minimumHumanPresenceRatio) > 1
     || Number(firstMinute.maximumFullScreenTakeoverRatio) < 0
-    || Number(firstMinute.maximumFullScreenTakeoverRatio) > 0.4
-    || Number(firstMinute.minimumBreathingRoomRatio) < 0.15
+    || Number(firstMinute.maximumFullScreenTakeoverRatio) > (expectedPack?.id === "dahui-ai" ? 1 : 0.4)
+    || Number(firstMinute.minimumBreathingRoomRatio) < (expectedPack?.id === "dahui-ai" ? 0 : 0.15)
     || Number(firstMinute.minimumBreathingRoomRatio) > 1
     || firstMinute.openingHookRequired !== true
     || firstMinute.audioVisualIntentMustMatch !== true
@@ -646,9 +653,9 @@ function validateExecution(contractFile, contract, errors) {
   if (
     Number(opening.primaryEffectCount) !== (naturalOpening ? 0 : 1)
     || Number(opening.firstVisibleChangeSeconds) < 0
-    || Number(opening.firstVisibleChangeSeconds) > 0.5
+    || Number(opening.firstVisibleChangeSeconds) > contract.policies.opening.firstVisibleChangeBySeconds
     || Number(opening.promiseSeconds) <= 0
-    || Number(opening.promiseSeconds) > 3
+    || Number(opening.promiseSeconds) > contract.policies.opening.promiseBySeconds
     || (!naturalOpening && !hasValue(opening.effectId))
   ) errors.push("execution.opening 未落实唯一开场、0.5 秒变化或 3 秒承诺");
   identityFile(contractFile, opening.dynamicPreview, "execution.opening.dynamicPreview", errors);
@@ -817,6 +824,15 @@ function validateExecution(contractFile, contract, errors) {
     }
   }
 
+  if (contract.policies?.productionProfile?.packId === "dahui-ai") {
+    const editorialCover = identityFile(contractFile, cover.editorialContract, "execution.cover.editorialContract", errors);
+    if (editorialCover) {
+      const data = readJson(editorialCover);
+      if (data.projectId !== contract.projectId || data.kind !== "kacha-editorial-cover-contract") errors.push("封面合同不是本期大灰AI实际证据封面");
+      errors.push(...validateCoverIdentityContract(editorialCover, { requireQcPass: true }).errors);
+    }
+  }
+
   const firstMinutePolicy = contract.policies?.firstMinute ?? {};
   const firstMinute = execution.firstMinute ?? {};
   const motivated = Array.isArray(firstMinute.motivatedEffects)
@@ -927,22 +943,36 @@ export function validateProductionQualityContract(contractFile, stage = "plan") 
   try { editorialVersion(contract.editorialPolicy?.version ?? "legacy"); validatePolicies(contract, errors); } catch (error) { errors.push(error.message); }
   if (contract.editorialPolicy?.version === NARRATIVE_POLICY && stage !== "plan") identityFile(resolved, contract.execution?.timeline, "execution.timeline", errors);
   if (contract.editorialPolicy?.version === NARRATIVE_POLICY) errors.push(...validateEditorialRequirements(resolved, contract.editorialPolicy.requirements, { execution: stage !== "plan", timeline: contract.execution?.timeline?.path ? resolveFrom(resolved, contract.execution.timeline.path) : null }));
+  if (contract.policies?.productionProfile?.packId === "dahui-ai") {
+    const episodeFile = identityFile(resolved, contract.episodeEditorial, "episodeEditorial", errors);
+    if (episodeFile) errors.push(...validateEpisode(episodeFile, {
+      stage, expectedProjectId: contract.projectId,
+      expectedShowId: contract.policies.productionProfile.showId,
+      timeline: contract.execution?.timeline?.path ? resolveFrom(resolved, contract.execution.timeline.path) : null,
+    }).errors);
+  }
   if (["execution", "release"].includes(stage)) validateExecution(resolved, contract, errors);
   if (stage === "release") validateRelease(resolved, contract, errors);
   return { status: errors.length === 0 ? "pass" : "fail", stage, contract: resolved, errors };
 }
 
-const [, , command] = process.argv;
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const command = isMain ? process.argv[2] : null;
 if (command === "template") {
   const projectId = option("--project-id");
   const output = option("--output");
-  const packId = option("--pack", "xingzhe-dahui");
-  const showId = option("--show", "tool-share");
+  const { packId, showId } = resolveProductionSelection(option("--pack"), option("--show"));
   if (!projectId || !output) {
     usage();
     process.exit(2);
   }
-  writeJsonAtomic(output, template(projectId, { packId, showId, editorialPolicy: option("--editorial-policy", "legacy"), requirements: option("--requirements") ? { path: path.resolve(option("--requirements")), sha256: sha256File(option("--requirements")) } : null }));
+  const contract = template(projectId, { packId, showId, editorialPolicy: option("--editorial-policy"), requirements: option("--requirements") ? { path: path.resolve(option("--requirements")), sha256: sha256File(option("--requirements")) } : null });
+  if (packId === "dahui-ai") {
+    const episodeFile = option("--episode") ? path.resolve(option("--episode")) : `${path.resolve(output)}.episode.json`;
+    if (!fs.existsSync(episodeFile)) writeJsonAtomic(episodeFile, episodeTemplate(projectId, showId));
+    contract.episodeEditorial = { path: episodeFile, sha256: sha256File(episodeFile) };
+  }
+  writeJsonAtomic(output, contract);
   console.log(JSON.stringify({
     status: "pass",
     output: path.resolve(output),
@@ -982,7 +1012,7 @@ if (command === "template") {
     metrics,
     written: shouldWrite,
   }, null, 2));
-} else {
+} else if (isMain) {
   usage();
   process.exit(2);
 }

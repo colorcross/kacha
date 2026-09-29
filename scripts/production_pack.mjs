@@ -192,6 +192,16 @@ function loadCinematicPolicy(fileName, showId, label, rootDirectory = designSyst
   };
 }
 
+export function resolveProductionSelection(packId = null, showId = null) {
+  const requested = showId;
+  if (!packId) {
+    const active = readJson(path.join(packsDirectory, "dahui-ai.json"));
+    packId = requested && active.shows[requested] ? "dahui-ai" : "xingzhe-dahui";
+  }
+  showId ??= packId === "dahui-ai" ? "ai-practice" : packId === "clean-editorial" ? "talking-head" : "tool-share";
+  return { packId, showId };
+}
+
 export function loadProductionPack(packId = "xingzhe-dahui", showId = "tool-share", {
   packRoot = packsDirectory,
   designRoot = designSystemDirectory,
@@ -213,6 +223,19 @@ export function loadProductionPack(packId = "xingzhe-dahui", showId = "tool-shar
   const resolved = merge(source.base, source.shows[showId]);
   const label = `${packId}.${showId}`;
   requireString(resolved.editorialIntent, `${label}.editorialIntent`);
+  if (resolved.episode) {
+    const episode = resolved.episode;
+    requireString(episode.label, `${label}.episode.label`);
+    requireString(episode.category, `${label}.episode.category`);
+    for (const field of ["structure", "requiredEvidence"]) {
+      requireStringArray(episode[field], `${label}.episode.${field}`);
+      if (new Set(episode[field]).size !== episode[field].length) throw new Error(`${label}.episode.${field} 不能重复`);
+    }
+    if (!Array.isArray(episode.durationSeconds) || episode.durationSeconds.length !== 2 || episode.durationSeconds.some(value => !Number.isFinite(value) || value <= 0) || episode.durationSeconds[0] > episode.durationSeconds[1]) throw new Error(`${label}.episode.durationSeconds 无效`);
+    requireNumber(resolved.opening?.promiseBySeconds, `${label}.opening.promiseBySeconds`, { min: 1, max: 60 });
+    requireNumber(resolved.opening?.firstVisibleChangeBySeconds, `${label}.opening.firstVisibleChangeBySeconds`, { min: 0, max: 3 });
+    if (resolved.editorialPolicy !== "narrative-v1") throw new Error(`${label} 必须使用 narrative-v1`);
+  }
   validateTypography(resolved.typography, `${label}.typography`);
   validateCover(resolved.cover, `${label}.cover`);
   validateFirstMinute(resolved.firstMinute, `${label}.firstMinute`);

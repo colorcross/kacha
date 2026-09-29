@@ -74,15 +74,18 @@ export function selectEditingRecipe(catalog, cues, { recipeId = "auto", showId }
     if (!recipe) throw new Error(`未知剪辑模板：${recipeId}`);
     return { recipe, reason: "explicit_selection" };
   }
+  const candidates = catalog.recipes.some(recipe => recipe.productionPack === "dahui-ai" && recipe.shows.includes(showId))
+    ? catalog.recipes.filter(recipe => recipe.productionPack === "dahui-ai" && recipe.shows.includes(showId))
+    : catalog.recipes.filter(recipe => recipe.productionPack !== "dahui-ai");
   const eligible = cues.filter((cue) => cue.confidence >= 0.65 && !cue.signals.includes("low_confidence"));
-  const ranked = catalog.recipes.map((recipe, index) => ({
+  const ranked = candidates.map((recipe, index) => ({
     recipe, index,
     score: eligible.filter((cue) => recipe.signals.some((signal) => cue.signals.includes(signal)))
       .reduce((seconds, cue) => seconds + (cue.end - cue.start), 0),
   })).sort((a, b) => b.score - a.score || Number(b.recipe.shows.includes(showId)) - Number(a.recipe.shows.includes(showId)) || a.index - b.index);
   if (ranked[0].score > 0) return { recipe: ranked[0].recipe, reason: "explicit_semantic_signals" };
   return {
-    recipe: catalog.recipes.find((item) => item.shows.includes(showId))
+    recipe: candidates.find((item) => item.shows.includes(showId))
       ?? catalog.recipes.find((item) => item.id === "reflective-talk"),
     reason: "show_default_pending_content_review",
   };

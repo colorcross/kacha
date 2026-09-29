@@ -1,3 +1,22 @@
+# 节目入口：大灰AI与历史作品
+
+当前大灰AI按调用项目V6.1方案，使用生产包 `dahui-ai` 和 [剪辑系统](../../docs/DAHUI_AI_EDITING_SYSTEM_V1.md)。
+
+|栏目|show ID|风格卡|
+|---|---|---|
+|AI实践|`ai-practice`|[PRACTICE](dahui-ai/ai-practice.md)|
+|AI拆解室|`ai-review`|[REVIEW](dahui-ai/ai-review.md)|
+|AI访谈解读|`ai-interview`|[TALK](dahui-ai/ai-interview.md)|
+|AI风向|`ai-news`|[NEWS](dahui-ai/ai-news.md)|
+|灰常AI|`ai-debate`|[DEBATE](dahui-ai/ai-debate.md)|
+|AI时代怎么读书|`ai-reading`|[BOOK](dahui-ai/ai-reading.md)|
+|产品实践|`product-practice`|[BUILD](dahui-ai/product-practice.md)|
+|运动与自我迭代|`life-iteration`|[LIFE](dahui-ai/life-iteration.md)|
+
+旧五栏目风格卡仅用于明确指定的历史作品；不得将其编号、字体、3D人物和密度要求套入新大灰AI作品。新草稿不自动进入真实已发布语料库。
+
+<details><summary>历史栏目资料</summary>
+
 # 栏目口播风格卡与语料库
 
 本目录是"行者大灰"五个正式栏目的**口播风格卡**与**文案语料库**的入口。
@@ -33,3 +52,5 @@ V3.3》（仓库外私有文档，不在本仓库分发）。克隆/安装环境
 
 **积累原则**：语料只从已发布的真实稿件中摘录；发现跨栏目混用、过时表述
 或与方案冲突的表达，先改风格卡，再清理语料。
+
+</details>

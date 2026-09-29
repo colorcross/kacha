@@ -20,7 +20,9 @@ const plan = (cues, options = {}) => { fs.writeFileSync(file, JSON.stringify({ c
 const resign = (value) => { const copy = structuredClone(value); delete copy.digest; delete copy.generatedAt; value.digest = sha256Value(copy); return value; };
 try {
   const catalog = loadEditingCraft();
-  assert.equal(catalog.recipes.length, 4); assert.equal(catalog.techniques.length, 12);
+  assert.equal(catalog.recipes.length, 12);
+  assert.equal(catalog.recipes.filter(recipe => recipe.productionPack === "dahui-ai").length, 8);
+  assert.equal(catalog.recipes.filter(recipe => !recipe.productionPack).length, 4); assert.equal(catalog.techniques.length, 12);
   const result = spawnSync(process.execPath, [path.join(root, "scripts/kacha.mjs"), "templates", "recipes", "--recipe", "field-journal"], { encoding: "utf8", timeout: 30_000 });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(JSON.parse(result.stdout).recipes[0].id, "field-journal");

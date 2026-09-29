@@ -1,0 +1,145 @@
+{
+  "schemaVersion": "1.0",
+  "styleProfile": "dahui-ai",
+  "profile": "evidence-led",
+  "productionMotionPolicy": "../effects/production-motion-policy.json",
+  "defaultShow": "ai-practice",
+  "description": "按语义需求映射实际时间线，不设动效、蒙版和画中画配额。",
+  "antiWebPolicy": "../design-system/anti-web.json",
+  "minimumDurationSeconds": 45,
+  "families": {
+    "opening": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.25
+    },
+    "expressive_transition": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.8
+    },
+    "supporting_media": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.8
+    },
+    "pip": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.8
+    },
+    "mask_depth": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.4
+    },
+    "semantic_motion": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 1.5
+    },
+    "gaze_guidance": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.65
+    },
+    "spatial_depth": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.4
+    },
+    "keyframe_variation": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 1.2
+    },
+    "parallel_layout": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.6
+    },
+    "caption_relation": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 1.2
+    },
+    "oversize_background_word": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.5
+    },
+    "person_depth_text": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.3
+    },
+    "visual_breathing": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 1.2
+    }
+  },
+  "resourceRules": {
+    "supportingMediaAlternatives": [
+      "project_media",
+      "external_media",
+      "ai_generated_media",
+      "hyperframes"
+    ],
+    "minimumSupportingMediaKinds": 0,
+    "personMaskRequiredAfterSeconds": 1000000000,
+    "pipInformationDifferenceRequired": true
+  },
+  "diversity": {
+    "minimumDistinctFamilies": 0,
+    "maximumSingleImplementationShare": 1,
+    "sameImplementationMinimumGapSeconds": 0
+  },
+  "perceptual": {
+    "minimumVisibleDurationSeconds": 0.8,
+    "minimumPrimaryScreenAreaRatio": 0.08,
+    "oversizeWordMinimumSubtitleScale": 3,
+    "oversizeWordMinimumScreenAreaRatio": 0.12,
+    "personDepthTextMinimumSubtitleScale": 1.8,
+    "personDepthTextMinimumVisibleAreaRatio": 0.65
+  },
+  "longFormRequirements": {
+    "captionRelationLayouts": [],
+    "minimumPipLayoutKinds": 0,
+    "minimumTransitionKinds": 0
+  },
+  "showProfiles": {
+    "ai-practice": {
+      "profile": "screen_steps",
+      "description": "真实任务→输入条件→关键操作→结果检查→总成本→可复用资料。"
+    },
+    "ai-review": {
+      "profile": "fair_comparison",
+      "description": "先定任务与评价尺度，再展示正常、边界、失败样本；结论限定人群、版本与条件。"
+    },
+    "ai-interview": {
+      "profile": "attributed_extract",
+      "description": "原问题与上下文→嘉宾论证→事实核验→大灰判断；区别事实、嘉宾观点、预测和我的推断。"
+    },
+    "ai-news": {
+      "profile": "event_explainer",
+      "description": "讲清发生了什么、是否真正开放、影响什么任务及仍未知什么。"
+    },
+    "ai-debate": {
+      "profile": "speaker_turns",
+      "description": "真实语音辩论，保留双方强论点、承认与条件；等待、重连、补录不得制造胜负。"
+    },
+    "ai-reading": {
+      "profile": "long_reading",
+      "description": "一本主书完整论证；围绕问题穿插原文、实际AI回答、核查和人的理解，不把长读书变成工具测评合集。"
+    },
+    "product-practice": {
+      "profile": "product_change",
+      "description": "自己的需求、取舍、制作、迭代、真实使用与效果；区分原型、交付和市场结果。"
+    },
+    "life-iteration": {
+      "profile": "observational",
+      "description": "真实情境、选择、行动与复盘，保留环境声，不强行绑定AI。"
+    }
+  }
+}

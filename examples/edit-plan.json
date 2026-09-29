@@ -145,7 +145,7 @@
       "designPreflight": {
         "designSystemId": "dahui-video-system",
         "designSystemVersion": "1.6.0",
-        "designDigest": "4ea8c0bb576fc2ca502b854457953065012965a01c315a413a76939ae6bcc3ef",
+        "designDigest": "666b85a50f470b4a4eb19477fa4782597a3be669a7878f277dd2607e2b0f093e",
         "sceneId": "text_behind_subject_scene",
         "componentIds": [
           "text_behind_subject"
@@ -160,9 +160,9 @@
         "status": "approved_for_implementation",
         "artifactMode": "local_styleframe",
         "artifactRef": "kacha://examples/design/text-behind/approved-styleframes.svg",
-        "artifactSha256": "081503005ccea0901dcded069940185bebc9dffd55c9e5672c95adb53ecf822a",
+        "artifactSha256": "79f1e732011bc5691e0c4263027549e840dcd4d7be3e35bcc1d5f57168d26997",
         "implementationManifestRef": "kacha://examples/design/text-behind/approved-styleframes.manifest.json",
-        "implementationManifestSha256": "4901c1e2ad45f4467aa5a6ba143a0e47fcb9885fa190829f28b7cec5c5964d8c",
+        "implementationManifestSha256": "1e0949c4b2f18627e67dba7cdc4aa277e3adc6cb7beebb01b3595581aa46017a",
         "layoutSpec": "人物头顶左侧负空间，文字与字幕区、品牌区分离",
         "motionSpec": "两组短语分别以 8 帧遮罩揭示进入，停稳后统一淡出",
         "soundSpec": "知识点落位声跟随第二组文字停稳，第一组只使用轻微空气感 whoosh",
@@ -242,7 +242,7 @@
       ]
     },
     {
-      "timeSeconds": 68.0,
+      "timeSeconds": 68,
       "timecode": "00:01:08.000",
       "technique": "外部插镜 + 真人角落画中画",
       "trigger": "旁白讲到把一本书放进打开的书包，需要把动作具体化并保留讲述者表情",
@@ -269,7 +269,7 @@
         "最终素材首中尾帧"
       ],
       "activeInterval": {
-        "startSeconds": 68.0,
+        "startSeconds": 68,
         "endSeconds": 71.8
       },
       "exitLeadFrames": 2,

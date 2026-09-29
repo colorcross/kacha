@@ -11,14 +11,36 @@
             "accentSignal": "#F05A47",
             "accentInsight": "#5577B8"
           },
-          "brand": {"label": "工具分享"},
-          "cover": {"subjectHeightRatio": 0.42, "subjectWidthRatio": 0.26},
-          "motion": {"fastFrames": 6, "standardFrames": 9, "slowFrames": 15, "maxOvershoot": 0.04}
+          "brand": {
+            "label": "工具分享"
+          },
+          "cover": {
+            "subjectHeightRatio": 0.42,
+            "subjectWidthRatio": 0.26
+          },
+          "motion": {
+            "fastFrames": 6,
+            "standardFrames": 9,
+            "slowFrames": 15,
+            "maxOvershoot": 0.04
+          }
         },
-        "sceneTags": ["practical", "screen", "evidence", "fast-clear"],
+        "sceneTags": [
+          "practical",
+          "screen",
+          "evidence",
+          "fast-clear"
+        ],
         "direction": {
-          "openingPriority": ["open_result_first", "open_cold_marker", "open_clean_title"],
-          "coverPriority": ["cover_editorial", "cover_comparison"],
+          "openingPriority": [
+            "open_result_first",
+            "open_cold_marker",
+            "open_clean_title"
+          ],
+          "coverPriority": [
+            "cover_editorial",
+            "cover_comparison"
+          ],
           "soundPolicy": "interface_feedback_only",
           "musicPolicy": "sectional_light_rhythm"
         }
@@ -36,14 +58,35 @@
             "accentSignal": "#B84F43",
             "accentInsight": "#66788D"
           },
-          "brand": {"label": "解读好书"},
-          "cover": {"subjectHeightRatio": 0.38, "subjectWidthRatio": 0.24},
-          "motion": {"fastFrames": 8, "standardFrames": 12, "slowFrames": 20, "maxOvershoot": 0.015}
+          "brand": {
+            "label": "解读好书"
+          },
+          "cover": {
+            "subjectHeightRatio": 0.38,
+            "subjectWidthRatio": 0.24
+          },
+          "motion": {
+            "fastFrames": 8,
+            "standardFrames": 12,
+            "slowFrames": 20,
+            "maxOvershoot": 0.015
+          }
         },
-        "sceneTags": ["calm", "evidence", "quote", "long-form"],
+        "sceneTags": [
+          "calm",
+          "evidence",
+          "quote",
+          "long-form"
+        ],
         "direction": {
-          "openingPriority": ["open_question", "open_documentary_moment", "open_clean_title"],
-          "coverPriority": ["cover_editorial"],
+          "openingPriority": [
+            "open_question",
+            "open_documentary_moment",
+            "open_clean_title"
+          ],
+          "coverPriority": [
+            "cover_editorial"
+          ],
           "soundPolicy": "chapter_or_evidence_only",
           "musicPolicy": "opening_chapter_ending_only"
         }
@@ -61,18 +104,35 @@
             "accentSignal": "#B95743",
             "accentInsight": "#6C7C80"
           },
-          "brand": {"label": "有限的无限游戏"},
+          "brand": {
+            "label": "有限的无限游戏"
+          },
           "cover": {
             "subjectHeightRatio": 0.34,
             "subjectWidthRatio": 0.22,
             "preferContextOverPortraitScale": true
           },
-          "motion": {"fastFrames": 7, "standardFrames": 11, "slowFrames": 18, "maxOvershoot": 0.01}
+          "motion": {
+            "fastFrames": 7,
+            "standardFrames": 11,
+            "slowFrames": 18,
+            "maxOvershoot": 0.01
+          }
         },
-        "sceneTags": ["documentary", "timeline", "process", "reflective"],
+        "sceneTags": [
+          "documentary",
+          "timeline",
+          "process",
+          "reflective"
+        ],
         "direction": {
-          "openingPriority": ["open_documentary_moment", "open_cold_marker"],
-          "coverPriority": ["cover_documentary"],
+          "openingPriority": [
+            "open_documentary_moment",
+            "open_cold_marker"
+          ],
+          "coverPriority": [
+            "cover_documentary"
+          ],
           "soundPolicy": "environment_first",
           "musicPolicy": "emotional_turn_or_time_jump_only"
         }
@@ -91,14 +151,36 @@
             "accentInsight": "#5577B8",
             "darkSurface": "#20272D"
           },
-          "brand": {"label": "灰常AI"},
-          "cover": {"subjectHeightRatio": 0.4, "subjectWidthRatio": 0.25},
-          "motion": {"fastFrames": 5, "standardFrames": 8, "slowFrames": 14, "maxOvershoot": 0.045}
+          "brand": {
+            "label": "灰常AI"
+          },
+          "cover": {
+            "subjectHeightRatio": 0.4,
+            "subjectWidthRatio": 0.25
+          },
+          "motion": {
+            "fastFrames": 5,
+            "standardFrames": 8,
+            "slowFrames": 14,
+            "maxOvershoot": 0.045
+          }
         },
-        "sceneTags": ["dialogue", "experiment", "playful", "fact-check"],
+        "sceneTags": [
+          "dialogue",
+          "experiment",
+          "playful",
+          "fact-check"
+        ],
         "direction": {
-          "openingPriority": ["open_dialogue", "open_cold_marker", "open_typewriter"],
-          "coverPriority": ["cover_ai_dialogue", "cover_comparison"],
+          "openingPriority": [
+            "open_dialogue",
+            "open_cold_marker",
+            "open_typewriter"
+          ],
+          "coverPriority": [
+            "cover_ai_dialogue",
+            "cover_comparison"
+          ],
           "soundPolicy": "reaction_and_state_change",
           "musicPolicy": "playful_until_fact_check"
         }
@@ -116,16 +198,222 @@
             "accentSignal": "#F05A47",
             "accentInsight": "#5D8C72"
           },
-          "brand": {"label": "闲聊"},
-          "cover": {"subjectHeightRatio": 0.41, "subjectWidthRatio": 0.25},
-          "motion": {"fastFrames": 7, "standardFrames": 10, "slowFrames": 17, "maxOvershoot": 0.025}
+          "brand": {
+            "label": "闲聊"
+          },
+          "cover": {
+            "subjectHeightRatio": 0.41,
+            "subjectWidthRatio": 0.25
+          },
+          "motion": {
+            "fastFrames": 7,
+            "standardFrames": 10,
+            "slowFrames": 17,
+            "maxOvershoot": 0.025
+          }
         },
-        "sceneTags": ["conversational", "personal", "reflective", "spontaneous"],
+        "sceneTags": [
+          "conversational",
+          "personal",
+          "reflective",
+          "spontaneous"
+        ],
         "direction": {
-          "openingPriority": ["open_cold_marker", "open_question", "open_clean_title"],
-          "coverPriority": ["cover_editorial", "cover_comparison"],
+          "openingPriority": [
+            "open_cold_marker",
+            "open_question",
+            "open_clean_title"
+          ],
+          "coverPriority": [
+            "cover_editorial",
+            "cover_comparison"
+          ],
           "soundPolicy": "semantic_punctuation_only",
           "musicPolicy": "sectional_conversational_with_silence"
+        }
+      },
+      "ai-practice": {
+        "label": "AI实践",
+        "styleOverrides": {
+          "brand": {
+            "label": "AI实践",
+            "persistent": false
+          }
+        },
+        "sceneTags": [
+          "evidence",
+          "screen_steps"
+        ],
+        "direction": {
+          "openingPriority": [
+            "open_question"
+          ],
+          "coverPriority": [
+            "cover_editorial"
+          ],
+          "soundPolicy": "semantic_trigger_only",
+          "musicPolicy": "dialogue_first"
+        }
+      },
+      "ai-review": {
+        "label": "AI拆解室",
+        "styleOverrides": {
+          "brand": {
+            "label": "AI拆解室",
+            "persistent": false
+          }
+        },
+        "sceneTags": [
+          "evidence",
+          "fair_comparison"
+        ],
+        "direction": {
+          "openingPriority": [
+            "open_question"
+          ],
+          "coverPriority": [
+            "cover_editorial"
+          ],
+          "soundPolicy": "semantic_trigger_only",
+          "musicPolicy": "quiet_during_comparison"
+        }
+      },
+      "ai-interview": {
+        "label": "AI访谈解读",
+        "styleOverrides": {
+          "brand": {
+            "label": "AI访谈解读",
+            "persistent": false
+          }
+        },
+        "sceneTags": [
+          "evidence",
+          "attributed_extract"
+        ],
+        "direction": {
+          "openingPriority": [
+            "open_question"
+          ],
+          "coverPriority": [
+            "cover_editorial"
+          ],
+          "soundPolicy": "semantic_trigger_only",
+          "musicPolicy": "quiet_during_quotes"
+        }
+      },
+      "ai-news": {
+        "label": "AI风向",
+        "styleOverrides": {
+          "brand": {
+            "label": "AI风向",
+            "persistent": false
+          }
+        },
+        "sceneTags": [
+          "evidence",
+          "event_explainer"
+        ],
+        "direction": {
+          "openingPriority": [
+            "open_question"
+          ],
+          "coverPriority": [
+            "cover_editorial"
+          ],
+          "soundPolicy": "semantic_trigger_only",
+          "musicPolicy": "dialogue_first"
+        }
+      },
+      "ai-debate": {
+        "label": "灰常AI",
+        "styleOverrides": {
+          "brand": {
+            "label": "灰常AI",
+            "persistent": false
+          }
+        },
+        "sceneTags": [
+          "evidence",
+          "speaker_turns"
+        ],
+        "direction": {
+          "openingPriority": [
+            "open_question"
+          ],
+          "coverPriority": [
+            "cover_editorial"
+          ],
+          "soundPolicy": "semantic_trigger_only",
+          "musicPolicy": "no_music_under_debate"
+        }
+      },
+      "ai-reading": {
+        "label": "AI时代怎么读书",
+        "styleOverrides": {
+          "brand": {
+            "label": "AI时代怎么读书",
+            "persistent": false
+          }
+        },
+        "sceneTags": [
+          "evidence",
+          "long_reading"
+        ],
+        "direction": {
+          "openingPriority": [
+            "open_question"
+          ],
+          "coverPriority": [
+            "cover_editorial"
+          ],
+          "soundPolicy": "semantic_trigger_only",
+          "musicPolicy": "chapters_only"
+        }
+      },
+      "product-practice": {
+        "label": "产品实践",
+        "styleOverrides": {
+          "brand": {
+            "label": "产品实践",
+            "persistent": false
+          }
+        },
+        "sceneTags": [
+          "evidence",
+          "product_change"
+        ],
+        "direction": {
+          "openingPriority": [
+            "open_question"
+          ],
+          "coverPriority": [
+            "cover_editorial"
+          ],
+          "soundPolicy": "semantic_trigger_only",
+          "musicPolicy": "dialogue_first"
+        }
+      },
+      "life-iteration": {
+        "label": "运动与自我迭代",
+        "styleOverrides": {
+          "brand": {
+            "label": "运动与自我迭代",
+            "persistent": false
+          }
+        },
+        "sceneTags": [
+          "evidence",
+          "observational"
+        ],
+        "direction": {
+          "openingPriority": [
+            "open_documentary_moment"
+          ],
+          "coverPriority": [
+            "cover_editorial"
+          ],
+          "soundPolicy": "semantic_trigger_only",
+          "musicPolicy": "natural_sound_first"
         }
       }
     },
@@ -133,50 +421,90 @@
       "landscape-16x9": {
         "label": "16:9横版",
         "styleOverrides": {
-          "subtitles": {"maxWidthRatio": 0.8, "baselineYRatio": 0.72},
-          "popups": {"maxWidthRatio": 0.58},
-          "pip": {"safeMarginRatio": 0.04}
+          "subtitles": {
+            "maxWidthRatio": 0.8,
+            "baselineYRatio": 0.72
+          },
+          "popups": {
+            "maxWidthRatio": 0.58
+          },
+          "pip": {
+            "safeMarginRatio": 0.04
+          }
         },
         "layout": {
           "canvasRatio": 1.777778,
           "gridColumns": 12,
           "outerMarginRatio": 0.05,
           "gutterRatio": 0.018,
-          "platformUiExclusion": {"top": 0.04, "right": 0.04, "bottom": 0.1, "left": 0.04}
+          "platformUiExclusion": {
+            "top": 0.04,
+            "right": 0.04,
+            "bottom": 0.1,
+            "left": 0.04
+          }
         }
       },
       "portrait-9x16": {
         "label": "9:16竖版",
         "styleOverrides": {
           "typography": {
-            "display": {"sizeRatio": 0.082},
-            "subtitlePrimary": {"sizeRatio": 0.052},
-            "subtitleSecondary": {"sizeRatio": 0.034}
+            "display": {
+              "sizeRatio": 0.082
+            },
+            "subtitlePrimary": {
+              "sizeRatio": 0.052
+            },
+            "subtitleSecondary": {
+              "sizeRatio": 0.034
+            }
           },
-          "subtitles": {"maxWidthRatio": 0.86, "baselineYRatio": 0.68},
-          "popups": {"maxWidthRatio": 0.78},
-          "pip": {"safeMarginRatio": 0.055}
+          "subtitles": {
+            "maxWidthRatio": 0.86,
+            "baselineYRatio": 0.68
+          },
+          "popups": {
+            "maxWidthRatio": 0.78
+          },
+          "pip": {
+            "safeMarginRatio": 0.055
+          }
         },
         "layout": {
           "canvasRatio": 0.5625,
           "gridColumns": 6,
           "outerMarginRatio": 0.06,
           "gutterRatio": 0.025,
-          "platformUiExclusion": {"top": 0.07, "right": 0.13, "bottom": 0.2, "left": 0.06}
+          "platformUiExclusion": {
+            "top": 0.07,
+            "right": 0.13,
+            "bottom": 0.2,
+            "left": 0.06
+          }
         }
       },
       "square-1x1": {
         "label": "1:1方形",
         "styleOverrides": {
-          "subtitles": {"maxWidthRatio": 0.82, "baselineYRatio": 0.72},
-          "popups": {"maxWidthRatio": 0.68}
+          "subtitles": {
+            "maxWidthRatio": 0.82,
+            "baselineYRatio": 0.72
+          },
+          "popups": {
+            "maxWidthRatio": 0.68
+          }
         },
         "layout": {
           "canvasRatio": 1,
           "gridColumns": 8,
           "outerMarginRatio": 0.055,
           "gutterRatio": 0.022,
-          "platformUiExclusion": {"top": 0.05, "right": 0.06, "bottom": 0.14, "left": 0.06}
+          "platformUiExclusion": {
+            "top": 0.05,
+            "right": 0.06,
+            "bottom": 0.14,
+            "left": 0.06
+          }
         }
       }
     },
@@ -190,7 +518,13 @@
         "label": "英文",
         "styleOverrides": {
           "typography": {
-            "subtitlePrimary": {"families": ["方正粗金陵简体", "FZJinLS-B-GB"], "sizeRatio": 0.042}
+            "subtitlePrimary": {
+              "families": [
+                "方正粗金陵简体",
+                "FZJinLS-B-GB"
+              ],
+              "sizeRatio": 0.042
+            }
           }
         },
         "subtitleLines": 1
@@ -198,10 +532,25 @@
       "bilingual": {
         "label": "中英双语",
         "styleOverrides": {
-          "subtitles": {"lineGapRatio": 0.03, "maxWidthRatio": 0.86},
+          "subtitles": {
+            "lineGapRatio": 0.03,
+            "maxWidthRatio": 0.86
+          },
           "typography": {
-            "subtitlePrimary": {"families": ["方正粗金陵简体", "FZJinLS-B-GB"], "sizeRatio": 0.041},
-            "subtitleSecondary": {"families": ["方正粗金陵简体", "FZJinLS-B-GB"], "sizeRatio": 0.03}
+            "subtitlePrimary": {
+              "families": [
+                "方正粗金陵简体",
+                "FZJinLS-B-GB"
+              ],
+              "sizeRatio": 0.041
+            },
+            "subtitleSecondary": {
+              "families": [
+                "方正粗金陵简体",
+                "FZJinLS-B-GB"
+              ],
+              "sizeRatio": 0.03
+            }
           }
         },
         "subtitleLines": 2
@@ -246,8 +595,13 @@
       "compact": {
         "label": "紧凑",
         "styleOverrides": {
-          "cards": {"gapRatio": 0.018, "paddingRatio": 0.028},
-          "motion": {"staggerFrames": 2}
+          "cards": {
+            "gapRatio": 0.018,
+            "paddingRatio": 0.028
+          },
+          "motion": {
+            "staggerFrames": 2
+          }
         }
       },
       "standard": {
@@ -257,8 +611,13 @@
       "spacious": {
         "label": "舒展",
         "styleOverrides": {
-          "cards": {"gapRatio": 0.032, "paddingRatio": 0.045},
-          "motion": {"staggerFrames": 4}
+          "cards": {
+            "gapRatio": 0.032,
+            "paddingRatio": 0.045
+          },
+          "motion": {
+            "staggerFrames": 4
+          }
         }
       }
     }

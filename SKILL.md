@@ -62,7 +62,7 @@ node scripts/kacha.mjs resume PROJECT --confirm-execute
 | 美颜 / FaceFusion | `references/beauty-v2.md` / `references/facefusion.md` |
 | 生成或外部素材 | `references/generated-media-assets.md`；费用、许可及参考派生另读 `references/production/control-and-orchestration.md` |
 | 模型能力较弱、低推理强度、长任务续跑 | `references/agent-execution.md`；视觉证据另读 `references/visual-evidence.md` |
-| 节目文稿 | `references/shows/README.md` 和本栏目风格卡；“行者大灰”遵守项目当前 V3.3 方案 |
+| 节目文稿 | `references/shows/README.md` 和本栏目风格卡；大灰AI遵守调用项目当前V6.1与 `docs/DAHUI_AI_EDITING_SYSTEM_V1.md`，旧V3.3仅用于明确指定的历史作品 |
 | 资源/渲染效率、缓存、量化比较 | `docs/QUALITY_PRESERVING_EFFICIENCY_V8.md`、`references/production/control-and-orchestration.md` |
 | 清理与保留 | `references/cleanup-retention.md` |
 | 白板视频 | `docs/WHITEBOARD_ANIMATION.md` |
@@ -82,3 +82,7 @@ node scripts/kacha.mjs resume PROJECT --confirm-execute
 改动前读工作树和受影响入口。源码开发期间保留当前可用安装；先受影响行为回归，再按仓库要求执行 `make check-full`，通过后原子同步并回读双 Agent 安装。MCP、工作台分发与安装器有独立套件；改相关模块须覆盖。
 
 真实素材、正常速度审片与同源队列才能证明成片质量和生产收益。至少 8 个独立同源成对项目是整体效率声明条件，不妨碍先交付已验证的局部修复。公开包不包含项目私有字体、人物资产与源音效。
+
+## 大灰AI新节目
+
+先按调用项目最终方案选择 `dahui-ai` 生产包与八类 show ID。读 `docs/DAHUI_AI_EDITING_SYSTEM_V1.md` 和对应风格卡；使用 `episode template/validate` 与 production-quality 合同绑定实际材料。工作台默认新包，CLI 单源工程显式 `--pack dahui-ai --show ...`，或由新 show ID 自动路由。读书母片30–60分钟，辩论保存完整会话与双方发言索引；运动不强制AI关联。默认真人与证据、自然开场、可读字幕、按需声音，不继承旧3D封面、固定服装、期号或动效配额。用户/事实必需及已触发增强仍必须执行。旧工程及冻结运行时不自动迁移。

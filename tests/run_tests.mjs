@@ -2702,8 +2702,9 @@ await test("local production studio compiles an auditable project with verified 
     "studio", "validate",
   ]).stdout);
   if (
-    catalog.defaultStyleId !== "xingzhe"
-    || catalog.builtInStyleCount !== 5
+    catalog.defaultStyleId !== "dahui-ai"
+    || catalog.builtInStyleCount !== 13
+    || catalog.activeEditorialPresetCount !== 8
     || catalog.masterStyleId !== "xingzhe"
     || catalog.masterStyleVersion !== "3.0"
     || catalog.productionPresetRelationship

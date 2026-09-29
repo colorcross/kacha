@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import { loadProductionPack } from "./production_pack.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -215,7 +216,7 @@ function coveragePolicy(profileId, durationSeconds, requestedShowId = null, vers
     diversity: narrative ? { ...selected.diversity, minimumDistinctFamilies: 1, maximumSingleImplementationShare: 1 } : selected.diversity,
     perceptual: selected.perceptual,
     longFormRequirements: narrative ? { captionRelationLayouts: [], minimumPipLayoutKinds: 0, minimumTransitionKinds: 0 } : selected.longFormRequirements,
-    openingContract: productionMotionPolicy.opening,
+    openingContract: profileId === "dahui-ai" ? { ...productionMotionPolicy.opening, startAtOrBeforeSeconds: 3, promiseBySeconds: loadProductionPack("dahui-ai", showId).policies.opening.promiseBySeconds } : productionMotionPolicy.opening,
     semanticRouting: productionMotionPolicy.semanticRouting,
     spatialRouting: productionMotionPolicy.spatialRouting,
     professionalMotionContract: productionMotionPolicy.professionalContract,
@@ -641,7 +642,8 @@ function validatePlan(planFile, forExecution = false, timelineFile = null) {
 }
 
 function writeTemplate(output, profileId, durationSeconds, showId, openingId) {
-  const version = editorialVersion(option("--editorial-policy", "legacy"));
+  const version = editorialVersion(option("--editorial-policy", profileId === "dahui-ai" ? NARRATIVE_POLICY : "legacy"));
+  if (profileId === "dahui-ai" && version !== NARRATIVE_POLICY) throw new Error("大灰AI必须使用 narrative-v1");
   const policy = coveragePolicy(profileId, durationSeconds, showId, version);
   const allowedOpeningIds = new Set([
     ...policy.openingContract.registeredCoreEffects,
@@ -760,8 +762,8 @@ try {
     const output = path.resolve(option("--output", ""));
     const duration = Number(option("--duration", ""));
     const profile = option("--style", "xingzhe");
-    const showId = option("--show", "tool-share");
-    const openingId = option("--opening", "cold_open_marker");
+    const showId = option("--show", profile === "dahui-ai" ? "ai-practice" : "tool-share");
+    const openingId = option("--opening", profile === "dahui-ai" ? "natural" : "cold_open_marker");
     if (!output || !Number.isFinite(duration) || duration <= 0) {
       throw new Error("template 需要 --duration 正数与 --output");
     }

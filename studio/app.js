@@ -72,7 +72,7 @@ function bgmPresetName(id) {
 }
 
 function showLabel(id) {
-  return {
+  return state.catalog?.shows?.[id] ?? {
     "tool-share": "工具分享",
     "book-talk": "解读好书",
     "infinite-game": "有限的无限游戏",
@@ -114,7 +114,7 @@ function renderStyles() {
       aria-pressed="${style.id === state.selectedStyleId}"
       style="--choice-accent:${escapeHtml(style.design.overrides?.palette?.accent || style.caption.emphasisColor)}"
     >
-      <small>${style.builtIn ? "BUILT-IN" : "CUSTOM"}</small>
+      <small>${style.design.profile === "dahui-ai" ? "大灰AI" : style.builtIn ? "历史风格" : "自定义"}</small>
       <h3>${escapeHtml(style.name)}</h3>
       <strong>${escapeHtml(style.tagline)}</strong>
       <p>${escapeHtml(style.description)}</p>
@@ -126,6 +126,12 @@ function renderStyles() {
 }
 
 function renderVisualLanguages() {
+  if (selectedStyle()?.design.profile === "dahui-ai") {
+    state.selectedVisualLanguageMode = "automatic";
+    state.selectedVisualLanguageId = null;
+    $("visualLanguageList").innerHTML = '<p>按栏目安排真实画面、证据与停留时间。需要解释关系时才添加图表和动效。</p>';
+    return;
+  }
   const automaticSelected = state.selectedVisualLanguageMode === "automatic";
   const automatic = `
     <button
@@ -287,6 +293,7 @@ function applyPreview(style) {
     accent: style.design.overrides?.palette?.accent || style.caption.emphasisColor,
   };
   const preview = $("stylePreview");
+  preview.querySelector(".preview-caption").style.color = style.design.profile === "dahui-ai" ? palette.ink : "";
   preview.style.setProperty("--preview-canvas", palette.canvas);
   preview.style.setProperty("--preview-surface", palette.surface);
   preview.style.setProperty("--preview-ink", palette.ink);
@@ -376,7 +383,11 @@ function selectStyle(styleId) {
   if (!style) return;
   state.selectedStyleId = styleId;
   state.selectedOpeningId = style.direction.openingId;
+  const active = style.design.profile === "dahui-ai";
+  const shows = active ? Object.entries(state.catalog.shows) : [["tool-share","工具分享"],["book-talk","解读好书"],["infinite-game","有限的无限游戏"],["very-ai","灰常AI（历史）"],["casual-chat","闲聊"]];
+  $("show").replaceChildren(...shows.map(([id,label]) => new Option(label,id)));
   $("show").value = style.design.modes.show;
+  renderVisualLanguages();
   syncProjectTuningFromStyle(style);
   renderStyles();
   renderOpenings();
@@ -417,7 +428,7 @@ function updateSummary() {
   $("summaryStyle").textContent = style.name;
   $("summaryVisualLanguage").textContent = visualLanguageSummary();
   $("summaryFont").textContent =
-    `${style.caption.preferredFontFamily}${style.id === "xingzhe" ? " · 默认" : ""}`;
+    state.preflight?.brief?.style?.captionFontEvidence?.resolvedFamily ?? `${style.caption.preferredFontFamily}${style.id === "xingzhe" ? " · 默认" : ""}`;
   $("summaryAudio").textContent = audioPresetName(state.selectedAudioPresetId);
   $("summaryBgm").textContent = $("bgmEnabled").checked
     ? bgmPresetName(state.selectedBgmPresetId)
@@ -971,6 +982,10 @@ $("bgmEnabled").addEventListener("change", () => {
   updateSummary();
 });
 $("show").addEventListener("change", () => {
+  if (selectedStyle()?.design.profile === "dahui-ai") {
+    const preset = state.catalog.styles.find(style => style.design.modes.show === $("show").value && style.design.profile === "dahui-ai");
+    if (preset) selectStyle(preset.id);
+  }
   markContractDirty();
   updateSummary();
 });
