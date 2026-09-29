@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { reviewTemplate, validateEditorialReview } from "./editorial_review.mjs";
 import { fileURLToPath } from "node:url";
 import {
   fileIdentity,
@@ -106,7 +107,11 @@ export function validateCoverIdentityContract(contractFile, { requireQcPass = fa
       verifyIdentity(resolved, source, "封面实际来源", errors);
       if (!["real_photo", "real_evidence"].includes(source.role)) errors.push("不可使用合成人物或伪造证据冒充实际来源");
     }
-    if (requireQcPass && contract.qc?.thumbnailStatus !== "pass") errors.push("手机缩略图尚未验收");
+    if (requireQcPass) {
+      if (contract.qc?.thumbnailStatus !== "pass") errors.push("手机缩略图尚未验收");
+      const candidate = verifyIdentity(resolved, contract.output, "实际封面", errors);
+      errors.push(...validateEditorialReview(resolved, contract.qc?.reviewEvidence, contract, {kind:"cover",candidate}));
+    }
     return { status: errors.length ? "fail" : "pass", contract: resolved, errors };
   }
   if (contract.schemaVersion !== "1.0") errors.push("schemaVersion 必须为 1.0");
@@ -200,9 +205,18 @@ if (action === "template") {
       ...(realPhoto ? [{ ...fileIdentity(realPhoto), role: "real_photo" }] : []),
       ...(option("--evidence") ? [{ ...fileIdentity(option("--evidence")), role: "real_evidence" }] : []),
     ],
-    seriesLabel: null, issueNumber: null, qc: { thumbnailStatus: "pending" },
+    seriesLabel: null, issueNumber: null, output: null, qc: { thumbnailStatus: "pending", reviewEvidence: null },
   } : buildTemplate(projectId, turnaround, realPhoto));
   console.log(JSON.stringify({ status: "pass", output: path.resolve(output) }, null, 2));
+} else if (action === "review-template") {
+  const file=option("--contract"), output=option("--output");
+  if (!file || !output || fs.existsSync(output)) throw new Error("需要 --contract、未占用的 --output");
+  const contract=readJson(file), report=validateCoverIdentityContract(file);
+  if (contract.kind !== "kacha-editorial-cover-contract" || report.status !== "pass") throw new Error("需要有效的大灰AI封面合同");
+  const errors=[], candidate=verifyIdentity(file,contract.output,"实际封面",errors);
+  if (errors.length) throw new Error(errors.join("; "));
+  writeJsonAtomic(output,reviewTemplate(contract,{kind:"cover",candidate}));
+  console.log(JSON.stringify({status:"pending",output:path.resolve(output)}));
 } else if (action === "validate") {
   const contractFile = option("--contract");
   if (!contractFile) {

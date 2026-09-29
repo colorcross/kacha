@@ -1,3 +1,5 @@
+> 大灰AI范围：生产包 `dahui-ai` 优先遵守 `docs/DAHUI_AI_EDITING_SYSTEM_V1.md`。默认自然开场、已授权清晰字体、真实证据2D封面及无BGM；本文件的旧字体、3D人物与固定双封面规则只适用于明确启用它们的历史profile。新包的节目与封面终审须绑定当前内容和输出，不能仅填pass。
+
 > 政策版本说明：narrative-v1 的需求分层与已实现手法以 `references/optimization-execution.md` 为准；下文通用数量下限仅适用于 legacy 工程。
 
 # quality-contracts

@@ -18,6 +18,7 @@ check-core:
 
 check-full: check-static
 	node tests/dahui_editorial_tests.mjs
+	node tests/dahui_review_tests.mjs
 	node tests/audio_fallback_review_tests.mjs
 	node tests/optimization_telemetry_tests.mjs
 	node tests/optimization_observation_tests.mjs

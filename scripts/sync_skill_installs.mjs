@@ -239,6 +239,7 @@ function verifyBundle(bundle, source) {
   }
   run(process.execPath, [path.join(bundle, "tests", "audio_fallback_review_tests.mjs")], bundle, { env: verificationEnvironment });
   run(process.execPath, [path.join(bundle, "tests", "dahui_editorial_tests.mjs")], bundle, { env: verificationEnvironment });
+  run(process.execPath, [path.join(bundle, "tests", "dahui_review_tests.mjs")], bundle, { env: verificationEnvironment });
   const privateTests = path.join(bundle, "tests", "private");
   if (fs.existsSync(privateTests)) {
     for (const entry of fs.readdirSync(privateTests).sort()) {

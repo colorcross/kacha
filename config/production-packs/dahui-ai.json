@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "id": "dahui-ai",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "大灰AI V6.1：真人判断、真实证据、八类叙事。旧行者大灰生产包独立保留。",
   "base": {
     "cinematicPolicyFile": "dahui-ai.json",

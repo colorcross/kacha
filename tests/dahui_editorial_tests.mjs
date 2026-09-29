@@ -20,7 +20,7 @@ function cli(args,ok=true){const r=spawnSync(process.execPath,[path.join(root,'s
 function filled(show){
  const e=episodeTemplate('regression',show);
  Object.assign(e,{question:'此任务如何判断结果可信？',audienceTask:'完成一份可交付材料',ownJudgment:'判断由来源及具体条件约束'});
- e.context={recordedAt:'2026-09-29',toolVersion:'test fixture only',inputScope:'synthetic validation fixture',primaryBooks:[{title:'测试主书',edition:'测试版'}],aiRole:'ai-assisted-development'};
+ e.context={recordedAt:'2026-09-29',toolVersion:'test fixture only',inputScope:'synthetic validation fixture',primaryBooks:[{title:'测试主书',edition:'测试版'}],aiRole:'ai-assisted-development',sourceUrl:'https://example.com/fixture',publishedAt:'2026-09-29',eventAt:'2026-09-29',availability:'announced'};
  const proof=save(`${show}-evidence.json`,{fixture:true,note:'schema regression only, not actual production evidence'});
  e.evidence.forEach(x=>Object.assign(x,{path:proof,sha256:sha256File(proof),locator:'fixture record 1',description:'仅回归夹具'}));
  e.beats.forEach(x=>Object.assign(x,{purpose:'说明本环节的判断依据',evidenceIds:e.evidence.map(item=>item.id),timelineIds:['segment-001']}));
@@ -61,7 +61,7 @@ try {
  });
  test('book duration deducts actual frame-based overlap, ignoring invented durationSeconds',()=>{
   const e=filled('ai-reading'),file=save('overlap.json',e);
-  const timeline=save('overlap-timeline.json',{projectId:'regression',output:{fps:25},edl:[{id:'segment-001',sourceStart:0,sourceEnd:900},{id:'segment-002',sourceStart:900,sourceEnd:1800}],transitions:[{boundaryIndex:0,durationFrames:25,durationSeconds:0}]});
+  const timeline=save('overlap-timeline.json',{projectId:'regression',output:{fps:25},edl:[{id:'segment-001',sourceStart:0,sourceEnd:900},{id:'segment-002',sourceStart:900,sourceEnd:1800}],transitions:[{boundaryIndex:0,durationFrames:10,durationSeconds:0}]});
   assert(validateEpisode(file,{stage:'execution',timeline}).errors.some(x=>x.includes('真实读书母片')));
  });
  test('release requires full-speed review receipt, not merely marked pass',()=>{
@@ -94,7 +94,7 @@ try {
   const project=path.join(dir,'source-project');
   cli(['start','--source',video,'--project-root',project,'--project-id','routing','--pack','dahui-ai','--show','ai-reading','--development']);
   const manifest=JSON.parse(fs.readFileSync(path.join(project,'contracts/project-manifest.json')));
-  assert.equal(manifest.productionPack,'dahui-ai');assert.equal(manifest.expectedMedia.audioMix.bgmRequired,false);
+  assert.equal(manifest.productionPack,'dahui-ai');assert.equal(manifest.expectedMedia.audioMix.bgmRequired,false);assert.equal(manifest.expectedMedia.audioMix.adaptiveBgmRequired,false);assert(!manifest.plans.adaptiveBgm);assert(!manifest.outputs.audioStems.bgm);assert(!manifest.outputs.audioStems.sfx);assert.deepEqual(manifest.requiredCoverAspectRatios,['16:9']);
   const config=JSON.parse(fs.readFileSync(path.join(project,'kacha.config.json')));assert.equal(config.style.profile,'dahui-ai');
   const cues=save('caption-cues.json',{cues:[{id:'cue',start:0,end:.8,text:'测试字幕'}]});
   const captions=path.join(dir,'captions.json');

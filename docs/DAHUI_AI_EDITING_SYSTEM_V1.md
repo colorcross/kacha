@@ -1,4 +1,4 @@
-# 大灰AI剪辑系统 V1
+# 大灰AI剪辑系统 V1.1
 
 依据：调用项目的《大灰AI｜自媒体IP实操方案 V6.1》。本文件规定咔嚓如何将它转成剪辑工程；选题、排期和产品事实仍以调用项目当期资料为准。
 
@@ -98,12 +98,12 @@ node scripts/kacha.mjs start --source /MEDIA/main.mov --pack dahui-ai --show ai-
 ```bash
 node scripts/kacha.mjs episode bind --episode /PROJECT/contracts/episode.json --requirements /PROJECT/contracts/editorial-requirements.json --contract /PROJECT/contracts/production-quality-contract.json
 node scripts/kacha.mjs episode validate --episode /PROJECT/contracts/episode.json --stage plan
-node scripts/kacha.mjs production-quality validate --contract /PROJECT/contracts/production-quality-contract.json --stage plan
+node scripts/kacha.mjs production-quality validate --contract /PROJECT/contracts/production-quality-contract.json --project /PROJECT/contracts/project-manifest.json --stage plan
 node scripts/kacha.mjs visual-capabilities template --style dahui-ai --show ai-reading --duration 2700 --requirements /PROJECT/contracts/editorial-requirements.json --output /PROJECT/contracts/visual-plan.json
 node scripts/kacha.mjs cover template --pack dahui-ai --project-id DH6-102 --evidence /MEDIA/book-photo.jpg --output /PROJECT/contracts/cover.json
 ```
 
-模板包含空值，表示待准备，不是通过证据。节目合同变更后用 `episode bind` 重新检查并更新 production-quality 中该文件的摘要；不得顺手清空其他已审阅的执行记录。已冻结项目继续使用绑定运行时，更新当前工具不自动重剪历史片。
+模板包含空值，表示待准备，不是通过证据。实际 manifest 路径以初始化返回值为准，`--project` 绑定真实工程；正式工程命令会自动传入。节目合同变更后用 `episode bind` 重新检查并更新 production-quality 中该文件的摘要；不得顺手清空其他已审阅的执行记录。已冻结项目继续使用绑定运行时，更新当前工具不自动重剪历史片。
 
 ### 节目合同与时间线的分工
 
@@ -113,9 +113,31 @@ node scripts/kacha.mjs cover template --pack dahui-ai --project-id DH6-102 --evi
 
 `editorial-requirements.json` 保留原有分层：用户或事实要求必须 required，条件增强注明触发情况，可选项注明采用/省略理由。节目合同不能替代它。
 
-封面通过 `cover validate --require-qc-pass` 后，将其 path/sha256 绑定到生产质量合同的 `execution.cover.editorialContract`。
+封面通过 `cover validate --require-qc-pass` 后，将其 path/sha256 绑定到生产质量合同的 `execution.cover.editorialContract`。多平台封面使用 `editorialContracts` 数组，每个实际交付文件各有对应合同和审阅记录。新工程默认以源画幅建立封面交付，其他平台画幅按当期需求显式增加并重新排版。
 
 发布检查增加事实、归属、可读性、正常速度终审及终审记录文件。自动检查只证明结构和证据绑定，**不能判定引用真实含义、观点是否准确或成片是否好看**；大灰仍需看完整条片。
+
+### 内容交接、衍生与终审
+
+从文稿开始的长读书工程保留完整段落，并生成栏目节目草稿、证据清单和约2700秒的录制预算。辩论生成提问与节点提纲，要求完整会话；模板不预写AI回答。交给实拍工程时保留已填的来源材料和上下文，重新绑定工程ID，清除原来的时间线映射、检查结论与终审记录，再依据新剪辑填写。
+
+```bash
+node scripts/kacha.mjs episode derivative-template --master /MASTER/contracts/episode.json --project-id DH6-102-excerpt --output /EXCERPT/contracts/episode.json
+node scripts/kacha.mjs episode review-template --episode /PROJECT/contracts/episode.json --timeline /PROJECT/timeline.json --candidate /PROJECT/output/final.mp4 --output /PROJECT/contracts/episode-review.json
+node scripts/kacha.mjs cover review-template --contract /PROJECT/contracts/cover.json --output /PROJECT/contracts/cover-review.json
+```
+
+衍生模板只有在母片节目合同完整有效时才能建立。正式交付衍生片时，`sourceMaster.timeline`、`sourceMaster.candidate` 还须绑定已审阅的母片实际时间线与视频，母片本身仍执行完整读书时长、证据和终审检查。切片保留来源、条件和独立结论，不能用一个空壳母片记录冒充已完成的一期书。
+
+终审模板只建立 `pending` 记录。审阅人看完当前候选后，填写真实 `reviewer`、`reviewedAt`、各项检查和最终状态，再将记录的 path/sha256 绑定回 `episode.reviewEvidence` 或 `cover.qc.reviewEvidence`。封面先填写实际成图的 `output.path/sha256`。Agent负责文件绑定，不代填未发生的人工通过。
+
+记录固定工程ID、节目内容摘要、候选视频及时间线摘要；封面记录固定构图、文案和实际成图。改变这些对象即使重新填了普通文件摘要，也不能继续沿用旧终审。节目合同中的待核事项与审阅记录分开保存，避免自引用摘要。
+
+### 音乐与字体的实际交付
+
+大灰AI默认无配乐，质量合同填写 `execution.audio.bgmMode=none` 及 `silenceReason`；实际 Timeline IR 无BGM时，不要求生成音乐计划、音乐提示词或空的BGM/SFX文件，只要求dialogue和mix。出现真实BGM/SFX才要求相应stem；显式要求配乐的工程不能静默省略。音乐段落覆盖率来自时间线，音乐和“有意留白”不得重叠记账。仅给实际BGM对象写 `enabled=false` 并不会移除渲染中的音轨，应以渲染器支持的时间线结构为准。
+
+字体检查读取实际解析的文件及授权注册表，`fontEvidence` 保存文件与注册表各自的路径和摘要。允许当前生产包中的已授权字体，文件、授权或选择发生改变后重新检查；不再要求所有工程使用同一个字体名。
 
 ### 路径与能力边界
 
@@ -142,5 +164,6 @@ node scripts/kacha.mjs cover template --pack dahui-ai --project-id DH6-102 --evi
 
 - 不批量改名旧视频、期号、栏目目录或运行时；新内容才使用新包。
 - 旧 `very-ai` 是历史栏目路由，新辩论是 `ai-debate`；同名“灰常AI”若对外显示期号须先查历史最高已发布编号。
+- 深度修复记录见 `docs/DAHUI_AI_REVIEW_V1_1.md`；`tests/dahui_review_tests.mjs` 额外覆盖实际执行与发布门禁、失效终审、母片完整性、字体、无配乐/有配乐、内容交接与入口一致性。
 - `tests/dahui_editorial_tests.mjs` 覆盖八类路由、旧包保留、节目草稿、证据变更、读书长度、章节、真实时间线和终审记录等；夹具通过不等于实拍验收。
 - `make check-full` 后同步 Codex/Claude 安装并核对摘要。双安装更新不代表历史工程运行时自动迁移，也不代表公开版本发布。

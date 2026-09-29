@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import { resolveProductionSelection } from "./production_pack.mjs";
 import { dispatchBoundRuntime } from "./runtime_bundle.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,8 +33,8 @@ function usage() {
       + "  kacha.mjs contracts validate|list|show|resolve [options]\n"
       + "  kacha.mjs visual-capabilities template|validate [options]\n"
       + "  kacha.mjs production-quality template|validate|anti-web-audit [options]\n"
-      + "  kacha.mjs episode list|template|bind|validate --show SHOW --output FILE [options]\n"
-      + "  kacha.mjs cover template|validate|prompt [options]\n"
+      + "  kacha.mjs episode list|template|derivative-template|review-template|bind|validate --show SHOW --output FILE [options]\n"
+      + "  kacha.mjs cover template|review-template|validate|prompt [options]\n"
       + "  kacha.mjs fonts scan|validate|resolve|preview [options]\n"
       + "  kacha.mjs captions plan|validate|render [options]\n"
       + "  kacha.mjs breathing plan|validate|render [options]\n"
@@ -610,7 +611,7 @@ function gatePlanV3() {
 }
 
 function validateProductionQuality(stage) {
-  const required = project.productionQualityV1?.required === true;
+  const required = project.productionQualityV1?.required === true || project.productionPack === "dahui-ai" || resolveProductionSelection(null, project.show).packId === "dahui-ai";
   const entry = project.plans?.productionQuality;
   if (!entry && required) {
     console.error(`生产质量${stage}门禁缺少 plans.productionQuality`);
@@ -628,6 +629,7 @@ function validateProductionQuality(stage) {
     contract,
     "--stage",
     stage,
+    "--project", projectFile,
   ]);
 }
 

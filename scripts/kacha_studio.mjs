@@ -1017,6 +1017,7 @@ function resolveCaptionFontEvidence(style, loadedConfig) {
       record.projectAuthorization?.status ?? record.license?.status,
     redistributionAllowed: record.redistributionAllowed === true,
     registryPath,
+    registrySha256: sha256File(registryPath),
     registryDigest: registry.digest ?? sha256File(registryPath),
   };
 }
@@ -1085,6 +1086,7 @@ function normalizeProductionRequest(request, catalog, media) {
   const language = enumValue(request.language ?? "zh", LANGUAGES, "language");
   const show = enumValue(request.show ?? style.design.modes.show, SHOWS, "show");
   if ((style.design.profile === "dahui-ai") !== DAHUI_SHOWS.includes(show)) throw new Error("栏目与品牌风格不匹配，请选择同一生产包的栏目");
+  if (style.design.profile === "dahui-ai" && style.design.modes.show !== show) throw new Error("栏目与所选预设不匹配，请选择该栏目的制作预设");
   if (style.design.profile !== "dahui-ai" && openingId === "natural") throw new Error("历史风格保留注册开场合同；真实开场请用大灰AI生产包");
   return {
     schemaVersion: "1.0",

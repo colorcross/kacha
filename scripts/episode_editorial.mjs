@@ -1,7 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { loadProductionPack } from "./production_pack.mjs";
-import { readJson, sha256File } from "./kacha_utils.mjs";
+import { readJson } from "./kacha_utils.mjs";
+import { verifiedEditorialFile, validateEditorialReview } from "./editorial_review.mjs";
+import { editorialTimeline } from "./editorial_timeline.mjs";
 
 // Episode evidence supplements Timeline IR; it never becomes a second timeline.
 export function episodeTemplate(projectId, showId) {
@@ -15,7 +17,10 @@ export function episodeTemplate(projectId, showId) {
     targetSeconds: policy.targetSeconds,
     beats: policy.structure.map(role => ({ id: role, role, purpose: "", evidenceIds: [], timelineIds: [] })),
     evidence: policy.requiredEvidence.map(kind => ({ id: kind, kind, path: null, sha256: null, locator: "", description: "" })),
-    context: { recordedAt: null, toolVersion: null, inputScope: null, primaryBooks: [], aiRole: null },
+    context: { recordedAt: null, toolVersion: null, inputScope: null, primaryBooks: [], aiRole: null,
+      ...(["TALK", "NEWS"].includes(policy.category) ? {sourceUrl: null, publishedAt: null} : {}),
+      ...(policy.category === "NEWS" ? {eventAt: null, availability: null} : {}),
+    },
     chapters: [], turns: [], disclosures: [],
     checks: { facts: "pending", attribution: "pending", readability: "pending", fullSpeedReview: "pending" },
     reviewEvidence: null,
@@ -23,18 +28,15 @@ export function episodeTemplate(projectId, showId) {
   };
 }
 
+const identity = (owner, item, errors, label) => verifiedEditorialFile(owner, item, label, errors);
 const nonempty = value => typeof value === "string" && value.trim().length > 0;
-function identity(owner, item, errors, label) {
-  if (!item?.path || !/^[a-f0-9]{64}$/.test(item.sha256 ?? "")) { errors.push(`${label}: 缺少 path/sha256`); return null; }
-  const file = path.resolve(path.dirname(owner), item.path);
-  if (!fs.existsSync(file) || !fs.statSync(file).isFile() || sha256File(file) !== item.sha256) { errors.push(`${label}: 来源文件缺失或摘要失效`); return null; }
-  return file;
-}
 
-export function validateEpisode(file, { stage = "plan", timeline = null, expectedProjectId = null, expectedShowId = null } = {}) {
+export function validateEpisode(file, { stage = "plan", timeline = null, expectedProjectId = null, expectedShowId = null, candidate = null, ancestry = [] } = {}) {
   const errors = [];
   if (!["plan", "execution", "release"].includes(stage)) return { status: "fail", errors: ["未知检查阶段"] };
   try {
+    file = path.resolve(file);
+    if (ancestry.includes(file) || ancestry.length > 8) throw new Error("衍生母片引用循环或层级过深");
     const episode = readJson(file);
     if (episode.schemaVersion !== "1.0" || episode.kind !== "kacha-episode-editorial") throw new Error("节目合同格式无效");
     const pack = loadProductionPack(episode.pack?.id, episode.pack?.showId);
@@ -50,7 +52,15 @@ export function validateEpisode(file, { stage = "plan", timeline = null, expecte
       const source = identity(file, episode.sourceMaster, errors, "衍生母片");
       if (source) {
         const master = readJson(source);
-        if (master.deliverable !== "master" || master.projectId !== episode.sourceMaster.projectId || master.pack?.showId !== pack.showId) errors.push("衍生须引用同栏目母片，沿用其期号");
+        if (master.deliverable !== "master" || master.projectId === episode.projectId || master.projectId !== episode.sourceMaster.projectId || master.pack?.showId !== pack.showId) errors.push("衍生须引用独立且同栏目的母片，沿用其期号");
+        let parentTimeline = null, parentCandidate = null;
+        if (stage === "release") {
+          parentTimeline = identity(file, episode.sourceMaster.timeline, errors, "母片时间线");
+          parentCandidate = identity(file, episode.sourceMaster.candidate, errors, "母片成片");
+        }
+        errors.push(...validateEpisode(source, {stage: stage === "release" ? "release" : "plan",
+          timeline: parentTimeline, candidate: parentCandidate, expectedShowId: pack.showId,
+          ancestry: [...ancestry, file]}).errors.map(error => `母片: ${error}`));
       }
       if (!nonempty(episode.sourceMaster?.contextPreserved)) errors.push("衍生须说明保留了哪些前提与条件");
     }
@@ -84,6 +94,14 @@ export function validateEpisode(file, { stage = "plan", timeline = null, expecte
     if (policy.aiLinkRequired && ["BOOK", "PRACTICE", "REVIEW", "DEBATE"].includes(policy.category)) {
       for (const field of ["recordedAt", "toolVersion", "inputScope"]) if (!nonempty(episode.context?.[field])) errors.push(`context.${field}: 记录日期、模型工具版本和输入条件`);
     }
+    if (["TALK", "NEWS"].includes(policy.category)) {
+      try { if (!["http:", "https:"].includes(new URL(episode.context?.sourceUrl).protocol)) throw new Error(); }
+      catch { errors.push("访谈/资讯必须记录原始来源 URL"); }
+      if (!nonempty(episode.context?.publishedAt) || !Number.isFinite(Date.parse(episode.context.publishedAt))) errors.push("必须记录可解析的原始发布日期");
+    }
+    if (policy.category === "NEWS" && (!nonempty(episode.context?.eventAt) || !Number.isFinite(Date.parse(episode.context.eventAt))
+      || !["announced", "demo", "invite-only", "available", "personally-tested", "unknown"].includes(episode.context?.availability))) errors.push("资讯须分别记录事件日期与真实开放状态");
+    if (episode.context?.recordedAt && !Number.isFinite(Date.parse(episode.context.recordedAt))) errors.push("录制日期无效");
     if (policy.category === "BUILD" && !["ai-native", "ai-assisted-development", "non-ai-decision"].includes(episode.context?.aiRole)) errors.push("产品须区分AI原生、AI辅助开发和非AI取舍");
     let duration = episode.targetSeconds;
     if (stage !== "plan") {
@@ -91,14 +109,10 @@ export function validateEpisode(file, { stage = "plan", timeline = null, expecte
       if (!actual) errors.push("执行检查必须提供当前 Timeline IR");
       else {
         if (actual.projectId !== episode.projectId) errors.push("Timeline IR projectId 不匹配");
-        const objects = [...(actual.edl ?? []), ...(actual.visual?.overlays ?? []), ...(actual.visual?.breathing ?? []), ...(actual.audio?.sfx ?? [])];
+        const resolved = editorialTimeline(actual);
+        const objects = [...resolved.plan.edl, ...(actual.visual?.overlays ?? []), ...(actual.visual?.breathing ?? []), ...(actual.audio?.sfx ?? [])];
         for (const beat of beats) for (const id of beat.timelineIds ?? []) if (!objects.some(item => item.id === id)) errors.push(`${beat.id}: 当前时间线缺少 ${id}`);
-        const fps = Number(actual.output?.fps ?? actual.source?.fps);
-        const transitions = actual.transitions ?? [];
-        if (transitions.some(item => Number(item.durationFrames ?? 0) > 0) && !(fps > 0)) errors.push("带重叠转场的时间线须明确实际 fps 才能核对读书时长");
-        duration = (actual.edl ?? []).reduce((sum, item) => sum + (Number(item.sourceEnd) - Number(item.sourceStart)), 0)
-          - transitions.reduce((sum, item) => sum + (Number(item.durationFrames ?? 0) > 0 && fps > 0 ? Number(item.durationFrames) / fps : 0), 0);
-        if (!Number.isFinite(duration) || duration <= 0) errors.push("无法从 Timeline IR 计算成片时长");
+        duration = resolved.duration;
         if (policy.category === "BOOK" && episode.deliverable === "master" && (duration < 1800 || duration > 3600)) errors.push("真实读书母片时间线不是30–60分钟");
       }
     }
@@ -114,11 +128,11 @@ export function validateEpisode(file, { stage = "plan", timeline = null, expecte
       const turns = episode.turns ?? [];
       if (!turns.some(turn => turn.speaker === "human") || !turns.some(turn => turn.speaker === "ai")) errors.push("辩论须保留双方真实发言索引");
       for (const turn of turns) if (!["human", "ai"].includes(turn.speaker) || !nonempty(turn.sourceLocator) || !evidenceIds.has(turn.evidenceId) || !beatIds.has(turn.beatId)) errors.push("发言必须关联原会话位置、证据及叙事环节");
-      if (!Array.isArray(episode.disclosures) || !episode.disclosures.length) errors.push("须说明实时/异步、等待缩短、重连及补录情况，包括无此操作");
+      if (!Array.isArray(episode.disclosures) || !episode.disclosures.length || episode.disclosures.some(item => !nonempty(item))) errors.push("须说明实时/异步、等待缩短、重连及补录情况，包括无此操作");
     }
     if (stage === "release") {
       for (const field of ["facts", "attribution", "readability", "fullSpeedReview"]) if (episode.checks?.[field] !== "pass") errors.push(`终审 ${field} 尚未通过`);
-      identity(file, episode.reviewEvidence, errors, "正常速度终审记录");
+      errors.push(...validateEditorialReview(file, episode.reviewEvidence, episode, {timeline, candidate}));
     }
   } catch (error) { errors.push(error.message); }
   return { status: errors.length ? "fail" : "pass", stage, errors };

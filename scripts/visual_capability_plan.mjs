@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
-import { loadProductionPack } from "./production_pack.mjs";
+import { loadProductionPack, resolveProductionSelection } from "./production_pack.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -246,7 +246,7 @@ function validateOpeningEvent(event, label, policy, errors) {
     || promiseBySeconds > Number(contract.promiseBySeconds)
     || promiseBySeconds < start
   ) {
-    errors.push(`${label}.implementation.promiseBySeconds 必须在开场后且不晚于 3 秒`);
+    errors.push(`${label}.implementation.promiseBySeconds 必须在开场后且不晚于 ${contract.promiseBySeconds} 秒`);
   }
   if (implementation.openingMode === "natural" && policy.editorialPolicy === NARRATIVE_POLICY) {
     requireContractFields(implementation, ["sourceReason", "sourceCueId"], `${label}.implementation`, errors);
@@ -266,7 +266,7 @@ function validateOpeningEvent(event, label, policy, errors) {
       errors,
     );
   } else {
-    errors.push(`${label}.implementation.openingMode 必须是 registered 或 custom`);
+    errors.push(`${label}.implementation.openingMode 不符合当前政策支持的开场模式`);
   }
 }
 
@@ -761,7 +761,8 @@ try {
   if (action === "template") {
     const output = path.resolve(option("--output", ""));
     const duration = Number(option("--duration", ""));
-    const profile = option("--style", "xingzhe");
+    const inferred = resolveProductionSelection(null, option("--show"));
+    const profile = option("--style", inferred.packId === "dahui-ai" ? "dahui-ai" : "xingzhe");
     const showId = option("--show", profile === "dahui-ai" ? "ai-practice" : "tool-share");
     const openingId = option("--opening", profile === "dahui-ai" ? "natural" : "cold_open_marker");
     if (!output || !Number.isFinite(duration) || duration <= 0) {

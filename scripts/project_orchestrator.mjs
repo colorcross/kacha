@@ -1,5 +1,6 @@
 import { isMaterialProject, initializeMaterialProject, materialProjectStatus, runMaterialProject } from "./material_project.mjs";
 import fs from "node:fs";
+import { episodeTemplate } from "./episode_editorial.mjs";
 import { resolveProductionSelection, loadProductionPack } from "./production_pack.mjs";
 import { inspectBundle, freezeProjectRuntime, bindRuntime, callBoundProject } from "./runtime_bundle.mjs";
 import os from "node:os";
@@ -11,6 +12,7 @@ import {
   fileIdentityMatches,
   mediaSummary,
   readJson,
+  resolveFrom,
   run,
   sha256File,
   sha256Value,
@@ -239,12 +241,12 @@ function outputContractFor(input, options = {}) {
     integratedLufsMax: -19,
     truePeakMax: -3,
     audioMix: {
-      bgmRequired: options.productionPack !== "dahui-ai",
-      adaptiveBgmRequired: true,
+      bgmRequired: options.bgmEnabled ?? (options.productionPack !== "dahui-ai"),
+      adaptiveBgmRequired: options.bgmEnabled ?? (options.productionPack !== "dahui-ai"),
       masterTruePeakDb: -4,
       bgmBelowDialogueDbMin: 12,
       bgmBelowDialogueDbMax: 24,
-      bgmMinimumCoverageRatio: options.productionPack === "dahui-ai" ? 0 : 0.95,
+      bgmMinimumCoverageRatio: (options.bgmEnabled ?? (options.productionPack !== "dahui-ai")) ? 0.95 : 0,
     },
   };
 }
@@ -265,6 +267,13 @@ function ensureProjectGitignore(baseRoot) {
   if (missing.length === 0) return;
   const prefix = existing && !existing.endsWith("\n") ? "\n" : "";
   fs.appendFileSync(gitignore, `${prefix}${["# kacha 本机运行状态与产物", ...missing].join("\n")}\n`);
+}
+
+function coverRatiosFor(input, options) {
+  if (options.productionPack !== "dahui-ai") return ["3:4", "4:3"];
+  const width = Number(input.media?.width), height = Number(input.media?.height);
+  if (!(width > 0 && height > 0)) throw new Error("封面需要实际源画幅");
+  return [ratioLabel(width, height)];
 }
 
 function buildManifest({ projectId, projectRoot, input, runtimeLock, options }) {
@@ -292,7 +301,7 @@ function buildManifest({ projectId, projectRoot, input, runtimeLock, options }) 
       proposal: rel(path.join(contracts, "edit-proposal.json")),
       editPlan: rel(path.join(contracts, "edit-plan.json")),
       directorPlan: rel(path.join(contracts, "director-plan.json")),
-      adaptiveBgm: rel(path.join(contracts, "adaptive-bgm-plan.json")),
+      ...((options.bgmEnabled ?? (options.productionPack !== "dahui-ai")) ? {adaptiveBgm: rel(path.join(contracts, "adaptive-bgm-plan.json"))} : {}),
       assetGapPlan: rel(path.join(contracts, "asset-gap-plan.json")),
       temporalPerceptionAudit: rel(path.join(contracts, "temporal-perception-audit.json")),
       semanticReviewSession: rel(path.join(projectRoot, ".kacha", "review", "review-session.json")),
@@ -318,20 +327,19 @@ function buildManifest({ projectId, projectRoot, input, runtimeLock, options }) 
     ],
     source: input,
     expectedMedia: outputContractFor(input, options),
-    requiredCoverAspectRatios: ["3:4", "4:3"],
+    requiredCoverAspectRatios: coverRatiosFor(input, options),
     outputs: {
       finalVideo: { path: rel(path.join(projectRoot, "output", "final.mov")) },
-      covers: [
-        { aspectRatio: "3:4", path: rel(path.join(projectRoot, "output", "cover-3x4.png")) },
-        { aspectRatio: "4:3", path: rel(path.join(projectRoot, "output", "cover-4x3.png")) },
-      ],
+      covers: coverRatiosFor(input, options).map(aspectRatio => ({
+        aspectRatio, path: rel(path.join(projectRoot, "output", `cover-${aspectRatio.replace(":", "x")}.png`)),
+      })),
       subtitles: [
         { language: "zh-CN", path: rel(path.join(projectRoot, "output", "subtitles.zh-CN.srt")) },
       ],
       audioStems: {
         dialogue: { path: rel(path.join(projectRoot, "output", "dialogue-stem.wav")) },
-        bgm: { path: rel(path.join(projectRoot, "output", "bgm-stem.wav")) },
-        sfx: { path: rel(path.join(projectRoot, "output", "sfx-stem.wav")) },
+        ...((options.bgmEnabled ?? (options.productionPack !== "dahui-ai")) ? {bgm: { path: rel(path.join(projectRoot, "output", "bgm-stem.wav")) }} : {}),
+        ...(options.productionPack !== "dahui-ai" ? {sfx: { path: rel(path.join(projectRoot, "output", "sfx-stem.wav")) }} : {}),
         mix: { path: rel(path.join(projectRoot, "output", "final-mix-stem.wav")) },
       },
       technicalQcReport: { path: rel(path.join(projectRoot, "output", "technical-qc.json")) },
@@ -357,6 +365,7 @@ function buildContentContract({ projectId, input, options, runtimeLock }) {
       requiredOnSourceEditHandoff: true,
     },
     requiredOutputs: [
+      ...(options.productionPack === "dahui-ai" ? ["episode.json"] : []),
       "content-spine.json",
       "fact-check-tasks.json",
       "recording-plan.json",
@@ -420,36 +429,35 @@ export function initializeProject({
   if (fs.existsSync(orchestrationFile)) {
     throw new Error(`项目已经初始化：${orchestrationFile}`);
   }
-  fs.mkdirSync(path.join(baseRoot, "contracts"), { recursive: true });
-  fs.mkdirSync(path.join(baseRoot, ".kacha", "review"), { recursive: true });
-  fs.mkdirSync(path.join(baseRoot, ".kacha", "packets"), { recursive: true });
-  fs.mkdirSync(path.join(baseRoot, "previews"), { recursive: true });
-  fs.mkdirSync(path.join(baseRoot, "output"), { recursive: true });
-  ensureProjectGitignore(baseRoot);
-
-  let runtime = inspectRuntime({ home });
-  if (!development && runtime.productionReady) runtime = freezeProjectRuntime(runtime, { home });
-  const runtimeAllowed = development || runtime.productionReady || !enforceRuntime;
-  const resolvedProjectId = slug(
-    projectId ?? fromBrief?.brief?.projectName ?? path.parse(input.path ?? "content").name,
-  );
+  if ((pack && fromBrief?.brief?.target?.productionPack && pack !== fromBrief.brief.target.productionPack)
+    || (show && fromBrief?.brief?.target?.show && show !== fromBrief.brief.target.show)) throw new Error("显式栏目/生产包与 brief 不一致");
+  const resolvedProjectId = slug(projectId ?? fromBrief?.brief?.projectName ?? path.parse(input.path ?? "content").name);
   const selection = resolveProductionSelection(fromBrief?.brief?.target?.productionPack ?? pack, fromBrief?.brief?.target?.show ?? show);
   loadProductionPack(selection.packId, selection.showId);
   const options = {
     productionPack: selection.packId,
+    bgmEnabled: fromBrief?.brief?.style?.bgm?.enabled ?? fromBrief?.brief?.target?.bgmEnabled ?? (selection.packId !== "dahui-ai"),
     show: selection.showId,
     style: fromBrief?.brief?.style?.id ?? (selection.packId === "dahui-ai" ? "dahui-ai" : style),
     platform: fromBrief?.brief?.target?.platform ?? platform,
     language: fromBrief?.brief?.target?.language ?? language,
   };
-  if (selection.packId === "dahui-ai") {
-    const configFile = path.join(baseRoot, "kacha.config.json");
-    if (!fs.existsSync(configFile)) writeJsonAtomic(configFile, {
-      schemaVersion: "1.0",
-      style: { system: "dahui-video-system", profile: "dahui-ai", modes: { show: selection.showId }, overrides: {} },
-      editingDefaults: { parameters: { audio: { dialogueFirst: true, bgm: { enabled: false } } } },
-    });
+  const configFile = path.join(baseRoot, "kacha.config.json");
+  if (selection.packId === "dahui-ai" && fs.existsSync(configFile)) {
+    const existing = readJson(configFile);
+    if (existing.style?.profile !== "dahui-ai" || existing.style?.modes?.show !== selection.showId) throw new Error("项目已有配置与新栏目不一致，请保留原工程并选择新目录，或明确迁移配置");
+    options.bgmEnabled = fromBrief?.brief?.style?.bgm?.enabled ?? fromBrief?.brief?.target?.bgmEnabled ?? existing.editingDefaults?.parameters?.audio?.bgm?.enabled ?? false;
   }
+  for (const directory of ["contracts", ".kacha/review", ".kacha/packets", "previews", "output"]) fs.mkdirSync(path.join(baseRoot, directory), {recursive:true});
+  ensureProjectGitignore(baseRoot);
+  let runtime = inspectRuntime({ home });
+  if (!development && runtime.productionReady) runtime = freezeProjectRuntime(runtime, { home });
+  const runtimeAllowed = development || runtime.productionReady || !enforceRuntime;
+  if (selection.packId === "dahui-ai" && !fs.existsSync(configFile)) writeJsonAtomic(configFile, {
+    schemaVersion: "1.0",
+    style: { system: "dahui-video-system", profile: "dahui-ai", modes: { show: selection.showId }, overrides: {} },
+    editingDefaults: { parameters: { audio: { dialogueFirst: true, bgm: { enabled: options.bgmEnabled } } } },
+  });
   const runtimeLock = {
     sourceRef: runtime.sourceRef,
     sourceDirty: runtime.sourceDirty,
@@ -600,6 +608,22 @@ export function resolveProjectRoot(input) {
   return path.dirname(resolved);
 }
 
+export function episodeForSourceHandoff(file, projectId) {
+  const episode = readJson(file);
+  const pack = loadProductionPack("dahui-ai", episode.pack?.showId);
+  if (episode.kind !== "kacha-episode-editorial" || episode.pack?.id !== pack.id || episode.pack?.sha256 !== pack.sha256) throw new Error("内容节目合同身份或生产包已变化，须先复核");
+  const absolutize = value => {
+    if (Array.isArray(value)) return value.map(absolutize);
+    if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,key === "path" && typeof item === "string" ? resolveFrom(file,item) : absolutize(item)]));
+    return value;
+  };
+  const result = absolutize(episode);
+  Object.assign(result,{projectId,status:"draft",reviewEvidence:null,contentOrigin:fileIdentity(file)});
+  result.checks=Object.fromEntries(Object.keys(result.checks).map(key=>[key,"pending"]));
+  result.beats.forEach(beat=>{beat.timelineIds=[];});
+  return result;
+}
+
 export function handoffContentProject(input, source, {
   targetRoot = null,
   confirmContentApproved = false,
@@ -624,12 +648,15 @@ export function handoffContentProject(input, source, {
   if (unresolvedFacts.length > 0) throw new Error(`仍有 ${unresolvedFacts.length} 项事实核查未解决`);
   const unresolvedAssets = (inbox.items ?? []).filter((item) => !["resolved", "waived_with_reason"].includes(item.status));
   if (unresolvedAssets.length > 0) throw new Error(`仍有 ${unresolvedAssets.length} 项内容素材缺口未解决`);
+  const contentEpisode = orchestration.productionPack === "dahui-ai" ? episodeForSourceHandoff(path.join(contentRoot,"contracts","episode.json"), `${orchestration.projectId}-source-edit`) : null;
+  if (contentEpisode && contentEpisode.pack.showId !== orchestration.show) throw new Error("内容节目与交接栏目不一致");
   const childRoot = path.resolve(targetRoot ?? path.join(contentRoot, "source-edit"));
   const child = initializeProject({
     source,
     projectRoot: childRoot,
     projectId: `${orchestration.projectId}-source-edit`,
     task: "source_edit",
+    pack: orchestration.productionPack,
     show: orchestration.show,
     style: orchestration.style,
     platform: orchestration.platform,
@@ -641,6 +668,14 @@ export function handoffContentProject(input, source, {
   });
   const manifestFile = child.files.manifest;
   const manifest = readJson(manifestFile);
+  if (contentEpisode) {
+    contentEpisode.projectId=manifest.projectId;
+    const qualityFile=resolveFrom(manifestFile,manifest.plans.productionQuality), quality=readJson(qualityFile);
+    const episodeFile=resolveFrom(qualityFile,quality.episodeEditorial.path);
+    writeJsonAtomic(episodeFile,contentEpisode);
+    quality.episodeEditorial=fileIdentity(episodeFile);
+    writeJsonAtomic(qualityFile,quality);
+  }
   manifest.contentOrigin = {
     contentProject: fileIdentity(orchestration.files.contentContract),
     contentSpine: fileIdentity(spineFile),
@@ -1014,24 +1049,27 @@ function contentText(input) {
   throw new Error("内容策划输入必须是 topic 或 document");
 }
 
-function contentParagraphs(text) {
+function contentParagraphs(text, limit = 80) {
   return String(text)
     .replace(/^\s*#{1,6}\s+/gm, "")
     .split(/(?:\r?\n){2,}/)
     .map((value) => value.replace(/\s+/g, " ").trim())
     .filter(Boolean)
-    .slice(0, 80);
+    .slice(0, limit);
 }
 
-function ensureContentPackage(projectRoot, orchestration) {
+export function ensureContentPackage(projectRoot, orchestration) {
   const contracts = path.join(projectRoot, "contracts");
   const text = contentText(orchestration.input);
-  const paragraphs = contentParagraphs(text);
+  const dahui = orchestration.productionPack === "dahui-ai";
+  const paragraphs = contentParagraphs(text, dahui ? Infinity : 80);
   const isTopicOnly = orchestration.input.type === "topic";
   const writeIfMissing = (file, value) => {
     if (!fs.existsSync(file)) writeJsonAtomic(file, value);
     return fileIdentity(file);
   };
+  const episode = dahui ? writeIfMissing(path.join(contracts, "episode.json"), episodeTemplate(orchestration.projectId, orchestration.show)) : null;
+  const editorial = episode ? readJson(episode.path) : null;
   const sourceIdentity = orchestration.input.type === "document"
     ? fileIdentity(orchestration.input.path)
     : { type: "topic", value: orchestration.input.value, digest: orchestration.input.digest };
@@ -1060,6 +1098,7 @@ function ensureContentPackage(projectRoot, orchestration) {
     projectId: orchestration.projectId,
     source: sourceIdentity,
     show: orchestration.show,
+    ...(dahui ? {productionPack:"dahui-ai",episodePath:episode.path,targetSeconds:editorial.targetSeconds,editorialStructure:editorial.beats.map(item=>item.role)} : {}),
     thesis: isTopicOnly ? text.trim() : sections[0]?.sourceText ?? "",
     sections,
     status: isTopicOnly ? "needs_authoring" : "source_structured",
@@ -1078,6 +1117,7 @@ function ensureContentPackage(projectRoot, orchestration) {
     projectId: orchestration.projectId,
     show: orchestration.show,
     openingRequired: true,
+    ...(dahui ? {targetSeconds:editorial.targetSeconds,episodePath:episode.path,recordingMode:orchestration.show === "ai-debate" ? "live-debate-outline" : "human-with-evidence",requiredEvidence:editorial.evidence.map(item=>item.kind)} : {}),
     segments: sections.map((section) => ({
       id: section.id,
       textRef: `content-spine.json#/${section.id}`,
@@ -1096,13 +1136,13 @@ function ensureContentPackage(projectRoot, orchestration) {
     schemaVersion: "1.0",
     kind: "kacha-content-asset-inbox",
     projectId: orchestration.projectId,
-    items: sections.map((section) => ({
+    items: [...sections.map((section) => ({
       id: `asset-${section.id}`,
       sectionId: section.id,
       need: section.narrativeRole === "opening_promise" ? "开场真实动作或结果证据" : "支持当前论点的事实素材或说明性画面",
       evidenceClass: claims.some((claim) => claim.sectionId === section.id) ? "factual" : "illustrative",
       status: "unresolved",
-    })),
+    })), ...(dahui ? editorial.evidence.map(item=>({id:`episode-${item.id}`,need:item.kind,evidenceClass:"factual",status:"unresolved"})) : [])],
     boundary: "事实素材必须有来源和许可；说明性生成素材不得冒充事实证据。",
   });
   const handoff = writeIfMissing(path.join(contracts, "source-edit-handoff.json"), {
@@ -1114,7 +1154,7 @@ function ensureContentPackage(projectRoot, orchestration) {
     intelligenceV6: { required: true },
     requiredInputs: ["recorded_or_generated_source_media", "approved_content_spine", "resolved_fact_checks", "asset_license_records"],
   });
-  return { contentSpine, factTasks, recording, contentInbox, handoff };
+  return { contentSpine, factTasks, recording, contentInbox, handoff, ...(episode ? {episode} : {}) };
 }
 
 function indexForShot(order) {
@@ -1123,7 +1163,10 @@ function indexForShot(order) {
 }
 
 function contentPackageReady(projectRoot) {
+  const contractFile=path.join(projectRoot, "contracts", "content-project.json");
+  const dahui=fs.existsSync(contractFile) && readJson(contractFile).productionPack === "dahui-ai";
   return [
+    ...(dahui ? ["episode.json"] : []),
     "content-spine.json",
     "fact-check-tasks.json",
     "recording-plan.json",
