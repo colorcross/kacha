@@ -1,4 +1,4 @@
-import { escapeHtml, studioHeaders, jsonErrorMessage } from "/shared.js";
+import { escapeHtml, studioRequest } from "/shared.js";
 
 import { formatReviewProposal } from "/review-format.js";
 
@@ -9,19 +9,25 @@ const state = {
   activeId: null,
   release: null,
   releaseActiveId: null,
+  releasePath: null,
+  busy: false,
 };
 
 const $ = (id) => document.getElementById(id);
 
 async function api(path, body) {
-  const response = await fetch(path, {
-    method: "POST",
-    headers: studioHeaders(),
-    body: JSON.stringify(body),
-  });
-  const value = await response.json();
-  if (!response.ok || value.status === "blocked") throw new Error(jsonErrorMessage(value, response));
-  return value;
+  if (state.busy) throw new Error("正在保存或读取，请等待完成。");
+  state.busy = true;
+  const controls = [...document.querySelectorAll("button, input, textarea, select")]
+    .map((node) => [node, node.disabled]);
+  controls.forEach(([node]) => { node.disabled = true; });
+  document.body.setAttribute("aria-busy", "true");
+  try { return await studioRequest(path, { body, rejectBlocked: true }); }
+  finally {
+    state.busy = false;
+    controls.forEach(([node, disabled]) => { node.disabled = disabled; });
+    document.body.setAttribute("aria-busy", "false");
+  }
 }
 
 function toast(message, error = false) {
@@ -133,6 +139,8 @@ function render() {
 async function openBundle() {
   const bundlePath = $("bundlePath").value.trim();
   if (!bundlePath) throw new Error("请先填写审片包路径");
+  state.bundle = null; state.session = null; state.bundlePath = null;
+  $("reviewShell").hidden = true;
   const result = await api("/api/review/open", { bundlePath });
   state.bundlePath = bundlePath;
   state.bundle = result.bundle;
@@ -143,6 +151,7 @@ async function openBundle() {
   const guessedRoot = bundlePath.split("/.kacha/")[0];
   if (guessedRoot !== bundlePath) $("projectRoot").value = guessedRoot;
   if (guessedRoot !== bundlePath) {
+    invalidateRelease();
     $("releaseManifest").value = `${guessedRoot}/contracts/project-manifest.json`;
   }
   render();
@@ -184,7 +193,9 @@ function renderRelease() {
 async function openRelease() {
   const projectManifestPath = $("releaseManifest").value.trim();
   if (!projectManifestPath) throw new Error("请填写项目 manifest 路径");
+  invalidateRelease();
   state.release = await api("/api/release/open", { projectManifestPath });
+  state.releasePath = projectManifestPath;
   state.releaseActiveId = state.release.checks[0]?.id ?? null;
   renderRelease();
 }
@@ -193,7 +204,9 @@ async function initializeRelease() {
   const projectManifestPath = $("releaseManifest").value.trim();
   const reviewer = $("releaseReviewer").value.trim();
   if (!reviewer) throw new Error("请填写审片人");
+  invalidateRelease();
   state.release = await api("/api/release/initialize", { projectManifestPath, reviewer });
+  state.releasePath = projectManifestPath;
   state.releaseActiveId = state.release.checks[0]?.id ?? null;
   renderRelease();
   toast("发布审片清单已绑定当前最终视频");
@@ -205,7 +218,7 @@ async function recordRelease(outcome) {
   const reviewer = $("releaseReviewer").value.trim();
   if (!reviewer) throw new Error("请填写审片人");
   state.release = await api("/api/release/record", {
-    projectManifestPath: $("releaseManifest").value.trim(),
+    projectManifestPath: boundReleasePath(),
     reviewer,
     checkId: active.id,
     outcome,
@@ -220,7 +233,7 @@ async function approveRelease() {
   const reviewer = $("releaseReviewer").value.trim();
   if (!reviewer) throw new Error("请填写审片人");
   state.release = await api("/api/release/approve", {
-    projectManifestPath: $("releaseManifest").value.trim(),
+    projectManifestPath: boundReleasePath(),
     reviewer,
     limitations: $("releaseLimitations").value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean),
   });
@@ -278,3 +291,22 @@ if (query.get("bundle")) {
   $("bundlePath").value = query.get("bundle");
   openBundle().catch((error) => toast(error.message, true));
 }
+
+function invalidateRelease() {
+  state.release = null; state.releasePath = null; state.releaseActiveId = null;
+  $("releaseShell").hidden = true;
+  $("approveRelease").disabled = true;
+  $("releaseStatus").textContent = "请读取当前项目的审片清单。";
+}
+function boundReleasePath() {
+  if (!state.release || !state.releasePath || state.releasePath !== $("releaseManifest").value.trim()) {
+    throw new Error("项目目录已变化，请重新读取审片清单。");
+  }
+  return state.releasePath;
+}
+$("releaseManifest").addEventListener("input", invalidateRelease);
+$("bundlePath").addEventListener("input", () => {
+  state.bundle = null; state.bundlePath = null; state.session = null;
+  $("reviewShell").hidden = true;
+  $("loadStatus").textContent = "路径已变化，请重新读取审片包。";
+});

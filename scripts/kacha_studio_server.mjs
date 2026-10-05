@@ -22,7 +22,8 @@ import {
   resolveReviewMedia,
 } from "./kacha_review.mjs";
 import { observeProject } from "./kacha_intelligence.mjs";
-import { initializeProject, projectStatus, runProject } from "./project_orchestrator.mjs";
+import { initializeProject } from "./project_orchestrator.mjs";
+import { createProjectTaskRunner } from "./studio_project_tasks.mjs";
 import {
   approveReleaseReview,
   initializeReleaseReview,
@@ -57,6 +58,7 @@ const skillRoot = path.resolve(scriptDirectory, "..");
 const studioRoot = path.join(skillRoot, "studio");
 const brandLogo = path.join(skillRoot, "assets", "brand", "kacha-logo.png");
 const MAX_BODY_BYTES = 1024 * 1024;
+const runProjectTask = createProjectTaskRunner();
 const editorSessions = new Map();
 const EDITOR_SESSION_LIMIT = 32;
 const EDITOR_SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
@@ -706,7 +708,11 @@ async function handleApi(request, response, url, port) {
     return;
   }
   if (pathname === "/api/project/status") {
-    json(response, 200, projectStatus(body.projectRoot));
+    json(response, 200, await runProjectTask("status", body.projectRoot));
+    return;
+  }
+  if (pathname === "/api/project/observe") {
+    json(response, 200, await runProjectTask("observe", body.projectRoot));
     return;
   }
   if (pathname === "/api/content/start") {
@@ -743,7 +749,7 @@ async function handleApi(request, response, url, port) {
     if (body.confirmExecute !== true) {
       throw new Error("执行或恢复项目必须显式设置 confirmExecute=true");
     }
-    json(response, 200, runProject(body.projectRoot, {
+    json(response, 200, await runProjectTask("run", body.projectRoot, {
       confirmExecute: true,
       resume: pathname.endsWith("/resume"),
       includeRender: body.includeRender === true,

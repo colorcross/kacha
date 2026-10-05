@@ -21,15 +21,19 @@
       <section class="hero">
         <div>
           <p class="eyebrow">RECOVERABLE PRODUCTION</p>
-          <h1>每次停下，<br /><span>都有清楚的下一步。</span></h1>
+          <h1>项目进度<span>与下一步</span></h1>
         </div>
         <div class="loader">
           <label for="projectRoot">项目目录</label>
-          <div><input id="projectRoot" autocomplete="off" placeholder="/absolute/project" /><button id="loadProject">读取</button></div>
-          <p id="loadStatus">只读取本机项目状态；素材不会上传。</p>
+          <div><input id="projectRoot" autocomplete="off" placeholder="/absolute/project" /><button id="observeProject">查看进度</button><button id="loadProject" class="secondary">核验并读取</button></div>
+          <p id="loadStatus" role="status">先查看进度；继续执行前核验素材与运行版本。素材不会上传。</p>
         </div>
       </section>
 
+      <section id="observationCard" class="observation-card" hidden aria-live="polite">
+        <p class="eyebrow">已记录进度 · 未核验</p><h2 id="observationTitle"></h2>
+        <p id="observationSummary"></p><p id="observationBoundary"></p><p id="observationWarnings"></p>
+      </section>
       <section id="projectShell" hidden>
         <div class="project-head">
           <div><p class="eyebrow" id="taskLabel">SOURCE EDIT</p><h2 id="projectId">—</h2><p id="projectPath">—</p></div>
@@ -46,7 +50,7 @@
           <div><p class="eyebrow">NEXT ACTION</p><h3 id="nextTitle">—</h3><p id="nextSummary">—</p></div>
           <div class="next-actions">
             <label><input id="includeRender" type="checkbox" /> 允许执行渲染引擎步骤</label>
-            <button id="runProject">确认并继续</button>
+            <button id="runProject" disabled>确认并继续</button>
             <button class="secondary" id="refreshProject">刷新状态</button>
           </div>
         </section>
@@ -83,7 +87,7 @@
         </section>
       </section>
     </main>
-    <div class="toast" id="toast" hidden></div>
+    <div class="toast" id="toast" role="status" hidden></div>
     <script type="module" src="/project.js"></script>
   </body>
 </html>

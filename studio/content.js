@@ -1,13 +1,9 @@
-import { studioHeaders, jsonErrorMessage } from "/shared.js";
+import { studioRequest } from "/shared.js";
 
 const $ = (id) => document.getElementById(id);
 let mode = "script";
-async function api(path, body) {
-  const response = await fetch(path, { method: "POST", headers: studioHeaders(), body: JSON.stringify(body) });
-  const value = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(jsonErrorMessage(value, response));
-  return value;
-}
+const api = (path, body) => studioRequest(path, { body });
+
 function toast(message, error = false) {
   const node = $("toast"); node.textContent = message; node.style.background = error ? "#9e3422" : "#1b1a17"; node.hidden = false;
   clearTimeout(toast.timer); toast.timer = setTimeout(() => { node.hidden = true; }, 4000);

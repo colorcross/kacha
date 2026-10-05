@@ -85,3 +85,14 @@ public/og.png            社交分享图
 - 能力数字必须带当前版本口径，并与 README 和真实测试一致；
 - 不把技术通过写成人工审片通过；
 - 社交分享图和 Logo 是项目资产，不得从官网源码中单独拆出另作品牌。
+
+### Build dependency boundary (2026-10-05)
+
+The Pages pipeline retains vinext/Vite. `vite-plugin-dynamic-import` only needs
+`fast-glob.sync(patterns, { cwd })`; that single dependency edge now resolves to
+`build/glob-adapter`, backed by pinned `tinyglobby`. This removes the unpatched
+`braces` dependency chain (GHSA-vfj7-8cjw-p6xm) instead of suppressing the audit.
+The adapter rejects unknown options so an upstream API expansion fails visibly.
+Extension braces, duplicate patterns, dotfiles, nested relative paths and empty
+matches are checked before both site builds. Keep this scoped override until the
+upstream plugin removes the affected chain; it is not a general fast-glob clone.

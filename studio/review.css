@@ -190,6 +190,7 @@ main { width: min(1720px, 94vw); margin: 0 auto; padding-bottom: 80px; }
 .release-loader .quiet { background: var(--paper); }
 .release-status { min-height: 20px; color: var(--muted); font-size: 12px; }
 .release-shell { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(420px, 1.2fr); border: 1px solid var(--line); background: #11110f; }
+.review-shell[hidden], .release-shell[hidden] { display: none !important; }
 .release-list { max-height: 650px; overflow: auto; border-right: 1px solid var(--line); }
 .release-item { width: 100%; min-height: 58px; padding: 11px 14px; display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; color: var(--ink); text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line); }
 .release-item:hover, .release-item.is-active { background: rgb(255 107 26 / 8%); }

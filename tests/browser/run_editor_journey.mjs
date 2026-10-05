@@ -36,6 +36,7 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   if (!ready) throw new Error(`Studio did not start: ${serverError}`);
+  process.stdout.write(execute(["tests/browser/studio_state_journey.mjs", origin, artifacts]));
   process.stdout.write(execute(["tests/browser/editor_v3_journey.mjs", origin, workspace, artifacts]));
 } finally {
   if (server && server.exitCode === null) {

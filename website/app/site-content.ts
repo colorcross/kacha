@@ -1,4 +1,5 @@
 import productTruth from "./product-truth.json";
+import releaseChannels from "../../config/release-channels.json";
 
 type Feature = {
   kicker: string;
@@ -429,7 +430,7 @@ export const zhContent: SiteContent = {
     copy: "复制安装命令",
     copied: "已复制",
     copyFailed: "复制失败，请手动复制",
-    note: "页面命令明确安装 canary（跟随 main）；需要稳定线时把 canary 改为 stable，当前 stable 仍为 v1.1.0。需要 Node.js 20+；完整媒体链路还需要 FFmpeg 与 FFprobe。安装器不会覆盖已有版本。",
+    note: `页面命令明确安装 canary（跟随 main）；需要稳定线时把 canary 改为 stable，当前 stable 仍为 ${releaseChannels.channels.stable.ref}。需要 Node.js 20+；完整媒体链路还需要 FFmpeg 与 FFprobe。安装器不会覆盖已有版本。`,
   },
   contact: {
     title: "看真实效果，或者直接联系我。",
@@ -743,7 +744,7 @@ export const enContent: SiteContent = {
     copy: "Copy install command",
     copied: "Copied",
     copyFailed: "Copy failed — select the command",
-    note: "This command explicitly installs canary (tracking main). Replace canary with stable for the release line, which currently remains v1.1.0. Requires Node.js 20+; the full media workflow also needs FFmpeg and FFprobe. The installer will not overwrite an existing version.",
+    note: `This command explicitly installs canary (tracking main). Replace canary with stable for the release line, which currently remains ${releaseChannels.channels.stable.ref}. Requires Node.js 20+; the full media workflow also needs FFmpeg and FFprobe. The installer will not overwrite an existing version.`,
   },
   contact: {
     title: "See real results or contact me directly.",

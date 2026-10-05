@@ -14,6 +14,9 @@ const state = {
   generatedProjectPath: null,
   preflight: null,
   preflightSignature: null,
+  probeGeneration: 0,
+  validationGeneration: 0,
+  generating: false,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -709,6 +712,7 @@ async function pickVideo() {
 }
 
 async function probeVideo() {
+  const generation = ++state.probeGeneration;
   const videoPath = $("videoPath").value.trim();
   if (!videoPath) {
     toast("请先选择或粘贴视频路径", true);
@@ -722,6 +726,7 @@ async function probeVideo() {
       method: "POST",
       body: JSON.stringify({ videoPath }),
     });
+    if (generation !== state.probeGeneration || videoPath !== $("videoPath").value.trim()) return;
     state.media = result.media;
     $("mediaGeometry").textContent = `${result.media.width} × ${result.media.height}`;
     $("mediaFps").textContent = `${result.media.fps.toFixed(3)} fps`;
@@ -740,11 +745,12 @@ async function probeVideo() {
     markContractDirty();
     toast("视频规格读取完成");
   } catch (error) {
+    if (generation !== state.probeGeneration || videoPath !== $("videoPath").value.trim()) return;
     state.media = null;
     $("sourceState").textContent = "读取失败";
     toast(error.message, true);
   } finally {
-    button.disabled = false;
+    if (generation === state.probeGeneration) button.disabled = false;
     updateSummary();
   }
 }
@@ -837,6 +843,7 @@ function payloadSignature(payload) {
 }
 
 async function validateProject({ announce = true } = {}) {
+  const generation = ++state.validationGeneration;
   const button = $("validateProject");
   button.disabled = true;
   button.textContent = "正在检查…";
@@ -846,6 +853,9 @@ async function validateProject({ announce = true } = {}) {
       method: "POST",
       body: JSON.stringify(payload),
     });
+    if (generation !== state.validationGeneration || payloadSignature(payload) !== payloadSignature(requestPayload())) {
+      throw new Error("配置已变化，请检查当前配置后再生成。");
+    }
     state.preflight = result;
     state.preflightSignature = payloadSignature(payload);
     $("preflightSummary").textContent =
@@ -857,16 +867,25 @@ async function validateProject({ announce = true } = {}) {
     if (announce) toast("配置检查通过，可以生成剪辑项目");
     return result;
   } catch (error) {
-    markContractDirty();
-    toast(error.message, true);
+    if (generation === state.validationGeneration) {
+      markContractDirty();
+      toast(error.message, true);
+    }
     throw error;
   } finally {
-    button.disabled = false;
-    button.textContent = "检查配置";
+    if (generation === state.validationGeneration) {
+      button.disabled = false;
+      button.textContent = "检查配置";
+    }
   }
 }
 
 async function generateProject() {
+  if (state.generating) return;
+  state.generating = true;
+  const main = document.querySelector("main");
+  main.inert = true;
+  main.setAttribute("aria-busy", "true");
   const button = $("generateProject");
   button.disabled = true;
   button.textContent = "正在冻结配置与素材身份…";
@@ -890,6 +909,9 @@ async function generateProject() {
   } finally {
     button.disabled = false;
     button.textContent = "生成剪辑项目";
+    state.generating = false;
+    main.inert = false;
+    main.setAttribute("aria-busy", "false");
   }
 }
 
@@ -1002,6 +1024,8 @@ $("validateProject").addEventListener("click", () => {
 });
 $("generateProject").addEventListener("click", generateProject);
 $("videoPath").addEventListener("input", () => {
+  state.probeGeneration++;
+  $("probeVideo").disabled = false;
   if (state.media?.path !== $("videoPath").value.trim()) {
     state.media = null;
     $("mediaStrip").classList.add("is-empty");

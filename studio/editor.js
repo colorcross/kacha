@@ -1,5 +1,5 @@
 const $ = (selector) => document.querySelector(selector);
-import { studioHeaders, jsonErrorMessage } from "/shared.js";
+import { studioRequest, trackPointer } from "/shared.js";
 
 const state = {
   project: null,
@@ -21,16 +21,7 @@ const state = {
   deliveryProfiles: null,
 };
 
-async function api(endpoint, body) {
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: studioHeaders(),
-    body: JSON.stringify(body),
-  });
-  const value = await response.json();
-  if (!response.ok || value.status === "blocked") throw new Error(jsonErrorMessage(value, response));
-  return value;
-}
+const api = (endpoint, body) => studioRequest(endpoint, { body, rejectBlocked: true });
 
 function setStatus(message, error = false) {
   $("#status").textContent = message;
@@ -273,9 +264,10 @@ function attachClipDrag(clip, item, lane) {
   for (const [handle, edge] of [[startHandle, "start"], [endHandle, "end"]]) {
     if (item.type === "sfx" || !item.editableFields.some((field) => field === `${edge}Tick` || field === `source${edge[0].toUpperCase()}${edge.slice(1)}Tick`)) continue;
     handle.addEventListener("pointerdown", (event) => {
+      if (event.isPrimary === false || event.button !== 0 || state.mutationInFlight) return;
       event.preventDefault(); event.stopPropagation(); selectItem(item.id);
       const originX = event.clientX; const originTick = edge === "start" ? item.startTick : item.endTick;
-      handle.setPointerCapture(event.pointerId);
+
       const move = (next) => {
         const tick = snapTick(originTick + (next.clientX - originX) / Math.max(1, lane.clientWidth) * projection().durationTick, new Set([item.id]));
         const left = edge === "start" ? tick : item.startTick; const right = edge === "end" ? tick : item.endTick;
@@ -293,19 +285,17 @@ function attachClipDrag(clip, item, lane) {
         if (tick !== originTick) runCommand({ itemId: item.id, operation: item.type === "picture" ? "ripple_trim" : "trim", arguments: { edge, outputTick: tick } }, item.type === "picture" ? `已波纹修剪 ${item.label}` : `已修剪 ${item.label}`);
       };
       const cancel = () => { cleanup(); delete clip.dataset.previewTick; renderTracks(); renderSelection(); };
-      handle.addEventListener("pointermove", move);
-      handle.addEventListener("pointerup", up);
-      handle.addEventListener("pointercancel", cancel);
+      trackPointer(handle, event, { move, commit: up, cancel });
     });
     clip.append(handle);
   }
   if (item.type === "picture" || !item.editableFields.some((field) => ["startTick", "targetLandingTick", "timeTick"].includes(field))) return;
   clip.addEventListener("pointerdown", (event) => {
-    if (event.target.classList.contains("trim-handle")) return;
+    if (event.target.classList.contains("trim-handle") || event.isPrimary === false || event.button !== 0 || state.mutationInFlight) return;
     event.preventDefault(); selectItem(item.id, event.shiftKey || event.metaKey);
     const movable = selectedItems().filter((candidate) => candidate.type !== "picture" && candidate.editableFields.some((field) => ["startTick", "targetLandingTick", "timeTick"].includes(field)));
     if (!movable.some((candidate) => candidate.id === item.id)) return;
-    const originX = event.clientX; let deltaTick = 0; clip.setPointerCapture(event.pointerId);
+    const originX = event.clientX; let deltaTick = 0;
     const move = (next) => {
       const raw = (next.clientX - originX) / Math.max(1, lane.clientWidth) * projection().durationTick;
       deltaTick = snapTick(item.startTick + raw, new Set(movable.map((candidate) => candidate.id))) - item.startTick;
@@ -325,9 +315,7 @@ function attachClipDrag(clip, item, lane) {
       if (deltaTick) runCommand({ operation: "move", arguments: { itemIds: movable.map((candidate) => candidate.id), deltaTick } }, `已移动 ${movable.length} 项`);
     };
     const cancel = () => cleanup();
-    clip.addEventListener("pointermove", move);
-    clip.addEventListener("pointerup", up);
-    clip.addEventListener("pointercancel", cancel);
+    trackPointer(clip, event, { move, commit: up, cancel });
   });
 }
 
@@ -370,7 +358,8 @@ function renderOverlayProjection() {
     box.style.left = `${currentX / outputWidth * width}px`; box.style.top = `${currentY / outputHeight * height}px`; box.style.width = `${Number(item.metadata.width) / outputWidth * width}px`; box.style.height = `${Number(item.metadata.height) / outputHeight * height}px`; box.style.opacity = String(item.metadata.opacity ?? 1);
     const resize = document.createElement("span"); resize.className = "resize-handle"; box.append(resize);
     const begin = (event, resizing) => {
-      event.preventDefault(); selectItem(item.id); const origin = { x: event.clientX, y: event.clientY, left: currentX, top: currentY, width: Number(item.metadata.width), height: Number(item.metadata.height) }; box.setPointerCapture(event.pointerId);
+      if (event.isPrimary === false || event.button !== 0 || state.mutationInFlight) return;
+      event.preventDefault(); selectItem(item.id); const origin = { x: event.clientX, y: event.clientY, left: currentX, top: currentY, width: Number(item.metadata.width), height: Number(item.metadata.height) };
       let changes = {};
       const move = (next) => {
         const dx = (next.clientX - origin.x) * outputWidth / Math.max(1, width); const dy = (next.clientY - origin.y) * outputHeight / Math.max(1, height);
@@ -400,9 +389,7 @@ function renderOverlayProjection() {
         }
       };
       const cancel = () => { cleanup(); renderOverlayProjection(); };
-      box.addEventListener("pointermove", move);
-      box.addEventListener("pointerup", up);
-      box.addEventListener("pointercancel", cancel);
+      trackPointer(box, event, { move, commit: up, cancel });
     };
     box.addEventListener("pointerdown", (event) => begin(event, event.target === resize)); layer.append(box);
   }

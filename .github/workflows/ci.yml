@@ -72,6 +72,42 @@ jobs:
       - name: Run workbench distribution tests
         run: node tests/workbench_distribution_tests.mjs
 
+  specialized:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Install media dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg jq fonts-noto-cjk fonts-dejavu-core
+          python3 -m pip install --user Pillow fonttools
+      - name: Check editorial, costs, runtime, preview, execution and recovery
+        run: make check-specialized
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Install media and browser test runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          npm install --prefix "$RUNNER_TEMP/kacha-browser" --no-save playwright@1.63.0
+          "$RUNNER_TEMP/kacha-browser/node_modules/.bin/playwright" install --with-deps chromium
+          browser_root="$RUNNER_TEMP/kacha-browser"
+          browser_module="$browser_root/node_modules/playwright/index.mjs"
+          echo "KACHA_PLAYWRIGHT_MODULE=$browser_module" >> "$GITHUB_ENV"
+      - name: Verify Studio state and editor journeys
+        run: make check-browser
+
   installer:
     runs-on: ubuntu-latest
     timeout-minutes: 10

@@ -1,30 +1,26 @@
 const $ = (id) => document.getElementById(id);
-import { studioHeaders, jsonErrorMessage } from "/shared.js";
+import { escapeHtml, studioRequest } from "/shared.js";
 
-const state = { status: null };
-const escapeHtml = (value) => String(value ?? "")
-  .replaceAll("&", "&amp;")
-  .replaceAll("<", "&lt;")
-  .replaceAll(">", "&gt;")
-  .replaceAll('"', "&quot;")
-  .replaceAll("'", "&#039;");
+const state = { status: null, busy: false, loadedPath: null };
+const api = (path, body) => studioRequest(path, { body });
+const getApi = (path) => studioRequest(path);
 
-async function api(path, body) {
-  const response = await fetch(path, {
-    method: "POST",
-    headers: studioHeaders(),
-    body: JSON.stringify(body),
-  });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(jsonErrorMessage(result, response, { includeStatus: true }));
-  return result;
+function updateControls() {
+  const matched = state.loadedPath === $("projectRoot").value.trim();
+  $("runProject").disabled = state.busy || !matched || !state.status?.nextAction
+    || state.status.nextAction.state === "blocked";
+  for (const id of ["loadProject", "observeProject", "refreshProject", "projectRoot", "includeRender"]) $(id).disabled = state.busy;
+  $("projectShell").setAttribute("aria-busy", String(state.busy));
 }
 
-async function getApi(path) {
-  const response = await fetch(path, { headers: { "X-Kacha-Studio": "1" } });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || `请求失败：${response.status}`);
-  return result;
+function invalidateProject() {
+  state.status = null;
+  state.loadedPath = null;
+  $("projectShell").hidden = true;
+  $("observationCard").hidden = true;
+  $("includeRender").checked = false;
+  $("loadStatus").textContent = "目录已变更，请读取当前项目。";
+  updateControls();
 }
 
 function toast(message, error = false) {
@@ -117,7 +113,7 @@ function render(status) {
 
   $("nextTitle").textContent = status.nextAction?.id?.replaceAll("_", " ") || "等待项目状态";
   $("nextSummary").textContent = status.nextAction?.summary || "当前没有可执行动作。";
-  $("runProject").disabled = status.nextAction?.state === "blocked";
+  updateControls();
 
   $("assetCard").hidden = !status.assetInbox;
   if (status.assetInbox) {
@@ -187,28 +183,49 @@ async function loadFlight(projectRoot) {
   }
 }
 
-async function loadProject({ quiet = false } = {}) {
+async function loadProject({ quiet = false, observe = false } = {}) {
+  if (state.busy) return;
   const projectRoot = $("projectRoot").value.trim();
-  if (!projectRoot) throw new Error("请填写项目目录");
-  $("loadProject").disabled = true;
-  $("loadStatus").textContent = "正在核对输入身份、运行版本和项目证据…";
+  if (!projectRoot.startsWith("/")) {
+    invalidateProject();
+    $("loadStatus").textContent = "请填写项目的绝对路径";
+    $("projectRoot").focus();
+    return;
+  }
+  invalidateProject();
+  state.busy = true;
+  updateControls();
+  $("loadStatus").textContent = observe ? "正在读取已记录进度…" : "正在核对输入身份、运行版本和项目证据…";
   try {
-    const status = await api("/api/project/status", { projectRoot });
-    render(status);
-    await loadFlight(projectRoot);
-    $("loadStatus").textContent = `已读取 · ${status.lifecycle.status}`;
-    if (!quiet) toast("项目状态已刷新");
+    const status = await api(observe ? "/api/project/observe" : "/api/project/status", { projectRoot });
+    if (observe) {
+      $("observationCard").hidden = false;
+      $("observationTitle").textContent = status.projectId || projectRoot;
+      $("observationSummary").textContent = `${status.progress.complete} / ${status.progress.total} 阶段已记录完成 · ${status.jobs.length} 个近期任务`;
+      $("observationBoundary").textContent = status.evidenceBoundary;
+      $("observationWarnings").textContent = (status.warnings ?? []).join(" · ");
+      $("loadStatus").textContent = "已读取进度；继续执行前请点击“核验并读取”。";
+    } else {
+      state.loadedPath = projectRoot;
+      render(status);
+      await loadFlight(status.projectRoot);
+      $("loadStatus").textContent = `已核验 · ${status.lifecycle.status}`;
+    }
+    if (!quiet) toast(observe ? "已读取进度，尚未核验执行条件" : "项目状态已刷新");
   } catch (error) {
+    invalidateProject();
     $("loadStatus").textContent = error.message;
     toast(error.message, true);
-  } finally { $("loadProject").disabled = false; }
+  } finally { state.busy = false; updateControls(); }
 }
 
 async function runCurrent() {
-  const projectRoot = $("projectRoot").value.trim();
-  if (!projectRoot) return;
+  if (state.busy || !state.status || state.loadedPath !== $("projectRoot").value.trim()
+      || !state.status.nextAction || state.status.nextAction.state === "blocked") return;
+  const projectRoot = state.status.projectRoot;
+  state.busy = true;
+  updateControls();
   const button = $("runProject");
-  button.disabled = true;
   button.textContent = "正在执行安全步骤…";
   try {
     const status = await api("/api/project/run", {
@@ -217,13 +234,21 @@ async function runCurrent() {
       includeRender: $("includeRender").checked,
     });
     render(status);
+    await loadFlight(projectRoot);
     toast("已保存执行状态；可随时退出后恢复");
-  } catch (error) { toast(error.message, true); }
-  finally { button.textContent = "确认并继续"; button.disabled = state.status?.nextAction?.state === "blocked"; }
+  } catch (error) {
+    invalidateProject();
+    $("loadStatus").textContent = `执行结果需重新核对：${error.message}`;
+    toast(error.message, true);
+  } finally { state.busy = false; button.textContent = "确认并继续"; updateControls(); }
 }
 
 const queryPath = new URLSearchParams(window.location.search).get("path");
-if (queryPath) { $("projectRoot").value = queryPath; loadProject({ quiet: true }); }
+if (queryPath) { $("projectRoot").value = queryPath; loadProject({ quiet: true, observe: true }); }
+$("projectRoot").addEventListener("input", invalidateProject);
+$("projectRoot").addEventListener("keydown", (event) => { if (event.key === "Enter") loadProject({ observe: true }); });
 $("loadProject").addEventListener("click", () => loadProject());
-$("refreshProject").addEventListener("click", () => loadProject());
+$("observeProject").addEventListener("click", () => loadProject({ observe: true }));
+$("refreshProject").addEventListener("click", () => loadProject({ observe: true }));
 $("runProject").addEventListener("click", runCurrent);
+updateControls();

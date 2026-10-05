@@ -1,7 +1,7 @@
-.PHONY: check-static check-targeted check-core check-full check-website check-browser
+.PHONY: check-static check-targeted check-core check-full check-website check-browser check-specialized
 
 check-static:
-	find scripts tests hooks -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
+	find scripts tests hooks studio -type f \( -name '*.mjs' -o -name '*.js' \) -print0 | xargs -0 -n1 node --check
 	find scripts -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
 	python3 -m py_compile scripts/*.py
 	python3 scripts/scan_secrets.py
@@ -16,7 +16,8 @@ check-targeted: check-static
 check-core:
 	node tests/run_tests.mjs --suite core
 
-check-full: check-static
+check-specialized:
+	node tests/studio_reliability_tests.mjs
 	node tests/dahui_editorial_tests.mjs
 	node tests/dahui_review_tests.mjs
 	node tests/audio_fallback_review_tests.mjs
@@ -27,6 +28,8 @@ check-full: check-static
 	node tests/optimization_execution_tests.mjs
 	node tests/optimization_render_tests.mjs
 	node tests/job_reliability_tests.mjs
+
+check-full: check-static check-specialized
 	node tests/run_tests.mjs
 	node tests/mcp_server_tests.mjs
 	node tests/workbench_distribution_tests.mjs
