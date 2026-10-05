@@ -44,3 +44,5 @@ CI浏览器环境常量触发本地secret scanner高熵误报，改为分步构�
 最终本地 `make check-full` 退出0，包含安装器重复安装不覆盖/渠道/hook验证。提交前fetch：已有基础提交40b9791、543e03b尚未推送，本轮优化基于它们，完整回归覆盖该组合；快进推送保留历史。原九份未提交栏目文档与开工快照逐字节一致，不进入本轮候选。
 
 远端复验追加：首次新增specialized作业缺少Linux的rsvg-convert，渲染专项在启动SVG转换器时失败；为该作业补齐与现有渲染回归一致的librsvg2-bin依赖。保留渲染测试，修复后以新提交重新运行CI、部署和安装读回。
+
+干净安装复验追加：macOS字体回退测试夹具遗漏当前正文/强调角色，原仓库父级Fonts会掩盖缺项；让fc-list与system_profiler模拟共享完整字体及别名，在无外部Fonts候选中定向复验。生产代码在缺字体时仍如实返回warnings，不放宽验证。另核对既有macOS定时检查失败日志，确认Homebrew普通ffmpeg缺libass；该作业改装包含libass的ffmpeg-full并显式加入PATH，保持字幕渲染能力门禁。参考：https://formulae.brew.sh/formula/ffmpeg-full 。

@@ -21,7 +21,8 @@ jobs:
 
       - name: Install native media dependencies
         run: |
-          brew install ffmpeg jq librsvg
+          brew install ffmpeg-full jq librsvg
+          echo "$(brew --prefix ffmpeg-full)/bin" >> "$GITHUB_PATH"
           python3 -m venv "$RUNNER_TEMP/kacha-python"
           "$RUNNER_TEMP/kacha-python/bin/python" -m pip install --upgrade pip
           "$RUNNER_TEMP/kacha-python/bin/python" -m pip install Pillow fonttools

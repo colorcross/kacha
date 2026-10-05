@@ -165,6 +165,13 @@ function expectFailure(command, args) {
   return result;
 }
 
+const deterministicDesignFontFamilies = [
+  "青鸟华光标题黑体", "华光标题黑", "JBHGBTH",
+  "方正粗金陵简体", "FZJinLS-B-GB",
+  "思源黑体 CN Light", "Source Han Sans CN Light",
+  "Aa封神榜书", "AaFSBS", "Avenir Next",
+];
+
 async function withDeterministicDesignFonts(callback) {
   const fontProbeBin = path.join(temporary, "deterministic-design-fonts");
   const fontProbe = path.join(fontProbeBin, "fc-list");
@@ -173,10 +180,8 @@ async function withDeterministicDesignFonts(callback) {
     fontProbe,
     "#!/bin/sh\n"
       + "printf '%s\\n' "
-      + "'青鸟华光标题黑体' 'JBHGBTH' "
-      + "'方正粗金陵简体' 'FZJinLS-B-GB' "
-      + "'思源黑体 CN Light' 'Source Han Sans CN Light' "
-      + "'Aa封神榜书' 'AaFSBS'\n",
+      + deterministicDesignFontFamilies.map((family) => `'${family}'`).join(" ")
+      + "\n",
   );
   fs.chmodSync(fontProbe, 0o755);
   const previousPath = process.env.PATH;
@@ -1506,9 +1511,7 @@ await test("video design system validates, resolves every mode and renders produ
       profiler,
       "#!/bin/sh\n"
         + "printf '%s\\n' "
-        + "'{\"SPFontsDataType\":[{\"_name\":\"华光标题黑\"},"
-        + "{\"_name\":\"方正粗金陵简体\"},{\"_name\":\"FZJinLS-B-GB\"},"
-        + "{\"_name\":\"Avenir Next\"}]}'\n",
+        + `'${JSON.stringify({ SPFontsDataType: deterministicDesignFontFamilies.map((family) => ({ _name: family })) })}'\n`,
     );
     fs.chmodSync(profiler, 0o755);
     const fallbackProbe = run(process.execPath, [
