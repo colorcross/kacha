@@ -83,7 +83,7 @@ jobs:
       - name: Install media dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg jq fonts-noto-cjk fonts-dejavu-core
+          sudo apt-get install -y ffmpeg jq librsvg2-bin fonts-noto-cjk fonts-dejavu-core
           python3 -m pip install --user Pillow fonttools
       - name: Check editorial, costs, runtime, preview, execution and recovery
         run: make check-specialized
