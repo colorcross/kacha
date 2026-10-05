@@ -99,6 +99,7 @@ archive_paths() {
     cd "$root"
     find . \
       \( -name .git -o -name node_modules -o -name .next \
+        -o -name .venv -o -name __pycache__ \
         -o -name .open-next -o -name .wrangler -o -name dist \) -prune \
       -o \( -type f -o -type l \) -print0
   )
@@ -108,6 +109,8 @@ mkdir -p "$source_clone/kacha-fixture"
 archive_paths \
   | tar -cf - -C "$root" --null -T - \
   | tar -xf - -C "$source_clone/kacha-fixture"
+[[ ! -e "$source_clone/kacha-fixture/scripts/whiteboard_engine/.venv" ]]
+[[ ! -e "$source_clone/kacha-fixture/scripts/whiteboard_engine/__pycache__" ]]
 tar -czf "$archive" -C "$source_clone" kacha-fixture
 
 local_plan=$(HOME="$test_home" "$root/scripts/install.sh" \

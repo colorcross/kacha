@@ -46,3 +46,5 @@ CI浏览器环境常量触发本地secret scanner高熵误报，改为分步构�
 远端复验追加：首次新增specialized作业缺少Linux的rsvg-convert，渲染专项在启动SVG转换器时失败；为该作业补齐与现有渲染回归一致的librsvg2-bin依赖。保留渲染测试，修复后以新提交重新运行CI、部署和安装读回。
 
 干净安装复验追加：macOS字体回退测试夹具遗漏当前正文/强调角色，原仓库父级Fonts会掩盖缺项；让fc-list与system_profiler模拟共享完整字体及别名，在无外部Fonts候选中定向复验。生产代码在缺字体时仍如实返回warnings，不放宽验证。另核对既有macOS定时检查失败日志，确认Homebrew普通ffmpeg缺libass；该作业改装包含libass的ffmpeg-full并显式加入PATH，保持字幕渲染能力门禁。参考：https://formulae.brew.sh/formula/ffmpeg-full 。
+
+安装资源复验追加：无.git的验证bundle在制作安装测试档案时，把白板测试刚引导的Python虚拟环境与缓存重复归档，低磁盘环境下导致验证失败。安装测试的fallback归档现在排除.venv和__pycache__，并断言白板运行时不进入fixture，保持与Git忽略规则及最终安装包的边界一致。源媒体和用户环境不做清理；本次余下临时验证使用独立临时目录，安装仍须通过完整门禁。
