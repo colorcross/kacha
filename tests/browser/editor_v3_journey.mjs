@@ -6,7 +6,7 @@ import path from "node:path";
 const modulePath = process.env.KACHA_PLAYWRIGHT_MODULE;
 const origin = process.argv[2];
 const workspacePath = process.argv[3];
-const artifactDirectory = process.argv[4];
+const artifactDirectory = process.argv[4] ? path.resolve(process.argv[4]) : null;
 if (!modulePath || !origin || !workspacePath || !artifactDirectory) {
   throw new Error("usage: KACHA_PLAYWRIGHT_MODULE=... node editor_v3_journey.mjs ORIGIN WORKSPACE ARTIFACT_DIR");
 }

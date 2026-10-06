@@ -893,6 +893,10 @@ async function handleApi(request, response, url, port) {
       json(response, 200, listDeliveryProfiles());
       return;
     }
+    if (["/api/editor/delivery-plan", "/api/editor/delivery-bundle", "/api/editor/nle-export"].includes(pathname)
+      && (typeof body.outputPath !== "string" || !path.isAbsolute(body.outputPath))) {
+      throw new Error("交付输出路径必须是非空绝对路径");
+    }
     if (pathname === "/api/editor/delivery-plan") {
       assertEditorSourceCurrent(session);
       json(response, 201, createDeliveryPlan(session.timelinePath, body.profileId, body.outputPath));

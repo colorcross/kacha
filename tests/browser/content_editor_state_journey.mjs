@@ -108,6 +108,17 @@ try {
     await route.fulfill({ json: { status: 'pass', plan: { path: '/fixture/current-plan.json' } } });
   });
   await page.locator('#deliveryButton').click();
+  await page.locator('#deliveryOutput').fill('relative-final.mp4');
+  await page.locator('#deliveryPlanForm button').click();
+  await page.locator('#deliveryStatus').filter({ hasText: '绝对路径' }).waitFor();
+  assert.equal(exports, 0, 'UI must reject relative output before submitting');
+  const headers = { Origin: origin, 'X-Kacha-Studio': '1', 'Content-Type': 'application/json' };
+  const opened = await (await fetch(`${origin}/api/editor/open`, { method: 'POST', headers, body: JSON.stringify({ timelinePath: workspacePath }) })).json();
+  for (const endpoint of ['delivery-plan', 'delivery-bundle', 'nle-export']) {
+    const rejected = await fetch(`${origin}/api/editor/${endpoint}`, { method: 'POST', headers, body: JSON.stringify({ sessionId: opened.browserSessionId, outputPath: 'relative-final.mp4', profileId: 'wechat-channels', format: 'otio' }) });
+    assert.equal(rejected.status, 400); assert.match((await rejected.json()).error, /绝对路径/);
+  }
+  checks.push('relative-delivery-destinations-rejected-by-ui-and-all-three-http-routes');
   await page.locator('#deliveryOutput').fill('/fixture/final.mp4');
   await page.locator('#deliveryPlanForm button').click(); await exportArrived.promise;
   await page.locator('#deliveryPlanForm').evaluate(form => form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));

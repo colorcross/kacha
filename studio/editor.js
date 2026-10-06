@@ -675,6 +675,9 @@ async function writeEditorArtifact(endpoint, body) {
   if (!state.sessionId || state.mutationInFlight || state.openingInFlight) {
     throw new Error("请等当前操作完成后再提交。未重复写入。");
   }
+  if (endpoint !== "/api/editor/workspace-duplicate" && !/^(?:\/|[A-Za-z]:[\\/]|\\\\)/.test(body.outputPath ?? "")) {
+    throw new Error("交付输出路径必须是非空绝对路径");
+  }
   const sessionId = state.sessionId;
   const generation = state.openGeneration;
   state.mutationInFlight = true; setOperationLock(true);
