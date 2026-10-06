@@ -40,10 +40,10 @@
   },
   "overrides": {
     "next": {
-      "postcss": "8.5.24",
-      "sharp": "0.35.4"
+      "postcss": "8.5.24"
     },
-    "fast-glob": "$fast-glob"
+    "fast-glob": "$fast-glob",
+    "sharp": "0.35.5"
   },
   "type": "module"
 }

@@ -10476,7 +10476,9 @@ await test("V6 review workbench is local-only and exposes the new review assets"
     || !projectHtml.includes("QUALITY-PRESERVING EFFICIENCY · V8")
     || !projectJs.includes("/api/project/run")
     || !projectJs.includes("renderEfficiency")
-    || !contentHtml.includes("还没有视频")
+    || !contentHtml.includes('id="contentForm"')
+    || !contentHtml.includes('id="scriptPath"')
+    || !contentHtml.includes('id="topic"')
     || !editorJs.includes("if (!current) {")
     || !css.includes("--signal: #ff6b1a")
   ) throw new Error("V7 local project and unified review workbench contract is incomplete");

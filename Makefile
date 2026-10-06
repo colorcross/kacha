@@ -18,6 +18,8 @@ check-core:
 
 check-specialized:
 	node tests/studio_reliability_tests.mjs
+	node tests/studio_media_tests.mjs
+	node tests/studio_task_api_tests.mjs
 	node tests/dahui_editorial_tests.mjs
 	node tests/dahui_review_tests.mjs
 	node tests/audio_fallback_review_tests.mjs

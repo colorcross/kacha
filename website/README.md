@@ -49,6 +49,8 @@ npm run audit:dependencies
 测试与隐私扫描。当前 lint 使用 Oxlint；生产依赖必须保持 `0 vulnerabilities`。
 生产与开发依赖均须通过 `scripts/audit-dependencies.mjs` 的零漏洞检查。已升级到
 vinext 1.0.0-beta.9，移除旧 image-size 例外；任何新增漏洞或审计失败都会阻断。
+Sharp 统一固定到 0.35.5，覆盖 Next 与 Miniflare 链的
+[GHSA-wq5f-xc86-pv6w](https://github.com/advisories/GHSA-wq5f-xc86-pv6w) 修复；不对受影响依赖加审计豁免。
 Pages 打包同时验证新版 `/_next/static/` 和兼容的 `/assets/` 路径。
 
 首页的“五种剪辑语法”区块直接对应

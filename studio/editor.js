@@ -13,6 +13,7 @@ const state = {
   pendingInTick: null,
   eventSource: null,
   mutationInFlight: false,
+  openingInFlight: false,
   openGeneration: 0,
   projectGeneration: 0,
   binGeneration: 0,
@@ -238,7 +239,7 @@ function renderSelection() {
 
 async function runCommand(command, successMessage) {
   if (!projection()) return;
-  if (state.mutationInFlight) { setStatus("上一个编辑命令尚未完成。", true); return; }
+  if (state.mutationInFlight || state.openingInFlight) { setStatus("上一个编辑命令尚未完成。", true); return; }
   const sessionId = state.sessionId;
   state.mutationInFlight = true;
   try {
@@ -264,7 +265,7 @@ function attachClipDrag(clip, item, lane) {
   for (const [handle, edge] of [[startHandle, "start"], [endHandle, "end"]]) {
     if (item.type === "sfx" || !item.editableFields.some((field) => field === `${edge}Tick` || field === `source${edge[0].toUpperCase()}${edge.slice(1)}Tick`)) continue;
     handle.addEventListener("pointerdown", (event) => {
-      if (event.isPrimary === false || event.button !== 0 || state.mutationInFlight) return;
+      if (event.isPrimary === false || event.button !== 0 || state.mutationInFlight || state.openingInFlight) return;
       event.preventDefault(); event.stopPropagation(); selectItem(item.id);
       const originX = event.clientX; const originTick = edge === "start" ? item.startTick : item.endTick;
 
@@ -291,7 +292,7 @@ function attachClipDrag(clip, item, lane) {
   }
   if (item.type === "picture" || !item.editableFields.some((field) => ["startTick", "targetLandingTick", "timeTick"].includes(field))) return;
   clip.addEventListener("pointerdown", (event) => {
-    if (event.target.classList.contains("trim-handle") || event.isPrimary === false || event.button !== 0 || state.mutationInFlight) return;
+    if (event.target.classList.contains("trim-handle") || event.isPrimary === false || event.button !== 0 || state.mutationInFlight || state.openingInFlight) return;
     event.preventDefault(); selectItem(item.id, event.shiftKey || event.metaKey);
     const movable = selectedItems().filter((candidate) => candidate.type !== "picture" && candidate.editableFields.some((field) => ["startTick", "targetLandingTick", "timeTick"].includes(field)));
     if (!movable.some((candidate) => candidate.id === item.id)) return;
@@ -358,7 +359,7 @@ function renderOverlayProjection() {
     box.style.left = `${currentX / outputWidth * width}px`; box.style.top = `${currentY / outputHeight * height}px`; box.style.width = `${Number(item.metadata.width) / outputWidth * width}px`; box.style.height = `${Number(item.metadata.height) / outputHeight * height}px`; box.style.opacity = String(item.metadata.opacity ?? 1);
     const resize = document.createElement("span"); resize.className = "resize-handle"; box.append(resize);
     const begin = (event, resizing) => {
-      if (event.isPrimary === false || event.button !== 0 || state.mutationInFlight) return;
+      if (event.isPrimary === false || event.button !== 0 || state.mutationInFlight || state.openingInFlight) return;
       event.preventDefault(); selectItem(item.id); const origin = { x: event.clientX, y: event.clientY, left: currentX, top: currentY, width: Number(item.metadata.width), height: Number(item.metadata.height) };
       let changes = {};
       const move = (next) => {
@@ -420,6 +421,7 @@ function updateDeliveryGuide() {
 
 function renderProject(project) {
   if (state.project?.session?.currentSha256 !== project.session?.currentSha256) {
+    clearTimeout(realPreviewTimer); realPreviewGeneration += 1;
     $("#realPreviewVideo").pause(); $("#realPreviewVideo").hidden = true;
     $("#realPreviewStatus").textContent = "时间线已更新，可生成当前版本预览";
   }
@@ -507,8 +509,16 @@ function loadWaveform() {
 }
 
 async function openProjectPath(timelinePath, timelineId = null) {
-  if (state.mutationInFlight) { setStatus("请等当前编辑命令完成后再打开新 Timeline。", true); return; }
+  if (state.mutationInFlight || state.openingInFlight) { setStatus("请等当前编辑命令完成后再打开新 Timeline。", true); return; }
   const generation = ++state.openGeneration;
+  state.openingInFlight = true;
+  setOperationLock(true);
+  state.eventSource?.close();
+  state.projectGeneration += 1; state.binGeneration += 1;
+  $("#video").pause(); $("#realPreviewVideo").pause();
+  $("#realPreviewVideo").hidden = true;
+  clearTimeout(realPreviewTimer); realPreviewGeneration += 1;
+  $("#deliveryStatus").textContent = "打开项目后可生成交付计划或交换候选。";
   for (const id of ["#capabilitiesButton", "#deliveryButton", "#activityButton"]) $(id).disabled = true;
   setStatus("正在验证 Timeline IR、源媒体身份、时间基和编辑历史……");
   try {
@@ -528,7 +538,18 @@ async function openProjectPath(timelinePath, timelineId = null) {
     $("#capabilitiesButton").disabled = false; $("#deliveryButton").disabled = false;
     refreshActivity().catch(() => {});
     setStatus(`已打开 ${result.projection.projectId}。选择片段可以调整，预览供校正参考。`);
-  } catch (error) { if (generation === state.openGeneration) setStatus(error.message, true); }
+  } catch (error) {
+    if (generation === state.openGeneration) {
+      state.project = null; state.sessionId = null; state.workspace = null;
+      state.projectGeneration += 1; state.binGeneration += 1;
+      state.eventSource?.close();
+      $("#workspace").hidden = true;
+      for (const id of ["#video", "#realPreviewVideo"]) { $(id).removeAttribute("src"); $(id).load(); }
+      setStatus(error.message, true);
+    }
+  } finally {
+    if (generation === state.openGeneration) { state.openingInFlight = false; setOperationLock(false); }
+  }
 }
 
 $("#openForm").addEventListener("submit", async (event) => {
@@ -554,7 +575,7 @@ $("#inspector").addEventListener("submit", (event) => {
 });
 
 for (const [selector, endpoint] of [["#undoButton", "undo"], ["#redoButton", "redo"]]) $(selector).onclick = async () => {
-  if (state.mutationInFlight) { setStatus("上一个编辑命令尚未完成。", true); return; }
+  if (state.mutationInFlight || state.openingInFlight) { setStatus("上一个编辑命令尚未完成。", true); return; }
   const sessionId = state.sessionId;
   state.mutationInFlight = true;
   try {
@@ -612,7 +633,7 @@ window.addEventListener("resize", () => { renderOverlayProjection(); updateDeliv
 window.addEventListener("beforeunload", () => state.eventSource?.close());
 window.addEventListener("keydown", (event) => {
   const target = document.activeElement;
-  if (!projection() || event.defaultPrevented || event.isComposing || event.repeat
+  if (state.openingInFlight || state.mutationInFlight || !projection() || event.defaultPrevented || event.isComposing || event.repeat
     || target?.closest('input, select, textarea, [contenteditable]:not([contenteditable="false"]), dialog[open], [role="dialog"]')
     || document.querySelector("dialog[open]")) return;
   const modified = event.metaKey || event.ctrlKey || event.altKey;
@@ -645,11 +666,30 @@ $("#duplicateTimelineButton").onclick = () => {
   $("#duplicateDialog").showModal();
 };
 $("#closeDuplicateDialog").onclick = () => $("#duplicateDialog").close();
+function setOperationLock(locked) {
+  for (const id of ["#workspace", "#openForm", "#duplicateForm"]) $(id).inert = locked;
+  $("#workspace").setAttribute("aria-busy", String(locked));
+}
+
+async function writeEditorArtifact(endpoint, body) {
+  if (!state.sessionId || state.mutationInFlight || state.openingInFlight) {
+    throw new Error("请等当前操作完成后再提交。未重复写入。");
+  }
+  const sessionId = state.sessionId;
+  const generation = state.openGeneration;
+  state.mutationInFlight = true; setOperationLock(true);
+  try {
+    const result = await api(endpoint, { ...body, sessionId });
+    if (state.sessionId !== sessionId || state.openGeneration !== generation) throw new Error("项目已变化，请重新读取交付结果。");
+    return result;
+  } finally { state.mutationInFlight = false; setOperationLock(false); }
+}
+
 $("#duplicateForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
     const newTimelineId = $("#duplicateId").value.trim();
-    const result = await api("/api/editor/workspace-duplicate", {
+    const result = await writeEditorArtifact("/api/editor/workspace-duplicate", {
       sessionId: state.sessionId, expectedWorkspaceSha256: state.workspace.workspace.sha256,
       newTimelineId, label: $("#duplicateLabel").value.trim(), outputPath: $("#duplicatePath").value.trim(),
       width: $("#duplicateWidth").valueAsNumber, height: $("#duplicateHeight").valueAsNumber, role: $("#duplicateRole").value,
@@ -662,21 +702,21 @@ $("#duplicateForm").addEventListener("submit", async (event) => {
 $("#deliveryPlanForm").addEventListener("submit", async (event) => {
   event.preventDefault(); const status = $("#deliveryStatus");
   try {
-    const result = await api("/api/editor/delivery-plan", { sessionId: state.sessionId, profileId: $("#deliveryProfile").value, outputPath: $("#deliveryOutput").value.trim() });
+    const result = await writeEditorArtifact("/api/editor/delivery-plan", { sessionId: state.sessionId, profileId: $("#deliveryProfile").value, outputPath: $("#deliveryOutput").value.trim() });
     status.classList.remove("error"); status.textContent = `交付计划已写入 ${result.plan.path}；还未渲染成片。`;
   } catch (error) { status.classList.add("error"); status.textContent = error.message; }
 });
 $("#nleExportForm").addEventListener("submit", async (event) => {
   event.preventDefault(); const status = $("#deliveryStatus");
   try {
-    const result = await api("/api/editor/nle-export", { sessionId: state.sessionId, format: $("#nleFormat").value, outputPath: $("#nleOutput").value.trim() });
+    const result = await writeEditorArtifact("/api/editor/nle-export", { sessionId: state.sessionId, format: $("#nleFormat").value, outputPath: $("#nleOutput").value.trim() });
     status.classList.remove("error"); status.textContent = `NLE 交换候选已写入 ${result.output.path}；需在目标 NLE 真实导入验证。`;
   } catch (error) { status.classList.add("error"); status.textContent = error.message; }
 });
 $("#bundleForm").addEventListener("submit", async (event) => {
   event.preventDefault(); const status = $("#deliveryStatus");
   try {
-    const result = await api("/api/editor/delivery-bundle", { sessionId: state.sessionId, outputPath: $("#bundleOutput").value.trim(), includeMedia: $("#bundleMedia").checked });
+    const result = await writeEditorArtifact("/api/editor/delivery-bundle", { sessionId: state.sessionId, outputPath: $("#bundleOutput").value.trim(), includeMedia: $("#bundleMedia").checked });
     status.classList.remove("error"); status.textContent = `工程包已写入 ${result.output}；状态 ${result.status}。`;
   } catch (error) { status.classList.add("error"); status.textContent = error.message; }
 });
@@ -690,9 +730,10 @@ $("#realPreviewButton").addEventListener("click", () => {
   clearTimeout(realPreviewTimer);
   const generation = ++realPreviewGeneration;
   realPreviewTimer = setTimeout(async () => {
-    if (!state.project || !state.sessionId) return;
+    if (!state.project || !state.sessionId || state.openingInFlight || state.mutationInFlight || generation !== realPreviewGeneration) return;
     const sessionId = state.sessionId, revision = state.project.session.currentSha256;
     const current = () => generation === realPreviewGeneration && sessionId === state.sessionId && revision === state.project?.session?.currentSha256;
+    if (!current()) return;
     const duration = ticksToSeconds(projection().durationTick);
     const start = Math.max(0, ticksToSeconds(state.outputTick) - 2), end = Math.min(duration, start + 8);
     $("#realPreviewVideo").pause(); $("#realPreviewVideo").hidden = true;

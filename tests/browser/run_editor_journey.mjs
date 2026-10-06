@@ -25,7 +25,7 @@ try {
   execute(["examples/first-run/demo.mjs", "--output-dir", temporary]);
   const workspace = path.join(temporary, "workspace.json");
   execute(["scripts/kacha.mjs", "workspace", "create", "--output", workspace, "--timeline", path.join(temporary, "timeline.json")]);
-  server = spawn(process.execPath, ["scripts/kacha.mjs", "studio", "serve", "--port", String(port)], { cwd: root, stdio: ["ignore", "ignore", "pipe"], detached: process.platform !== "win32" });
+  server = spawn(process.execPath, ["scripts/kacha.mjs", "studio", "serve", "--port", String(port), "--no-open"], { cwd: root, stdio: ["ignore", "ignore", "pipe"], detached: process.platform !== "win32" });
   let serverError = "";
   server.stderr.on("data", (chunk) => { serverError = (serverError + chunk).slice(-8000); });
   const origin = `http://127.0.0.1:${port}`;
@@ -37,6 +37,7 @@ try {
   }
   if (!ready) throw new Error(`Studio did not start: ${serverError}`);
   process.stdout.write(execute(["tests/browser/studio_state_journey.mjs", origin, artifacts]));
+  process.stdout.write(execute(["tests/browser/content_editor_state_journey.mjs", origin, workspace, artifacts]));
   process.stdout.write(execute(["tests/browser/editor_v3_journey.mjs", origin, workspace, artifacts]));
 } finally {
   if (server && server.exitCode === null) {

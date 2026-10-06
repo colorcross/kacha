@@ -21,7 +21,7 @@ try {
   fs.writeFileSync(worker, `import {parentPort,workerData} from 'node:worker_threads';
     if(workerData.options.fail) process.exit(2);
     const end=Date.now()+200;while(Date.now()<end){};
-    parentPort.postMessage({value:{status:'pass'}});`);
+    parentPort.postMessage({value:{status:'pass',projectRoot:workerData.projectRoot}});`);
   const bounded = createProjectTaskRunner({ limit: 1, workerUrl: pathToFileURL(worker) });
   const first = bounded('status', project);
   const alias = path.join(root, 'alias'); fs.symlinkSync(project, alias, 'dir');
@@ -33,6 +33,30 @@ try {
   await first;
   await assert.rejects(bounded('status', project, { fail: true }), /异常退出/);
   await bounded('status', project);
+  const media = path.join(root, 'source.mp4'); fs.writeFileSync(media, 'fixture');
+  const probe = bounded('probe', media);
+  assert.throws(() => bounded('compile', media), error => error.statusCode === 409);
+  assert.throws(() => bounded('content-start', path.join(root, 'new-project')), error => error.statusCode === 409);
+  await probe;
+  const directoryAlias = path.join(root, 'root-alias'); fs.symlinkSync(root, directoryAlias, 'dir');
+  const creating = bounded('content-start', path.join(root, 'new-project'));
+  assert.throws(() => bounded('content-start', path.join(directoryAlias, 'new-project')), error => error.statusCode === 409);
+  await creating;
+  await assert.rejects(run('content-start', path.join(root, 'invalid-content'), { topic: 'test', show: 'ai-practice', style: 'xingzhe-dark-tech' }), /不匹配/);
+  assert.equal(fs.existsSync(path.join(root, 'invalid-content')), false);
+  const media2 = path.join(root, 'source2.mp4'); fs.writeFileSync(media2, 'fixture');
+  const outputBounded = createProjectTaskRunner({ limit: 2, workerUrl: pathToFileURL(worker) });
+  const mediaAlias = path.join(root, 'selected-name.mp4'); fs.symlinkSync(media, mediaAlias);
+  const throughAlias = outputBounded('probe', mediaAlias);
+  assert.throws(() => outputBounded('probe', media), error => error.statusCode === 409);
+  assert.equal((await throughAlias).projectRoot, mediaAlias, 'execution retains the selected media path');
+  const compile = outputBounded('compile', media, { outputDirectory: path.join(root, 'new-output') });
+  assert.throws(() => outputBounded('compile', media2, { outputDirectory: path.join(directoryAlias, 'new-output') }), error => error.statusCode === 409);
+  await outputBounded('probe', media2); // Two resource locks still occupy just one worker slot.
+  await compile;
+  await outputBounded('compile', media2, { outputDirectory: path.join(root, 'new-output') });
+  checked.push('shared-output-alias-exclusion-and-worker-slot-accounting');
+  checked.push('cross-task-capacity-media-exclusion-and-uncreated-path-aliases');
   checked.push('canonical-project-exclusion-bounded-concurrency-event-loop-and-exit-recovery');
   const originalFetch = globalThis.fetch;
   try {

@@ -1,0 +1,7 @@
+/* The same destinations and current-page cue on every Studio surface. */
+nav.studio-navigation { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+nav.studio-navigation a { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px; color: var(--muted); font-size: 13px; text-decoration: none; white-space: nowrap; box-sizing: border-box; }
+nav.studio-navigation a[aria-current="page"] { color: var(--ink); font-weight: 700; text-decoration: underline; text-underline-offset: 6px; }
+nav.studio-navigation a:hover { color: var(--ink); }
+nav.studio-navigation a:focus-visible { outline: 2px solid var(--signal, #ed6035); outline-offset: 2px; }
+@media (max-width: 620px) { nav.studio-navigation { gap: 0; } nav.studio-navigation a { padding: 8px 6px; } }

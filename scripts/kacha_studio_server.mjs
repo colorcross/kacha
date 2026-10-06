@@ -7,8 +7,6 @@ import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import {
-  compileProductionRequest,
-  inspectProductionVideo,
   loadProductionCatalog,
   saveCustomStyle,
 } from "./kacha_studio.mjs";
@@ -22,8 +20,7 @@ import {
   resolveReviewMedia,
 } from "./kacha_review.mjs";
 import { observeProject } from "./kacha_intelligence.mjs";
-import { initializeProject } from "./project_orchestrator.mjs";
-import { createProjectTaskRunner } from "./studio_project_tasks.mjs";
+import { createStudioTaskRunner } from "./studio_project_tasks.mjs";
 import {
   approveReleaseReview,
   initializeReleaseReview,
@@ -58,7 +55,7 @@ const skillRoot = path.resolve(scriptDirectory, "..");
 const studioRoot = path.join(skillRoot, "studio");
 const brandLogo = path.join(skillRoot, "assets", "brand", "kacha-logo.png");
 const MAX_BODY_BYTES = 1024 * 1024;
-const runProjectTask = createProjectTaskRunner();
+const runStudioTask = createStudioTaskRunner();
 const editorSessions = new Map();
 const EDITOR_SESSION_LIMIT = 32;
 const EDITOR_SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
@@ -490,81 +487,92 @@ function serveFile(response, file) {
   response.end(body);
 }
 
-function serveMedia(request, response, media) {
+export function serveMedia(request, response, media) {
   const flags = fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0);
   const descriptor = fs.openSync(media.path, flags);
-  const stat = fs.fstatSync(descriptor);
-  if (
-    !stat.isFile()
-    || stat.size !== Number(media.identity.sizeBytes)
-    || Math.abs(Math.trunc(stat.mtimeMs) - Number(media.identity.mtimeMs)) > 1
-    || Math.abs(Math.trunc(stat.ctimeMs) - Number(media.identity.ctimeMs)) > 1
-    || (
-      media.identity.inode !== null
-      && media.identity.inode !== undefined
-      && Number(stat.ino) !== Number(media.identity.inode)
-    )
-  ) {
-    fs.closeSync(descriptor);
-    throw new Error("审片媒体在验证与读取之间发生变化");
-  }
-  const range = request.headers.range;
-  const contentType = MIME_TYPES[path.extname(media.path).toLowerCase()] ?? "application/octet-stream";
-  const close = () => {
-    try { fs.closeSync(descriptor); } catch {}
-  };
-  if (!range) {
-    response.writeHead(200, {
+  let handedOff = false;
+  const close = () => { if (!handedOff) { handedOff = true; fs.closeSync(descriptor); } };
+  try {
+    const stat = fs.fstatSync(descriptor);
+    if (
+      !stat.isFile()
+      || stat.size !== Number(media.identity.sizeBytes)
+      || Math.abs(Math.trunc(stat.mtimeMs) - Number(media.identity.mtimeMs)) > 1
+      || Math.abs(Math.trunc(stat.ctimeMs) - Number(media.identity.ctimeMs)) > 1
+      || (
+        media.identity.inode !== null
+        && media.identity.inode !== undefined
+        && Number(stat.ino) !== Number(media.identity.inode)
+      )
+    ) {
+      close();
+      throw new Error("审片媒体在验证与读取之间发生变化");
+    }
+    const range = request.headers.range;
+    const contentType = MIME_TYPES[path.extname(media.path).toLowerCase()] ?? "application/octet-stream";
+    const stream = (rangeOptions = {}) => {
+      const input = fs.createReadStream(null, { fd: descriptor, autoClose: true, ...rangeOptions });
+      handedOff = true;
+      const abort = () => input.destroy();
+      response.once("close", abort);
+      input.once("error", (error) => response.destroy(error));
+      input.once("close", () => response.off("close", abort));
+      input.pipe(response);
+      if (response.destroyed) input.destroy();
+    };
+    if (!range) {
+      response.writeHead(200, {
+        ...SECURITY_HEADERS,
+        "Accept-Ranges": "bytes",
+        "Content-Type": contentType,
+        "Content-Length": stat.size,
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+      });
+      if (request.method === "HEAD") {
+        close();
+        response.end();
+      } else stream();
+      return;
+    }
+    const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+    if (!match) {
+      close();
+      response.writeHead(416, { ...SECURITY_HEADERS, "Content-Range": `bytes */${stat.size}` });
+      response.end();
+      return;
+    }
+    if (!match[1] && !match[2]) {
+      close();
+      response.writeHead(416, { ...SECURITY_HEADERS, "Content-Range": `bytes */${stat.size}` });
+      response.end();
+      return;
+    }
+    const suffixLength = !match[1] && match[2] ? Number(match[2]) : null;
+    const start = suffixLength === null ? Number(match[1]) : Math.max(0, stat.size - suffixLength);
+    const end = suffixLength === null && match[2]
+      ? Math.min(Number(match[2]), stat.size - 1)
+      : stat.size - 1;
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start || start >= stat.size) {
+      close();
+      response.writeHead(416, { ...SECURITY_HEADERS, "Content-Range": `bytes */${stat.size}` });
+      response.end();
+      return;
+    }
+    response.writeHead(206, {
       ...SECURITY_HEADERS,
       "Accept-Ranges": "bytes",
+      "Content-Range": `bytes ${start}-${end}/${stat.size}`,
+      "Content-Length": end - start + 1,
       "Content-Type": contentType,
-      "Content-Length": stat.size,
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
     });
     if (request.method === "HEAD") {
       close();
       response.end();
-    } else fs.createReadStream(null, { fd: descriptor, autoClose: true }).pipe(response);
-    return;
-  }
-  const match = /^bytes=(\d*)-(\d*)$/.exec(range);
-  if (!match) {
-    close();
-    response.writeHead(416, { ...SECURITY_HEADERS, "Content-Range": `bytes */${stat.size}` });
-    response.end();
-    return;
-  }
-  if (!match[1] && !match[2]) {
-    close();
-    response.writeHead(416, { ...SECURITY_HEADERS, "Content-Range": `bytes */${stat.size}` });
-    response.end();
-    return;
-  }
-  const suffixLength = !match[1] && match[2] ? Number(match[2]) : null;
-  const start = suffixLength === null ? Number(match[1]) : Math.max(0, stat.size - suffixLength);
-  const end = suffixLength === null && match[2]
-    ? Math.min(Number(match[2]), stat.size - 1)
-    : stat.size - 1;
-  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || start >= stat.size) {
-    close();
-    response.writeHead(416, { ...SECURITY_HEADERS, "Content-Range": `bytes */${stat.size}` });
-    response.end();
-    return;
-  }
-  response.writeHead(206, {
-    ...SECURITY_HEADERS,
-    "Accept-Ranges": "bytes",
-    "Content-Range": `bytes ${start}-${end}/${stat.size}`,
-    "Content-Length": end - start + 1,
-    "Content-Type": contentType,
-    "Cache-Control": "no-store",
-    "X-Content-Type-Options": "nosniff",
-  });
-  if (request.method === "HEAD") {
-    close();
-    response.end();
-  } else fs.createReadStream(null, { fd: descriptor, start, end, autoClose: true }).pipe(response);
+    } else stream({ start, end });
+  } catch (error) { close(); throw error; }
 }
 
 function safeStaticFile(urlPath) {
@@ -573,6 +581,7 @@ function safeStaticFile(urlPath) {
     "/index.html": path.join(studioRoot, "index.html"),
     "/app.css": path.join(studioRoot, "app.css"),
     "/app.js": path.join(studioRoot, "app.js"),
+    "/navigation.css": path.join(studioRoot, "navigation.css"),
     "/shared.js": path.join(studioRoot, "shared.js"),
     "/review": path.join(studioRoot, "review.html"),
     "/review.html": path.join(studioRoot, "review.html"),
@@ -687,7 +696,7 @@ async function handleApi(request, response, url, port) {
     return;
   }
   if (pathname === "/api/probe-video") {
-    json(response, 200, inspectProductionVideo(body.videoPath));
+    json(response, 200, await runStudioTask("probe", body.videoPath));
     return;
   }
   if (pathname === "/api/styles") {
@@ -700,56 +709,30 @@ async function handleApi(request, response, url, port) {
     return;
   }
   if (pathname === "/api/preview-request") {
-    json(response, 200, compileProductionRequest(body, { write: false }));
+    json(response, 200, await runStudioTask("preview", body.videoPath, body));
     return;
   }
   if (pathname === "/api/compile") {
-    json(response, 201, compileProductionRequest(body));
+    json(response, 201, await runStudioTask("compile", body.videoPath, body));
     return;
   }
   if (pathname === "/api/project/status") {
-    json(response, 200, await runProjectTask("status", body.projectRoot));
+    json(response, 200, await runStudioTask("status", body.projectRoot));
     return;
   }
   if (pathname === "/api/project/observe") {
-    json(response, 200, await runProjectTask("observe", body.projectRoot));
+    json(response, 200, await runStudioTask("observe", body.projectRoot));
     return;
   }
   if (pathname === "/api/content/start") {
-    if (!body.projectRoot || !path.isAbsolute(body.projectRoot)) {
-      throw new Error("内容项目目录必须是非空绝对路径");
-    }
-    if (!body.scriptPath && !body.topic) {
-      throw new Error("请提供脚本路径或中心选题");
-    }
-    const catalog = loadProductionCatalog();
-    const visualLanguageIds = new Set(
-      catalog.visualLanguages.map((language) => language.id),
-    );
-    const dahui = Object.hasOwn(catalog.shows, body.show);
-    if (dahui ? body.style !== "dahui-ai" : !visualLanguageIds.has(body.style)) {
-      throw new Error(`内容栏目与视觉风格不匹配：${body.style}`);
-    }
-    json(response, 201, initializeProject({
-      script: body.scriptPath || null,
-      topic: body.topic || null,
-      projectRoot: body.projectRoot,
-      projectId: body.projectId,
-      task: "content_generation",
-      show: body.show,
-      style: body.style,
-      platform: body.platform,
-      language: "zh",
-      confirmExecute: false,
-      development: false,
-    }));
+    json(response, 201, await runStudioTask("content-start", body.projectRoot, body));
     return;
   }
   if (pathname === "/api/project/run" || pathname === "/api/project/resume") {
     if (body.confirmExecute !== true) {
       throw new Error("执行或恢复项目必须显式设置 confirmExecute=true");
     }
-    json(response, 200, await runProjectTask("run", body.projectRoot, {
+    json(response, 200, await runStudioTask("run", body.projectRoot, {
       confirmExecute: true,
       resume: pathname.endsWith("/resume"),
       includeRender: body.includeRender === true,
@@ -1020,6 +1003,7 @@ export function startStudioServerFromCli(args = process.argv.slice(2)) {
       }
       serveFile(response, file);
     } catch (error) {
+      if (response.headersSent || response.destroyed) { response.destroy(error); return; }
       const statusCode = Number.isInteger(error.statusCode)
         && error.statusCode >= 400
         && error.statusCode <= 599

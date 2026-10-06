@@ -7,14 +7,12 @@
   <link rel="icon" href="data:,">
   <title>咔嚓 · 剪辑工作台</title>
   <link rel="stylesheet" href="/editor.css">
+  <link rel="stylesheet" href="/navigation.css" />
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="/" aria-label="返回咔嚓生产台"><img src="/brand/kacha-logo.png" alt=""><span>咔嚓</span></a>
-    <nav aria-label="生产台页面">
-      <a href="/content">内容</a><a href="/">配置</a><a href="/project">项目</a>
-      <a class="active" href="/editor" aria-current="page">调整</a><a href="/review">审片</a>
-    </nav>
+    <nav class="studio-navigation" aria-label="生产台页面"><a href="/content">内容</a><a href="/">配置</a><a href="/project">项目</a><a href="/editor" aria-current="page">调整</a><a href="/review">审片</a></nav>
     <div class="live-cluster"><span id="liveDot" class="live-dot idle"></span><span id="liveState">OFFLINE</span></div>
     <div class="preview-badge" title="正式成片仍由 FFmpeg Render Graph 生成">APPROXIMATE PREVIEW</div>
   </header>
