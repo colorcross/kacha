@@ -251,7 +251,8 @@ if (stage) {
 }
 
 const generationModules = ["audio_generation", "bgm", "minimax", "generated", "video_generation"];
-if (modules.some(module => generationModules.includes(module))) {
+if ((!stage || ["content", "visual_audio"].includes(stage))
+  && modules.some(module => generationModules.includes(module))) {
   selected.add("config/generation-routing.json");
   if (modules.some(module => ["minimax", "generated", "video_generation"].includes(module))) {
     selected.add("references/generated-media-assets.md");
