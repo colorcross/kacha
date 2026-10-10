@@ -46,6 +46,25 @@ class StockTests(unittest.TestCase):
         with patch.object(stock,"fetch_json",return_value={"hits":hits}):
             self.assertEqual([x['id'] for x in stock.pixabay_items('fixture','x','video','portrait',3,5)],[2])
             self.assertEqual([x['id'] for x in stock.pixabay_items('fixture','x','video','square',3,5)],[3])
+    def test_commons_file_license_and_bounded_video_rendition(self):
+        info={'url':'https://media.invalid/original.webm','mime':'video/webm','width':3840,'height':2160,
+              'descriptionurl':'https://commons.wikimedia.org/wiki/File:Fixture.webm',
+              'extmetadata':{'Artist':{'value':'<b>Original author</b>'},'LicenseUrl':{'value':'https://creativecommons.org/licenses/by/4.0/'}},
+              'derivatives':[{'src':f'https://media.invalid/{w}.webm','type':'video/webm; codecs=vp9','width':w,'height':h} for w,h in [(3840,2160),(1920,1080),(640,360)]]}
+        with patch.object(stock,'fetch_json',return_value={'query':{'pages':{'1':{'pageid':1,'videoinfo':[info]}}}}) as fetch:
+            item=stock.commons_items('book','video','landscape',1,5)[0]
+            self.assertEqual(item['download_url'],'https://media.invalid/1920.webm')
+            self.assertEqual(item['creator'],'Original author');self.assertIn('videoinfo',fetch.call_args.args[0])
+            info['extmetadata'].pop('LicenseUrl');self.assertEqual(stock.commons_items('book','video','landscape',1,5),[])
+    def test_web_selection_requires_sources_licenses_and_safe_suffixes(self):
+        item=self.item(1);item['license_url']='https://example.com/license'
+        file=self.root/'candidates.json';report={'schema':'kacha.network-candidates.v1','provider':'web','kind':'photo','query':'blue','items':[item]}
+        file.write_text(json.dumps(report));self.assertEqual(len(stock.read_candidates(file,'web','photo','blue',['1'])),1)
+        with self.assertRaises(RuntimeError):stock.read_candidates(file,'web','photo','blue',['9'])
+        item['license_url']='';file.write_text(json.dumps(report))
+        with self.assertRaises(RuntimeError):stock.read_candidates(file,'web','photo','blue',[])
+        with self.assertRaises(RuntimeError):stock.suffix_for('https://example.com/file','/../../escape')
+        with self.assertRaises(RuntimeError):stock.web_url('file:///etc/passwd')
     def test_search_cache_reuses_success_and_expires_without_storing_credentials(self):
         url='https://search.invalid/?key=fixture-private-value'
         with patch.object(stock,'config_root',return_value=self.root), patch.object(stock.urllib.request,'urlopen',side_effect=[Response(b'{"hits": []}'),Response(b'{"hits": [1]}')]) as fetch:

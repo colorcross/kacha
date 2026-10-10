@@ -619,6 +619,7 @@ export function episodeForSourceHandoff(file, projectId) {
   };
   const result = absolutize(episode);
   Object.assign(result,{projectId,status:"draft",reviewEvidence:null,contentOrigin:fileIdentity(file)});
+  if (result.editingBrief) result.editingBrief.networkMaterials = [];
   result.checks=Object.fromEntries(Object.keys(result.checks).map(key=>[key,"pending"]));
   result.beats.forEach(beat=>{beat.timelineIds=[];});
   return result;

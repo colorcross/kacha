@@ -29,6 +29,7 @@ function fixture(){
  const timeline=save('timeline.json',{projectId:'review',output:{fps:25},edl:[{id:'s1',sourceStart:0,sourceEnd:30,provenance:{kind:'synthetic-test-fixture',evidence:proof}}],audio:{sfx:[]}});
  const episode=episodeTemplate('review','ai-practice');
  Object.assign(episode,{question:'测试任务',audienceTask:'测试输入',ownJudgment:'仅测试检查行为',targetSeconds:30});
+ Object.assign(episode.editingBrief,{firstSpokenQuestion:'这个任务如何完成？',closingAnswer:'仅测试检查行为',protectedMeaning:['保留条件']});
  episode.context={recordedAt:'2026-09-29',toolVersion:'fixture',inputScope:'synthetic only'};
  episode.evidence.forEach(e=>Object.assign(e,identity(proof),{locator:'fixture 1',description:'synthetic fixture'}));
  episode.beats.forEach(b=>Object.assign(b,{purpose:'fixture',evidenceIds:episode.evidence.map(e=>e.id),timelineIds:['s1']}));

@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { validateAssetGapPlan } from "./kacha_intelligence.mjs";
 import {
   acquireFileLock,
   fileIdentity,
@@ -69,7 +70,12 @@ export function buildAssetInbox(projectManifestPath) {
     throw new Error("asset gap plan 无效");
   }
   const existing = fs.existsSync(files.inboxPath) ? readJson(files.inboxPath) : null;
-  const submissions = new Map((existing?.items ?? []).map((item) => [item.gapId, item.submission ?? null]));
+  const errors = validateAssetGapPlan(plan);
+  if (errors.length) throw new Error(errors.join('\n'));
+  if (readJson(plan.directorPlan.path).project?.id !== files.manifest.projectId) throw new Error('素材缺口与当前工程不匹配');
+  const samePlan = existing?.assetGapPlan && fileIdentityMatches(files.gapPlanPath, existing.assetGapPlan)
+    && existing.projectId === files.manifest.projectId;
+  const submissions = new Map((samePlan ? existing.items : []).map((item) => [item.gapId, item.submission ?? null]));
   const items = plan.gaps.map((gap) => {
     const submission = submissions.get(gap.id) ?? null;
     const submissionCurrent = Boolean(
@@ -133,6 +139,12 @@ export function attachAsset(projectManifestPath, {
   const release = acquireFileLock(`${files.inboxPath}.lock`, { purpose: "asset-inbox-attach" });
   try {
     const inbox = readJson(files.inboxPath);
+    if (inbox.projectId !== files.manifest.projectId || !inbox.projectManifest?.path
+      || fs.realpathSync(inbox.projectManifest.path) !== fs.realpathSync(files.manifestPath)) {
+      throw new Error('素材收件箱不属于本次调用的工程 manifest');
+    }
+    const validation = validateAssetInbox(files.inboxPath);
+    if (validation.status !== 'pass') throw new Error(validation.errors.join('\n'));
     const item = inbox.items.find((candidate) => candidate.gapId === gapId);
     if (!item) throw new Error(`素材缺口不存在：${gapId}`);
     item.submission = {
@@ -154,6 +166,15 @@ export function validateAssetInbox(inboxPath) {
   const errors = [];
   if (inbox.schemaVersion !== "1.0" || inbox.kind !== "kacha-asset-inbox") errors.push("素材收件箱 schema 无效");
   if (!Array.isArray(inbox.items)) errors.push("素材收件箱 items 必须是数组");
+  for (const [label, binding] of [['项目',inbox.projectManifest],['素材缺口',inbox.assetGapPlan]]) {
+    if (!binding?.path || !fileIdentityMatches(binding.path,binding)) errors.push(`${label}绑定已变化，请刷新收件箱`);
+  }
+  if (!errors.length) {
+    const plan = readJson(inbox.assetGapPlan.path);
+    errors.push(...validateAssetGapPlan(plan));
+    if (!errors.length && (readJson(plan.directorPlan.path).project?.id !== inbox.projectId
+      || readJson(inbox.projectManifest.path).projectId !== inbox.projectId)) errors.push('素材收件箱工程不匹配');
+  }
   for (const item of inbox.items ?? []) {
     if (item.submission && !fileIdentityMatches(item.submission.identity.path, item.submission.identity)) {
       errors.push(`${item.gapId} 提交素材内容已变化`);

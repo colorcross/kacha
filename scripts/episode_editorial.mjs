@@ -4,6 +4,8 @@ import { loadProductionPack } from "./production_pack.mjs";
 import { readJson } from "./kacha_utils.mjs";
 import { verifiedEditorialFile, validateEditorialReview } from "./editorial_review.mjs";
 import { editorialTimeline } from "./editorial_timeline.mjs";
+import { buildTimelineProjection } from './timeline_projection.mjs';
+import { validateAdoptedSelection } from './network_materials.mjs';
 
 // Episode evidence supplements Timeline IR; it never becomes a second timeline.
 export function episodeTemplate(projectId, showId) {
@@ -14,6 +16,11 @@ export function episodeTemplate(projectId, showId) {
     pack: { id: pack.id, version: pack.version, sha256: pack.sha256, showId },
     status: "draft", deliverable: "master", sourceMaster: null,
     question: "", audienceTask: "", ownJudgment: "",
+    editingBrief: { firstSpokenQuestion:"", closingAnswer:"", protectedMeaning:[],
+      networkMaterials:[], reviewScenario:policy.category === 'REVIEW' ? {
+        type:'product-experience', productVersion:'', conditions:'', expected:'', actual:'',
+        attempts:null, reproduced:null, priorVersion:null, priorEvidence:null,
+      } : null },
     targetSeconds: policy.targetSeconds,
     beats: policy.structure.map(role => ({ id: role, role, purpose: "", evidenceIds: [], timelineIds: [] })),
     evidence: policy.requiredEvidence.map(kind => ({ id: kind, kind, path: null, sha256: null, locator: "", description: "" })),
@@ -46,6 +53,36 @@ export function validateEpisode(file, { stage = "plan", timeline = null, expecte
     if (expectedShowId && pack.showId !== expectedShowId) errors.push("节目 showId 不匹配");
     const policy = pack.policies.episode;
     for (const key of ["question", "audienceTask", "ownJudgment"]) if (!nonempty(episode[key])) errors.push(`${key}: 必须填写本期具体内容`);
+    // Old frozen episodes remain readable. New templates carry this explicit
+    // editorial brief; execution checks it without pretending to understand ASR.
+    if (stage !== 'plan') {
+      const brief=episode.editingBrief ?? {};
+      if (!nonempty(brief.firstSpokenQuestion) || !/[？?]$/.test(brief.firstSpokenQuestion.trim())
+        || brief.firstSpokenQuestion.trim().length < 6) errors.push('首句须填写本期具体完整问句并保留问号');
+      if (!nonempty(brief.closingAnswer)) errors.push('结尾须填写对同一问题的回答及适用条件');
+      if (!Array.isArray(brief.protectedMeaning) || !brief.protectedMeaning.length || brief.protectedMeaning.some(x=>!nonempty(x))) errors.push('记录不能剪掉的否定、因果、条件和反方论据；无特殊项时明确说明');
+      if (!Array.isArray(brief.networkMaterials)) errors.push('networkMaterials 必须是来源选择文件列表');
+      for (const material of brief.networkMaterials ?? []) {
+        const selected=identity(file,material,errors,'网络素材选择');
+        if (selected) {
+          const selection=readJson(selected);
+          const request=identity(selected,selection.request,errors,'网络素材需求');
+          if (selection.kind !== 'kacha-network-material-selection' || selection.review?.status !== 'approved'
+            || (request && readJson(request).projectId !== episode.projectId)) errors.push('网络素材未审阅或不属于本期节目');
+        }
+      }
+      if (policy.category === 'REVIEW') {
+        const scenario=brief.reviewScenario;
+        if (!['ai-task','product-experience','issue-investigation','fix-followup'].includes(scenario?.type)
+          || !['productVersion','conditions','expected','actual'].every(key=>nonempty(scenario?.[key]))
+          || !Number.isInteger(scenario?.attempts) || scenario.attempts < 1
+          || !Number.isInteger(scenario?.reproduced) || scenario.reproduced < 0 || scenario.reproduced > scenario.attempts) errors.push('测评须记录题型、产品版本、测试条件、预期/实际与复现次数');
+        if (scenario?.type === 'fix-followup') {
+          if (!nonempty(scenario.priorVersion)) errors.push('修复回访须记录旧版本');
+          identity(file,scenario.priorEvidence,errors,'回访旧问题证据');
+        }
+      }
+    }
     if (!["master", "derivative"].includes(episode.deliverable)) errors.push("deliverable 必须为 master 或 derivative");
     if (!Number.isFinite(episode.targetSeconds) || episode.targetSeconds <= 0) errors.push("目标时长无效");
     if (episode.deliverable === "derivative") {
@@ -111,6 +148,16 @@ export function validateEpisode(file, { stage = "plan", timeline = null, expecte
         if (actual.projectId !== episode.projectId) errors.push("Timeline IR projectId 不匹配");
         const resolved = editorialTimeline(actual);
         const objects = [...resolved.plan.edl, ...(actual.visual?.overlays ?? []), ...(actual.visual?.breathing ?? []), ...(actual.audio?.sfx ?? [])];
+        const networkOverlays=(actual.visual?.overlays ?? []).filter(item=>item.provenance?.selectionSha256);
+        if (networkOverlays.length) {
+          const projection=buildTimelineProjection(timeline);
+          for (const overlay of networkOverlays) {
+            const binding=episode.editingBrief?.networkMaterials?.find(item=>item.sha256 === overlay.provenance.selectionSha256);
+            const selectionFile=binding && identity(file,binding,errors,'当前插镜选择');
+            if (!selectionFile) errors.push(`${overlay.id}: 未绑定当前网络素材审阅`);
+            else try { validateAdoptedSelection(projection,overlay,selectionFile); } catch(error) {errors.push(`${overlay.id}: ${error.message}`);}
+          }
+        }
         for (const beat of beats) for (const id of beat.timelineIds ?? []) if (!objects.some(item => item.id === id)) errors.push(`${beat.id}: 当前时间线缺少 ${id}`);
         duration = resolved.duration;
         if (policy.category === "BOOK" && episode.deliverable === "master" && (duration < 1800 || duration > 3600)) errors.push("真实读书母片时间线不是30–60分钟");

@@ -526,6 +526,11 @@ function hasUsableProvenance(value) {
   );
 }
 
+function declaresUnreviewedStock(provenance) {
+  return Boolean(provenance && (/stock|network|illustration/i.test(provenance.kind ?? '')
+    || (Array.isArray(provenance.sources) && provenance.sources.some(declaresUnreviewedStock))));
+}
+
 function declaresGeneratedMedia(provenance) {
   if (!provenance || typeof provenance !== "object") return false;
   return /generated|synthetic|ai[_ -]?created/i.test(provenance.kind ?? "")
@@ -575,7 +580,8 @@ export function buildAssetGapPlan(directorFile, mediaIndexFile = null) {
         && !["unknown", "unverified"].includes(candidate.license)
         && hasUsableProvenance(candidate.provenance)
         && (!factual || (!/generated|synthetic/i.test(candidate.license)
-          && !declaresGeneratedMedia(candidate.provenance)))
+          && !declaresGeneratedMedia(candidate.provenance)
+          && !declaresUnreviewedStock(candidate.provenance)))
       ));
       const resolution = usable
         ? "local_candidate"

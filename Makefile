@@ -18,6 +18,7 @@ check-core:
 
 check-specialized:
 	node tests/editing_capability_tests.mjs
+	node tests/network_materials_tests.mjs
 	node tests/editing_audio_tests.mjs
 	python3 tests/stock_media_tests.py
 	node tests/studio_reliability_tests.mjs

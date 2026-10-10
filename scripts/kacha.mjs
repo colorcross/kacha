@@ -70,6 +70,7 @@ function usage() {
       + "  kacha.mjs materials inspect|compose|render|status --project-root DIR [options]\n"
       + "  kacha.mjs start --materials DIR --requirements TEXT --project-root DIR [--duration SEC --aspect 9:16]\n"
       + "  kacha.mjs media index|search [options]\n"
+      + "  kacha.mjs network-materials request|search|select|inspect|fact-template|validate|apply [options]\n"
       + "  kacha.mjs capabilities validate|list|probe|rank [options]\n"
       + "  kacha.mjs cost init|estimate|reserve|approve|consume|reconcile|refund|status|validate [options]\n"
       + "  kacha.mjs reference analyze|derive|validate [options]\n"
@@ -206,6 +207,7 @@ const delegatedCommands = {
   mcp: "kacha_mcp_server.mjs",
   "mcp-config": "kacha_mcp_config.mjs",
   media: "kacha_media.mjs",
+  "network-materials": "network_materials.mjs",
   materials: "kacha_materials.mjs",
   capabilities: "capability_broker.mjs",
   cost: "cost_ledger.mjs",

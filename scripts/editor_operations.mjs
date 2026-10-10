@@ -1,13 +1,14 @@
-import { mediaSummary, readJson } from "./kacha_utils.mjs";
+import { mediaSummary, visualMediaDuration, readJson } from "./kacha_utils.mjs";
 import { normalizeTimebase, secondsToTicks, ticksToSeconds } from "./media_time.mjs";
 import { compileProjectionCommand, findProjectionItem } from "./timeline_projection.mjs";
 import { resolveIndexedAsset } from "./project_bin.mjs";
+import { selectedOverlay } from "./network_materials.mjs";
 
 const OPERATIONS = new Set([
   "batch", "move", "trim", "ripple_trim", "split", "overwrite", "reorder",
   "marker_set", "marker_remove", "work_area_set", "work_area_clear",
   "keyframe_set", "keyframe_remove", "delivery_frames_set",
-  "replace_media",
+  "replace_media", "insert_media",
 ]);
 
 const COMMAND_FIELDS = new Set([
@@ -31,6 +32,7 @@ const OPERATION_ARGUMENT_FIELDS = Object.freeze({
   keyframe_remove: new Set(["property", "tick"]),
   delivery_frames_set: new Set(["frames"]),
   replace_media: new Set(["indexPath", "assetRef"]),
+  insert_media: new Set(["selectionPath", "selectionSha256", "id"]),
 });
 
 function plainObject(value, label) {
@@ -510,7 +512,18 @@ function compileReplaceMedia(projection, command) {
     license: asset.license,
     provenance: asset.provenance,
   };
-  if (item.type === "overlay") value.kind = asset.kind;
+  if (item.type === "overlay") {
+    value.kind = asset.kind;
+    value.sourceOffsetSeconds = asset.kind === 'video' ? (asset.range?.start ?? 0) : 0;
+    if (asset.kind === 'video') {
+      const mediaDuration = visualMediaDuration(asset.path);
+      const end = asset.range?.end ?? mediaDuration;
+      const start = value.sourceOffsetSeconds;
+      const duration = (item.endTick-item.startTick)/projection.timebase.ticksPerSecond;
+      if (!(mediaDuration > 0) || !Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start
+        || end > mediaDuration + 1e-7 || duration > end-start + 1e-7) throw new Error('替换素材选段不足或超出视频范围');
+    }
+  }
   const qc = item.type === "overlay" ? ["visual_dynamic_review"] : ["audio_qc"];
   return compiledResult(
     [{ op: "merge", path: item.sourcePointer, value }],
@@ -535,5 +548,13 @@ export function compileEditorOperation(projection, command) {
   if (command.operation.startsWith("work_area_")) return compileWorkArea(projection, command, timeline);
   if (command.operation.startsWith("keyframe_")) return compileKeyframe(projection, command, timeline);
   if (command.operation === "replace_media") return compileReplaceMedia(projection, command);
+  if (command.operation === "insert_media") {
+    const {selectionPath, selectionSha256, id} = command.arguments;
+    const overlay = selectedOverlay(projection, selectionPath, selectionSha256, id);
+    const overlays = [...(timeline.visual?.overlays ?? []), overlay];
+    return compiledResult([timeline.visual
+      ? {op: Object.hasOwn(timeline.visual, 'overlays') ? 'replace':'add', path:'/visual/overlays', value:overlays}
+      : {op:'add',path:'/visual',value:{overlays}}], ['overlays'], ['visual_dynamic_review'], {id});
+  }
   return compileDeliveryFrames(command, timeline);
 }

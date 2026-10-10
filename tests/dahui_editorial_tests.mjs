@@ -20,6 +20,8 @@ function cli(args,ok=true){const r=spawnSync(process.execPath,[path.join(root,'s
 function filled(show){
  const e=episodeTemplate('regression',show);
  Object.assign(e,{question:'此任务如何判断结果可信？',audienceTask:'完成一份可交付材料',ownJudgment:'判断由来源及具体条件约束'});
+ e.editingBrief.firstSpokenQuestion=e.question;e.editingBrief.closingAnswer=e.ownJudgment;e.editingBrief.protectedMeaning=['保留具体条件'];
+ if(e.editingBrief.reviewScenario) Object.assign(e.editingBrief.reviewScenario,{productVersion:'fixture',conditions:'fixture',expected:'fixture',actual:'fixture',attempts:1,reproduced:0});
  e.context={recordedAt:'2026-09-29',toolVersion:'test fixture only',inputScope:'synthetic validation fixture',primaryBooks:[{title:'测试主书',edition:'测试版'}],aiRole:'ai-assisted-development',sourceUrl:'https://example.com/fixture',publishedAt:'2026-09-29',eventAt:'2026-09-29',availability:'announced'};
  const proof=save(`${show}-evidence.json`,{fixture:true,note:'schema regression only, not actual production evidence'});
  e.evidence.forEach(x=>Object.assign(x,{path:proof,sha256:sha256File(proof),locator:'fixture record 1',description:'仅回归夹具'}));
@@ -54,6 +56,14 @@ try {
  });
  test('changed proof bytes invalidate prior acceptance',()=>{
   const e=filled('ai-practice'),file=save('changed.json',e);fs.appendFileSync(e.evidence[0].path,' ');assert(validateEpisode(file).errors.some(x=>x.includes('摘要失效')));
+ });
+ test('V1.2 opening, protected meaning and product followup evidence are explicit',()=>{
+  const e=filled('ai-review'),file=save('review-scenario.json',e),timeline=save('review-scenario-timeline.json',{projectId:'regression',output:{fps:25},edl:[{id:'segment-001',sourceStart:0,sourceEnd:540}]});
+  assert.equal(validateEpisode(file,{stage:'execution',timeline}).status,'pass');
+  e.editingBrief.firstSpokenQuestion='只写标题';e.editingBrief.protectedMeaning=[];
+  e.editingBrief.reviewScenario.type='fix-followup';save('review-scenario.json',e);
+  const errors=validateEpisode(file,{stage:'execution',timeline}).errors;
+  assert(errors.some(x=>x.includes('首句')));assert(errors.some(x=>x.includes('不能剪掉')));assert(errors.some(x=>x.includes('回访')));
  });
  test('execution uses real timeline identities and book duration, not target duration',()=>{
   const e=filled('ai-reading'),file=save('execution.json',e),timeline=save('timeline.json',{projectId:'regression',edl:[{id:'wrong-id',sourceStart:0,sourceEnd:120}]});

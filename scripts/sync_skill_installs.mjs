@@ -238,7 +238,7 @@ function verifyBundle(bundle, source) {
     run(process.execPath, [path.join(bundle, "tests", test)], bundle, { env: verificationEnvironment });
   }
   run(process.execPath, [path.join(bundle, "tests", "audio_fallback_review_tests.mjs")], bundle, { env: verificationEnvironment });
-  for (const test of ["editing_capability_tests.mjs", "editing_audio_tests.mjs"]) {
+  for (const test of ["editing_capability_tests.mjs", "editing_audio_tests.mjs", "network_materials_tests.mjs"]) {
     run(process.execPath, [path.join(bundle, "tests", test)], bundle, { env: verificationEnvironment });
   }
   run("python3", [path.join(bundle, "tests", "stock_media_tests.py")], bundle, { env: verificationEnvironment });

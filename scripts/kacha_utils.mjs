@@ -562,6 +562,27 @@ export function mediaSummary(file) {
   };
 }
 
+// Container duration may include a longer audio tail. WebM often has no
+// stream duration, so measure its visual packet timeline instead of guessing.
+export function visualMediaDuration(file) {
+  const media = mediaSummary(file);
+  const duration = Number(media.video?.duration);
+  if (Number.isFinite(duration) && duration > 0) return duration;
+  const result = run(process.env.KACHA_FFPROBE_BIN || 'ffprobe', ['-v','error','-select_streams','v:0',
+    '-show_entries','packet=pts_time,duration_time','-of','csv=p=0',file], {timeout:60000});
+  if (result.status !== 0) throw new Error('无法确认视频画面的实际时长');
+  let first=Infinity,last=-Infinity;
+  for (const line of result.stdout.trim().split('\n')) {
+    if (!line.trim()) continue;
+    const [pts,length]=line.split(',').map(Number);
+    if (!Number.isFinite(pts)) continue;
+    const span=Number.isFinite(length) && length > 0 ? length : (media.fps > 0 ? 1/media.fps : 0);
+    first=Math.min(first,pts);last=Math.max(last,pts+span);
+  }
+  if (!Number.isFinite(last-first) || last <= first) throw new Error('视频画面没有可确认的有效时长');
+  return last-first;
+}
+
 export function daysBetween(dateText, now = new Date()) {
   if (typeof dateText !== "string") return NaN;
   const timestamp = Date.parse(`${dateText}T00:00:00Z`);

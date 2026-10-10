@@ -31,7 +31,7 @@ const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
 const action = args[0];
 const mediaExtensions = new Set([
-  ".mp4", ".mov", ".m4v", ".mkv", ".webm",
+  ".mp4", ".mov", ".m4v", ".mkv", ".webm", ".ogv",
   ".jpg", ".jpeg", ".png", ".webp", ".heic",
   ".wav", ".aif", ".aiff", ".m4a", ".mp3", ".flac",
 ]);

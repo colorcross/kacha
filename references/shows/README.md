@@ -1,6 +1,6 @@
 # 节目入口：大灰AI与历史作品
 
-当前大灰AI按调用项目V6.1方案，使用生产包 `dahui-ai` 和 [剪辑系统](../../docs/DAHUI_AI_EDITING_SYSTEM_V1.md)。
+当前大灰AI按调用项目资料索引指向的有效方案（本轮V6.4），使用生产包 `dahui-ai` 和 [剪辑系统](../../docs/DAHUI_AI_EDITING_SYSTEM_V1.md)。
 
 |栏目|show ID|风格卡|
 |---|---|---|
@@ -12,6 +12,8 @@
 |AI时代怎么读书|`ai-reading`|[BOOK](dahui-ai/ai-reading.md)|
 |产品实践|`product-practice`|[BUILD](dahui-ai/product-practice.md)|
 |运动与自我迭代|`life-iteration`|[LIFE](dahui-ai/life-iteration.md)|
+
+旧五栏目后续返工同样使用[网络素材工作流](../network-materials.md)核对来源、选段、匹配与声音，并重新审阅改动段；不批量改写历史合同或作品。
 
 旧五栏目风格卡仅用于明确指定的历史作品；不得将其编号、字体、3D人物和密度要求套入新大灰AI作品。新草稿不自动进入真实已发布语料库。
 

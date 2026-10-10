@@ -30,6 +30,7 @@ import {
   buildAssetInbox,
   validateAssetInbox,
 } from "../scripts/asset_inbox.mjs";
+import { buildDirectorPlan, buildAssetGapPlan } from "../scripts/kacha_intelligence.mjs";
 import { loadProductionPack } from "../scripts/production_pack.mjs";
 import {
   framesToTicks,
@@ -4249,23 +4250,14 @@ await test("V7 asset inbox records licensed submissions without bypassing media 
   const contracts = path.join(root, "contracts");
   fs.mkdirSync(contracts, { recursive: true });
   const gapPlan = path.join(contracts, "asset-gap-plan.json");
-  writeJson(gapPlan, {
-    schemaVersion: "1.0",
-    kind: "kacha_asset_gap_plan",
-    gaps: [
-      {
-        id: "gap-evidence", beatId: "beat-1", range: { start: 0, end: 2 },
-        query: "官方截图", evidenceType: "factual", resolution: "user_or_source_evidence_required",
-        candidates: [], generationSpec: null, blocker: true, blockerReason: "source_evidence_required",
-      },
-      {
-        id: "gap-illustration", beatId: "beat-2", range: { start: 2, end: 4 },
-        query: "抽象流程", evidenceType: "illustrative", resolution: "generated_visual_candidate",
-        candidates: [], generationSpec: { promptBrief: "抽象流程", externalOrPaidActionAuthorized: false },
-        blocker: true, blockerReason: "generated_asset_not_materialized",
-      },
-    ],
-  });
+  const cues = path.join(root, "cues.json");
+  writeJson(cues, {schemaVersion:"1.0",cues:[
+    {id:"evidence",start:0,end:2,text:"查看官方数据",signals:["evidence","data"],confidence:1},
+    {id:"illustration",start:2,end:4,text:"用抽象流程解释这个概念",signals:["illustration_required"],confidence:1},
+  ]});
+  const director = path.join(root, "director.json");
+  writeJson(director, buildDirectorPlan(cues, {projectId:"asset-inbox-v7",showId:"ai-practice"}));
+  writeJson(gapPlan, buildAssetGapPlan(director));
   const manifest = path.join(contracts, "project-manifest.json");
   writeJson(manifest, {
     schemaVersion: "2.0", kind: "kacha-project-manifest", projectId: "asset-inbox-v7",
@@ -4278,7 +4270,7 @@ await test("V7 asset inbox records licensed submissions without bypassing media 
   const asset = path.join(root, "official-evidence.png");
   fs.writeFileSync(asset, "licensed evidence fixture");
   const attached = attachAsset(manifest, {
-    gapId: "gap-evidence", assetPath: asset, license: "project-owned",
+    gapId: built.inbox.items[0].gapId, assetPath: asset, license: "project-owned",
     provenanceKind: "user-provided", provenanceEvidence: "source capture record",
   });
   if (attached.inbox.items[0].status !== "pending_reindex" || attached.inbox.summary.productionReady !== false) {
