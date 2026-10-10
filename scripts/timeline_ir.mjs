@@ -692,6 +692,10 @@ function validatePlan(planFile) {
     if (!["image", "video"].includes(event.kind)) {
       errors.push(`visual.overlays[${index}].kind 必须为 image 或 video`);
     }
+    if (event.sourceOffsetSeconds !== undefined && (
+      typeof event.sourceOffsetSeconds !== "number" || !Number.isFinite(event.sourceOffsetSeconds)
+      || event.sourceOffsetSeconds < 0 || (event.kind === "image" && event.sourceOffsetSeconds !== 0)
+    )) errors.push(`visual.overlays[${index}].sourceOffsetSeconds 必须是非负视频源时间`);
     if (
       !finite(event.start)
       || !finite(event.end)
@@ -1343,7 +1347,7 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
     videoSegments.push(`[vseg${index}]`);
     if (graph.sourceMedia.hasAudio && !graph.audio.dialogue) {
       filters.push(
-        `[0:a]atrim=start=${formatNumber(sourceStart)}:`
+        `[0:a]aresample=48000:first_pts=0,apad,atrim=start=${formatNumber(sourceStart)}:`
           + `end=${formatNumber(sourceEnd)},asetpts=PTS-STARTPTS[aseg${index}]`,
       );
       audioSegments.push(`[aseg${index}]`);
@@ -1450,7 +1454,7 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
     filters.push(
       `[${currentVideo}][${label}]overlay=x='${overlayX}':`
         + `y='${overlayY}':eval=frame:`
-        + `enable='between(t,${formatNumber(overlay.start)},${formatNumber(overlay.end)})':`
+        + `enable='gte(t,${formatNumber(overlay.start)})*lt(t,${formatNumber(overlay.end)})':`
         + `eof_action=pass:shortest=0[${next}]`,
     );
     currentVideo = next;

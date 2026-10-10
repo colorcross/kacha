@@ -15,6 +15,8 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
+import uuid
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -136,9 +138,37 @@ def fetch_json(
 ) -> dict:
     request_headers = {"User-Agent": "kacha-local-media-fetcher/1.0", "Accept": "application/json"}
     request_headers.update(headers or {})
+    cache = config_root() / "stock-search-cache"
+    cache_key = hashlib.sha256(json.dumps([url, request_headers], sort_keys=True).encode()).hexdigest()
+    cache_file = cache / f"{cache_key}.json"
+    try:
+        if cache_file.stat().st_size <= 9 * 1024 * 1024:
+            saved = json.loads(cache_file.read_text())
+            age = time.time() - saved["retrieved_at"]
+            if 0 <= age < 24 * 60 * 60 and isinstance(saved["payload"], dict):
+                return saved["payload"]
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
     request = urllib.request.Request(url, headers=request_headers)
     with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.load(response)
+        payload = response.read(8 * 1024 * 1024 + 1)
+        if len(payload) > 8 * 1024 * 1024:
+            raise RuntimeError("Search response exceeds 8 MiB")
+        result = json.loads(payload)
+        if not isinstance(result, dict):
+            raise RuntimeError("Search response must be an object")
+    # Cache successful searches for 24h; credentials are only part of the
+    # one-way key, never persisted as request URLs or authorization headers.
+    cache.mkdir(parents=True, exist_ok=True, mode=0o700)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", dir=cache, prefix=".search-", delete=False) as file:
+            temporary = Path(file.name)
+            json.dump({"retrieved_at": time.time(), "payload": result}, file)
+        os.replace(temporary, cache_file)
+    finally:
+        if temporary and temporary.exists(): temporary.unlink()
+    return result
 
 
 def validate_media(path: Path, kind: str) -> dict:
@@ -149,6 +179,7 @@ def validate_media(path: Path, kind: str) -> dict:
                 "-v",
                 "error",
                 "-show_streams",
+                "-show_format",
                 "-of",
                 "json",
                 str(path),
@@ -166,13 +197,20 @@ def validate_media(path: Path, kind: str) -> dict:
     if not video_streams:
         raise RuntimeError(f"Downloaded file has no decodable visual stream: {path.name}")
     stream = video_streams[0]
-    if kind == "video" and float(stream.get("duration") or 0) <= 0:
+    duration = stream.get("duration") or payload.get("format", {}).get("duration")
+    if kind == "video" and (not duration or not 0 < float(duration) < float("inf")):
         raise RuntimeError(f"Downloaded video has no positive duration: {path.name}")
+    try:
+        subprocess.run([os.environ.get("KACHA_FFMPEG_BIN", "ffmpeg"), "-v", "error",
+                        "-xerror", "-nostdin", "-i", str(path), "-map", "0:v:0",
+                        "-an", "-f", "null", "-"], check=True, capture_output=True, timeout=90)
+    except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError(f"Downloaded file failed visual decoding: {path.name}") from exc
     return {
         "width": stream.get("width"),
         "height": stream.get("height"),
         "codec": stream.get("codec_name"),
-        "duration": stream.get("duration"),
+        "duration": duration,
     }
 
 
@@ -181,6 +219,7 @@ def download(
     target: Path,
     kind: str,
     timeout: int = 90,
+    max_bytes: int = 512 * 1024 * 1024,
 ) -> tuple[str, str, int, dict]:
     if target.exists():
         raise RuntimeError(f"Refusing to overwrite existing asset: {target}")
@@ -189,6 +228,7 @@ def download(
     temporary_path: Path | None = None
     content_type = ""
     byte_count = 0
+    started = time.monotonic()
     try:
         with tempfile.NamedTemporaryFile(
             prefix=f".{target.name}.",
@@ -204,19 +244,29 @@ def download(
                     raise RuntimeError(
                         f"Unexpected Content-Type {content_type!r} for {kind} asset"
                     )
+                declared_size = response.headers.get("Content-Length")
+                if declared_size and int(declared_size) > max_bytes:
+                    raise RuntimeError("Downloaded asset exceeds the byte limit")
                 while True:
                     chunk = response.read(1024 * 1024)
                     if not chunk:
                         break
+                    if byte_count + len(chunk) > max_bytes or time.monotonic() - started > timeout:
+                        raise RuntimeError("Downloaded asset exceeds the byte/time limit")
                     output.write(chunk)
                     digest.update(chunk)
                     byte_count += len(chunk)
+                if declared_size and byte_count != int(declared_size):
+                    raise RuntimeError("Downloaded asset is incomplete")
             output.flush()
             os.fsync(output.fileno())
         if byte_count <= 0:
             raise RuntimeError("Downloaded asset is empty")
         decoded = validate_media(temporary_path, kind)
-        os.replace(temporary_path, target)
+        # An atomic no-clobber publication also protects against a concurrent
+        # downloader creating the destination after the initial exists check.
+        os.link(temporary_path, target)
+        temporary_path.unlink()
         temporary_path = None
         return digest.hexdigest(), content_type, byte_count, decoded
     finally:
@@ -227,6 +277,13 @@ def download(
 def suffix_for(url: str, fallback: str) -> str:
     suffix = Path(urllib.parse.urlparse(url).path).suffix.lower()
     return suffix if suffix in {".jpg", ".jpeg", ".png", ".mp4"} else fallback
+
+
+def orientation_matches(width: int, height: int, orientation: str) -> bool:
+    if not width or not height or width <= 0 or height <= 0:
+        return False
+    return {"landscape": width > height, "portrait": height > width,
+            "square": width == height}[orientation]
 
 
 def pixabay_items(
@@ -240,7 +297,9 @@ def pixabay_items(
     endpoint = "https://pixabay.com/api/videos/" if kind == "video" else "https://pixabay.com/api/"
     params = {"key": key, "q": query, "per_page": str(max(limit * 3, 10)), "safesearch": "true"}
     if kind == "photo":
-        params.update({"image_type": "photo", "orientation": orientation})
+        params.update({"image_type": "photo", "orientation": {
+            "landscape": "horizontal", "portrait": "vertical", "square": "all",
+        }[orientation]})
     response = fetch_json(f"{endpoint}?{urllib.parse.urlencode(params)}", timeout=timeout)
     selected: list[dict] = []
     for hit in response.get("hits", []):
@@ -257,6 +316,8 @@ def pixabay_items(
                 continue
             fallback = ".jpg"
             dimensions = {"width": hit.get("imageWidth"), "height": hit.get("imageHeight")}
+        if not orientation_matches(dimensions["width"], dimensions["height"], orientation):
+            continue
         selected.append({
             "id": hit.get("id"), "download_url": media_url, "source_url": hit.get("pageURL"),
             "creator": hit.get("user"), "dimensions": dimensions, "tags": hit.get("tags"),
@@ -293,7 +354,14 @@ def pexels_items(
                 item for item in hit.get("video_files", [])
                 if item.get("file_type") == "video/mp4" and item.get("link")
             ]
-            candidates.sort(key=lambda item: (item.get("width", 0) > 1920, -item.get("width", 0)))
+            candidates = [item for item in candidates if orientation_matches(item.get("width"), item.get("height"), orientation)]
+            # Prefer the largest long edge <=1920; when only larger copies
+            # exist, select the smallest one, including portrait renditions.
+            candidates.sort(key=lambda item: (
+                max(item["width"], item["height"]) > 1920,
+                -max(item["width"], item["height"]) if max(item["width"], item["height"]) <= 1920
+                else max(item["width"], item["height"]),
+            ))
             if not candidates:
                 continue
             rendition = candidates[0]
@@ -308,6 +376,8 @@ def pexels_items(
             fallback = ".jpg"
             dimensions = {"width": hit.get("width"), "height": hit.get("height")}
             creator = (hit.get("photographer") or (hit.get("user") or {}).get("name"))
+        if not orientation_matches(dimensions["width"], dimensions["height"], orientation):
+            continue
         selected.append({
             "id": hit.get("id"), "download_url": media_url, "source_url": hit.get("url"),
             "creator": creator, "dimensions": dimensions, "tags": None, "fallback_suffix": fallback,
@@ -315,6 +385,66 @@ def pexels_items(
         if len(selected) >= limit:
             break
     return selected
+
+
+def download_batch(items: list[dict], output_dir: Path, *, provider: str,
+                   kind: str, query: str, orientation: str, timeout: int = 90,
+                   max_bytes: int = 512 * 1024 * 1024,
+                   configuration: dict | None = None) -> tuple[Path, dict]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    retrieved = datetime.now(timezone.utc).replace(microsecond=0)
+    entries = []
+    for index, item in enumerate(items, start=1):
+        asset_id = str(item["id"])
+        if not asset_id.isascii() or not asset_id.isdigit():
+            raise RuntimeError("Provider returned an invalid asset ID")
+        filename = f"{provider}-{kind}-{asset_id}-{index}{suffix_for(item['download_url'], item['fallback_suffix'])}"
+        entries.append({
+            "local_path": str((output_dir / filename).absolute()),
+            "provider": provider, "asset_id": item["id"], "kind": kind,
+            "query": query, "orientation": orientation,
+            "source_url": item["source_url"], "creator": item["creator"],
+            "dimensions": item["dimensions"], "tags": item["tags"],
+            "license_url": LICENSES[provider], "retrieved_at": retrieved.isoformat(),
+        })
+    manifest = {"schema": "kacha.media-manifest.v1", "provider": provider,
+                "license_url": LICENSES[provider], "configuration": configuration or {},
+                "status": "in_progress", "items": [], "pending": entries.copy()}
+    manifest_path = output_dir / f"manifest.{provider}.{kind}.{retrieved.strftime('%Y%m%dT%H%M%SZ')}.{uuid.uuid4().hex[:12]}.json"
+    with manifest_path.open("x", encoding="utf-8") as file:
+        file.write(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
+        file.flush(); os.fsync(file.fileno())
+
+    def persist():
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=output_dir,
+                                             prefix=".manifest-", delete=False) as file:
+                temporary = Path(file.name)
+                file.write(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
+                file.flush(); os.fsync(file.fileno())
+            os.replace(temporary, manifest_path)
+        finally:
+            if temporary and temporary.exists(): temporary.unlink()
+    try:
+        for item, entry in zip(items, entries):
+            checksum, content_type, byte_count, decoded = download(
+                item["download_url"], Path(entry["local_path"]), kind,
+                timeout=timeout, max_bytes=max_bytes,
+            )
+            manifest["items"].append({**entry, "sha256": checksum,
+                "content_type": content_type, "bytes": byte_count, "decoded_media": decoded})
+            manifest["pending"] = manifest["pending"][1:]
+            persist()
+        manifest["status"] = "complete"
+        persist()
+    except Exception as exc:
+        manifest["status"] = "partial" if manifest["items"] else "failed"
+        # Do not copy exception URLs or provider credentials into receipts/logs.
+        manifest["failure"] = type(exc).__name__
+        persist()
+        raise RuntimeError(f"Download incomplete; preserved {len(manifest['items'])} asset(s). Manifest: {manifest_path}") from None
+    return manifest_path, manifest
 
 
 def main() -> int:
@@ -329,6 +459,7 @@ def main() -> int:
     parser.add_argument("--orientation", choices=("landscape", "portrait", "square"), default="landscape")
     parser.add_argument("--limit", type=int)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--max-bytes", type=int, default=512 * 1024 * 1024, help="Per-asset download ceiling (default 512 MiB).")
     parser.add_argument(
         "--config",
         type=Path,
@@ -337,6 +468,10 @@ def main() -> int:
     parser.add_argument("--secrets", type=Path, help="Private Kacha secrets.json")
     parser.add_argument("--legacy-env", type=Path, default=default_legacy_env)
     args = parser.parse_args()
+    if not 1 <= args.max_bytes <= 2 * 1024 * 1024 * 1024:
+        parser.error("--max-bytes must be between 1 and 2147483648")
+    if not args.query.strip():
+        parser.error("--query must not be empty")
 
     explicit_json_config = args.config
     legacy_env = args.legacy_env
@@ -379,53 +514,17 @@ def main() -> int:
     if not items:
         raise SystemExit("No downloadable candidates returned. Refine the query or use the other provider.")
 
-    retrieved = datetime.now(timezone.utc).replace(microsecond=0)
-    retrieved_at = retrieved.isoformat()
-    manifest_items = []
-    for index, item in enumerate(items, start=1):
-        suffix = suffix_for(item["download_url"], item["fallback_suffix"])
-        filename = f"{args.provider}-{args.kind}-{item['id']}-{index}{suffix}"
-        local_path = args.output_dir / filename
-        checksum, content_type, byte_count, decoded = download(
-            item["download_url"], local_path, args.kind, timeout=download_timeout
-        )
-        manifest_items.append({
-            "local_path": str(local_path.resolve()), "provider": args.provider, "asset_id": item["id"],
-            "kind": args.kind, "query": args.query, "orientation": args.orientation,
-            "source_url": item["source_url"], "creator": item["creator"], "dimensions": item["dimensions"],
-            "tags": item["tags"], "license_url": LICENSES[args.provider], "retrieved_at": retrieved_at,
-            "sha256": checksum, "content_type": content_type, "bytes": byte_count,
-            "decoded_media": decoded,
-        })
-    manifest = {
-        "schema": "kacha.media-manifest.v1", "provider": args.provider,
-        "license_url": LICENSES[args.provider],
-        "configuration": {
-            "sources": config_sources,
-            "digest": config_digest,
+    manifest_path, manifest = download_batch(
+        items, args.output_dir, provider=args.provider, kind=args.kind,
+        query=args.query, orientation=args.orientation, timeout=download_timeout,
+        max_bytes=args.max_bytes, configuration={
+            "sources": config_sources, "digest": config_digest,
             "credential_env": key_name,
-            "credential_source": (
-                "environment"
-                if os.environ.get(key_name)
-                else "secrets_file"
-                if secret_value
-                else "legacy_env"
-            ),
+            "credential_source": "environment" if os.environ.get(key_name)
+                else "secrets_file" if secret_value else "legacy_env",
         },
-        "items": manifest_items,
-    }
-    manifest_path = args.output_dir / (
-        f"manifest.{args.provider}.{args.kind}.{retrieved.strftime('%Y%m%dT%H%M%SZ')}.json"
     )
-    if manifest_path.exists():
-        raise SystemExit(f"Refusing to overwrite existing manifest: {manifest_path}")
-    temporary_manifest = manifest_path.with_name(f".{manifest_path.name}.{os.getpid()}.tmp")
-    temporary_manifest.write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    os.replace(temporary_manifest, manifest_path)
-    print(f"Downloaded {len(manifest_items)} {args.provider} {args.kind} asset(s).")
+    print(f"Downloaded {len(manifest['items'])} {args.provider} {args.kind} asset(s).")
     print(f"Manifest: {manifest_path}")
     return 0
 

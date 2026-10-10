@@ -105,10 +105,11 @@ function parseAstatsRms(stderr) {
   return values.length > 0 ? values.at(-1) : null;
 }
 
-function measureResidualSimilarity(firstFile, referenceFile) {
+function measureResidualSimilarity(firstFile, referenceFile, durationSeconds) {
   const common = "aresample=48000:async=0:first_pts=0,"
     + "aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo,"
-    + "asetpts=N/SR/TB";
+    + "asetpts=N/SR/TB,apad,"
+    + `atrim=duration=${Number(durationSeconds).toFixed(6)}`;
   const residual = run("ffmpeg", [
     "-hide_banner",
     "-nostats",
@@ -216,7 +217,7 @@ function compareReconstructedMix(
     };
   }
   try {
-    return measureResidualSimilarity(reconstructedFile, mixFile);
+    return measureResidualSimilarity(reconstructedFile, mixFile, durationSeconds);
   } finally {
     fs.rmSync(reconstructedFile, { force: true });
   }
@@ -235,6 +236,9 @@ export function evaluateAudioStems({
 
   const checks = [];
   const measurements = {};
+  if (!Number.isFinite(finalDurationSeconds) || finalDurationSeconds <= 0) {
+    throw new Error("Audio stem QC requires the positive duration of the complete final timeline");
+  }
   const required = contract?.bgmRequired === true;
   const adaptiveRequired = contract?.adaptiveBgmRequired === true;
   const dialogueEntry = declared?.dialogue ?? declared?.voice;
@@ -330,6 +334,12 @@ export function evaluateAudioStems({
     if (!exists) continue;
     try {
       measurements[name] = measureStem(file, qcConfig);
+      if (["dialogue", "mix"].includes(name)) checks.push(check(
+        `${name}_stem_full_duration`,
+        Math.abs(measurements[name].durationSeconds - finalDurationSeconds) <= 0.05,
+        measurements[name].durationSeconds,
+        `${finalDurationSeconds} seconds (+/- 0.05s encoding tolerance)`,
+      ));
       checks.push(check(
         `${name}_stem_loudness_analysis`,
         Number.isFinite(measurements[name].integratedLufs),
@@ -452,14 +462,18 @@ export function evaluateAudioStems({
       "existing final video with decoded audio",
     ));
     if (finalExists) {
-      const finalComparison = measureResidualSimilarity(resolvedFinal, mixFile);
+      const finalSummary = mediaSummary(resolvedFinal);
+      checks.push(check("final_audio_full_duration",
+        Boolean(finalSummary.audio) && Math.abs(finalSummary.audioDuration - finalDurationSeconds) <= 0.05,
+        finalSummary.audioDuration, `${finalDurationSeconds} seconds (+/- 0.05s)`));
+      const finalComparison = measureResidualSimilarity(resolvedFinal, mixFile, finalDurationSeconds);
       measurements.finalMixComparison = finalComparison;
       const finalThreshold = Number(qcConfig.finalMixPsnrMinDb);
       checks.push(check(
         "final_audio_matches_mix_stem",
         finalComparison.status === 0
-          && finalComparison.similaritySnrDb !== null
-          && finalComparison.similaritySnrDb >= finalThreshold,
+          && (finalComparison.exactMatch === true || (finalComparison.similaritySnrDb !== null
+          && finalComparison.similaritySnrDb >= finalThreshold)),
         finalComparison,
         `decoded final audio matches mix stem at >= ${finalThreshold} dB residual SNR`,
       ));

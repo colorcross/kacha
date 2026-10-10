@@ -230,6 +230,7 @@ export function buildTimelineProjection(timelineFile, { includeSourceHash = fals
       },
       metadata: {
         kind: entry.kind,
+        sourceOffsetSeconds: entry.sourceOffsetSeconds ?? 0,
         x: entry.x,
         y: entry.y,
         width: entry.width,

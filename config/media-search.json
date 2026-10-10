@@ -14,7 +14,8 @@
     "labels": 2.2,
     "transcript": 1.9,
     "ocr": 1.2,
-    "filename": 0.8
+    "filename": 0.8,
+    "searchQuery": 0.3
   },
   "synonymGroups": [
     ["ai", "人工智能", "智能体", "agent", "模型", "科技"],

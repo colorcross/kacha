@@ -159,4 +159,23 @@ node scripts/kacha.mjs generated-cache run \
 - 保留来源页、作者、许可、检索词、时间和哈希；
 - 正式工程只引用本地冻结文件，不使用热链。
 
+`--orientation landscape|portrait|square` 会转换成供应商支持的参数，并复核返回尺寸；
+Pexels 视频版本优先选择长边不超过 1920 的最大版本，仅有更大版本时选择其中最小的；
+Pixabay 视频沿用 medium 优先、small 备用，并检查实际画幅。
+成功搜索在本机缓存 24 小时。`--max-bytes` 默认限制每个文件 512 MiB；下载完成后
+真实解码，再以不可覆盖的方式落盘。每个成功素材立即写入来源清单，中途失败保留
+`partial` 清单和剩余 `pending` 项，不把未完成项当成可用素材。
+
+下载清单可直接进入本地搜索：
+
+```bash
+node scripts/kacha.mjs media index --root PROJECT/assets \
+  --catalog PROJECT/assets/manifest.pixabay.photo.TIMESTAMP.ID.json --output media-index.json
+node scripts/kacha.mjs media search media-index.json --query '需要的画面'
+```
+
+索引会校验清单中的实际 SHA，并保留作者、来源页、许可链接和检索时间。搜索词只记
+为 `search_query_unreviewed`，不能冒充实际看过画面的描述；进入时间线前仍须核对素材
+内容和具体使用条件。清单的 `pending` 项不会被导入。
+
 IconScout、Lordicon 和 LottieFiles 资源也必须保留来源、许可和哈希。平台允许下载不等于所有叙事用途都安全。

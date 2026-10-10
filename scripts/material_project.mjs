@@ -446,8 +446,8 @@ export function renderMaterialProject(root, { runtime, confirmExecute = false, e
             ...(segment.kind === "image" ? ["-loop", "1", "-framerate", String(fps)] : ["-ss", String(segment.sourceIn)]), "-i", segment.source.path,
             ...(!keepAudio ? ["-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo"] : []),
             "-map", "0:v:0", "-map", keepAudio ? "0:a:0" : "1:a:0",
-            "-vf", `scale=w='max(2,trunc(iw*if(gt(sar,0),sar,1)/2)*2)':h=ih,setsar=1,${filter},setsar=1,fps=${fps},format=yuv420p`,
-            "-af", `${keepAudio ? "loudnorm=I=-16:TP=-2:LRA=11," : ""}aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${segment.duration},asetpts=PTS-STARTPTS,afade=t=in:d=0.01,afade=t=out:st=${Math.max(0,segment.duration-.01)}:d=0.01`,
+            "-vf", `setpts=PTS-STARTPTS,scale=w='max(2,trunc(iw*if(gt(sar,0),sar,1)/2)*2)':h=ih,setsar=1,${filter},setsar=1,fps=${fps}:start_time=0,trim=end_frame=${segment.frames},format=yuv420p`,
+            "-af", `aresample=48000:first_pts=0,${keepAudio ? "loudnorm=I=-16:TP=-2:LRA=11," : ""}aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=${segment.duration},asetpts=PTS-STARTPTS,afade=t=in:d=0.01,afade=t=out:st=${Math.max(0,segment.duration-.01)}:d=0.01`,
             "-t", String(segment.duration), "-c:v", "ffv1", "-level", "3", "-c:a", "pcm_s16le", "-ar", "48000", temporary]);
           if (!current(segment.source)) throw new Error("转码期间源素材发生变化");
           const summary = mediaSummary(temporary);

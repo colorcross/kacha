@@ -241,15 +241,31 @@ function catalogEntries(catalogFile) {
   if (!catalogFile) return [];
   const file = ensureFile(catalogFile, "素材 catalog");
   const catalog = readJson(file);
-  const entries = Array.isArray(catalog) ? catalog : catalog.entries;
+  const stock = catalog.schema === "kacha.media-manifest.v1";
+  const entries = stock ? catalog.items : Array.isArray(catalog) ? catalog : catalog.entries;
   if (!Array.isArray(entries)) {
     fail("KACHA-E140", "素材 catalog 必须是数组或包含 entries 数组", 2);
   }
-  return entries.map((entry, index) => ({
-    ...entry,
-    __catalog: file,
-    __index: index,
-  }));
+  return entries.map((entry, index) => {
+    if (stock) {
+      const local = path.resolve(path.dirname(file), entry.local_path ?? "");
+      if (!fs.existsSync(local) || !fs.statSync(local).isFile()
+        || !/^[a-f0-9]{64}$/.test(entry.sha256 ?? "") || sha256File(local) !== entry.sha256) {
+        fail("KACHA-E120", `下载素材身份已失效：${index}，请检查 manifest 与原文件`);
+      }
+      if (!["photo", "video"].includes(entry.kind) || !entry.source_url || !entry.license_url) {
+        fail("KACHA-E140", `下载素材缺少类型、来源或许可记录：${index}`);
+      }
+      return { id: `${entry.provider}-${entry.kind}-${entry.asset_id}-${shortDigest(local)}`,
+        path: local, kind: entry.kind === "photo" ? "image" : "video",
+        tags: entry.tags ?? "", searchQuery: entry.query ?? "", license: entry.license_url,
+        provenance: { kind: "stock_media", source: entry.source_url, creator: entry.creator,
+          license: entry.license_url, retrievedAt: entry.retrieved_at, evidence: file,
+          sha256: entry.sha256, externalUpload: false },
+        __catalog: file, __index: index };
+    }
+    return { ...entry, __catalog: file, __index: index };
+  });
 }
 
 function visualEntries(files) {
@@ -335,6 +351,7 @@ function normalizeEntry(entry, root) {
       labels: Array.isArray(merged.labels) ? merged.labels.join(" ") : String(merged.labels ?? ""),
       transcript: String(merged.transcript ?? merged.text ?? ""),
       ocr: String(merged.ocr ?? ""),
+      searchQuery: String(merged.searchQuery ?? ""),
     },
     license: merged.license ?? merged.provenance?.license ?? "unknown",
     provenance: merged.provenance ?? {
@@ -349,6 +366,7 @@ function normalizeEntry(entry, root) {
       ...(merged.labels ? ["labels"] : []),
       ...(merged.transcript || merged.text ? ["transcript"] : []),
       ...(merged.ocr ? ["ocr"] : []),
+      ...(merged.searchQuery ? ["search_query_unreviewed"] : []),
       ...(!merged.description && !merged.tags && !merged.labels
         && !merged.transcript && !merged.ocr ? ["filename_only"] : []),
     ],

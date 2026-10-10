@@ -182,9 +182,45 @@ function compileTrim(projection, command) {
       : { sourceEndTick: item.metadata.sourceStartTick + outputTick - item.startTick };
   } else if (Object.hasOwn(item.editBindings, `${edge}Tick`)) changes = { [`${edge}Tick`]: outputTick };
   else throw new Error(`${item.id} 不支持 ${edge} trim`);
-  return compileProjectionCommand(projection, {
+  const compiled = compileProjectionCommand(projection, {
     schemaVersion: "1.0", kind: "kacha-editor-command", itemId: item.id, changes,
   });
+  if (item.type === "overlay") {
+    const timebase = projectionTimebase(projection);
+    const start = edge === "start" ? outputTick : item.startTick;
+    const end = edge === "end" ? outputTick : item.endTick;
+    if (edge === "start" && item.metadata.kind === "video") {
+      compiled.operations.push({ op: "merge", path: item.sourcePointer, value: {
+        sourceOffsetSeconds: Number(item.metadata.sourceOffsetSeconds ?? 0)
+          + ticksToSeconds(start - item.startTick, timebase),
+      } });
+    }
+    const keyframes = item.metadata.keyframes ?? {};
+    if (Object.keys(keyframes).length) {
+      const at = (points, tick) => {
+        if (tick <= points[0].tick) return points[0].value;
+        for (let i = 1; i < points.length; i += 1) {
+          if (tick <= points[i].tick) {
+            const a = points[i - 1], b = points[i];
+            return a.value + (b.value - a.value) * (tick - a.tick) / (b.tick - a.tick);
+          }
+        }
+        return points.at(-1).value;
+      };
+      compiled.operations.push({ op: "replace", path: `${item.sourcePointer}/keyframes`, value:
+        Object.fromEntries(Object.entries(keyframes).map(([property, points]) => {
+          const kept = points.filter(point => point.tick >= start && point.tick <= end);
+          if (points[0].tick < start && !kept.some(point => point.tick === start)) {
+            kept.unshift({ tick: start, time: ticksToSeconds(start, timebase), value: at(points, start) });
+          }
+          if (points.at(-1).tick > end && !kept.some(point => point.tick === end)) {
+            kept.push({ tick: end, time: ticksToSeconds(end, timebase), value: at(points, end) });
+          }
+          return [property, kept];
+        })) });
+    }
+  }
+  return compiled;
 }
 
 function compileRippleTrim(projection, command, timeline) {
