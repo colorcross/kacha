@@ -63,7 +63,7 @@ node scripts/kacha.mjs resume PROJECT --confirm-execute
 | 从网络找图片/视频并匹配当前片段 | `references/network-materials.md`；搜索→下载→实际观察/选段→许可→可撤销剪入，不用检索命中冒充事实证据 |
 | 生成或外部素材 | `references/generated-media-assets.md`；费用、许可及参考派生另读 `references/production/control-and-orchestration.md` |
 | 模型能力较弱、低推理强度、长任务续跑 | `references/agent-execution.md`；视觉证据另读 `references/visual-evidence.md` |
-| 节目文稿 | `references/shows/README.md` 和本栏目风格卡；大灰AI遵守调用项目当前V6.1与 `docs/DAHUI_AI_EDITING_SYSTEM_V1.md`，旧V3.3仅用于明确指定的历史作品 |
+| 节目文稿 | `references/shows/README.md` 和本栏目风格卡；大灰AI遵守调用项目基础资料索引所指的当前主方案与 `docs/DAHUI_AI_EDITING_SYSTEM_V1.md`，旧V3.3仅用于明确指定的历史作品 |
 | 资源/渲染效率、缓存、量化比较 | `docs/QUALITY_PRESERVING_EFFICIENCY_V8.md`、`references/production/control-and-orchestration.md` |
 | 清理与保留 | `references/cleanup-retention.md` |
 | 白板视频 | `docs/WHITEBOARD_ANIMATION.md` |
