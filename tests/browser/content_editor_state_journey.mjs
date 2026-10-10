@@ -22,10 +22,12 @@ try {
   assert.equal(await page.locator('[data-mode=topic]').getAttribute('aria-pressed'), 'true');
   await page.locator('#topic').fill('如何验证自己的工作？');
   await page.locator('#projectRoot').fill('/content-a');
-  assert.equal(await page.locator('#style option:disabled').count(), 5);
+  assert.equal(await page.locator('#show').inputValue(), 'talking-head');
+  assert.equal(await page.locator('#style').inputValue(), 'clean-editorial');
+  assert.equal(await page.locator('#style option:disabled').count(), 6);
   await page.locator('#show').selectOption('tool-share');
   assert.equal(await page.locator('#style').inputValue(), 'xingzhe-light-overlay');
-  assert.equal(await page.locator('#style option:disabled').count(), 1);
+  assert.equal(await page.locator('#style option:disabled').count(), 2);
   await page.locator('#show').selectOption('ai-practice');
   await page.locator('#startContent').click(); await arrived.promise;
   for (const id of ['projectRoot', 'topic', 'chooseScript', 'show', 'style', 'startContent']) assert.equal(await page.locator(`#${id}`).isDisabled(), true);

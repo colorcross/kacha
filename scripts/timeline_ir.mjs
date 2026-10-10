@@ -1084,6 +1084,7 @@ function compileGraph(validated, loadedConfig) {
   const graph = {
     schemaVersion: "1.0",
     projectId: plan.projectId,
+    rendererVersion: "continuous-bgm-aligned-sidechain-v2",
     mode,
     timebase: plan.timebase,
     contracts: Object.fromEntries(
@@ -1520,7 +1521,7 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
         const fadeFilters = fades.length > 0 ? `${fades.join(",")},` : "";
         const label = `bgmSegment${index}`;
         filters.push(
-          `[${inputIndexes.bgm[index]}:a]atrim=start=${formatNumber(sourceStart)}:`
+          `[${inputIndexes.bgm[index]}:a]asetpts=N/SR/TB,atrim=start=${formatNumber(sourceStart)}:`
             + `end=${formatNumber(sourceStart + envelopeDuration)},asetpts=PTS-STARTPTS,`
             + "aresample=48000:async=0:first_pts=0,"
             + "aformat=sample_rates=48000:channel_layouts=stereo,"
@@ -1538,7 +1539,7 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
       const bgmStart = graph.previewRange?.start ?? 0;
       const bgmEnd = graph.previewRange?.end ?? graph.durationSeconds;
       filters.push(
-        `[${inputIndexes.bgm[0]}:a]atrim=start=${formatNumber(bgmStart)}:`
+        `[${inputIndexes.bgm[0]}:a]asetpts=N/SR/TB,atrim=start=${formatNumber(bgmStart)}:`
           + `end=${formatNumber(bgmEnd)},`
           + "asetpts=PTS-STARTPTS,aresample=48000:async=0:first_pts=0,"
           + `aformat=sample_rates=48000:channel_layouts=stereo,volume=${level}dB[bgmRaw]`,
@@ -1550,8 +1551,14 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
       const release = Number(sidechain.releaseMs ?? 280);
       const threshold = Number(sidechain.threshold ?? 0.03);
       const ratio = Number(sidechain.ratio ?? 4);
+      // Loop demux timestamps can drift from decoded sample counts. The BGM
+      // inputs above use a continuous sample clock; equal block boundaries here
+      // keep sidechain EOF from dropping the final music block. p=0 preserves
+      // the exact tail instead of extending it with silence.
+      filters.push("[voiceSidechain]asetnsamples=n=1024:p=0[voiceSidechainBlock]");
+      filters.push("[bgmRaw]asetnsamples=n=1024:p=0[bgmBlock]");
       filters.push(
-        `[bgmRaw][voiceSidechain]sidechaincompress=threshold=${formatNumber(threshold)}:`
+        `[bgmBlock][voiceSidechainBlock]sidechaincompress=threshold=${formatNumber(threshold)}:`
           + `ratio=${formatNumber(ratio)}:attack=${formatNumber(attack)}:`
           + `release=${formatNumber(release)}[bgmDucked]`,
       );

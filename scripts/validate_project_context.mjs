@@ -252,6 +252,15 @@ if (
 ) {
   errors.push("delivery 包含 covers 时 coverAspectRatios 不能为空");
 }
+if (context.productionProfile) {
+  const profile = context.productionProfile;
+  const file = verifyIdentity(profile.manifest, contextFile, "productionProfile.manifest", template, fullHash, errors);
+  if (file && fs.existsSync(file)) {
+    const original = readJson(file);
+    if (original.projectId !== context.projectId || original.productionPack !== profile.packId || original.show !== profile.showId
+      || JSON.stringify(original.expectedMedia?.audioMix ?? {}) !== JSON.stringify(context.delivery?.audioContract?.audioMix ?? {})) errors.push("返工生产包与声音策略必须来自绑定的原项目");
+  }
+}
 if (context.delivery?.audioContract) {
   const contract = context.delivery.audioContract;
   for (const field of ["integratedLufsMin", "integratedLufsMax", "truePeakMax"]) {

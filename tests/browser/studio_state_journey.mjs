@@ -33,6 +33,18 @@ try {
  });
  await page.goto(`${origin}/`);
  await page.locator('#styleList button').first().waitFor();
+ assert.equal(await page.locator('#show').inputValue(),'talking-head');
+ assert.equal(await page.locator('#show option').count(),3);
+ await page.locator('#notes').fill('保留我的要求');
+ await page.locator('[data-style-id="dahui-book"]').click();
+ assert.equal(await page.locator('#show').inputValue(),'ai-reading');assert.equal(await page.locator('#show option').count(),8);
+ await page.locator('[data-style-id="xingzhe"]').click();
+ assert.equal(await page.locator('#show option').count(),5);
+ await page.locator('[data-style-id="clean-editorial"]').click();
+ await page.locator('#show').selectOption('screen-demo');
+ assert.equal(await page.locator('#notes').inputValue(),'保留我的要求');
+ checks.push('general-brand-legacy-switching-preserves-user-input-and-scopes-shows');
+ await page.screenshot({path:path.join(artifacts,'general-studio-desktop.png'),fullPage:true});
  await page.locator('#videoPath').fill('/a.mp4');await page.locator('#probeVideo').click();
  while(!releaseProbe) await new Promise(r=>setTimeout(r,10));
  await page.locator('#videoPath').fill('/b.mp4');releaseProbe();

@@ -54,7 +54,8 @@ node scripts/kacha.mjs resume PROJECT --confirm-execute
 | --- | --- |
 | Agent 控制、对象引用、mutation、异步任务 | `references/agent-chat-control-plane.md` |
 | 开场、导演、专业剪辑与 J/L-cut | `references/professional-editing-craft.md`、`references/production/agent-and-review.md` |
-| 人声、BGM、SFX、同步 | `references/audio.md`；SFX 另读 `references/sfx-library.md`；生成 BGM/缺失音效按 `references/minimax-audio-fallback.md` 执行 mmx → 已登录默认浏览器 → MiniMax Design |
+| 人声、BGM、SFX、同步 | `references/audio.md`；SFX 另读 `references/sfx-library.md`；生成 BGM 默认 MiniMax Audio 已登录网页版；缺失音效按 `references/minimax-audio-fallback.md` |
+| 含音频的视频生成 | 默认本机 MiniMax Design；`references/generated-media-assets.md` 与 `config/generation-routing.json`，实际检查音轨后接回工程 |
 | 视觉、PIP、蒙版、调色 | `references/visuals-masks.md` |
 | 信息图、空间/语义动效、字景 | `references/visual-design-preflight.md`、`references/production/visual-execution.md` |
 | 风格、效果合同 | `references/style-effects-library.md`、`references/effect-templates-resources.md` |
@@ -84,6 +85,10 @@ node scripts/kacha.mjs resume PROJECT --confirm-execute
 
 真实素材、正常速度审片与同源队列才能证明成片质量和生产收益。至少 8 个独立同源成对项目是整体效率声明条件，不妨碍先交付已验证的局部修复。公开包不包含项目私有字体、人物资产与源音效。
 
+## 通用与专用工程
+
+新建工程默认 `clean-editorial`：`talking-head` 通用口播、`screen-demo` 录屏演示、`montage` 多素材。通用工程不附带个人品牌、问句开场、期号、强制配乐或音效；剪辑仍须保留完整内容、实际来源、当前时间线与正常速度审阅。显式选栏目会路由到所属生产包，跨包组合拒绝；新建工程固化配置，已冻结工程继续用其原运行时。规则及通用终审模板入口见 `docs/PRODUCTION_PACKS.md`。
+
 ## 大灰AI新节目
 
-先按调用项目最终方案选择 `dahui-ai` 生产包与八类 show ID。读 `docs/DAHUI_AI_EDITING_SYSTEM_V1.md` 和对应风格卡；使用 `episode template/validate` 与 production-quality 合同绑定实际材料。工作台默认新包，CLI 单源工程显式 `--pack dahui-ai --show ...`，或由新 show ID 自动路由。读书母片30–60分钟，辩论保存完整会话与双方发言索引；运动不强制AI关联。默认真人与证据、自然开场、可读字幕、按需声音，不继承旧3D封面、固定服装、期号或动效配额。用户/事实必需及已触发增强仍必须执行。旧工程及冻结运行时不自动迁移。
+先按调用项目最终方案选择 `dahui-ai` 生产包与八类 show ID。读 `docs/DAHUI_AI_EDITING_SYSTEM_V1.md` 和对应风格卡；使用 `episode template/validate` 与 production-quality 合同绑定实际材料。工作台选择对应大灰AI预设，CLI 单源工程显式 `--pack dahui-ai --show ...`，或由新 show ID 自动路由。读书母片30–60分钟，辩论保存完整会话与双方发言索引；运动不强制AI关联。默认真人与证据、自然开场、可读字幕、按需声音，不继承旧3D封面、固定服装、期号或动效配额。用户/事实必需及已触发增强仍必须执行。旧工程及冻结运行时不自动迁移。

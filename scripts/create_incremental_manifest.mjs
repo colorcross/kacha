@@ -33,13 +33,6 @@ if (positional.length < 3 || !outputInput) {
   );
   process.exit(2);
 }
-if (bgmStemInput && (!dialogueStemInput || !mixStemInput)) {
-  console.error(
-    "--bgm-stem 要求同时提供 --dialogue-stem 和 --mix-stem，"
-      + "以证明组件混音和最终成片都包含 BGM",
-  );
-  process.exit(2);
-}
 
 const [contextInput, deltaInput, indexInput] = positional.map((item) => path.resolve(item));
 const outputFile = path.resolve(outputInput);
@@ -66,11 +59,16 @@ if (context.projectId !== index.projectId) {
   console.error("context 与 artifact index 的 projectId 不一致");
   process.exit(1);
 }
+const profile = context.productionProfile;
+const audioContract = context.delivery?.audioContract;
+const montageWithoutDialogue = profile?.packId === "clean-editorial" && profile?.showId === "montage" && audioContract?.audioMix?.dialogueRequired === false;
+if (bgmStemInput && (!mixStemInput || (!montageWithoutDialogue && !dialogueStemInput))) throw new Error("--bgm-stem 要求混音与适用的对白分轨");
 const relative = (file) => path.relative(path.dirname(outputFile), file);
 const project = {
   schemaVersion: "3.0",
   workflow: "incremental",
   projectId: context.projectId,
+  ...(profile ? {productionPack:profile.packId, show:profile.showId} : {}),
   context: relative(contextInput),
   delta: relative(deltaInput),
   artifactIndex: relative(indexInput),
@@ -101,15 +99,10 @@ const project = {
         }
       : {}),
   },
-  ...(bgmStemInput
-    ? {
-        expectedMedia: {
-          audioMix: {
-            bgmRequired: true,
-          },
-        },
-      }
-    : {}),
+  ...(audioContract || bgmStemInput ? {expectedMedia: {
+    ...(audioContract ?? {}),
+    ...(audioContract?.audioMix || bgmStemInput ? {audioMix: {...(audioContract?.audioMix ?? {}), ...(bgmStemInput ? {bgmRequired:true} : {})}} : {}),
+  }} : {}),
 };
 writeJsonAtomic(outputFile, project);
 console.log(

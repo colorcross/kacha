@@ -271,7 +271,7 @@ try {
   assert.throws(()=>materialProjectStatus(projectRoot),/工程字幕字体已变化/);fs.writeFileSync(activeFont,savedFont);
   assert.equal(materialProjectStatus(projectRoot).status,"candidate_ready");
   checks.push("candidate-status-revalidates-project-font-content");
-  const report={status:"pass",passed:checks.length,checks,fontFixture:publicFont?"public_system_font":"private_brand_font",fixture:"synthetic_local_media_not_real_editorial_acceptance",candidate:rendered.candidate.path};
+  const report={status:"pass",passed:checks.length,checks,fontFixture:publicFont?"public_system_font":"selected_project_font",fixture:"synthetic_local_media_not_real_editorial_acceptance",candidate:rendered.candidate.path};
   if(persistent)write(path.join(temp,"demo-result.json"),report);
   console.log(JSON.stringify(report,null,2));
 } finally { if(!persistent)fs.rmSync(temp,{recursive:true,force:true}); }

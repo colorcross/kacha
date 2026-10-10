@@ -216,7 +216,7 @@ function coveragePolicy(profileId, durationSeconds, requestedShowId = null, vers
     diversity: narrative ? { ...selected.diversity, minimumDistinctFamilies: 1, maximumSingleImplementationShare: 1 } : selected.diversity,
     perceptual: selected.perceptual,
     longFormRequirements: narrative ? { captionRelationLayouts: [], minimumPipLayoutKinds: 0, minimumTransitionKinds: 0 } : selected.longFormRequirements,
-    openingContract: profileId === "dahui-ai" ? { ...productionMotionPolicy.opening, startAtOrBeforeSeconds: 3, promiseBySeconds: loadProductionPack("dahui-ai", showId).policies.opening.promiseBySeconds } : productionMotionPolicy.opening,
+    openingContract: ["dahui-ai", "clean-editorial"].includes(profileId) ? { ...productionMotionPolicy.opening, startAtOrBeforeSeconds: 3, promiseBySeconds: loadProductionPack(profileId, showId).policies.opening.promiseBySeconds } : productionMotionPolicy.opening,
     semanticRouting: productionMotionPolicy.semanticRouting,
     spatialRouting: productionMotionPolicy.spatialRouting,
     professionalMotionContract: productionMotionPolicy.professionalContract,
@@ -642,7 +642,7 @@ function validatePlan(planFile, forExecution = false, timelineFile = null) {
 }
 
 function writeTemplate(output, profileId, durationSeconds, showId, openingId) {
-  const version = editorialVersion(option("--editorial-policy", profileId === "dahui-ai" ? NARRATIVE_POLICY : "legacy"));
+  const version = editorialVersion(option("--editorial-policy", profileId === "xingzhe" ? "legacy" : NARRATIVE_POLICY));
   if (profileId === "dahui-ai" && version !== NARRATIVE_POLICY) throw new Error("大灰AI必须使用 narrative-v1");
   const policy = coveragePolicy(profileId, durationSeconds, showId, version);
   const allowedOpeningIds = new Set([
@@ -762,9 +762,9 @@ try {
     const output = path.resolve(option("--output", ""));
     const duration = Number(option("--duration", ""));
     const inferred = resolveProductionSelection(null, option("--show"));
-    const profile = option("--style", inferred.packId === "dahui-ai" ? "dahui-ai" : "xingzhe");
-    const showId = option("--show", profile === "dahui-ai" ? "ai-practice" : "tool-share");
-    const openingId = option("--opening", profile === "dahui-ai" ? "natural" : "cold_open_marker");
+    const profile = option("--style", inferred.packId === "xingzhe-dahui" ? "xingzhe" : inferred.packId);
+    const showId = option("--show", profile === "dahui-ai" ? "ai-practice" : profile === "clean-editorial" ? "talking-head" : "tool-share");
+    const openingId = option("--opening", profile === "xingzhe" ? "cold_open_marker" : "natural");
     if (!output || !Number.isFinite(duration) || duration <= 0) {
       throw new Error("template 需要 --duration 正数与 --output");
     }

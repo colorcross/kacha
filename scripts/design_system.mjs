@@ -821,6 +821,7 @@ export function resolveDesignSystem(styleConfig = {}) {
   const bundle = loadDesignSystem(systemId);
   const selectedModes = {
     ...bundle.system.defaultModes,
+    ...(["dahui-ai", "clean-editorial"].includes(styleConfig.profile) ? { show: styleConfig.profile === "dahui-ai" ? "ai-practice" : "talking-head" } : {}),
     ...(styleConfig.modes ?? {}),
   };
   let modeStyleOverrides = {};

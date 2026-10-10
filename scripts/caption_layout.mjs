@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { resolveProductionSelection, productionStyleProfile } from "./production_pack.mjs";
 
 import fs from "node:fs";
 import os from "node:os";
@@ -25,6 +26,7 @@ const registryFile = path.join(
   "spoken-caption-layouts.json",
 );
 const legacyFontRoutingFile = path.join(skillDirectory, "config", "font-routing.json");
+const genericFontRoutingFile = path.join(skillDirectory, "config", "font-routing-clean-editorial.json");
 const dahuiFontRoutingFile = path.join(skillDirectory, "config", "font-routing-dahui-ai.json");
 const bundledSfxRoot = path.join(skillDirectory, "assets", "sfx");
 const args = process.argv.slice(2);
@@ -316,8 +318,8 @@ function resolveShowProfile(requested, registry, label) {
   throw new Error(`${label} 指定了不存在的栏目字景档案：${requested}`);
 }
 
-function showProfileForCue(cue, registry) {
-  const requested = String(cue.textScene?.show ?? option("--show", "neutral")).trim();
+function showProfileForCue(cue, registry, inheritedShow = "neutral") {
+  const requested = String(cue.textScene?.show ?? inheritedShow ?? "neutral").trim();
   return resolveShowProfile(requested, registry, `cue ${cue.id}`);
 }
 
@@ -710,15 +712,16 @@ function planCaptionLayout({ input, transcript, output, mask, fontRegistry }) {
     explicit: fontRegistry,
     config,
   });
-  const globalShowRequest = option("--show", config.style.profile === "dahui-ai" ? config.style.modes.show : null);
+  const globalShowRequest = option("--show", ["dahui-ai", "clean-editorial"].includes(config.style.profile) ? config.style.modes.show : null);
   const globalShowProfile = globalShowRequest
     ? resolveShowProfile(String(globalShowRequest).trim(), registry, "--show")
     : null;
-  const isDahui = Boolean(globalShowProfile && globalShowProfile.id.includes("-"));
-  const fontRoutingFile = isDahui ? dahuiFontRoutingFile : legacyFontRoutingFile;
+  const selectedPack = globalShowProfile && globalShowProfile.id !== "neutral"
+    ? resolveProductionSelection(null, globalShowProfile.id.replaceAll("_", "-")).packId : null;
+  const fontRoutingFile = selectedPack === "clean-editorial" ? genericFontRoutingFile : selectedPack === "dahui-ai" ? dahuiFontRoutingFile : legacyFontRoutingFile;
   const designResolverInput = {
     ...config.style,
-    ...(isDahui ? { profile: "dahui-ai" } : {}),
+    ...(selectedPack ? { profile: productionStyleProfile(selectedPack) } : {}),
     modes: {
       ...config.style.modes,
       ...(globalShowProfile && globalShowProfile.id !== "neutral"
@@ -888,7 +891,7 @@ function planCaptionLayout({ input, transcript, output, mask, fontRegistry }) {
       Math.round(summary.videoDuration * summary.averageFps),
       Math.round(cue.end * summary.averageFps),
     );
-    const profile = showProfileForCue(cue, registry);
+    const profile = showProfileForCue(cue, registry, globalShowRequest);
     const scene = textSceneRecord(cue, layout, profile, surface);
     if (!registeredMotifs.has(scene.graphics.motif)) {
       throw new Error(`cue ${cue.id} 指定了未注册的字景图形母题：${scene.graphics.motif}`);
@@ -1052,7 +1055,7 @@ function planCaptionLayout({ input, transcript, output, mask, fontRegistry }) {
 
 function validatePlan(planFile, strictTextScenes = false) {
   const plan = readJson(planFile);
-  const fontRoutingFile = plan.registry?.fontRoutingId === "dahui-ai-font-routing" ? dahuiFontRoutingFile : legacyFontRoutingFile;
+  const fontRoutingFile = plan.registry?.fontRoutingId === "clean-editorial-font-routing" ? genericFontRoutingFile : plan.registry?.fontRoutingId === "dahui-ai-font-routing" ? dahuiFontRoutingFile : legacyFontRoutingFile;
   const registry = readJson(registryFile);
   const routing = readJson(fontRoutingFile);
   const layoutsById = new Map(registry.layouts.map((layout) => [layout.id, layout]));

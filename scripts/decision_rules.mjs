@@ -184,7 +184,7 @@ function compileDecisions(registry, cues, seed, modelTier) {
       ? "dark_caption_on_bright"
       : signalSet.has("logical_emphasis")
         ? "keyword_weight_and_scale"
-        : "jinling_plain_single";
+        : "project_plain_single";
     const sfxRecipe = signalSet.has("typing_requested")
       ? "single_keyboard_click"
       : signalSet.has("effect_peak") || signalSet.has("logical_emphasis")

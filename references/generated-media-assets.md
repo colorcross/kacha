@@ -45,7 +45,7 @@ node scripts/validate_generated_shot_plan.mjs PLAN.json --template
 node scripts/validate_generated_shot_plan.mjs PLAN.json --for-execution
 ```
 
-通过门禁后，必须从内容指纹缓存入口执行生成命令：
+显式采用命令行生成器时，通过门禁后从内容指纹缓存入口执行生成命令：
 
 ```bash
 node scripts/kacha.mjs generated-cache run \
@@ -67,7 +67,7 @@ node scripts/kacha.mjs generated-cache run \
 
 ## 能力快照
 
-每次调用前以官方入口和本机实际 CLI/API 为准，记录：
+每次调用前以官方入口、实际 CLI/API 或网页/桌面当前界面为准，记录：
 
 - 验证日期和来源；
 - provider transport；
@@ -104,7 +104,28 @@ node scripts/kacha.mjs generated-cache run \
 一个位于人物后景。五栏目分别追加任务推进、沉静思考、真实运动重量、人机
 冲突和成年交流感的表演/灯光段落，不得用同一人物姿势批量换标题。
 
-## MiniMax
+## MiniMax Design：含音频视频的默认入口
+
+生成时明确需要视频内含声音，默认使用本机 **MiniMax Design** 桌面应用；BGM 单独生成默认走
+<https://www.minimax.cn/audio>。此选择适用于通用工程、大灰AI和历史包的新生成需求；
+既有冻结任务继续其原路由，最新明确要求可覆盖 `config/generation-routing.json`。
+
+1. 定位已安装应用并读取当前界面，使用独立创作页，保留其他项目和输入草稿。核实当前模型、
+   音画联合生成开关、规格与下载能力；不根据固定模型名推定能力，也不把“本机桌面版”写成离线生成。
+2. 按上面的镜头合同填写画面和声音：旁白/对白、环境声、动作声、音乐分别明确；已有口播不重复生成。
+   `audioPolicy=model_audio`，能力快照的 transport 使用 `desktop`，nativeAudio 以当次界面证据填写。
+3. 先查项目缓存和应用已有任务，沿用已有需求与预算；每个镜头提交一次并立即记录任务标识或可定位结果。
+   状态未知先查询原任务，不因等待而再交给 mmx/API 提交。桌面版不支持要求时保留缺口，不能交付静音视频冒充含音频生成。
+4. 下载原件到项目私有目录，保存 SHA、实际渠道/模型、提示词摘要、任务/结果标识、费用与许可记录；
+   用 ffprobe 确认视频和音频流均存在，再完整解码、检查两条流的时长与起点并实际试听对应声音。
+   音轨存在不等于有声或语义正确；按要求检查静音、同步、对白准确度、口型和人声保护。
+5. 原件只读，工作副本导入现有媒体索引/素材工程，并沿用普通素材匹配、剪入、撤销和终审流程。
+   应用的生成成功不等于咔嚓成片通过，也不自动触发公开发布。
+
+网页/桌面是 Agent 操作入口，当前没有后台无人值守生成器。UI 下载结果直接按上述流程接回，
+不为进入 CLI 缓存而再次生成，不用 `cp` 命令伪装远端生成。`generated-cache run` 只适用于下面显式选择的命令行执行器。
+
+## MiniMax CLI：显式选择或已确认的备用入口
 
 - 每次运行 `mmx --version`、`mmx video generate --help` 和必要预检；
 - 竖屏口播插镜优先用真实 9:16 首帧做 I2V；
@@ -133,7 +154,7 @@ node scripts/kacha.mjs generated-cache run \
 2. 审首帧、尾帧和角色卡；
 3. 确认模型、区域、额度、路由、输出和计费；
 4. 用户授权后才提交；
-5. 通过 `generated-cache run` 提交，缓存命中不得再次付费；
+5. CLI 通过 `generated-cache run` 提交；网页/桌面先查项目和应用已有结果，复用命中不得再次付费；
 6. 先用最低充分规格；
 7. 记录任务 ID、请求摘要和计费不确定性；
 8. 下载后本地冻结并 ffprobe；

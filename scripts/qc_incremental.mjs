@@ -18,7 +18,7 @@ import {
   firstPositional,
   loadKachaConfig,
 } from "./kacha_config.mjs";
-import { evaluateAudioStems } from "./audio_stem_qc.mjs";
+import { evaluateAudioStems, allowsSilentAudio, isSilentLoudness } from "./audio_stem_qc.mjs";
 
 function check(id, pass, actual, expected, severity = "error") {
   return {
@@ -91,6 +91,15 @@ try {
   process.exit(2);
 }
 
+// Audio exceptions are inherited from the hashed context, never granted by
+// editing the transient incremental manifest.
+const audioProject = context.productionProfile ? {
+  ...project, productionPack: context.productionProfile.packId, show: context.productionProfile.showId,
+  expectedMedia: { ...(context.delivery?.audioContract ?? {}), audioMix: {
+    ...(context.delivery?.audioContract?.audioMix ?? {}),
+    ...(project.expectedMedia?.audioMix?.bgmRequired === true ? {bgmRequired:true} : {}),
+  } },
+} : { ...project, productionPack: null, show: null };
 const outputFile = resolveFrom(projectFile, project.outputs.deltaQcReport);
 const deltaFile = resolveFrom(projectFile, project.delta);
 const contextFile = resolveFrom(projectFile, project.context);
@@ -128,6 +137,18 @@ if (
       "plan belongs to current context and delta",
     ),
   );
+}
+
+if (context.productionProfile) {
+  try {
+    const profile = context.productionProfile;
+    const file = resolveFrom(contextFile, profile.manifest?.path);
+    const original = readJson(file);
+    const valid = sha256File(file) === profile.manifest?.sha256 && original.projectId === context.projectId
+      && original.productionPack === profile.packId && original.show === profile.showId
+      && JSON.stringify(original.expectedMedia?.audioMix ?? {}) === JSON.stringify(context.delivery?.audioContract?.audioMix ?? {});
+    checks.push(check("production_audio_context", valid, valid ? "current bound project policy" : "stale or mismatched policy", "unchanged bound production manifest"));
+  } catch (error) { checks.push(check("production_audio_context", false, error.message, "valid bound production manifest")); }
 }
 
 if (delta.deliverables.video) {
@@ -287,17 +308,18 @@ if (delta.deliverables.video) {
     const contract = context.delivery.audioContract;
     if (loudness && contract) {
       const integrated = Number(loudness.input_i);
+      const allowedSilence = allowsSilentAudio(audioProject) && isSilentLoudness(loudness);
       const truePeak = Number(loudness.input_tp);
       checks.push(check(
         "integrated_loudness",
-        integrated >= Number(contract.integratedLufsMin)
-          && integrated <= Number(contract.integratedLufsMax),
+        allowedSilence || (integrated >= Number(contract.integratedLufsMin)
+          && integrated <= Number(contract.integratedLufsMax)),
         integrated,
         `${contract.integratedLufsMin} to ${contract.integratedLufsMax} LUFS`,
       ));
       checks.push(check(
         "true_peak",
-        truePeak <= Number(contract.truePeakMax),
+        allowedSilence || truePeak <= Number(contract.truePeakMax),
         truePeak,
         `<= ${contract.truePeakMax} dBTP`,
       ));
@@ -381,7 +403,7 @@ if (delta.deliverables.video) {
 if (audioChanged && summary) {
   audioStemQc = evaluateAudioStems({
     projectFile,
-    project,
+    project: audioProject,
     qcConfig,
     finalDurationSeconds: summary.duration,
     finalVideo: candidateVideo,

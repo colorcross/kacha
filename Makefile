@@ -17,6 +17,7 @@ check-core:
 	node tests/run_tests.mjs --suite core
 
 check-specialized:
+	node tests/general_custom_tests.mjs
 	node tests/deep_review_tests.mjs
 	node tests/editing_capability_tests.mjs
 	node tests/network_materials_tests.mjs

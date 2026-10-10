@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "id": "kacha-deterministic-decision-rules",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "rules": [
     {
       "id": "audio-generation-fallback",
@@ -9,9 +9,19 @@
       "modules": ["audio_generation", "audio", "bgm", "sfx", "minimax"],
       "signals": ["always"],
       "priority": "required",
-      "decision": "仅需生成 BGM/缺失音效时：先查本地库与缓存，按 references/minimax-audio-fallback.md 执行 mmx → 默认浏览器 MiniMax 音频网页版 → MiniMax Design；渠道异常不等于任务失败，已提交结果未知先查状态，禁止跨渠道重复提交。",
+      "decision": "仅需新生成 BGM 时：先查已有素材/缓存，默认已登录 MiniMax Audio 网页版 https://www.minimax.cn/audio；网页不可用且任务状态查明后再考虑 MiniMax Design、mmx。缺失 SFX 按独立音效回退。提交结果未知先查状态，禁止跨渠道重复提交。",
       "candidates": [{"recipe": "minimax_audio_agent_fallback", "score": 100}],
       "fallback": "preserve_unknown_attempt_and_required_asset_gap"
+    },
+    {
+      "id": "video-with-audio-generation-default",
+      "stages": ["content", "visual_audio"],
+      "modules": ["video_generation", "generated", "minimax"],
+      "signals": ["always"],
+      "priority": "required",
+      "decision": "需要生成视频内含音频时，默认本机 MiniMax Design 桌面版，按 references/generated-media-assets.md 记录当前能力、任务和成本；下载后核验实际声画流、完整解码与声音，不能以静音视频代交或因结果未知重复提交。",
+      "candidates": [{"recipe": "minimax_design_video_with_audio", "score": 100}],
+      "fallback": "preserve_unknown_attempt_and_required_audio_video_gap"
     },
     {
       "id": "cut-information-change",
@@ -130,8 +140,8 @@
       "modules": ["captions", "typography"],
       "signals": ["ordinary_speech"],
       "priority": "required",
-      "decision": "使用单行金陵体主字幕；不描边、无背景色、普通字幕无音效。",
-      "candidates": [{"recipe": "jinling_plain_single", "score": 100}],
+      "decision": "普通字幕使用工程已验证字体与字幕合同，默认单行、无音效；仅历史行者合同选择金陵体，不把品牌字体套入通用工程。",
+      "candidates": [{"recipe": "project_plain_single", "score": 100}],
       "fallback": "plain_single"
     },
     {
@@ -145,7 +155,7 @@
         {"recipe": "keyword_weight_and_scale", "score": 100},
         {"recipe": "conclusion_card", "score": 84}
       ],
-      "fallback": "jinling_plain_single"
+      "fallback": "project_plain_single"
     },
     {
       "id": "caption-bright-surface",
@@ -173,9 +183,9 @@
       "modules": ["bgm", "audio"],
       "signals": ["spoken_video"],
       "priority": "required",
-      "decision": "正式口播成片必须有可听但不抢人声的 BGM stem 和覆盖证据。",
+      "decision": "是否使用 BGM 以工程声音合同为准；通用工程可明确不配乐。合同要求或时间线实际启用 BGM 时，必须有可听但不抢人声的 BGM stem 与覆盖证据。",
       "candidates": [{"recipe": "sidechained_low_bgm", "score": 100}],
-      "fallback": "block_release"
+      "fallback": "follow_project_audio_contract_block_only_when_required"
     },
     {
       "id": "sfx-semantic",

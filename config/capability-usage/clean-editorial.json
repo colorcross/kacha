@@ -1,0 +1,125 @@
+{
+  "schemaVersion": "1.0",
+  "styleProfile": "clean-editorial",
+  "profile": "general",
+  "productionMotionPolicy": "../effects/production-motion-policy.json",
+  "defaultShow": "talking-head",
+  "description": "由用户意图和素材决定能力使用；不附加个人品牌、栏目证据或动效数量下限。",
+  "antiWebPolicy": "../design-system/anti-web.json",
+  "minimumDurationSeconds": 45,
+  "families": {
+    "opening": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.25
+    },
+    "expressive_transition": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.8
+    },
+    "supporting_media": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.8
+    },
+    "pip": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.8
+    },
+    "mask_depth": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.4
+    },
+    "semantic_motion": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 1.5
+    },
+    "gaze_guidance": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.65
+    },
+    "spatial_depth": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.4
+    },
+    "keyframe_variation": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 1.2
+    },
+    "parallel_layout": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.6
+    },
+    "caption_relation": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 1.2
+    },
+    "oversize_background_word": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.5
+    },
+    "person_depth_text": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 0.3
+    },
+    "visual_breathing": {
+      "minimumPerVideo": 0,
+      "minimumPerMinute": 0,
+      "maximumPerMinute": 1.2
+    }
+  },
+  "resourceRules": {
+    "supportingMediaAlternatives": [
+      "project_media",
+      "external_media",
+      "ai_generated_media",
+      "hyperframes"
+    ],
+    "minimumSupportingMediaKinds": 0,
+    "personMaskRequiredAfterSeconds": 1000000000,
+    "pipInformationDifferenceRequired": true
+  },
+  "diversity": {
+    "minimumDistinctFamilies": 0,
+    "maximumSingleImplementationShare": 1,
+    "sameImplementationMinimumGapSeconds": 0
+  },
+  "perceptual": {
+    "minimumVisibleDurationSeconds": 0.8,
+    "minimumPrimaryScreenAreaRatio": 0.08,
+    "oversizeWordMinimumSubtitleScale": 3,
+    "oversizeWordMinimumScreenAreaRatio": 0.12,
+    "personDepthTextMinimumSubtitleScale": 1.8,
+    "personDepthTextMinimumVisibleAreaRatio": 0.65
+  },
+  "longFormRequirements": {
+    "captionRelationLayouts": [],
+    "minimumPipLayoutKinds": 0,
+    "minimumTransitionKinds": 0
+  },
+  "showProfiles": {
+    "talking-head": {
+      "profile": "talking-head",
+      "description": "保留完整表达，以内容、切点和字幕可读性决定剪辑。"
+    },
+    "screen-demo": {
+      "profile": "screen-demo",
+      "description": "按实际操作步骤剪辑，保持界面文字可读、结果和条件完整。"
+    },
+    "montage": {
+      "profile": "montage",
+      "description": "按叙事与用户要求组织图片、视频和现场声，不要求出镜人物或对白。"
+    }
+  }
+}

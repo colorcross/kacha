@@ -1196,8 +1196,9 @@ function validateConfig() {
   if (config.schemaVersion !== "1.0" || config.version !== "6.1.0") {
     errors.push("intelligence-v6 配置版本无效");
   }
-  if (Object.keys(config.director?.styles ?? {}).length !== 5) {
-    errors.push("V6 必须定义五套互斥风格语法");
+  for (const id of ["light-warm-overlay", "spatial-light-path", "humor-comic", "pixel-editorial", "dark-tech", "clean-editorial", "dahui-ai"]) {
+    const style = config.director?.styles?.[id];
+    if (![style?.grammar, style?.defaultMechanism, style?.quietMechanism].every(value => typeof value === "string" && value.trim())) errors.push(`V6 风格 ${id} 缺少有效语法`);
   }
   if (config.review?.preferenceActivationRequiresConfirmation !== true) {
     errors.push("长期偏好激活必须显式确认");

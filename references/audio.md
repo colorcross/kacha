@@ -329,8 +329,9 @@ dialogue 与 mix 组件必须覆盖完整成片时长（允许 50 ms 编码容�
 ## MiniMax 音频生成与回退
 
 生成背景音乐或本地库缺失的音效时，必读 `references/minimax-audio-fallback.md`：
-优先 mmx；调用异常且确认可以安全发起新尝试后，使用用户默认浏览器中已登录的
-<https://www.minimax.cn/audio>；网页版也不可用时，使用本机 MiniMax Design 桌面版。
+BGM 默认使用已登录浏览器的 <https://www.minimax.cn/audio>；网页版不可用且尝试状态已查明后，
+再使用本机 MiniMax Design，mmx 保留为备用。缺失 SFX 沿用单独的能力回退。
+含音频的视频默认通过 MiniMax Design 生成，按 `references/generated-media-assets.md` 接回工程。
 渠道切换由 Agent 执行，不代表渲染器内置了无人值守浏览器重试。
 
 mmx 默认中国区无代理直连，网络设置只作用于该次 CLI 子进程：

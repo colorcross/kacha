@@ -331,6 +331,7 @@ function ensureVisualCapabilityPlanFixture() {
     "100",
     "--output",
     visualCapabilityPlanFixture,
+    "--style", "xingzhe", "--show", "tool-share",
   ]);
   return visualCapabilityPlanFixture;
 }
@@ -2706,8 +2707,8 @@ await test("local production studio compiles an auditable project with verified 
     "studio", "validate",
   ]).stdout);
   if (
-    catalog.defaultStyleId !== "dahui-ai"
-    || catalog.builtInStyleCount !== 13
+    catalog.defaultStyleId !== "clean-editorial"
+    || catalog.builtInStyleCount !== 14
     || catalog.activeEditorialPresetCount !== 8
     || catalog.masterStyleId !== "xingzhe"
     || catalog.masterStyleVersion !== "3.0"
@@ -3040,11 +3041,14 @@ await test("production packs separate generic policy from five show-specific edi
     ) throw new Error(`show-specific production pack did not resolve: ${showId}`);
   }
 
+  const genericRequirements = path.join(root, "requirements.json");
+  writeJson(genericRequirements, {version:"narrative-v1", requirements:[{id:"content",priority:"required",origin:"user",reason:"preserve source",timelineIds:["main"]}]});
   const genericFile = path.join(root, "generic.json");
   execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
     "production-quality", "template",
     "--project-id", "pack-generic",
+    "--requirements", genericRequirements,
     "--pack", "clean-editorial",
     "--show", "talking-head",
     "--output", genericFile,
@@ -3088,6 +3092,7 @@ await test("production quality contract gates recurring editorial defects across
     path.join(scripts, "kacha.mjs"),
     "production-quality", "template",
     "--project-id", "quality-contract",
+    "--pack", "xingzhe-dahui", "--show", "tool-share",
     "--output", contractFile,
   ]);
   execute(process.execPath, [
@@ -3398,12 +3403,13 @@ await test("production quality contract gates recurring editorial defects across
     "--contract", genericContractFile,
     "--write",
   ]);
-  execute(process.execPath, [
+  const borrowedFailure = expectFailure(process.execPath, [
     path.join(scripts, "kacha.mjs"),
     "production-quality", "validate",
     "--contract", genericContractFile,
     "--stage", "release",
   ]);
+  if (!borrowedFailure.stderr.includes("execution.timeline") || !borrowedFailure.stderr.includes("release.finalVideo")) throw new Error("generic contract accepted unbound legacy evidence");
 
   const broken = structuredClone(contract);
   broken.execution.semanticEdit.unresolvedFragments = 1;
@@ -9292,6 +9298,7 @@ await test("xingzhe capability budget rejects perceptually weak or under-covered
     path.join(scripts, "kacha.mjs"),
     "visual-capabilities",
     "template",
+    "--style", "xingzhe", "--show", "tool-share",
     "--duration",
     "399.28",
     "--output",
@@ -9332,6 +9339,7 @@ await test("every video requires exactly one registered or contracted opening, i
     path.join(scripts, "kacha.mjs"),
     "visual-capabilities",
     "template",
+    "--style", "xingzhe", "--show", "tool-share",
     "--duration",
     "20",
     "--opening",

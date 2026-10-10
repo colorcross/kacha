@@ -117,7 +117,7 @@ function renderStyles() {
       aria-pressed="${style.id === state.selectedStyleId}"
       style="--choice-accent:${escapeHtml(style.design.overrides?.palette?.accent || style.caption.emphasisColor)}"
     >
-      <small>${style.design.profile === "dahui-ai" ? "大灰AI" : style.builtIn ? "历史风格" : "自定义"}</small>
+      <small>${style.design.profile === "clean-editorial" ? "通用" : style.design.profile === "dahui-ai" ? "大灰AI" : style.builtIn ? "历史风格" : "自定义"}</small>
       <h3>${escapeHtml(style.name)}</h3>
       <strong>${escapeHtml(style.tagline)}</strong>
       <p>${escapeHtml(style.description)}</p>
@@ -129,10 +129,10 @@ function renderStyles() {
 }
 
 function renderVisualLanguages() {
-  if (selectedStyle()?.design.profile === "dahui-ai") {
+  if (["dahui-ai", "clean-editorial"].includes(selectedStyle()?.design.profile)) {
     state.selectedVisualLanguageMode = "automatic";
     state.selectedVisualLanguageId = null;
-    $("visualLanguageList").innerHTML = '<p>按栏目安排真实画面、证据与停留时间。需要解释关系时才添加图表和动效。</p>';
+    $("visualLanguageList").innerHTML = '<p>按当前素材与剪辑目标安排画面和停留时间。需要解释关系时才添加图表和动效。</p>';
     return;
   }
   const automaticSelected = state.selectedVisualLanguageMode === "automatic";
@@ -386,8 +386,8 @@ function selectStyle(styleId) {
   if (!style) return;
   state.selectedStyleId = styleId;
   state.selectedOpeningId = style.direction.openingId;
-  const active = style.design.profile === "dahui-ai";
-  const shows = active ? Object.entries(state.catalog.shows) : [["tool-share","工具分享"],["book-talk","解读好书"],["infinite-game","有限的无限游戏"],["very-ai","灰常AI（历史）"],["casual-chat","闲聊"]];
+  const packId = style.design.profile === "xingzhe" ? "xingzhe-dahui" : style.design.profile;
+  const shows = Object.entries(state.catalog.showGroups?.[packId] ?? state.catalog.shows);
   $("show").replaceChildren(...shows.map(([id,label]) => new Option(label,id)));
   $("show").value = style.design.modes.show;
   renderVisualLanguages();

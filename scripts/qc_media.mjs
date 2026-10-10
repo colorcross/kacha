@@ -16,7 +16,7 @@ import {
   firstPositional,
   loadKachaConfig,
 } from "./kacha_config.mjs";
-import { evaluateAudioStems } from "./audio_stem_qc.mjs";
+import { evaluateAudioStems, allowsSilentAudio, isSilentLoudness } from "./audio_stem_qc.mjs";
 
 function usage() {
   console.error(
@@ -245,6 +245,7 @@ if (summary.audio) {
     checks.push(check("loudness_analysis", false, "unavailable", "valid loudnorm report"));
   } else {
     const integrated = Number(loudness.input_i);
+    const allowedSilence = allowsSilentAudio(project) && isSilentLoudness(loudness);
     const truePeak = Number(loudness.input_tp);
     const minimum = Number(expected.integratedLufsMin ?? -22);
     const maximum = Number(expected.integratedLufsMax ?? -18);
@@ -252,7 +253,7 @@ if (summary.audio) {
     checks.push(
       check(
         "integrated_loudness",
-        integrated >= minimum && integrated <= maximum,
+        allowedSilence || (integrated >= minimum && integrated <= maximum),
         integrated,
         `${minimum} to ${maximum} LUFS`,
       ),
@@ -260,7 +261,7 @@ if (summary.audio) {
     checks.push(
       check(
         "true_peak",
-        truePeak <= peakMaximum,
+        allowedSilence || truePeak <= peakMaximum,
         truePeak,
         `<= ${peakMaximum} dBTP`,
       ),

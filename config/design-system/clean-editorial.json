@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "id": "clean-editorial-cinematic",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "intent": "以真人、真实空间和证据为主体，用克制的无边界排版、景别变化和少量信息表面帮助理解。",
   "selectionOrder": [
     "camera_reframe",
@@ -71,7 +71,7 @@
     "maximumRoundedContainerAreaRatio": 0.34,
     "maximumSimultaneousReadingZones": 3,
     "minimumCleanReturnSecondsAfterBoundedSurface": 1.2,
-    "sameMechanismMaximumShare": 0.5,
+    "sameMechanismMaximumShare": 1,
     "requireOneDominantMotionPerBeat": true,
     "requireNormalSpeedRepresentativePreview": true,
     "staticPeakFrameIsNotAcceptance": true
@@ -81,7 +81,19 @@
       "minimumRealPictureRatio": 0.7,
       "maximumBoundedSurfaceRatio": 0.3,
       "maximumDashboardRatio": 0,
-      "minimumDistinctMechanismsPer120Seconds": 2
+      "minimumDistinctMechanismsPer120Seconds": 1
+    },
+    "screen-demo": {
+      "minimumRealPictureRatio": 0.7,
+      "maximumBoundedSurfaceRatio": 0.3,
+      "maximumDashboardRatio": 0,
+      "minimumDistinctMechanismsPer120Seconds": 1
+    },
+    "montage": {
+      "minimumRealPictureRatio": 0.7,
+      "maximumBoundedSurfaceRatio": 0.3,
+      "maximumDashboardRatio": 0,
+      "minimumDistinctMechanismsPer120Seconds": 1
     }
   },
   "styleGrammarMechanisms": {

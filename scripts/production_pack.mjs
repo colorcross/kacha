@@ -193,13 +193,25 @@ function loadCinematicPolicy(fileName, showId, label, rootDirectory = designSyst
 }
 
 export function resolveProductionSelection(packId = null, showId = null) {
-  const requested = showId;
   if (!packId) {
-    const active = readJson(path.join(packsDirectory, "dahui-ai.json"));
-    packId = requested && active.shows[requested] ? "dahui-ai" : "xingzhe-dahui";
+    packId = showId ? ["clean-editorial", "dahui-ai", "xingzhe-dahui"].find(id =>
+      Object.hasOwn(readJson(path.join(packsDirectory, `${id}.json`)).shows, showId)) : "clean-editorial";
+    if (!packId) throw new Error(`未注册的栏目：${showId}`);
   }
   showId ??= packId === "dahui-ai" ? "ai-practice" : packId === "clean-editorial" ? "talking-head" : "tool-share";
+  if (!SAFE_ID.test(packId) || !SAFE_ID.test(showId)) throw new Error("无效的生产包或栏目 ID");
+  const file = path.join(packsDirectory, `${packId}.json`);
+  if (!fs.existsSync(file) || !Object.hasOwn(readJson(file).shows, showId)) throw new Error(`生产包 ${packId} 不支持栏目：${showId}`);
   return { packId, showId };
+}
+
+export function requiresProductionQuality(project) {
+  const declaredPack = project.productionPack ?? (project.show ? resolveProductionSelection(null, project.show).packId : null);
+  return project.productionQualityV1?.required === true || ["clean-editorial", "dahui-ai"].includes(declaredPack);
+}
+
+export function productionStyleProfile(packId) {
+  return packId === "xingzhe-dahui" ? "xingzhe" : packId;
 }
 
 export function loadProductionPack(packId = "xingzhe-dahui", showId = "tool-share", {

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "version": "1.0.0",
+  "kind": "agent_generation_defaults",
+  "scope": "new_generation_requests",
+  "defaults": {
+    "bgm": {
+      "provider": "minimax",
+      "transport": "web",
+      "url": "https://www.minimax.cn/audio",
+      "reuseExistingBrowserSession": true,
+      "fallbackTransports": [
+        "desktop",
+        "mmx"
+      ]
+    },
+    "video_with_audio": {
+      "provider": "minimax",
+      "transport": "desktop",
+      "application": "MiniMax Design",
+      "macosBundleId": "com.minimax.hub",
+      "audioPolicy": "model_audio",
+      "requireDecodedAudio": true
+    }
+  },
+  "policy": {
+    "inspectCurrentCapabilities": true,
+    "model": "select_from_current_interface",
+    "reuseExistingResultFirst": true,
+    "unknownSubmission": "reconcile_before_retry",
+    "existingProjectRoutes": "preserve_unless_explicitly_changed",
+    "credentials": "existing_session_only",
+    "generationAutomaticallyAuthorized": false
+  }
+}

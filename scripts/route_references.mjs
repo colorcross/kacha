@@ -126,6 +126,7 @@ const MODULE_REFERENCES = {
   covers: ["references/subtitles-covers-brand.md"],
   brand: ["references/subtitles-covers-brand.md"],
   series: ["references/subtitles-covers-brand.md"],
+  video_generation: ["references/generated-media-assets.md"],
   generated: ["references/generated-media-assets.md"],
   minimax: ["references/generated-media-assets.md", "references/minimax-audio-fallback.md"],
   seedance: ["references/generated-media-assets.md"],
@@ -249,6 +250,13 @@ if (stage) {
   }
 }
 
+const generationModules = ["audio_generation", "bgm", "minimax", "generated", "video_generation"];
+if (modules.some(module => generationModules.includes(module))) {
+  selected.add("config/generation-routing.json");
+  if (modules.some(module => ["minimax", "generated", "video_generation"].includes(module))) {
+    selected.add("references/generated-media-assets.md");
+  }
+}
 const files = [...selected].map((relative) => {
   const absolute = path.join(skillDirectory, relative);
   if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) {

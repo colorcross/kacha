@@ -5,6 +5,7 @@ import { acquireFileLock, fileIdentity, fileIdentityMatches, mediaSummary, readJ
 import { resolveContainedPath } from "./agent_workspace_utils.mjs";
 import { resolveDesignSystem } from "./design_system.mjs";
 import { loadKachaConfig } from "./kacha_config.mjs";
+import { resolveProductionSelection, productionStyleProfile } from "./production_pack.mjs";
 import { buildDirectorPlan } from "./kacha_intelligence.mjs";
 
 const scripts = path.dirname(fileURLToPath(import.meta.url));
@@ -82,8 +83,13 @@ function collect(inputs, outputRoot) {
 }
 
 export function initializeMaterialProject({ materials, requirements, projectRoot, projectId = "material-film", duration = 60,
-  aspect = "16:9", fps = 25, width = null, show = "casual-chat", style = "light-warm-overlay", development = false,
+  aspect = "16:9", fps = 25, width = null, pack = null, show = null, style = null, development = false,
   confirmExecute = false, runtime } = {}) {
+  const selection = resolveProductionSelection(pack, show ?? (!pack || pack === "clean-editorial" ? "montage" : null));
+  pack = selection.packId; show = selection.showId;
+  if (pack === "dahui-ai") throw new Error("大灰AI素材项目需要节目证据合同，请使用 source-edit 入口");
+  style ??= pack === "clean-editorial" ? productionStyleProfile(pack) : "light-warm-overlay";
+  if (pack === "clean-editorial" && style !== "clean-editorial") throw new Error("通用素材项目需使用 clean-editorial 样式");
   if (!Array.isArray(materials) || !materials.length || !materials.every(text)) throw new Error("请提供素材文件或目录");
   if (!text(requirements) || requirements.length > 20000) throw new Error("剪辑要求必须是 1–20000 字的文本");
   if (!text(projectRoot)) throw new Error("素材成片需要独立 --project-root");
@@ -115,13 +121,17 @@ export function initializeMaterialProject({ materials, requirements, projectRoot
   fs.mkdirSync(requestedRoot, { recursive: true }); const root = fs.realpathSync(requestedRoot);
   fs.mkdirSync(path.join(root, ".kacha"), { recursive: true }); fs.mkdirSync(path.join(root, "contracts"));
   fs.writeFileSync(path.join(root, ".gitignore"), ".kacha/\noutput/\npreviews/\n");
+  json(path.join(root, "kacha.config.json"), {
+    schemaVersion: "1.0", style: { system: "dahui-video-system", profile: productionStyleProfile(pack), modes: { show }, overrides: {} },
+    editingDefaults: { parameters: { audio: { bgm: { enabled: false } } } },
+  });
   const brief = signed({ schemaVersion: "1.0", kind: "kacha_material_brief", requirements: requirements.trim(),
     target: { durationSeconds: Math.round(duration * fps) / fps, fps, width: geometry[0], height: geometry[1], aspect },
     principles: ["根据实际内容选择镜头，不以文件名冒充内容理解", "保留因果、否定与完整说话语义", "默认完整适配画面，裁切必须注明依据", "只做本地候选，保留人工成片审阅"] });
   json(path.join(root, "contracts/material-brief.json"), brief);
   const project = signed({ schemaVersion: "1.0", kind: "kacha_material_project", projectRoot: root, projectId,
     task: "material_edit", brief: fileIdentity(path.join(root, "contracts/material-brief.json")), assets, skipped: inventory.skipped,
-    runtimeRef: runtime?.sourceRef ?? null, runtimeBundleDigest: runtime?.bundleDigest ?? null, development, confirmExecute, show, style, createdAt: new Date().toISOString() });
+    runtimeRef: runtime?.sourceRef ?? null, runtimeBundleDigest: runtime?.bundleDigest ?? null, development, confirmExecute, productionPack: pack, show, style, createdAt: new Date().toISOString() });
   json(path.join(root, marker), project);
   json(path.join(root, "contracts/storyboard-template.json"), { schemaVersion: "1.0", kind: "kacha_material_storyboard",
     projectDigest: project.digest, briefDigest: brief.digest, interpretation: "填写对用户要求的具体理解",
@@ -199,18 +209,21 @@ function subtitleContract(root, segments) {
   const role = design.style.typography.subtitlePrimary;
   const sizeRatio = role.sizeRatio ?? .042;
   if (!numeric(sizeRatio) || sizeRatio <= 0 || sizeRatio > .2) throw new Error("字幕字号比例无效");
-  if (role.fontFile) {
-    const file = path.resolve(scripts, "..", role.fontFile);
-    if (!fs.existsSync(file) || !/^[a-f0-9]{64}$/.test(role.fontSha256 ?? "") || sha256File(file) !== role.fontSha256) throw new Error("字幕字体文件缺失或 SHA-256 不匹配，请修复字体配置后重新编排");
+  const font = design.fonts.roles.subtitlePrimary;
+  let file = role.fontFile ? path.resolve(scripts, "..", role.fontFile) : null;
+  if (!file && font.verified) {
+    const matcher = ["/opt/homebrew/bin/fc-match", "/usr/local/bin/fc-match", "/usr/bin/fc-match"].find(file => fs.existsSync(file)) ?? "fc-match";
+    file = command(matcher, ["--format", "%{file}", font.resolved]).stdout.trim();
+  }
+  if (file) {
+    if (!fs.existsSync(file) || (role.fontFile && (!/^[a-f0-9]{64}$/.test(role.fontSha256 ?? "") || sha256File(file) !== role.fontSha256))) throw new Error("字幕字体文件缺失或 SHA-256 不匹配，请修复字体配置后重新编排");
     const scanner = ["/opt/homebrew/bin/fc-scan", "/usr/local/bin/fc-scan", "/usr/bin/fc-scan"].find((file) => fs.existsSync(file)) ?? "fc-scan";
-    const families = command(scanner, ["--format", "%{family}", file]).stdout.split(",").map((name) => name.replaceAll("\\-", "-").trim());
+    const families = command(scanner, ["--format", "%{family}\n", file]).stdout.split(/[,\r\n]/).map((name) => name.replaceAll("\\-", "-").trim());
     const family = role.families.find((name) => families.includes(name));
     if (!family) throw new Error("字幕字体文件内部名称与品牌配置不一致");
     return { family, sizeRatio, source: fileIdentity(file) };
   }
-  const font = design.fonts.roles.subtitlePrimary;
-  if (!font.verified) throw new Error("字幕字体尚未验证，请配置字体文件或安装当前品牌字体后重试");
-  return { family: font.resolved, sizeRatio, source: null };
+  throw new Error("字幕字体文件尚未验证，请配置字体文件或安装所选字体后重试");
 }
 
 function validateStoryboard(project, brief, storyboard, { frozen = false } = {}) {

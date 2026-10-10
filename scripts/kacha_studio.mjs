@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
-import { loadProductionPack } from "./production_pack.mjs";
+import { loadProductionPack, resolveProductionSelection } from "./production_pack.mjs";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -114,7 +114,8 @@ const BEAUTY_PROFILES = new Set(["natural", "visible"]);
 const TASKS = new Set(["source_edit", "content_generation", "local_optimization"]);
 const LANGUAGES = new Set(["zh", "en", "bilingual"]);
 const DAHUI_SHOWS = loadProductionPack("dahui-ai", "ai-practice").supportedShows;
-const SHOWS = new Set(["tool-share", "book-talk", "infinite-game", "very-ai", "casual-chat", ...DAHUI_SHOWS]);
+const GENERAL_SHOWS = loadProductionPack("clean-editorial", "talking-head").supportedShows;
+const SHOWS = new Set([...GENERAL_SHOWS, "tool-share", "book-talk", "infinite-game", "very-ai", "casual-chat", ...DAHUI_SHOWS]);
 const PLATFORMS = new Set([
   "douyin",
   "xiaohongshu",
@@ -607,9 +608,9 @@ function normalizeProjectOverrides(value, catalog) {
 }
 
 function normalizeVisualLanguageSelection(value, catalog, style) {
-  if (style.design.profile === "dahui-ai") {
-    if (value?.mode === "preferred") throw new Error("大灰AI按栏目证据编排；旧视觉语言请在历史风格中选择");
-    return { mode: "automatic", parentProfile: "dahui-ai", allowedIds: [], noMatchFallback: "clean_a_roll", runtimeEvidenceRequired: ["semanticBeatId", "sourceRange"] };
+  if (["dahui-ai", "clean-editorial"].includes(style.design.profile)) {
+    if (value?.mode === "preferred") throw new Error("当前生产包按内容编排；行者视觉语言请在行者风中选择");
+    return { mode: "automatic", parentProfile: style.design.profile, allowedIds: [], noMatchFallback: "clean_a_roll", runtimeEvidenceRequired: ["semanticBeatId", "sourceRange"] };
   }
   const policy = catalog.visualLanguagePolicy;
   if (style.design.profile !== policy.parentProfile) {
@@ -794,7 +795,11 @@ function buildProductionCatalogBase() {
     defaultStyleId: registry.defaultStyleId,
     authorityBoundary: registry.authorityBoundary,
     styleArchitecture,
-    styles: [...(registry.editorialPresets ?? []).map((style, index) => normalizeStylePreset(style, { label: `editorialPresets[${index}]`, builtIn: true, openingIds })), ...builtIns],
+    styles: [...(registry.generalPresets ?? []).map((style, index) => normalizeStylePreset(style, { label: `generalPresets[${index}]`, builtIn: true, openingIds })), ...(registry.editorialPresets ?? []).map((style, index) => normalizeStylePreset(style, { label: `editorialPresets[${index}]`, builtIn: true, openingIds })), ...builtIns],
+    showGroups: Object.fromEntries(["clean-editorial", "dahui-ai", "xingzhe-dahui"].map(packId => {
+      const selected = resolveProductionSelection(packId); const pack = loadProductionPack(packId, selected.showId);
+      return [packId, Object.fromEntries(pack.supportedShows.map(id => { const p = loadProductionPack(packId, id).policies; return [id, p.episode?.label ?? p.label ?? id]; }))];
+    })),
     shows: Object.fromEntries(DAHUI_SHOWS.map(id => [id, loadProductionPack("dahui-ai", id).policies.episode.label])),
     visualLanguagePolicy: {
       parentProfile: visualLanguageRegistry.parentProfile,
@@ -980,8 +985,8 @@ function resolveCaptionFontEvidence(style, loadedConfig) {
     );
   }
   const registry = readJson(registryPath);
-  const choices = style.design.profile === "dahui-ai"
-    ? loadProductionPack("dahui-ai", style.design.modes.show).policies.typography.allowedFonts
+  const choices = style.design.profile !== "xingzhe"
+    ? loadProductionPack(style.design.profile, style.design.modes.show).policies.typography.allowedFonts
     : [style.caption.preferredFontFamily];
   const record = choices.flatMap(choice => (registry.records ?? []).filter((entry) => {
     const requested = choice.toLowerCase();
@@ -991,7 +996,7 @@ function resolveCaptionFontEvidence(style, loadedConfig) {
       ...(entry.postscriptNames ?? []),
     ].map((name) => String(name).toLowerCase());
     return names.some((name) => name === requested || name.includes(requested) || requested.includes(name))
-      && (style.design.profile !== "dahui-ai" || entry.projectAuthorization?.status === "authorized" || entry.license?.status === "open");
+      && (style.design.profile === "xingzhe" || entry.projectAuthorization?.status === "authorized" || entry.license?.status === "open");
   }))[0];
   if (!record) {
     throw new Error(
@@ -1085,9 +1090,9 @@ function normalizeProductionRequest(request, catalog, media) {
   const platform = enumValue(request.platform ?? "general", PLATFORMS, "platform");
   const language = enumValue(request.language ?? "zh", LANGUAGES, "language");
   const show = enumValue(request.show ?? style.design.modes.show, SHOWS, "show");
-  if ((style.design.profile === "dahui-ai") !== DAHUI_SHOWS.includes(show)) throw new Error("栏目与品牌风格不匹配，请选择同一生产包的栏目");
+  resolveProductionSelection(style.design.profile === "xingzhe" ? "xingzhe-dahui" : style.design.profile, show);
   if (style.design.profile === "dahui-ai" && style.design.modes.show !== show) throw new Error("栏目与所选预设不匹配，请选择该栏目的制作预设");
-  if (style.design.profile !== "dahui-ai" && openingId === "natural") throw new Error("历史风格保留注册开场合同；真实开场请用大灰AI生产包");
+  if (style.design.profile === "xingzhe" && openingId === "natural") throw new Error("历史风格保留注册开场合同；真实开场请用大灰AI生产包");
   return {
     schemaVersion: "1.0",
     projectName: nonEmptyString(
@@ -1133,6 +1138,13 @@ function normalizeProductionRequest(request, catalog, media) {
 }
 
 function productionInstructions(request, catalog) {
+  if (request.style.design.profile === "clean-editorial") return [
+    { id: "general-content", text: loadProductionPack("clean-editorial", request.show).policies.editorialIntent, priority: "required", appliesTo: [request.task], modules: [] },
+    { id: "general-edit", text: "以用户要求和真实素材为依据，保留完整语义、时序和结果；不附加个人品牌、栏目问句、出镜或动效配额。", priority: "required", appliesTo: [request.task], modules: [] },
+    { id: "general-audio", text: "保留需要的对白或现场声；背景音乐与音效按需使用，可以不配乐。使用当前项目提供且许可明确的素材。", priority: "required", appliesTo: [request.task], modules: [] },
+    ...request.effectAssignments.map(item => ({ id: `general-${item.id}`, text: `${item.positionDescription}：${item.effectId}；${item.notes}`, priority: "required", appliesTo: [request.task], modules: ["visual"] })),
+    ...(request.notes ? [{ id: "general-notes", text: request.notes, priority: "required", appliesTo: [request.task], modules: [] }] : []),
+  ];
   if (request.style.design.profile === "dahui-ai") {
     const pack = loadProductionPack("dahui-ai", request.show);
     return [
@@ -1312,8 +1324,8 @@ function buildProjectConfig(request, media, catalog) {
               ?? "按注册开场模板完成进入、语义峰值、停稳和退出",
             soundFunction: request.openingEffect.soundFunction ?? "visible_landing",
             fallback: request.openingEffect.fallback ?? "cold_open_marker",
-            startAtOrBeforeSeconds: style.design.profile === "dahui-ai" ? 3 : catalog.productionMotionPolicy.opening.startAtOrBeforeSeconds,
-            promiseBySeconds: style.design.profile === "dahui-ai" ? loadProductionPack("dahui-ai", request.show).policies.opening.promiseBySeconds : catalog.productionMotionPolicy.opening.promiseBySeconds,
+            startAtOrBeforeSeconds: style.design.profile !== "xingzhe" ? 3 : catalog.productionMotionPolicy.opening.startAtOrBeforeSeconds,
+            promiseBySeconds: style.design.profile !== "xingzhe" ? loadProductionPack(style.design.profile, request.show).policies.opening.promiseBySeconds : catalog.productionMotionPolicy.opening.promiseBySeconds,
             normalSpeedPreviewRequired: true,
             representativeFrameRequired: true,
           },
@@ -1486,7 +1498,7 @@ export function compileProductionRequest(request, {
       platform: normalized.platform,
       language: normalized.language,
       show: normalized.show,
-      productionPack: normalized.style.design.profile === "dahui-ai" ? "dahui-ai" : "xingzhe-dahui",
+      productionPack: normalized.style.design.profile === "xingzhe" ? "xingzhe-dahui" : normalized.style.design.profile,
       outputPresetId: normalized.outputPresetId,
       preserveSource: normalized.preserveSource,
       targetDuration: normalized.targetDuration || null,
@@ -1520,15 +1532,15 @@ export function compileProductionRequest(request, {
       required: true,
       primaryEffectCount: normalized.openingId === "natural" ? 0 : 1,
       mode: normalized.openingId === "natural" ? "natural" : "registered",
-      startAtOrBeforeSeconds: normalized.style.design.profile === "dahui-ai" ? 3 : catalog.productionMotionPolicy.opening.startAtOrBeforeSeconds,
-      promiseBySeconds: normalized.style.design.profile === "dahui-ai" ? loadProductionPack("dahui-ai", normalized.show).policies.opening.promiseBySeconds : catalog.productionMotionPolicy.opening.promiseBySeconds,
+      startAtOrBeforeSeconds: normalized.style.design.profile !== "xingzhe" ? 3 : catalog.productionMotionPolicy.opening.startAtOrBeforeSeconds,
+      promiseBySeconds: normalized.style.design.profile !== "xingzhe" ? loadProductionPack(normalized.style.design.profile, normalized.show).policies.opening.promiseBySeconds : catalog.productionMotionPolicy.opening.promiseBySeconds,
       normalSpeedPreviewRequired: true,
     },
     effectAssignments: clone(normalized.effectAssignments),
     professionalAutoDirector: {
       enabled: normalized.automaticProfessionalJudgment,
       rules: normalized.automaticProfessionalJudgment
-        ? (normalized.style.design.profile === "dahui-ai" ? productionInstructions(normalized, catalog).map(item => item.text) : clone(catalog.professionalAutoDirector.rules))
+        ? (normalized.style.design.profile !== "xingzhe" ? productionInstructions(normalized, catalog).map(item => item.text) : clone(catalog.professionalAutoDirector.rules))
         : [],
       decisionBoundary:
         "自动选择只适用于用户未明确指定的区间；不得越过内容、素材、授权和质量门禁。",
@@ -1675,7 +1687,8 @@ async function runCli() {
               schemaVersion: "1.0",
               status: "pass",
               defaultStyleId: catalog.defaultStyleId,
-              activeProductionPack: "dahui-ai",
+              activeProductionPack: "clean-editorial",
+              supportedProductionPacks: Object.keys(catalog.showGroups),
               activeEditorialPresetCount: catalog.styles.filter(style => style.design.profile === "dahui-ai").length,
               legacyEffectLibrary: catalog.styleArchitecture.masterStyleId,
               builtInStyleCount: catalog.styles.filter((style) => style.builtIn).length,

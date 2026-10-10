@@ -415,6 +415,78 @@
           "soundPolicy": "semantic_trigger_only",
           "musicPolicy": "natural_sound_first"
         }
+      },
+      "talking-head": {
+        "label": "通用口播",
+        "styleOverrides": {
+          "brand": {
+            "label": "",
+            "creatorName": "",
+            "persistent": false
+          }
+        },
+        "sceneTags": [
+          "evidence",
+          "calm"
+        ],
+        "direction": {
+          "openingPriority": [
+            "open_clean_title"
+          ],
+          "coverPriority": [
+            "cover_editorial"
+          ],
+          "soundPolicy": "motivated_only",
+          "musicPolicy": "optional"
+        }
+      },
+      "screen-demo": {
+        "label": "录屏演示",
+        "styleOverrides": {
+          "brand": {
+            "label": "",
+            "creatorName": "",
+            "persistent": false
+          }
+        },
+        "sceneTags": [
+          "evidence",
+          "calm"
+        ],
+        "direction": {
+          "openingPriority": [
+            "open_clean_title"
+          ],
+          "coverPriority": [
+            "cover_editorial"
+          ],
+          "soundPolicy": "motivated_only",
+          "musicPolicy": "optional"
+        }
+      },
+      "montage": {
+        "label": "多素材剪辑",
+        "styleOverrides": {
+          "brand": {
+            "label": "",
+            "creatorName": "",
+            "persistent": false
+          }
+        },
+        "sceneTags": [
+          "evidence",
+          "calm"
+        ],
+        "direction": {
+          "openingPriority": [
+            "open_clean_title"
+          ],
+          "coverPriority": [
+            "cover_editorial"
+          ],
+          "soundPolicy": "motivated_only",
+          "musicPolicy": "optional"
+        }
       }
     },
     "aspectRatio": {

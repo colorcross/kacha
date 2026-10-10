@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
-import { resolveProductionSelection } from "./production_pack.mjs";
+import { resolveProductionSelection, requiresProductionQuality } from "./production_pack.mjs";
 import { dispatchBoundRuntime } from "./runtime_bundle.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -613,7 +613,7 @@ function gatePlanV3() {
 }
 
 function validateProductionQuality(stage) {
-  const required = project.productionQualityV1?.required === true || project.productionPack === "dahui-ai" || resolveProductionSelection(null, project.show).packId === "dahui-ai";
+  const required = requiresProductionQuality(project);
   const entry = project.plans?.productionQuality;
   if (!entry && required) {
     console.error(`生产质量${stage}门禁缺少 plans.productionQuality`);

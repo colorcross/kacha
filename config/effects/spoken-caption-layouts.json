@@ -230,6 +230,42 @@
         "life-iteration",
         "LIFE"
       ]
+    },
+    "talking-head": {
+      "label": "通用口播",
+      "accent": "#E9A92F",
+      "secondaryAccent": "#FFF1D0",
+      "lightAccent": "#8A5A00",
+      "lightSecondaryAccent": "#5D4A26",
+      "graphicMotif": "single_rule",
+      "motionCharacter": "measured",
+      "aliases": [
+        "talking-head"
+      ]
+    },
+    "screen-demo": {
+      "label": "录屏演示",
+      "accent": "#E9A92F",
+      "secondaryAccent": "#FFF1D0",
+      "lightAccent": "#8A5A00",
+      "lightSecondaryAccent": "#5D4A26",
+      "graphicMotif": "single_rule",
+      "motionCharacter": "measured",
+      "aliases": [
+        "screen-demo"
+      ]
+    },
+    "montage": {
+      "label": "多素材剪辑",
+      "accent": "#E9A92F",
+      "secondaryAccent": "#FFF1D0",
+      "lightAccent": "#8A5A00",
+      "lightSecondaryAccent": "#5D4A26",
+      "graphicMotif": "single_rule",
+      "motionCharacter": "measured",
+      "aliases": [
+        "montage"
+      ]
     }
   },
   "globalRules": {

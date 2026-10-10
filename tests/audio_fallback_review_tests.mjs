@@ -34,6 +34,23 @@ try {
     const dialogue = ok(invoke("route_references.mjs", ["--task", "local_optimization", "--modules", "dialogue"]));
     assert.ok(!dialogue.files.some(file => file.path === fallback));
   });
+  check("BGM web and audiovisual desktop defaults survive compact agent routing", () => {
+    const routing = JSON.parse(fs.readFileSync(path.join(repo, "config/generation-routing.json")));
+    assert.equal(routing.defaults.bgm.transport, "web");
+    assert.equal(routing.defaults.bgm.url, "https://www.minimax.cn/audio");
+    assert.equal(routing.defaults.video_with_audio.transport, "desktop");
+    assert.equal(routing.defaults.video_with_audio.requireDecodedAudio, true);
+    for (const module of ["bgm", "audio_generation", "minimax", "generated", "video_generation"]) {
+      for (const stage of [null, "content", "visual_audio"]) {
+        const report = ok(invoke("route_references.mjs", ["--task", "local_optimization", "--modules", module,
+          ...(stage ? ["--stage", stage] : [])]));
+        assert.ok(report.files.some(file => file.path === "config/generation-routing.json"));
+        if (["generated", "video_generation", "minimax"].includes(module)) assert.ok(report.files.some(file => file.path === "references/generated-media-assets.md"));
+      }
+    }
+    const rules = ok(invoke("decision_rules.mjs", ["query", "--stage", "visual_audio", "--modules", "video_generation"])).rules;
+    assert.ok(rules.some(rule => rule.id === "video-with-audio-generation-default"));
+  });
   check("rules retrieve fallback and protect required sound", () => {
     const rules = ok(invoke("decision_rules.mjs", ["query", "--stage", "visual_audio", "--modules", "audio_generation"])).rules;
     assert.ok(rules.some(rule => rule.id === "audio-generation-fallback"));

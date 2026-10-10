@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { resolveProductionSelection } from "./production_pack.mjs";
+import { resolveProductionSelection, productionStyleProfile } from "./production_pack.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -153,7 +153,7 @@ const loaded = loadKachaConfig({
 });
 const styleConfig = {
   ...loaded.config.style,
-  ...(resolveProductionSelection(null, option("--show")).packId === "dahui-ai" ? { profile: "dahui-ai" } : {}),
+  ...(option("--show") ? { profile: productionStyleProfile(resolveProductionSelection(null, option("--show")).packId) } : {}),
   modes: {
     ...loaded.config.style.modes,
     ...(option("--show") ? { show: option("--show") } : {}),

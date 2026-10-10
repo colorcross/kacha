@@ -107,6 +107,36 @@ try {
   assert.ok(failed.measurements.finalMixComparison.similaritySnrDb < 0, "comparison must consume the wrong tail, not just reject short metadata");
   checks.push("exact-lossless-final-audio-passes-mix-proof", "short-stems-and-correct-prefix-cannot-hide-six-second-wrong-tail");
 
+  const silentMix = path.join(root, "silent.wav"), silentVideo = path.join(root, "silent.mkv");
+  ff(["-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo:d=2", "-c:a", "pcm_s24le", silentMix]);
+  ff(["-f", "lavfi", "-i", "color=c=blue:s=160x90:r=25:d=2", "-i", silentMix, "-c:v", "ffv1", "-c:a", "copy", "-shortest", silentVideo]);
+  const silentProjectFile=path.join(root,"silent-project.json");
+  const silentProject={projectId:"silent-montage",productionPack:"clean-editorial",show:"montage",expectedMedia:{audioMix:{dialogueRequired:false,silenceAllowed:true,bgmRequired:false,adaptiveBgmRequired:false}},outputs:{finalVideo:silentVideo,audioStems:{mix:silentMix}}};
+  const silenceQc=project=>evaluateAudioStems({projectFile:silentProjectFile,project,qcConfig,finalDurationSeconds:2,finalVideo:silentVideo});
+  assert.equal(silenceQc(silentProject).status,"pass");
+  const requiredDialogue=structuredClone(silentProject);requiredDialogue.expectedMedia.audioMix.dialogueRequired=true;
+  assert.equal(silenceQc(requiredDialogue).checks.find(c=>c.id==="dialogue_stem_declared").status,"fail");
+  const wrongBrand=structuredClone(silentProject);wrongBrand.productionPack="dahui-ai";assert.equal(silenceQc(wrongBrand).status,"fail");
+  const audible=structuredClone(silentProject);audible.outputs.audioStems.mix=mix;
+  assert.equal(silenceQc(audible).checks.find(c=>c.id==="mix_stem_reconstruction").status,"fail");
+  const missingMix=structuredClone(silentProject);delete missingMix.outputs.audioStems.mix;assert.equal(silenceQc(missingMix).status,"fail");
+  write(silentProjectFile,silentProject);const silentQcFile=path.join(root,"silent-qc.json");
+  execute(process.execPath,[path.join(repository,"scripts/qc_media.mjs"),silentProjectFile,"--output",silentQcFile]);
+  assert.equal(readJson(silentQcFile).automaticChecks.filter(c=>c.status==="fail").length,0);
+  const incremental=path.join(root,"silent-incremental");
+  execute(process.execPath,[path.join(repository,"scripts/init_incremental_project.mjs"),silentVideo,"--project-id",silentProject.projectId,"--output-dir",incremental,"--project-manifest",silentProjectFile]);
+  const contextFile=path.join(incremental,"project-context.json"),indexFile=path.join(incremental,"artifact-index.json");
+  assert.equal(readJson(contextFile).delivery.audioContract.audioMix.silenceAllowed,true);
+  execute(process.execPath,[path.join(repository,"scripts/validate_project_context.mjs"),contextFile,"--full-hash"]);
+  const delta=path.join(incremental,"delta.json");write(delta,{synthetic:true});const manifest=path.join(incremental,"incremental-project.json");
+  execute(process.execPath,[path.join(repository,"scripts/create_incremental_manifest.mjs"),contextFile,delta,indexFile,"--output",manifest,"--mix-stem",silentMix]);
+  const inherited=readJson(manifest);assert.equal(inherited.productionPack,"clean-editorial");assert.equal(inherited.show,"montage");assert.equal(inherited.expectedMedia.audioMix.silenceAllowed,true);
+  assert.equal(evaluateAudioStems({projectFile:manifest,project:inherited,qcConfig,finalDurationSeconds:2,finalVideo:silentVideo}).status,"pass");
+  const tampered=readJson(contextFile);tampered.productionProfile.packId="dahui-ai";write(contextFile,tampered);
+  assert.notEqual(run(process.execPath,[path.join(repository,"scripts/validate_project_context.mjs"),contextFile,"--full-hash"]).status,0);
+  checks.push("incremental-manifest-inherits-bound-production-and-audio-contract-and-rejects-tampering");
+  checks.push("explicit-silent-montage-passes-real-stem-and-media-qc-with-current-mix", "silent-exception-cannot-hide-required-dialogue-wrong-brand-audible-or-missing-mix");
+
   const bgm = path.join(root, "loop.wav"), sfx = path.join(root, "impact.wav");
   ff(["-f", "lavfi", "-i", "sine=frequency=330:sample_rate=48000:duration=0.5", "-c:a", "pcm_s24le", bgm]);
   ff(["-f", "lavfi", "-i", "aevalsrc=if(between(t\\,0.4\\,0.5)\\,0.3*sin(2*PI*880*t)\\,0):s=48000:d=1",
@@ -120,13 +150,37 @@ try {
     output: { path: path.join(root, "mixed.mp4"), width: 160, height: 90, fps: 25, bgmStem, sfxStem } });
   execute(process.execPath, [path.join(repository, "scripts/timeline_ir.mjs"), "render", "--plan", timeline]);
   const music = samples(bgmStem);
-  assert.ok(music.length >= 3.95 * 48000, "short BGM source must loop across the timeline");
+  assert.equal(music.length, 4 * 48000, "short BGM source must cover every timeline sample");
+  assert.ok(rms(music, 3.99, 4) > 0.001, "BGM tail must contain music, not padded silence");
   assert.ok(rms(music, 3.3, 3.7) > 0.001, "BGM must remain audible after source dialogue ends");
   const reduction = 20 * Math.log10(rms(music, 0.3, 0.7) / rms(music, 1.3, 1.7));
   assert.ok(reduction > 3, `sidechain should lower music during source speech; measured ${reduction} dB`);
   const landing = measureSfxPeak(sfxStem).measuredPeakOffsetSeconds;
   assert.ok(Math.abs(landing - 2.5) <= 1 / 25, `rendered SFX peak landed at ${landing}, not target 2.5`);
   checks.push("decoded-bgm-loops-ducks-during-dialogue-and-survives-dialogue-end", "rendered-sfx-peak-lands-within-one-frame");
+  const compressedBgm = path.join(root, "loop-44100.m4a");
+  ff(["-f", "lavfi", "-i", "sine=frequency=330:sample_rate=44100:duration=0.5", "-c:a", "aac", compressedBgm]);
+  const sourceLong = path.join(root, "long-source.mkv");
+  ff(["-f", "lavfi", "-i", "color=c=blue:s=160x90:r=25:d=6", "-itsoffset", "1",
+    "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=1", "-c:v", "ffv1", "-c:a", "pcm_s16le", sourceLong]);
+  for (const [name, duration, segmented] of [["wave-tail-1", 4, false], ["wave-tail-2", 4, false],
+    ["aac-tail", 3.88, false], ["aac-partial-block", 4.04, false], ["aac-segment", 4.04, true]]) {
+    const candidate = readJson(timeline), wave = name.startsWith("wave");
+    candidate.source = fileIdentity(sourceLong);candidate.edl[0].sourceEnd = duration;
+    candidate.audio.bgm = { ...candidate.audio.bgm, ...fileIdentity(wave ? bgm : compressedBgm) };
+    if (segmented) candidate.audio.bgm = { sidechain: candidate.audio.bgm.sidechain, segments: [{
+      ...fileIdentity(compressedBgm), start: 0, end: duration, sourceStart: 0.3,
+      fadeInSeconds: 0, fadeOutSeconds: 0, levelBelowDialogueDb: 18 }] };
+    candidate.output = { ...candidate.output, path: path.join(root, name + ".mp4"),
+      bgmStem: path.join(root, name + "-bgm.wav"), sfxStem: path.join(root, name + "-sfx.wav"), mixStem: path.join(root, name + "-mix.wav") };
+    const file = path.join(root, name + ".json");write(file, candidate);
+    execute(process.execPath, [path.join(repository, "scripts/timeline_ir.mjs"), "render", "--plan", file]);
+    const decoded = samples(candidate.output.bgmStem);
+    assert.equal(decoded.length, Math.round(duration * 48000), `${name}: BGM sample coverage`);
+    assert.ok(rms(decoded, duration - 0.01, duration) > 0.001, `${name}: real music through the last sample block`);
+    assert.equal(samples(candidate.output.mixStem).length, Math.round(duration * 48000), `${name}: mix sample coverage`);
+  }
+  checks.push("looped-wav-and-compressed-bgm-preserve-exact-audible-tail-through-sidechain");
   console.log(JSON.stringify({ status: "pass", checks, scope: "Synthetic decoded-media regression; not human listening or final creative acceptance" }, null, 2));
 } finally {
   fs.rmSync(root, { recursive: true, force: true });

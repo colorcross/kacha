@@ -1,0 +1,239 @@
+{
+  "schemaVersion": "2.0",
+  "id": "clean-editorial-font-routing",
+  "scope": [
+    "clean-editorial"
+  ],
+  "principles": [
+    "字体须手机可读，按信息职责分层；使用本地可用且已授权字体，不强制旧品牌专属字体。"
+  ],
+  "allowedFamilies": [
+    "PingFang SC",
+    "Noto Sans CJK SC",
+    "Source Han Sans SC",
+    "Source Han Sans CN Medium",
+    "Source Han Sans CN Light",
+    "DejaVu Sans",
+    "Arial"
+  ],
+  "localAssets": {},
+  "roles": {
+    "subtitle_primary": {
+      "label": "常规口播字幕",
+      "preferredFamilies": [
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN Medium",
+        "Source Han Sans CN Light",
+        "DejaVu Sans",
+        "Arial"
+      ],
+      "targetWeight": 400,
+      "maximumWeight": 700,
+      "background": "none",
+      "outline": "none",
+      "shadowOpacity": 0.45,
+      "soundPolicy": "none"
+    },
+    "subtitle_emphasis": {
+      "label": "逻辑重音字幕",
+      "preferredFamilies": [
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN Medium",
+        "Source Han Sans CN Light",
+        "DejaVu Sans",
+        "Arial"
+      ],
+      "targetWeight": 400,
+      "maximumWeight": 700,
+      "background": "none",
+      "outline": "none",
+      "shadowOpacity": 0.45,
+      "emphasisMethods": [
+        "signal_color",
+        "rational_color",
+        "size_step",
+        "underline",
+        "word_spacing"
+      ],
+      "soundPolicy": "only_visible_settle"
+    },
+    "display_title": {
+      "label": "视频标题与大号题眼",
+      "preferredFamilies": [
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN Medium",
+        "Source Han Sans CN Light",
+        "DejaVu Sans",
+        "Arial"
+      ],
+      "targetWeight": 400,
+      "maximumWeight": 700,
+      "transparentGradient": true,
+      "soundPolicy": "tonal_hit_or_none",
+      "shadowOpacity": 0.45
+    },
+    "term_definition": {
+      "label": "术语定义",
+      "preferredFamilies": [
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN Medium",
+        "Source Han Sans CN Light",
+        "DejaVu Sans",
+        "Arial"
+      ],
+      "targetWeight": 400,
+      "transparentGradient": true,
+      "soundPolicy": "soft_tick_or_none",
+      "maximumWeight": 700,
+      "shadowOpacity": 0.45
+    },
+    "quote_pull": {
+      "label": "金句引用",
+      "preferredFamilies": [
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN Medium",
+        "Source Han Sans CN Light",
+        "DejaVu Sans",
+        "Arial"
+      ],
+      "targetWeight": 400,
+      "transparentGradient": true,
+      "soundPolicy": "tonal_resolve_or_none",
+      "maximumWeight": 700,
+      "shadowOpacity": 0.45
+    },
+    "cover_title": {
+      "label": "封面主标题",
+      "preferredFamilies": [
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN Medium",
+        "Source Han Sans CN Light",
+        "DejaVu Sans",
+        "Arial"
+      ],
+      "targetWeight": 400,
+      "maximumWeight": 700,
+      "soundPolicy": "none",
+      "shadowOpacity": 0.45
+    },
+    "thin_support": {
+      "label": "辅助说明、标签、期号和封面其他文字",
+      "preferredFamilies": [
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN Medium",
+        "Source Han Sans CN Light",
+        "DejaVu Sans",
+        "Arial"
+      ],
+      "targetWeight": 400,
+      "maximumWeight": 700,
+      "soundPolicy": "none",
+      "shadowOpacity": 0.45
+    },
+    "body_en": {
+      "label": "英文正文兼容角色",
+      "preferredFamilies": [
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN Medium",
+        "Source Han Sans CN Light",
+        "DejaVu Sans",
+        "Arial"
+      ],
+      "targetWeight": 400,
+      "maximumWeight": 700,
+      "soundPolicy": "none",
+      "canonicalRole": "thin_support",
+      "shadowOpacity": 0.45
+    },
+    "caption_tech": {
+      "label": "技术说明与图解标签兼容角色",
+      "preferredFamilies": [
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN Medium",
+        "Source Han Sans CN Light",
+        "DejaVu Sans",
+        "Arial"
+      ],
+      "targetWeight": 400,
+      "maximumWeight": 700,
+      "soundPolicy": "soft_tick_or_none",
+      "canonicalRole": "thin_support",
+      "shadowOpacity": 0.45
+    },
+    "caption_editorial": {
+      "label": "编辑型口播字幕兼容角色",
+      "preferredFamilies": [
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN Medium",
+        "Source Han Sans CN Light",
+        "DejaVu Sans",
+        "Arial"
+      ],
+      "targetWeight": 400,
+      "maximumWeight": 700,
+      "background": "none",
+      "outline": "none",
+      "shadowOpacity": 0.45,
+      "soundPolicy": "none",
+      "canonicalRole": "subtitle_primary"
+    },
+    "display_title_zh": {
+      "label": "中文展示标题兼容角色",
+      "preferredFamilies": [
+        "PingFang SC",
+        "Noto Sans CJK SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN Medium",
+        "Source Han Sans CN Light",
+        "DejaVu Sans",
+        "Arial"
+      ],
+      "targetWeight": 400,
+      "maximumWeight": 700,
+      "transparentGradient": true,
+      "soundPolicy": "tonal_hit_or_none",
+      "canonicalRole": "display_title",
+      "shadowOpacity": 0.45
+    }
+  },
+  "exceptionPolicy": {
+    "default": "forbid",
+    "allowOnlyWhen": [
+      "missing_glyph",
+      "explicit_user_request",
+      "source_artifact_requires_original_font"
+    ],
+    "requireRecordedReason": true,
+    "requireVisiblePreflightWarning": true,
+    "forbidSilentFallback": true
+  },
+  "distributionPolicy": {
+    "automaticSelectionStatuses": [
+      "project_authorized"
+    ],
+    "publicRedistributionRequiresExplicitLicense": true,
+    "fontFilesRemainPrivateProjectAssets": true,
+    "renderedOutputsMayBePublished": true,
+    "projectAuthorizationScope": "video_production_and_published_outputs"
+  }
+}

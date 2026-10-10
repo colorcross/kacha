@@ -12,6 +12,7 @@ import {
 } from "./kacha_utils.mjs";
 import { alignSfxPeak } from "./sfx_peak_alignment.mjs";
 import { validateCoverIdentityContract } from "./kacha_cover.mjs";
+import { reviewTemplate, validateEditorialReview } from "./editorial_review.mjs";
 import { editorialTimeline } from "./editorial_timeline.mjs";
 import { episodeTemplate, validateEpisode } from "./episode_editorial.mjs";
 import { loadProductionPack, resolveProductionSelection } from "./production_pack.mjs";
@@ -51,6 +52,7 @@ function usage() {
     "用法：\n"
       + "  production_quality_contract.mjs template --project-id ID --output FILE [--pack PACK_ID] [--show SHOW_ID]\n"
       + "  production_quality_contract.mjs validate --contract FILE --stage plan|execution|release\n"
+      + "  production_quality_contract.mjs review-template --contract FILE --output FILE\n"
       + "  production_quality_contract.mjs anti-web-audit --contract FILE [--write]",
   );
 }
@@ -67,8 +69,8 @@ export function template(projectId, {
   requirements = null,
 } = {}) {
   ({ packId, showId } = resolveProductionSelection(packId, showId));
-  editorialPolicy ??= packId === "dahui-ai" ? NARRATIVE_POLICY : "legacy";
-  if (packId === "dahui-ai" && editorialPolicy !== NARRATIVE_POLICY) throw new Error("大灰AI必须使用 narrative-v1");
+  editorialPolicy ??= packId === "xingzhe-dahui" ? "legacy" : NARRATIVE_POLICY;
+  if (packId !== "xingzhe-dahui" && editorialPolicy !== NARRATIVE_POLICY) throw new Error("通用与大灰AI生产包必须使用 narrative-v1");
   editorialVersion(editorialPolicy);
   const productionPack = loadProductionPack(packId, showId);
   return {
@@ -88,7 +90,7 @@ export function template(projectId, {
       semanticEdit: {
         fragmentPolicy: "keep_or_remove_complete_unit",
         pausePolicy: "remove_unintentional_preserve_intentional",
-        wordTimedEvidenceRequired: true,
+        wordTimedEvidenceRequired: !(packId === "clean-editorial" && showId === "montage"),
       },
       connections: {
         enumerateEveryFinalJoin: true,
@@ -124,11 +126,11 @@ export function template(projectId, {
         illustrativeLabel: "情境示意",
       },
       audio: {
-        adaptiveBgmRequired: packId !== "dahui-ai",
-        ...(packId === "dahui-ai" ? { bgmPolicy: "optional-by-timeline" } : {}),
+        adaptiveBgmRequired: packId === "xingzhe-dahui",
+        ...(packId !== "xingzhe-dahui" ? { bgmPolicy: "optional-by-timeline" } : {}),
         rhythmEmotionContentAnalysisRequired: true,
         professionalPromptFields: PROFESSIONAL_AUDIO_PROMPT_FIELDS,
-        stemsRequired: packId === "dahui-ai" ? ["dialogue", "mix"] : ["dialogue", "bgm", "sfx", "mix"],
+        stemsRequired: packId !== "xingzhe-dahui" ? (showId === "montage" ? ["mix"] : ["dialogue", "mix"]) : ["dialogue", "bgm", "sfx", "mix"],
         minimumCoverageRatio: 0.95,
         sfxWaveformPeakEvidenceRequired: true,
         sfxAutoPeakAlignmentRequired: true,
@@ -181,7 +183,7 @@ export function template(projectId, {
       pip: { events: [] },
       externalAssets: { items: [] },
       audio: {
-        ...(packId === "dahui-ai" ? { bgmMode: "none", silenceReason: "", } : {}),
+        ...(packId !== "xingzhe-dahui" ? { bgmMode: "none", silenceReason: "", } : {}),
         adaptivePlan: null,
         timelineFps: null,
         promptFields: {},
@@ -210,7 +212,7 @@ export function template(projectId, {
     },
     release: {
       finalTimeline: null,
-      ...(packId === "dahui-ai" ? { finalVideo: null } : {}),
+      ...(packId !== "xingzhe-dahui" ? { finalVideo: null } : {}),
       stems: { dialogue: null, bgm: null, sfx: null, mix: null },
       programDurationSeconds: null,
       bgmCoverageRatio: null,
@@ -338,9 +340,11 @@ function identityFile(contractFile, identity, label, errors) {
 }
 
 const isDahui = contract => contract.policies?.productionProfile?.packId === "dahui-ai";
+const isGeneric = contract => contract.policies?.productionProfile?.packId === "clean-editorial";
+const hasCurrentMediaBinding = contract => isDahui(contract) || isGeneric(contract);
 
 function editorialAudioState(owner, contract, errors) {
-  if (!isDahui(contract)) return {};
+  if (!hasCurrentMediaBinding(contract)) return {};
   let timeline = null;
   try { if (contract.execution?.timeline?.path) timeline = readJson(resolveFrom(owner, contract.execution.timeline.path)); }
   catch (error) { errors.push(`音轨时间线无效：${error.message}`); }
@@ -372,7 +376,7 @@ function validateProjectBinding(owner, contract, projectFile, stage, errors) {
   if (project.projectId !== contract.projectId) errors.push("生产合同与项目 projectId 不匹配");
   if (project.productionPack && project.productionPack !== profile?.packId) errors.push("生产合同不能替换项目 productionPack");
   if (project.show && project.show !== profile?.showId) errors.push("生产合同不能替换项目 show");
-  if (stage === "plan" || !isDahui(contract)) return;
+  if (stage === "plan" || !hasCurrentMediaBinding(contract)) return;
   const expectedTimeline = project.plans?.timeline;
   const expectedPath = typeof expectedTimeline === "string" ? expectedTimeline : expectedTimeline?.path;
   if (!expectedPath || !contract.execution?.timeline?.path || resolveFrom(projectFile, expectedPath) !== resolveFrom(owner, contract.execution.timeline.path)) errors.push("质量检查必须使用项目实际时间线");
@@ -383,6 +387,7 @@ function validateProjectBinding(owner, contract, projectFile, stage, errors) {
     const entry = project.outputs?.finalVideo;
     const video = typeof entry === "string" ? entry : entry?.path;
     if (!video || !contract.release?.finalVideo?.path || resolveFrom(projectFile, video) !== resolveFrom(owner, contract.release.finalVideo.path)) errors.push("终审成片不是项目当前交付文件");
+    if (!isDahui(contract)) return;
     const cover = contract.execution?.cover ?? {};
     const reviewed = (cover.editorialContracts ?? [cover.editorialContract]).filter(Boolean).map(entry => {
       const file = resolveFrom(owner, entry.path), data = readJson(file);
@@ -403,7 +408,7 @@ function validatePolicies(contract, errors) {
       policy.productionProfile?.packId,
       policy.productionProfile?.showId,
     );
-    if (expectedPack.id === "dahui-ai" && !narrative) errors.push("大灰AI不能回退 legacy 或移除叙事需求");
+    if (expectedPack.id !== "xingzhe-dahui" && !narrative) errors.push("通用与大灰AI不能回退 legacy 或移除叙事需求");
     if (
       policy.productionProfile?.packVersion !== expectedPack.version
       || policy.productionProfile?.packSha256 !== expectedPack.sha256
@@ -412,6 +417,7 @@ function validatePolicies(contract, errors) {
   } catch (error) {
     errors.push(`policies.productionProfile 无效：${error.message}`);
   }
+  if (policy.semanticEdit?.wordTimedEvidenceRequired !== !(isGeneric(contract) && expectedPack?.showId === "montage")) errors.push("语义证据规则与剪辑类型不一致");
   if (policy.semanticEdit?.fragmentPolicy !== "keep_or_remove_complete_unit") {
     errors.push("policies.semanticEdit 必须禁止半句话残片");
   }
@@ -460,8 +466,8 @@ function validatePolicies(contract, errors) {
   ) errors.push("policies.externalAssets 未落实语义五元组、来源和情境示意标记");
   const requiredPromptFields = PROFESSIONAL_AUDIO_PROMPT_FIELDS;
   if (
-    policy.audio?.adaptiveBgmRequired !== (expectedPack?.id !== "dahui-ai")
-    || (expectedPack?.id === "dahui-ai" && policy.audio?.bgmPolicy !== "optional-by-timeline")
+    policy.audio?.adaptiveBgmRequired !== (expectedPack?.id === "xingzhe-dahui")
+    || (expectedPack?.id !== "xingzhe-dahui" && policy.audio?.bgmPolicy !== "optional-by-timeline")
     || policy.audio?.rhythmEmotionContentAnalysisRequired !== true
     || !requiredPromptFields.every((field) => policy.audio?.professionalPromptFields?.includes(field))
     || !Number.isFinite(Number(policy.audio?.minimumCoverageRatio))
@@ -490,11 +496,11 @@ function validatePolicies(contract, errors) {
     || JSON.stringify(firstMinute) !== JSON.stringify(firstMinutePolicy(expectedPack.policies.firstMinute, contract.editorialPolicy?.version ?? "legacy"))
     || Number(firstMinute.maximumPrimaryEventsPer10Seconds) > 3
     || Number(firstMinute.maximumPrimaryEventsPer10Seconds) < 1
-    || Number(firstMinute.minimumHumanPresenceRatio) < (expectedPack?.id === "dahui-ai" ? 0 : 0.5)
+    || Number(firstMinute.minimumHumanPresenceRatio) < (expectedPack?.id !== "xingzhe-dahui" ? 0 : 0.5)
     || Number(firstMinute.minimumHumanPresenceRatio) > 1
     || Number(firstMinute.maximumFullScreenTakeoverRatio) < 0
-    || Number(firstMinute.maximumFullScreenTakeoverRatio) > (expectedPack?.id === "dahui-ai" ? 1 : 0.4)
-    || Number(firstMinute.minimumBreathingRoomRatio) < (expectedPack?.id === "dahui-ai" ? 0 : 0.15)
+    || Number(firstMinute.maximumFullScreenTakeoverRatio) > (expectedPack?.id !== "xingzhe-dahui" ? 1 : 0.4)
+    || Number(firstMinute.minimumBreathingRoomRatio) < (expectedPack?.id !== "xingzhe-dahui" ? 0 : 0.15)
     || Number(firstMinute.minimumBreathingRoomRatio) > 1
     || firstMinute.openingHookRequired !== true
     || firstMinute.audioVisualIntentMustMatch !== true
@@ -620,7 +626,7 @@ function validateCinematicEditorial(contractFile, contract, execution, errors) {
     byComposition.set(event.compositionSignature, event);
   }
   const metrics = calculateCinematicEditorialMetrics(record);
-  const expectedDistinct = contract.policies.productionProfile.packId === "dahui-ai"
+  const expectedDistinct = hasCurrentMediaBinding(contract)
     ? Number(budget?.minimumDistinctMechanismsPer120Seconds ?? 1)
     : durationSeconds < 45
     ? 2
@@ -669,10 +675,10 @@ function validateCinematicEditorial(contractFile, contract, execution, errors) {
 
 function validateExecution(contractFile, contract, errors) {
   const execution = contract.execution ?? {};
-  if (isDahui(contract) && execution.timeline?.path) {
+  if (hasCurrentMediaBinding(contract) && execution.timeline?.path) {
     const actual = editorialTimeline(readJson(resolveFrom(contractFile, execution.timeline.path)));
     if (Number(execution.connections?.detectedCount) !== actual.plan.edl.length - 1) errors.push("连接点数量与实际 EDL 不一致");
-    if (Number(execution.semanticEdit?.reviewedThroughSeconds) < Math.max(...actual.plan.edl.map(item => item.sourceEnd))) errors.push("语义审阅未覆盖使用的源区间");
+    if (contract.policies.semanticEdit.wordTimedEvidenceRequired && Number(execution.semanticEdit?.reviewedThroughSeconds) < Math.max(...actual.plan.edl.map(item => item.sourceEnd))) errors.push("语义审阅未覆盖使用的源区间");
     if (Math.abs(Number(execution.cinematicEditorial?.durationSeconds) - actual.duration) > 1e-6) errors.push("镜头审计时长与实际时间线不一致");
     if (Number(execution.audio?.timelineFps) !== actual.fps) errors.push("声音检查帧率与实际时间线不一致");
     for (const key of ["humanPresenceRatio", "fullScreenTakeoverRatio", "breathingRoomRatio"]) {
@@ -681,7 +687,7 @@ function validateExecution(contractFile, contract, errors) {
     }
   }
   const semantic = execution.semanticEdit ?? {};
-  identityFile(contractFile, semantic.wordTimedSource, "execution.semanticEdit.wordTimedSource", errors);
+  identityFile(contractFile, contract.policies.semanticEdit.wordTimedEvidenceRequired ? semantic.wordTimedSource : semantic.sourceReview, contract.policies.semanticEdit.wordTimedEvidenceRequired ? "execution.semanticEdit.wordTimedSource" : "execution.semanticEdit.sourceReview", errors);
   if (!(Number(semantic.reviewedThroughSeconds) > 0)) {
     errors.push("execution.semanticEdit.reviewedThroughSeconds 必须大于 0");
   }
@@ -760,7 +766,7 @@ function validateExecution(contractFile, contract, errors) {
     const displayFont = contract.policies?.typography?.displayFont;
     if (
       chineseLength(item.text) > 7
-      || (isDahui(contract) ? !validEditorialFont(contractFile, item.font, item.fontEvidence, contract, errors) : item.font !== displayFont)
+      || (hasCurrentMediaBinding(contract) ? !validEditorialFont(contractFile, item.font, item.fontEvidence, contract, errors) : item.font !== displayFont)
       || item.maskVerified !== true
     ) errors.push(`execution.effects.behindSubjectText[${index}] 必须是 7 字以内、使用 production pack 展示字体的短词并验证人物遮挡`);
   }
@@ -768,7 +774,7 @@ function validateExecution(contractFile, contract, errors) {
   const regularStyle = execution.captions?.regularStyle ?? {};
   const expectedRegularStyle = contract.policies?.typography?.regularSubtitle ?? {};
   if (
-    (isDahui(contract) ? !validEditorialFont(contractFile, regularStyle.font, regularStyle.fontEvidence, contract, errors) : regularStyle.font !== expectedRegularStyle.font)
+    (hasCurrentMediaBinding(contract) ? !validEditorialFont(contractFile, regularStyle.font, regularStyle.fontEvidence, contract, errors) : regularStyle.font !== expectedRegularStyle.font)
     || regularStyle.background !== expectedRegularStyle.background
     || regularStyle.outline !== expectedRegularStyle.outline
     || Number(regularStyle.shadowOpacity) !== Number(expectedRegularStyle.shadowOpacity)
@@ -811,12 +817,12 @@ function validateExecution(contractFile, contract, errors) {
 
   const audio = execution.audio ?? {};
   const audioState = editorialAudioState(contractFile, contract, errors);
-  if (!isDahui(contract) || audioState.bgm) {
+  if (!hasCurrentMediaBinding(contract) || audioState.bgm) {
     identityFile(contractFile, audio.adaptivePlan, "execution.audio.adaptivePlan", errors);
     for (const field of contract.policies?.audio?.professionalPromptFields ?? []) {
       if (!hasValue(audio.promptFields?.[field])) errors.push(`execution.audio.promptFields.${field} 缺失`);
     }
-    if (isDahui(contract) && (audioState.timeline?.audio?.bgm?.adaptivePlan?.sha256 !== audio.adaptivePlan?.sha256)) errors.push("配乐计划未与实际时间线绑定");
+    if (hasCurrentMediaBinding(contract) && (audioState.timeline?.audio?.bgm?.adaptivePlan?.sha256 !== audio.adaptivePlan?.sha256)) errors.push("配乐计划未与实际时间线绑定");
   }
   const timelineFps = Number(audio.timelineFps);
   if (!Number.isFinite(timelineFps) || timelineFps <= 0) {
@@ -968,12 +974,12 @@ function validateRelease(contractFile, contract, errors) {
   const release = contract.release ?? {};
   identityFile(contractFile, release.finalTimeline, "release.finalTimeline", errors);
   const state = editorialAudioState(contractFile, contract, errors);
-  const requiredStems = isDahui(contract) ? ["dialogue", "mix", ...(state.bgm ? ["bgm"] : []), ...(state.sfx ? ["sfx"] : [])] : ["dialogue", "bgm", "sfx", "mix"];
+  const requiredStems = hasCurrentMediaBinding(contract) ? [...(isGeneric(contract) && contract.policies.productionProfile.showId === "montage" ? [] : ["dialogue"]), "mix", ...(state.bgm ? ["bgm"] : []), ...(state.sfx ? ["sfx"] : [])] : ["dialogue", "bgm", "sfx", "mix"];
   for (const stem of new Set([...requiredStems, ...Object.keys(release.stems ?? {}).filter(key => release.stems[key])])) {
     const file = identityFile(contractFile, release.stems?.[stem], `release.stems.${stem}`, errors);
-    if (isDahui(contract) && file && state.timeline?.output?.[`${stem}Stem`] && file !== resolveFrom(resolveFrom(contractFile, contract.execution.timeline.path), state.timeline.output[`${stem}Stem`])) errors.push(`release.stems.${stem} 与时间线输出不一致`);
+    if (hasCurrentMediaBinding(contract) && file && state.timeline?.output?.[`${stem}Stem`] && file !== resolveFrom(resolveFrom(contractFile, contract.execution.timeline.path), state.timeline.output[`${stem}Stem`])) errors.push(`release.stems.${stem} 与时间线输出不一致`);
   }
-  if (isDahui(contract)) {
+  if (hasCurrentMediaBinding(contract)) {
     identityFile(contractFile, release.finalVideo, "release.finalVideo", errors);
     if (release.finalTimeline?.sha256 !== contract.execution?.timeline?.sha256) errors.push("release.finalTimeline 与已检查时间线不一致");
     if (state.timeline) {
@@ -1000,7 +1006,7 @@ function validateRelease(contractFile, contract, errors) {
     if (interval.end > start) intentionalDuration += interval.end - start;
     cursor = Math.max(cursor, interval.end);
   }
-  if (isDahui(contract) && state.bgm && state.timeline) {
+  if (hasCurrentMediaBinding(contract) && state.bgm && state.timeline) {
     try {
       const actual = editorialTimeline(state.timeline);
       const intervals = actual.plan.audio.bgm.segments?.map(item=>({startSeconds:item.start,endSeconds:item.end})) ?? [{startSeconds:0,endSeconds:actual.duration}];
@@ -1020,7 +1026,7 @@ function validateRelease(contractFile, contract, errors) {
     || coverage < 0
     || coverage > 1
     || !Number.isFinite(explainedCoverage)
-    || (isDahui(contract) && !state.bgm ? coverage !== 0 : explainedCoverage < Number(contract.policies.audio.minimumCoverageRatio))
+    || (hasCurrentMediaBinding(contract) && !state.bgm ? coverage !== 0 : explainedCoverage < Number(contract.policies.audio.minimumCoverageRatio))
     || intervals.length !== intentionalSilences.length
     || intentionalSilences.some((item) => !hasValue(item.reason))
   ) errors.push("release BGM 覆盖不足，且没有逐段记录有意留白原因");
@@ -1028,6 +1034,10 @@ function validateRelease(contractFile, contract, errors) {
     const review = release[field];
     if (review?.status !== "pass") errors.push(`release.${field}.status 必须为 pass`);
     identityFile(contractFile, review?.evidence, `release.${field}.evidence`, errors);
+    if (isGeneric(contract)) errors.push(...validateEditorialReview(contractFile, review?.evidence, contract, {
+      kind: "production", candidate: release.finalVideo?.path ? resolveFrom(contractFile, release.finalVideo.path) : null,
+      timeline: contract.execution?.timeline?.path ? resolveFrom(contractFile, contract.execution.timeline.path) : null,
+    }));
   }
 }
 
@@ -1082,6 +1092,20 @@ if (command === "template") {
     productionPack: packId,
     showId,
   }, null, 2));
+} else if (command === "review-template") {
+  const file = path.resolve(option("--contract") ?? "");
+  const output = option("--output");
+  if (!output) throw new Error("缺少 --output");
+  const contract = readJson(file);
+  if (!isGeneric(contract)) throw new Error("通用终审模板需要 clean-editorial 合同；大灰AI请使用 episode review-template");
+  const report = validateProductionQualityContract(file, "execution");
+  if (report.status !== "pass") throw new Error(report.errors.join("\n"));
+  const candidate = resolveFrom(file, contract.release?.finalVideo?.path);
+  const timeline = resolveFrom(file, contract.execution?.timeline?.path);
+  if (!candidate || !timeline) throw new Error("先绑定当前 timeline 和 finalVideo");
+  if (path.resolve(output) === file || fs.existsSync(path.resolve(output))) throw new Error("终审模板必须写入新文件，不覆盖已有记录");
+  writeJsonAtomic(output, reviewTemplate(contract, { kind: "production", candidate, timeline }));
+  console.log(JSON.stringify({status:"pending", output:path.resolve(output)}, null, 2));
 } else if (command === "validate") {
   const contractFile = option("--contract");
   const stage = option("--stage", "plan");

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { resolveProductionSelection } from "./production_pack.mjs";
+import { resolveProductionSelection, productionStyleProfile } from "./production_pack.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -314,7 +314,7 @@ function validateDesignPreflight(value, label, errors) {
   try {
     resolved = resolveDesignSystem({
       system: value.designSystemId,
-      profile: value.styleProfile ?? (resolveProductionSelection(null, value.modeSelection?.show).packId === "dahui-ai" ? "dahui-ai" : undefined),
+      profile: value.styleProfile ?? (value.modeSelection?.show ? productionStyleProfile(resolveProductionSelection(null, value.modeSelection.show).packId) : undefined),
       modes: value.modeSelection,
     });
   } catch (error) {

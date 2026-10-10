@@ -5,6 +5,8 @@ import path from "node:path";
 import {
   fileIdentity,
   mediaSummary,
+  readJson,
+  resolveFrom,
   sha256Value,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
@@ -38,7 +40,7 @@ if (!sourceInput || !projectId || !outputInput) {
     "用法：init_incremental_project.mjs SOURCE --project-id ID --output-dir DIR "
       + "[--baseline-version v1] [--delivery video,covers,subtitles] "
       + "[--cover-ratios 3:4,4:3] [--series-status detected|not_series] "
-      + "[--series-title TITLE] "
+      + "[--series-title TITLE] [--project-manifest FILE] "
       + "[--lufs-min -21.5 --lufs-max -19 --true-peak-max -3]",
   );
   process.exit(2);
@@ -77,9 +79,21 @@ if (!summary.video || !(summary.width > 0 && summary.height > 0 && summary.fps >
 }
 const identity = fileIdentity(source);
 const aspectRatio = `${summary.width}:${summary.height}`;
+const manifestInput = option(args, "--project-manifest");
+let production = null;
+if (manifestInput) {
+  const file = path.resolve(manifestInput), manifest = readJson(file);
+  const output = manifest.outputs?.finalVideo;
+  const expected = resolveFrom(file, typeof output === "string" ? output : output?.path);
+  if (manifest.projectId !== projectId || !expected || fs.realpathSync(expected) !== fs.realpathSync(source)
+    || (output?.sha256 && output.sha256 !== identity.sha256)) throw new Error("返工基线必须是同一项目当前成片");
+  production = { manifest: fileIdentity(file), packId: manifest.productionPack, showId: manifest.show,
+    audioContract: manifest.expectedMedia ?? {} };
+}
 const context = {
   schemaVersion: "3.0",
   projectId,
+  ...(production ? { productionProfile: { packId: production.packId, showId: production.showId, manifest: production.manifest } } : {}),
   projectRoot: ".",
   createdAt: new Date().toISOString(),
   authorization: {
@@ -127,11 +141,13 @@ const context = {
     artifacts: delivery,
     coverAspectRatios: coverRatios,
     subtitleLanguages: [],
+    ...(production ? {audioContract: { integratedLufsMin: -21.5, integratedLufsMax: -19, truePeakMax: -3, ...production.audioContract }} : {}),
     ...(Number.isFinite(lufsMin)
       && Number.isFinite(lufsMax)
       && Number.isFinite(truePeakMax)
       ? {
           audioContract: {
+            ...(production?.audioContract ?? {}),
             integratedLufsMin: lufsMin,
             integratedLufsMax: lufsMax,
             truePeakMax,

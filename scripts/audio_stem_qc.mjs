@@ -7,6 +7,16 @@ import {
   run,
 } from "./kacha_utils.mjs";
 
+export function allowsSilentAudio(project) {
+  const contract = project.expectedMedia?.audioMix;
+  return project.productionPack === "clean-editorial" && project.show === "montage"
+    && contract?.dialogueRequired === false && contract?.silenceAllowed === true && contract?.bgmRequired !== true;
+}
+
+export function isSilentLoudness(value) {
+  return value?.input_i === "-inf" && value?.input_tp === "-inf";
+}
+
 function entryPath(entry) {
   return typeof entry === "string" ? entry : entry?.path;
 }
@@ -61,6 +71,7 @@ function measureStem(file, qcConfig) {
     durationSeconds: probe.audioDuration || probe.duration,
     sampleRate: probe.sampleRate,
     channels: probe.channels,
+    silent: isSilentLoudness(loudness),
     integratedLufs: Number(loudness.input_i),
     truePeakDbtp: Number(loudness.input_tp),
     loudnessRangeLu: Number(loudness.input_lra),
@@ -240,6 +251,8 @@ export function evaluateAudioStems({
     throw new Error("Audio stem QC requires the positive duration of the complete final timeline");
   }
   const required = contract?.bgmRequired === true;
+  const dialogueRequired = !(project.productionPack === "clean-editorial" && project.show === "montage" && contract?.dialogueRequired === false);
+  const silenceAllowed = allowsSilentAudio(project);
   const adaptiveRequired = contract?.adaptiveBgmRequired === true;
   const dialogueEntry = declared?.dialogue ?? declared?.voice;
   const bgmEntry = declared?.bgm;
@@ -300,9 +313,9 @@ export function evaluateAudioStems({
 
   checks.push(check(
     "dialogue_stem_declared",
-    Boolean(dialogueFile),
+    !dialogueRequired || Boolean(dialogueFile),
     dialogueFile ?? "missing",
-    "outputs.audioStems.dialogue or outputs.audioStems.voice",
+    dialogueRequired ? "outputs.audioStems.dialogue or outputs.audioStems.voice" : "optional for montage",
   ));
   checks.push(check(
     "bgm_stem_declared",
@@ -312,9 +325,9 @@ export function evaluateAudioStems({
   ));
   checks.push(check(
     "final_mix_stem_declared",
-    !required || Boolean(mixFile),
+    Boolean(mixFile),
     mixFile ?? "missing",
-    required ? "outputs.audioStems.mix" : "optional",
+    "outputs.audioStems.mix",
   ));
 
   for (const [name, file] of [
@@ -342,7 +355,7 @@ export function evaluateAudioStems({
       ));
       checks.push(check(
         `${name}_stem_loudness_analysis`,
-        Number.isFinite(measurements[name].integratedLufs),
+        Number.isFinite(measurements[name].integratedLufs) || (silenceAllowed && measurements[name].silent),
         measurements[name],
         "finite integrated loudness measurement",
       ));
@@ -427,7 +440,8 @@ export function evaluateAudioStems({
   );
   if (mixExists) {
     const masterTruePeakDb = Number(contract?.masterTruePeakDb ?? -4);
-    const reconstruction = compareReconstructedMix(
+    const silentWithoutComponents = silenceAllowed && measurements.mix?.silent && !dialogueFile && !bgmFile && !sfxFile;
+    const reconstruction = silentWithoutComponents ? { status: 0, exactMatch: true, diagnostic: "Verified digital silence without component stems" } : compareReconstructedMix(
       { dialogue: dialogueFile, bgm: bgmFile, sfx: sfxFile },
       mixFile,
       finalDurationSeconds,
@@ -484,6 +498,7 @@ export function evaluateAudioStems({
   return {
     status: failures.length > 0 ? "fail" : "pass",
     contract: {
+      dialogueRequired, silenceAllowed,
       bgmRequired: required,
       adaptiveBgmRequired: adaptiveRequired,
       adaptiveBgmPlan: adaptivePlanFile,

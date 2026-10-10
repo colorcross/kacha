@@ -69,11 +69,25 @@
         "grammar": "forensic_reveal",
         "defaultMechanism": "evidence_lock_and_verdict",
         "quietMechanism": "clean_normally_exposed_live_action"
+      },
+      "clean-editorial": {
+        "grammar": "source_led_editing",
+        "defaultMechanism": "evidence_detail_focus",
+        "quietMechanism": "clean_source_hold"
+      },
+      "dahui-ai": {
+        "grammar": "evidence_led_explanation",
+        "defaultMechanism": "evidence_detail_focus",
+        "quietMechanism": "clean_live_action"
       }
     }
   },
   "review": {
-    "outcomes": ["accept", "adjust", "reject"],
+    "outcomes": [
+      "accept",
+      "adjust",
+      "reject"
+    ],
     "minimumPreferenceEvidence": 2,
     "preferenceActivationRequiresConfirmation": true,
     "storeFreeformNotesInLongTermProfile": false
@@ -88,7 +102,11 @@
     "sfxLandingToleranceFrames": 1
   },
   "interchange": {
-    "formats": ["otio", "fcpxml", "cmx3600"],
+    "formats": [
+      "otio",
+      "fcpxml",
+      "cmx3600"
+    ],
     "importCreatesCandidateOnly": true,
     "preserveSemanticIds": true
   },

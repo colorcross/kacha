@@ -94,14 +94,16 @@ if (!isMainThread) {
       const { initializeProject } = await import("./project_orchestrator.mjs");
       if (!options.scriptPath && !options.topic) throw new Error("请提供脚本路径或中心选题");
       const catalog = loadProductionCatalog();
-      const dahui = Object.hasOwn(catalog.shows, options.show);
-      if (dahui ? options.style !== "dahui-ai" : !catalog.visualLanguages.some(item => item.id === options.style)) {
+      const { resolveProductionSelection } = await import("./production_pack.mjs");
+      const selection = resolveProductionSelection(null, options.show);
+      const expectedStyle = selection.packId === "xingzhe-dahui" ? null : selection.packId;
+      if (expectedStyle ? options.style !== expectedStyle : !catalog.visualLanguages.some(item => item.id === options.style)) {
         throw new Error(`内容栏目与视觉风格不匹配：${options.style}`);
       }
       value = initializeProject({
         script: options.scriptPath || null, topic: options.topic || null,
         projectRoot, projectId: options.projectId, task: "content_generation",
-        show: options.show, style: options.style, platform: options.platform,
+        pack: selection.packId, show: selection.showId, style: options.style, platform: options.platform,
         language: "zh", confirmExecute: false, development: false,
       });
     } else {

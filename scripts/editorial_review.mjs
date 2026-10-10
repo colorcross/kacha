@@ -5,6 +5,9 @@ import { readJson, sha256File, sha256Value } from "./kacha_utils.mjs";
 export function editorialDigest(contract) {
   const content = structuredClone(contract);
   for (const field of ["reviewEvidence", "checks", "status", "qc"]) delete content[field];
+  if (content.kind === "kacha-production-quality-contract" && content.release) {
+    for (const field of ["representativeNormalSpeed", "fullPlayback", "deviceListening"]) delete content.release[field];
+  }
   return sha256Value(content);
 }
 
@@ -29,7 +32,9 @@ export function reviewTemplate(contract, { candidate, timeline = null, kind = "e
     projectId: contract.projectId, contentDigest: editorialDigest(contract),
     candidate: identity(candidate), ...(timeline ? { timeline: identity(timeline) } : {}),
     reviewer: "", reviewedAt: null, status: "pending",
-    checks: kind === "episode"
+    checks: kind === "production"
+      ? { representativeNormalSpeed: "pending", fullPlayback: "pending", deviceListening: "pending" }
+      : kind === "episode"
       ? { facts: "pending", attribution: "pending", readability: "pending", fullSpeedReview: "pending" }
       : { thumbnail: "pending" },
   };
@@ -47,9 +52,9 @@ export function validateEditorialReview(owner, reference, contract, { kind = "ep
     if (typeof review.reviewer !== "string" || !review.reviewer.trim()
       || typeof review.reviewedAt !== "string" || !Number.isFinite(Date.parse(review.reviewedAt))
       || review.status !== "pass") errors.push("终审须记录实际审阅人、时间与通过状态");
-    const checks = kind === "episode" ? ["facts", "attribution", "readability", "fullSpeedReview"] : ["thumbnail"];
+    const checks = kind === "production" ? ["representativeNormalSpeed", "fullPlayback", "deviceListening"] : kind === "episode" ? ["facts", "attribution", "readability", "fullSpeedReview"] : ["thumbnail"];
     if (checks.some(key => review.checks?.[key] !== "pass")) errors.push("终审各项尚未通过");
-    for (const [label, expected] of [["candidate", candidate], ...(kind === "episode" ? [["timeline", timeline]] : [])]) {
+    for (const [label, expected] of [["candidate", candidate], ...(kind !== "cover" ? [["timeline", timeline]] : [])]) {
       const actual = verifiedEditorialFile(file, review[label], `终审 ${label}`, errors);
       if (!expected || !actual || path.resolve(expected) !== actual) errors.push(`终审 ${label} 未绑定当前产物`);
     }

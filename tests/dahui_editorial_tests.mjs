@@ -37,8 +37,8 @@ try {
   assert.equal(loadProductionPack('xingzhe-dahui','book-talk').policies.cover.mode,'cinematic_3d');
   assert.throws(()=>loadProductionPack('xingzhe-dahui','ai-reading'));
  });
- test('studio defaults to eight new editorial presets and keeps five legacy presets',()=>{
-  const c=loadProductionCatalog({includeCustom:false});assert.equal(c.defaultStyleId,'dahui-ai');assert.equal(c.styles.filter(s=>s.design.profile==='dahui-ai').length,8);assert.equal(c.styles.filter(s=>s.design.profile==='xingzhe').length,5);
+ test('studio keeps eight new editorial presets and five legacy presets alongside generic default',()=>{
+  const c=loadProductionCatalog({includeCustom:false});assert.equal(c.defaultStyleId,'clean-editorial');assert.equal(c.styles.filter(s=>s.design.profile==='dahui-ai').length,8);assert.equal(c.styles.filter(s=>s.design.profile==='xingzhe').length,5);
   assert.equal(c.styles[0].direction.openingId,'natural');assert.equal(c.styles[0].bgm.enabled,false);
  });
  test('book and debate recipe cannot be hijacked by generic experiment signals',()=>{

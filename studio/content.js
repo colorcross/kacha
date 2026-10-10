@@ -33,9 +33,12 @@ function setMode(next) {
   });
 }
 function syncStyles() {
+  const generic = ["talking-head", "screen-demo", "montage"].includes($("show").value);
   const legacy = ["tool-share", "book-talk", "infinite-game", "very-ai", "casual-chat"].includes($("show").value);
-  for (const option of $("style").options) option.disabled = legacy === (option.value === "dahui-ai");
-  if ($("style").selectedOptions[0]?.disabled) $("style").value = legacy ? "xingzhe-light-overlay" : "dahui-ai";
+  const preferred = generic ? "clean-editorial" : legacy ? "xingzhe-light-overlay" : "dahui-ai";
+  for (const option of $("style").options) option.disabled = generic ? option.value !== "clean-editorial"
+    : legacy ? ["clean-editorial", "dahui-ai"].includes(option.value) : option.value !== "dahui-ai";
+  if ($("style").selectedOptions[0]?.disabled) $("style").value = preferred;
 }
 document.querySelectorAll("[data-mode]").forEach((button) => button.addEventListener("click", () => setMode(button.dataset.mode)));
 $("contentForm").addEventListener("input", invalidateResult);

@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "id": "kacha-production-studio",
   "name": "咔嚓本地生产台",
-  "defaultStyleId": "dahui-ai",
+  "defaultStyleId": "clean-editorial",
   "authorityBoundary": "页面生成的是本地剪辑意图与配置，不自动上传、付费生成、发布、覆盖源文件或跳过质量门禁。",
   "styleArchitecture": {
     "masterStyleId": "xingzhe",
@@ -1084,6 +1084,81 @@
       },
       "audio": {
         "presetId": "warm-soft",
+        "denoise": "light",
+        "targetLufs": -21,
+        "truePeakDbtp": -4,
+        "channelMode": "preserve"
+      },
+      "bgm": {
+        "enabled": false,
+        "presetId": "quiet-knowledge",
+        "targetBelowDialogueDb": 18,
+        "ducking": "gentle"
+      },
+      "beauty": {
+        "enabled": false,
+        "engine": "beauty-v2",
+        "profile": "natural",
+        "tuning": {
+          "smoothing": 35,
+          "whitening": 22,
+          "toneEvening": 30,
+          "nasolabialSoftening": 24
+        }
+      },
+      "direction": {
+        "openingId": "natural",
+        "transitionBias": "semantic-minimal",
+        "effectDensity": "restrained",
+        "automaticProfessionalJudgment": true,
+        "visualBreathing": true
+      },
+      "baseStyleId": null
+    }
+  ],
+  "generalPresets": [
+    {
+      "id": "clean-editorial",
+      "name": "通用剪辑",
+      "presetKind": "master-style",
+      "effectLibraryPolicy": "authoritative",
+      "tagline": "按你的素材与目的剪辑",
+      "description": "口播、录屏或多素材成片；保留完整内容，自然开场，按需使用字幕、动效和音乐。",
+      "builtIn": true,
+      "design": {
+        "system": "dahui-video-system",
+        "profile": "clean-editorial",
+        "modes": {
+          "show": "talking-head",
+          "aspectRatio": "landscape-16x9",
+          "language": "zh",
+          "surface": "footage",
+          "density": "standard"
+        },
+        "overrides": {
+          "palette": {
+            "canvas": "#F4F5F7",
+            "surface": "#FFFFFF",
+            "ink": "#202733",
+            "accent": "#E98A2B"
+          }
+        }
+      },
+      "caption": {
+        "templateId": "editorial-readable",
+        "fontRole": "subtitle_primary",
+        "preferredFontFamily": "PingFang SC",
+        "fontSizeRatio": 0.048,
+        "maxWidthRatio": 0.8,
+        "baselineYRatio": 0.72,
+        "primaryColor": "#FFF8EE",
+        "emphasisColor": "#E98A2B",
+        "shadowOpacity": 0.45,
+        "singleLine": true,
+        "background": "none"
+      },
+      "audio": {
+        "presetId": "natural",
         "denoise": "light",
         "targetLufs": -21,
         "truePeakDbtp": -4,
