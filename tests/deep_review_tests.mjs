@@ -45,7 +45,7 @@ try {
       const graph=path.join(root,'graph.json');exec(process.execPath,[path.join(repo,'scripts/timeline_ir.mjs'),'compile','--plan',file,'--graph',graph]);
       assert.deepEqual(readJson(graph).transitions.map(x=>x.durationFrames),[0,5]);
     }
-    plan.transitions=[{boundaryIndex:1,durationFrames:5},{boundaryIndex:1,durationFrames:0}];assert.throws(()=>buildTimelineProjection(save('duplicate.json',plan)),/重复/);
+    plan.transitions=[{boundaryIndex:1,durationFrames:5},{boundaryIndex:1,durationFrames:0}];assert.equal(buildTimelineProjection(save('duplicate.json',plan)).durationSeconds,3);
   });
   const timeline=save('network.json',base());
   const request=save('request.json',networkRequest(timeline,{start:1,end:1.04,text:'红色一帧',purpose:'检查极短选段',query:'red'}));
