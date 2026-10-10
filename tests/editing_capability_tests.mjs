@@ -25,8 +25,11 @@ async function check(name, fn) {
   try { await fn(); checks.push(name); } catch (error) { failures.push({name,error:error.message}); }
 }
 function rgb(file,time,x=50,y=50) {
-  const r=run('ffmpeg',['-hide_banner','-v','error','-ss',String(time),'-i',file,'-vf',`crop=2:2:${x}:${y},format=rgb24`,'-frames:v','1','-f','rawvideo','-'],{encoding:null});
-  assert.equal(r.status,0,r.stderr?.toString());return [...r.stdout.subarray(0,3)];
+  // Outputs use 25 fps. Decode by frame index: input seeking can round a
+  // boundary timestamp to the next frame differently across FFmpeg versions.
+  const frame=time*25;assert.ok(Math.abs(frame-Math.round(frame))<1e-6,'pixel measurement must be frame-aligned');
+  const r=run('ffmpeg',['-hide_banner','-v','error','-i',file,'-vf',`select=eq(n\\,${Math.round(frame)}),crop=2:2:${x}:${y},format=rgb24`,'-frames:v','1','-f','rawvideo','-'],{encoding:null});
+  assert.equal(r.status,0,r.stderr?.toString());assert.equal(r.stdout.length,12,'expected one decoded 2x2 RGB frame');return [...r.stdout.subarray(0,3)];
 }
 try {
   await check('video-overlay-trim-preserves-selected-source-frames',()=>{
@@ -59,7 +62,7 @@ try {
     const plan=base(),file=path.join(root,'outpoint.json'),output=path.join(root,'outpoint.mp4');
     plan.visual.overlays=[{id:'insert',kind:'video',path:insert,start:0,end:2,x:0,y:0,width:100,height:100}];write(file,plan);cli('render',file,'--output',output);
     const before=rgb(output,1.96),after=rgb(output,2);
-    assert.ok(before[2]>150);assert.ok(after.every(c=>c<25),`overlay remained on its exclusive end frame: ${after}`);
+    assert.ok(before[2]>150,`overlay ended before its out-point: ${before}`);assert.ok(after.every(c=>c<25),`overlay remained on its exclusive end frame: ${after}`);
   });
   await check('rough-and-fine-edits-remain-reversible-and-frame-accurate',()=>{
     const plan=base(),file=path.join(root,'edits.json'),output=path.join(root,'edits.mp4');write(file,plan);
