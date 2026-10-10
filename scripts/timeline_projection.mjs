@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { boundaryTransitions } from "./timeline_transitions.mjs";
 import path from "node:path";
 import {
   fileIdentity,
@@ -161,6 +162,7 @@ export function buildTimelineProjection(timelineFile, { includeSourceHash = fals
   const timebase = canonical.timebase ?? normalizeTimebase({}, fallbackFps);
   const items = [];
   let pictureCursor = 0;
+  const transitions = boundaryTransitions(timeline.transitions, timeline.edl ?? []);
   (timeline.edl ?? []).forEach((entry, index) => {
     const pointer = `/edl/${index}`;
     const sourceStartTick = entry.sourceStartTick ?? secondsToTicks(entry.sourceStart, timebase);
@@ -171,7 +173,7 @@ export function buildTimelineProjection(timelineFile, { includeSourceHash = fals
     if (!Number.isSafeInteger(sourceEndTick) || sourceEndTick <= sourceStartTick) {
       throw new Error(`${entry.id ?? `edl[${index}]`}.sourceEndTick 必须大于 sourceStartTick`);
     }
-    const transitionFrames = Number(timeline.transitions?.[Math.max(0, index - 1)]?.durationFrames ?? 0);
+    const transitionFrames = Number(transitions[Math.max(0, index - 1)]?.durationFrames ?? 0);
     if (index > 0 && Number.isSafeInteger(transitionFrames) && transitionFrames > 0) {
       pictureCursor -= framesToTicks(transitionFrames, timebase);
     }

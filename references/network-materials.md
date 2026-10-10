@@ -73,3 +73,11 @@ node scripts/kacha.mjs timeline render --plan /PROJECT/timeline.json --output /P
 在线检索、下载成功、技术渲染、语义适配、版权用途核对和全片终审分别记录。没有实际当前节目素材时，只能交付工具回归与演示，不能宣称某期已剪完。
 
 接口依据：[MediaWiki Imageinfo](https://www.mediawiki.org/wiki/API:Imageinfo)、[TimedMediaHandler Videoinfo](https://www.mediawiki.org/wiki/Extension:TimedMediaHandler/API)。
+
+### 观察帧、替换与工程交接
+
+当前抽帧记录使用 `source-pts-v1`：观察时间来自选段内实际视频帧，并按容器起始时间换算为相对 `sourceIn`。单帧等极短选段可以重复同一有效帧，不向选段外取图。旧观察记录需要重新 `inspect`，再观看完整选段、核对用途与许可后审阅。
+
+普通 Project Bin 的 `replace_media` 不能替换已绑定网络审阅的插镜，也不能直接把网络候选换进本地插镜。请为新素材重新建立需求、选择与审阅，通过 selection 插入；合并索引中包含的网络来源也按此处理。
+
+不含媒体的合同包保留网络来源、署名与 selection 摘要，将本机审阅路径改为待绑定占位并标记 `requires_rebind`。接收方必须重新绑定素材及当前工程审阅；合同包不会复制本机的私有审阅证据或项目音效源文件。

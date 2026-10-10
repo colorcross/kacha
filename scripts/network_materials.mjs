@@ -21,6 +21,12 @@ function narrativeDigest(projection) {
     dialogue:dialogue ? {spec:dialogue,sha256:sha256File(dialoguePath)} : null});
 }
 
+export function requiresNetworkReview(provenance) {
+  return Boolean(provenance && (provenance.selectionSha256 || provenance.requiresNetworkReview
+    || ['stock_media','stock_illustration','reviewed_source'].includes(provenance.kind)
+    || provenance.sources?.some(requiresNetworkReview)));
+}
+
 export function networkRequest(timeline, { start, end, text, purpose, query, evidenceType = 'illustration' }) {
   const projection = buildTimelineProjection(timeline);
   const request = { schemaVersion:'1.0', kind:'kacha-network-material-request', projectId:projection.projectId,
@@ -90,16 +96,40 @@ export function inspectSelection(selectionFile, output) {
   need(!fs.existsSync(output), '拒绝覆盖已有素材观察目录');
   fs.mkdirSync(output, {recursive:true});
   const frames = [];
-  const times = item.kind === 'photo' ? [0] : [0.05,0.5,0.95].map(f => selection.sourceIn + duration*f);
+  let times = [0];
+  if (item.kind === 'video') {
+    // sourceIn is relative to the input's start, while ffprobe exposes raw PTS.
+    const origin = mediaSummary(local).startTime;
+    const probe = spawnSync(process.env.KACHA_FFPROBE_BIN || 'ffprobe', ['-v','error','-select_streams','v:0',
+      '-read_intervals',`${origin + selection.sourceIn}%${origin + selection.sourceIn + duration}`,
+      '-show_entries','frame=best_effort_timestamp_time','-of','csv=p=0',local], {encoding:'utf8',timeout:60000,maxBuffer:32*1024*1024});
+    need(probe.status === 0, '无法确认选段内实际画面时间');
+    const pts = probe.stdout.split('\n').filter(line=>line.trim()).map(line=>Number(line.split(',')[0])-origin)
+      .filter(t=>Number.isFinite(t) && t >= selection.sourceIn-1e-7 && t < selection.sourceIn+duration-1e-7).sort((a,b)=>a-b);
+    need(pts.length > 0, '选段内没有可观察的视频帧');
+    times = [0.05,0.5,0.95].map(f=>pts[Math.floor((pts.length-1)*f)]);
+    const unique = [...new Set(times)];
+    // Seek once, retaining source timestamps. Never round a fractional sample
+    // forward past the exclusive out-point (including one-frame selections).
+    const filter = unique.map(t=>`between(t\\,${t+origin-0.000001}\\,${t+origin+0.000001})`).join('+');
+    const result = spawnSync(process.env.KACHA_FFMPEG_BIN || 'ffmpeg', ['-v','error','-nostdin','-copyts','-ss',String(selection.sourceIn),'-i',local,
+      '-vf',`select=${filter},scale=960:540:force_original_aspect_ratio=decrease`,'-fps_mode','vfr',
+      '-frames:v',String(unique.length),path.resolve(output,'sample-%d.jpg')], {encoding:'utf8',timeout:60000});
+    need(result.status === 0 && unique.every((_,i)=>fs.existsSync(path.resolve(output,`sample-${i+1}.jpg`))), '素材抽帧失败');
+    times.forEach((at,i)=>fs.copyFileSync(path.resolve(output,`sample-${unique.indexOf(at)+1}.jpg`),path.resolve(output,`frame-${i+1}.jpg`)));
+    unique.forEach((_,i)=>fs.unlinkSync(path.resolve(output,`sample-${i+1}.jpg`)));
+  }
   for (const [i, at] of times.entries()) {
     const file = path.resolve(output, `frame-${i+1}.jpg`);
+    if (item.kind === 'photo') {
     const result = spawnSync(process.env.KACHA_FFMPEG_BIN || 'ffmpeg', ['-v','error','-nostdin','-i',local,
-      ...(item.kind === 'photo' ? [] : ['-ss',String(at)]), '-vf','scale=960:540:force_original_aspect_ratio=decrease',
+      '-vf','scale=960:540:force_original_aspect_ratio=decrease',
       '-frames:v','1',file], {encoding:'utf8',timeout:60000});
     need(result.status === 0 && fs.existsSync(file), '素材抽帧失败');
+    }
     frames.push({...fileIdentity(file),atSeconds:at});
   }
-  selection.inspection = {asset:fileIdentity(local),request:selection.request,manifest:selection.manifest,sourceIn:selection.sourceIn,duration,frames};
+  selection.inspection = {sampling:'source-pts-v1',asset:fileIdentity(local),request:selection.request,manifest:selection.manifest,sourceIn:selection.sourceIn,duration,frames};
   // New observations invalidate prior assertions. Merely extracting frames is
   // never evidence that the selected video was watched.
   selection.review = {...selection.review,status:'pending',reviewer:'',reviewedAt:null,fullSelectedRangeViewed:false};
@@ -144,6 +174,7 @@ export function selectedOverlay(projection, selectionFile, selectionSha256, id, 
     && review.rightsChecked === true && review.fullSelectedRangeViewed === true, '先查看实际选段并填写匹配、许可条件和归属审阅');
   need(!nonempty(review.mismatch), '候选存在未解决的不匹配，不能加入时间线');
   need(inspection?.sourceIn === selection.sourceIn && inspection.duration === duration, '源选段已变化，需要重新查看');
+  need(inspection.sampling === 'source-pts-v1', '旧观察帧需重新按实际选段抽取并审阅');
   identity(inspection.asset,'观察素材');
   need(inspection.request?.sha256 === selection.request.sha256 && inspection.manifest?.sha256 === selection.manifest.sha256,
     '段落用途或来源许可已变化，需要重新查看和审阅');

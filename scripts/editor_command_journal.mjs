@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import {
   acquireFileLock,
@@ -7,6 +8,7 @@ import {
   sha256File,
   sha256Value,
   writeJsonAtomic,
+  writeFileAtomic,
 } from "./kacha_utils.mjs";
 import { applyJsonOperations } from "./json_mutation.mjs";
 import {
@@ -50,12 +52,13 @@ function enforcePrivateState(paths) {
   for (const name of fs.readdirSync(paths.snapshots)) enforcePrivateFile(path.join(paths.snapshots, name));
 }
 
-function writeSnapshot(paths, value) {
-  const digest = sha256Value(value);
-  const file = path.join(paths.snapshots, `${digest}.json`);
-  if (!fs.existsSync(file)) writeJsonAtomic(file, value, { mode: 0o600 });
+function writeSnapshot(paths, bytes) {
+  const digest = crypto.createHash("sha256").update(bytes).digest("hex");
+  const file = path.join(paths.snapshots, `bytes-${digest}.json`);
+  if (!fs.existsSync(file)) writeFileAtomic(file, bytes, { mode: 0o600 });
   enforcePrivateFile(file);
-  return { path: file, sha256: sha256File(file) };
+  if (sha256File(file) !== digest) throw new Error("Editor 快照摘要失效，拒绝继续写入");
+  return { path: file, sha256: digest };
 }
 
 function readJournal(paths, { tolerateTruncated = false } = {}) {
@@ -309,7 +312,7 @@ function loadOrCreateSession(timelineFile, { includeSourceHash = false } = {}) {
       undoStack: [],
       redoStack: [],
     };
-    session.initialSnapshot = writeSnapshot(paths, readJson(resolved));
+    session.initialSnapshot = writeSnapshot(paths, fs.readFileSync(resolved));
     writeJsonAtomic(paths.session, session, { mode: 0o600 });
   }
   return { session, paths, projection };
@@ -350,24 +353,25 @@ function auditText(value, fallback, label) {
 }
 
 function applyOperationsToTimeline({ timelineFile, operations, expectedSha, paths }) {
-  const before = readJson(timelineFile);
-  const beforeSha256 = sha256File(timelineFile);
-  if (beforeSha256 !== expectedSha) throw new Error("Command base SHA 已过期");
+  const beforeBytes = fs.readFileSync(timelineFile);
+  const before = JSON.parse(beforeBytes);
+  const beforeSha256 = crypto.createHash("sha256").update(beforeBytes).digest("hex");
+  if (beforeSha256 !== expectedSha || sha256File(timelineFile) !== beforeSha256) throw new Error("Command base SHA 已过期");
   const { value: after, inverseOperations } = applyJsonOperations(before, operations, {
     captureInverse: true,
   });
-  const beforeSnapshot = writeSnapshot(paths, before);
+  const beforeSnapshot = writeSnapshot(paths, beforeBytes);
+  const afterSnapshot = writeSnapshot(paths, Buffer.from(`${JSON.stringify(after, null, 2)}\n`));
   writeJsonAtomic(timelineFile, after);
   try {
     buildTimelineProjection(timelineFile);
   } catch (error) {
-    writeJsonAtomic(timelineFile, before);
+    writeFileAtomic(timelineFile, beforeBytes);
     throw new Error(`Command 破坏 Timeline 合同，已恢复：${error.message}`);
   }
-  const afterSnapshot = writeSnapshot(paths, after);
   const afterSha256 = sha256File(timelineFile);
   if (afterSha256 !== afterSnapshot.sha256) {
-    writeJsonAtomic(timelineFile, before);
+    writeFileAtomic(timelineFile, beforeBytes);
     throw new Error("Command 写入后检测到并发变化，Timeline 已恢复");
   }
   return {
@@ -446,7 +450,7 @@ export function applyEditorCommand(timelineFile, command) {
         snapshots: { before: applied.beforeSnapshot, after: applied.afterSnapshot },
       });
     } catch (error) {
-      writeJsonAtomic(resolved, readJson(applied.beforeSnapshot.path));
+      writeFileAtomic(resolved, fs.readFileSync(applied.beforeSnapshot.path));
       throw new Error(`Command journal 写入失败，Timeline 已恢复：${error.message}`);
     }
     session.currentSha256 = applied.afterSha256;
@@ -456,7 +460,7 @@ export function applyEditorCommand(timelineFile, command) {
     try {
       writeJsonAtomic(paths.session, session, { mode: 0o600 });
     } catch (error) {
-      writeJsonAtomic(resolved, readJson(applied.beforeSnapshot.path));
+      writeFileAtomic(resolved, fs.readFileSync(applied.beforeSnapshot.path));
       restoreJournal(paths, appended.previous);
       throw new Error(`Editor session 写入失败，Timeline 与 journal 已恢复：${error.message}`);
     }
@@ -515,7 +519,7 @@ function replayStack(timelineFile, action, expectedCurrentSha256) {
         snapshots: { before: applied.beforeSnapshot, after: applied.afterSnapshot },
       });
     } catch (error) {
-      writeJsonAtomic(resolved, readJson(applied.beforeSnapshot.path));
+      writeFileAtomic(resolved, fs.readFileSync(applied.beforeSnapshot.path));
       throw new Error(`Command journal 写入失败，Timeline 已恢复：${error.message}`);
     }
     session.currentSha256 = applied.afterSha256;
@@ -523,7 +527,7 @@ function replayStack(timelineFile, action, expectedCurrentSha256) {
     try {
       writeJsonAtomic(paths.session, session, { mode: 0o600 });
     } catch (error) {
-      writeJsonAtomic(resolved, readJson(applied.beforeSnapshot.path));
+      writeFileAtomic(resolved, fs.readFileSync(applied.beforeSnapshot.path));
       restoreJournal(paths, appended.previous);
       throw new Error(`Editor session 写入失败，Timeline 与 journal 已恢复：${error.message}`);
     }
@@ -582,7 +586,7 @@ export function recoverEditorProject(
     }
     const archive = archiveEditorState(paths, resolved, "recover");
     try {
-      writeJsonAtomic(resolved, snapshot.value);
+      writeFileAtomic(resolved, fs.readFileSync(snapshot.reference.path));
       buildTimelineProjection(resolved);
       writeJournalRecords(paths, records);
       const afterSha256 = sha256File(resolved);
@@ -662,7 +666,7 @@ export function reopenEditorProject(
         updatedAt: timestamp,
         reopenedBy: auditText(actor, "editor-user", "actor"),
         reopenReason: auditText(reason, "accept external timeline state", "reason"),
-        initialSnapshot: writeSnapshot(paths, readJson(resolved)),
+        initialSnapshot: writeSnapshot(paths, fs.readFileSync(resolved)),
         undoStack: [],
         redoStack: [],
       };

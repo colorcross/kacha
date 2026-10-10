@@ -58,6 +58,18 @@ try {
   checked.push('shared-output-alias-exclusion-and-worker-slot-accounting');
   checked.push('cross-task-capacity-media-exclusion-and-uncreated-path-aliases');
   checked.push('canonical-project-exclusion-bounded-concurrency-event-loop-and-exit-recovery');
+  const cacheWorker = path.join(root,'cache-worker.mjs');
+  fs.writeFileSync(cacheWorker, `import fs from 'node:fs';import {parentPort,workerData} from 'node:worker_threads';
+    import {importFileHashCache,exportFileHashCache,sha256File} from ${JSON.stringify(new URL('../scripts/kacha_utils.mjs',import.meta.url).href)};
+    importFileHashCache(workerData.hashCache);let bytes=0;const read=fs.readSync;fs.readSync=(...args)=>{const n=read(...args);bytes+=n;return n;};
+    const sha=sha256File(workerData.projectRoot);const mediaBytes=bytes;
+    for(let i=0;i<270;i++){const small=workerData.projectRoot+".small-"+i;if(!fs.existsSync(small))fs.writeFileSync(small,"x");sha256File(small);}
+    parentPort.postMessage({value:{bytes:mediaBytes,sha},hashCache:exportFileHashCache()});`);
+  const cached = createProjectTaskRunner({workerUrl:pathToFileURL(cacheWorker)});
+  assert.ok((await cached('real-preview',media)).bytes>0);
+  assert.equal((await cached('real-preview-status',media)).bytes,0);
+  fs.appendFileSync(media,' changed');assert.ok((await cached('real-preview-status',media)).bytes>0);
+  checked.push('preview-workers-reuse-current-media-hashes-and-invalidate-changes');
   const originalFetch = globalThis.fetch;
   try {
     globalThis.fetch = async () => new Response('oops', {status: 503});

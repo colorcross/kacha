@@ -5,7 +5,7 @@ import { readJson } from "./kacha_utils.mjs";
 import { verifiedEditorialFile, validateEditorialReview } from "./editorial_review.mjs";
 import { editorialTimeline } from "./editorial_timeline.mjs";
 import { buildTimelineProjection } from './timeline_projection.mjs';
-import { validateAdoptedSelection } from './network_materials.mjs';
+import { validateAdoptedSelection, requiresNetworkReview } from './network_materials.mjs';
 
 // Episode evidence supplements Timeline IR; it never becomes a second timeline.
 export function episodeTemplate(projectId, showId) {
@@ -148,7 +148,7 @@ export function validateEpisode(file, { stage = "plan", timeline = null, expecte
         if (actual.projectId !== episode.projectId) errors.push("Timeline IR projectId 不匹配");
         const resolved = editorialTimeline(actual);
         const objects = [...resolved.plan.edl, ...(actual.visual?.overlays ?? []), ...(actual.visual?.breathing ?? []), ...(actual.audio?.sfx ?? [])];
-        const networkOverlays=(actual.visual?.overlays ?? []).filter(item=>item.provenance?.selectionSha256);
+        const networkOverlays=(actual.visual?.overlays ?? []).filter(item=>requiresNetworkReview(item.provenance));
         if (networkOverlays.length) {
           const projection=buildTimelineProjection(timeline);
           for (const overlay of networkOverlays) {

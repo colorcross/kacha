@@ -170,11 +170,8 @@ export function listProjectBin(timelineFile, {
       range: item.range ?? null,
       identity: { sha256: item.identity.sha256, sizeBytes: item.identity.sizeBytes },
       license: item.license,
-      provenance: {
-        kind: item.provenance.kind,
-        evidence: item.provenance.evidence ?? null,
-        externalUpload: item.provenance.externalUpload,
-      },
+      provenance: structuredClone(item.provenance),
+      private: item.private, distribution: item.distribution, redistributionAllowed: item.redistributionAllowed,
       replacementEligible: replacementEligible(item),
       tags: tagsFor(item),
       semanticEvidence: item.semanticEvidence ?? [],

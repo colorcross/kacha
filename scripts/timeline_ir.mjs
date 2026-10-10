@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { boundaryTransitions } from "./timeline_transitions.mjs";
 import fs from "node:fs";
 import { renderMediaContract, colorArguments } from "./render_media_contract.mjs";
 import { previewClosure } from "./preview_range.mjs";
@@ -368,38 +369,12 @@ function resolveTransitionName(entry) {
 }
 
 function normalizeTransitions(plan, edl, fps) {
-  const count = Math.max(0, edl.length - 1);
-  const normalized = Array.from({ length: count }, (_, boundaryIndex) => ({
-    boundaryIndex,
-    effectId: "clean_cut",
-    transition: null,
-    durationFrames: 0,
-    durationSeconds: 0,
+  return boundaryTransitions(plan.transitions, edl).map(entry => ({
+    ...entry,
+    effectId: String(entry.effectId ?? "custom_xfade"),
+    transition: entry.durationFrames > 0 ? resolveTransitionName(entry) : null,
+    durationSeconds: entry.durationFrames / fps,
   }));
-  const entries = Array.isArray(plan.transitions) ? plan.transitions : [];
-  for (const [entryIndex, entry] of entries.entries()) {
-    let boundaryIndex = Number(entry?.boundaryIndex);
-    if (!Number.isInteger(boundaryIndex) && entry?.afterClipId) {
-      boundaryIndex = edl.findIndex((segment) => segment.id === entry.afterClipId);
-    }
-    if (!Number.isInteger(boundaryIndex) && entries.length === count) {
-      boundaryIndex = entryIndex;
-    }
-    if (!Number.isInteger(boundaryIndex) || boundaryIndex < 0 || boundaryIndex >= count) {
-      throw new Error(`transitions[${entryIndex}].boundaryIndex 无效`);
-    }
-    const durationFrames = Number(entry.durationFrames ?? 0);
-    const durationSeconds = durationFrames / fps;
-    normalized[boundaryIndex] = {
-      ...entry,
-      boundaryIndex,
-      effectId: String(entry.effectId ?? "custom_xfade"),
-      transition: durationFrames > 0 ? resolveTransitionName(entry) : null,
-      durationFrames,
-      durationSeconds,
-    };
-  }
-  return normalized;
 }
 
 function outputDuration(edl, transitions = []) {

@@ -1,3 +1,4 @@
+import { boundaryTransitions } from "./timeline_transitions.mjs";
 import { canonicalizeTimelineTime } from "./media_time.mjs";
 
 // Use the same tick authority and transition boundary semantics as Timeline IR.
@@ -18,20 +19,13 @@ export function editorialTimeline(input) {
       || item.sourceStart < 0 || item.sourceEnd <= item.sourceStart) throw new Error("时间线源区间无效");
     return item.sourceEnd - item.sourceStart;
   });
-  const boundaries = new Map();
-  const transitions = plan.transitions ?? [];
-  transitions.forEach((entry, index) => {
-    let boundary = Number(entry.boundaryIndex);
-    if (!Number.isInteger(boundary) && entry.afterClipId) boundary = edl.findIndex(item => item.id === entry.afterClipId);
-    if (!Number.isInteger(boundary) && transitions.length === edl.length - 1) boundary = index;
-    const frames = Number(entry.durationFrames ?? 0);
-    if (!Number.isInteger(boundary) || boundary < 0 || boundary >= edl.length - 1
-      || !Number.isInteger(frames) || frames < 0 || frames > Math.round(fps * 0.6)
-      || frames / fps >= Math.min(durations[boundary], durations[boundary + 1])) throw new Error("时间线转场边界或时长无效");
-    // Render Graph takes the final declaration for a boundary, not a sum of duplicates.
-    boundaries.set(boundary, frames / fps);
+  const transitions = boundaryTransitions(plan.transitions, edl);
+  transitions.forEach(({boundaryIndex: boundary, durationFrames: frames}) => {
+    if (frames > Math.round(fps * 0.6) || frames / fps >= Math.min(durations[boundary], durations[boundary + 1])) {
+      throw new Error("时间线转场边界或时长无效");
+    }
   });
-  const duration = durations.reduce((sum, item) => sum + item, 0) - [...boundaries.values()].reduce((sum, item) => sum + item, 0);
+  const duration = durations.reduce((sum, item) => sum + item, 0) - transitions.reduce((sum, item) => sum + item.durationFrames / fps, 0);
   if (!(duration > 0)) throw new Error("时间线总时长无效");
   return { plan, duration, fps };
 }

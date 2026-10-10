@@ -242,6 +242,7 @@ async function runCommand(command, successMessage) {
   if (state.mutationInFlight || state.openingInFlight) { setStatus("上一个编辑命令尚未完成。", true); return; }
   const sessionId = state.sessionId;
   state.mutationInFlight = true;
+  state.projectGeneration++; // Invalidate reads issued before this write.
   try {
     const result = await api("/api/editor/command", {
       sessionId,
@@ -435,6 +436,7 @@ function renderProject(project) {
 }
 
 async function refreshProject(reason = "external change") {
+  if (state.mutationInFlight || state.openingInFlight) return;
   const sessionId = state.sessionId;
   const generation = ++state.projectGeneration;
   try {
@@ -578,6 +580,7 @@ for (const [selector, endpoint] of [["#undoButton", "undo"], ["#redoButton", "re
   if (state.mutationInFlight || state.openingInFlight) { setStatus("上一个编辑命令尚未完成。", true); return; }
   const sessionId = state.sessionId;
   state.mutationInFlight = true;
+  state.projectGeneration++; // Invalidate reads issued before this write.
   try {
     const result = await api(`/api/editor/${endpoint}`, { sessionId, baseSha256: state.project.session.currentSha256 });
     if (state.sessionId !== sessionId) return;
@@ -680,7 +683,9 @@ async function writeEditorArtifact(endpoint, body) {
   }
   const sessionId = state.sessionId;
   const generation = state.openGeneration;
-  state.mutationInFlight = true; setOperationLock(true);
+  state.mutationInFlight = true;
+  state.projectGeneration++; // Invalidate reads issued before this write.
+  setOperationLock(true);
   try {
     const result = await api(endpoint, { ...body, sessionId });
     if (state.sessionId !== sessionId || state.openGeneration !== generation) throw new Error("项目已变化，请重新读取交付结果。");

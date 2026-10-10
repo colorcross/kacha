@@ -2,7 +2,8 @@ import { mediaSummary, visualMediaDuration, readJson } from "./kacha_utils.mjs";
 import { normalizeTimebase, secondsToTicks, ticksToSeconds } from "./media_time.mjs";
 import { compileProjectionCommand, findProjectionItem } from "./timeline_projection.mjs";
 import { resolveIndexedAsset } from "./project_bin.mjs";
-import { selectedOverlay } from "./network_materials.mjs";
+import { getAtPointer } from "./agent_workspace_utils.mjs";
+import { selectedOverlay, requiresNetworkReview } from "./network_materials.mjs";
 
 const OPERATIONS = new Set([
   "batch", "move", "trim", "ripple_trim", "split", "overwrite", "reorder",
@@ -506,11 +507,16 @@ function compileReplaceMedia(projection, command) {
     assetRef: command.arguments?.assetRef,
   });
   if (!accepted.has(asset.kind)) throw new Error(`${item.type} 不能使用 ${asset.kind} 素材`);
+  const current = getAtPointer(readJson(projection.timeline.path), item.sourcePointer);
+  if (item.type === "overlay" && (requiresNetworkReview(current.provenance) || requiresNetworkReview(asset.provenance))) {
+    throw new Error("已审阅网络插镜不能直接替换素材；请移除插镜，为新素材重新匹配审阅后插入");
+  }
   const value = {
     path: asset.path,
     sha256: asset.identity.sha256,
     license: asset.license,
     provenance: asset.provenance,
+    private: asset.private, distribution: asset.distribution, redistributionAllowed: asset.redistributionAllowed,
   };
   if (item.type === "overlay") {
     value.kind = asset.kind;

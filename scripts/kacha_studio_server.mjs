@@ -34,7 +34,6 @@ import {
   redoEditorCommand,
   undoEditorCommand,
 } from "./editor_command_journal.mjs";
-import { requestRealPreview, realPreviewStatus } from "./real_preview.mjs";
 import { listPreviewProviders } from "./preview_provider.mjs";
 import { listProjectBin } from "./project_bin.mjs";
 import { professionalCapabilityMap } from "./professional_capabilities.mjs";
@@ -654,7 +653,7 @@ async function handleApi(request, response, url, port) {
   if (["GET", "HEAD"].includes(request.method) && pathname === "/api/editor/real-preview-media") {
     if (!sameOrigin(request, port)) throw new Error("拒绝跨站预览读取");
     const session = activeEditorSession(url.searchParams.get("session"));
-    const preview = realPreviewStatus(session.timelinePath, url.searchParams.get("key"));
+    const preview = await runStudioTask("real-preview-status", session.timelinePath, { key: url.searchParams.get("key") });
     if (!preview.ready) throw new Error("预览未完成或版本已过期");
     serveMedia(request, response, { path: preview.output, identity: fileIdentity(preview.output) });
     return;
@@ -849,11 +848,11 @@ async function handleApi(request, response, url, port) {
     const session = activeEditorSession(body.sessionId);
     if (pathname === "/api/editor/real-preview") {
       assertEditorSourceCurrent(session);
-      json(response, 202, requestRealPreview(session.timelinePath, { start: body.start, end: body.end, expectedSha256: body.baseSha256 }));
+      json(response, 202, await runStudioTask("real-preview", session.timelinePath, { start: body.start, end: body.end, expectedSha256: body.baseSha256 }));
       return;
     }
     if (pathname === "/api/editor/real-preview-status") {
-      json(response, 200, realPreviewStatus(session.timelinePath, body.key));
+      json(response, 200, await runStudioTask("real-preview-status", session.timelinePath, { key: body.key }));
       return;
     }
     if (pathname === "/api/editor/project") {

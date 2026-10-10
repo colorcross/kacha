@@ -8,6 +8,7 @@ import { spawnSync } from "node:child_process";
 
 const fileHashCache = new Map();
 const mediaProbeCache = new Map();
+const visualDurationCache = new Map();
 const streamHashCache = new Map();
 const commandCache = new Map();
 
@@ -48,14 +49,18 @@ export function readJson(file) {
   return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
-export function writeJsonAtomic(file, value, { mode = null } = {}) {
+export function writeJsonAtomic(file, value, options = {}) {
+  return writeFileAtomic(file, `${JSON.stringify(value, null, 2)}\n`, options);
+}
+
+export function writeFileAtomic(file, contents, { mode = null } = {}) {
   const resolved = path.resolve(file);
   fs.mkdirSync(path.dirname(resolved), { recursive: true });
-  const temporary = `${resolved}.tmp-${process.pid}-${Date.now()}`;
+  const temporary = `${resolved}.tmp-${process.pid}-${crypto.randomUUID()}`;
   try {
     fs.writeFileSync(
       temporary,
-      `${JSON.stringify(value, null, 2)}\n`,
+      contents,
       mode === null ? undefined : { mode },
     );
     fs.renameSync(temporary, resolved);
@@ -175,6 +180,21 @@ export function sha256File(file) {
   }
   fileHashCache.set(cacheKey, value);
   return value;
+}
+
+// Internal worker handoff only. Keys include path, size, mtime, ctime and inode;
+// sha256File still checks the live stat before reusing any transferred digest.
+export function exportFileHashCache() {
+  // Keep large media ahead of the hundreds of tiny implementation files.
+  return [...fileHashCache.entries()]
+    .sort((left, right) => Number(right[0].split(':').at(-4)) - Number(left[0].split(':').at(-4)))
+    .slice(0, 256);
+}
+
+export function importFileHashCache(entries) {
+  for (const [key, digest] of entries ?? []) {
+    if (typeof key === 'string' && /^[a-f0-9]{64}$/.test(digest)) fileHashCache.set(key, digest);
+  }
 }
 
 export function stableStringify(value) {
@@ -565,6 +585,12 @@ export function mediaSummary(file) {
 // Container duration may include a longer audio tail. WebM often has no
 // stream duration, so measure its visual packet timeline instead of guessing.
 export function visualMediaDuration(file) {
+  const command = resolveRuntimeCommand("ffprobe");
+  const probe = path.isAbsolute(command) ? command : (process.env.PATH ?? "").split(path.delimiter)
+    .map(dir => path.join(dir, command)).find(candidate => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
+  if (!probe) throw new Error("ffprobe 不可用");
+  const key = `${statCacheKey(file)}|${statCacheKey(probe)}`;
+  if (visualDurationCache.has(key)) return visualDurationCache.get(key);
   const media = mediaSummary(file);
   const duration = Number(media.video?.duration);
   if (Number.isFinite(duration) && duration > 0) return duration;
@@ -580,6 +606,9 @@ export function visualMediaDuration(file) {
     first=Math.min(first,pts);last=Math.max(last,pts+span);
   }
   if (!Number.isFinite(last-first) || last <= first) throw new Error('视频画面没有可确认的有效时长');
+  if (`${statCacheKey(file)}|${statCacheKey(probe)}` !== key) throw new Error('视频或探测工具在时长核验期间已变化');
+  if (visualDurationCache.size >= 256) visualDurationCache.delete(visualDurationCache.keys().next().value);
+  visualDurationCache.set(key, last-first);
   return last-first;
 }
 

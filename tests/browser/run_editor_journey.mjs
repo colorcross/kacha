@@ -39,6 +39,7 @@ try {
   process.stdout.write(execute(["tests/browser/studio_state_journey.mjs", origin, artifacts]));
   process.stdout.write(execute(["tests/browser/content_editor_state_journey.mjs", origin, workspace, artifacts]));
   process.stdout.write(execute(["tests/browser/editor_v3_journey.mjs", origin, workspace, artifacts]));
+  process.stdout.write(execute(["tests/browser/editor_refresh_race_journey.mjs", origin, workspace, artifacts]));
 } finally {
   if (server && server.exitCode === null) {
     const exited = new Promise((resolve) => server.once("exit", resolve));

@@ -333,11 +333,19 @@ def download(
                 if declared_size and int(declared_size) > max_bytes:
                     raise RuntimeError("Downloaded asset exceeds the byte limit")
                 while True:
-                    chunk = response.read(1024 * 1024)
-                    if not chunk:
-                        break
+                    remaining = timeout - (time.monotonic() - started)
+                    if remaining <= 0:
+                        raise RuntimeError("Downloaded asset exceeds the time limit")
+                    # read() waits for a whole MiB; a slow trickle can reset its
+                    # idle timeout forever. read1() returns each available batch.
+                    socket = getattr(getattr(getattr(response, "fp", None), "raw", None), "_sock", None)
+                    if socket is not None:
+                        socket.settimeout(remaining)
+                    chunk = response.read1(1024 * 1024)
                     if byte_count + len(chunk) > max_bytes or time.monotonic() - started > timeout:
                         raise RuntimeError("Downloaded asset exceeds the byte/time limit")
+                    if not chunk:
+                        break
                     output.write(chunk)
                     digest.update(chunk)
                     byte_count += len(chunk)

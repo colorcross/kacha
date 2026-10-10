@@ -7,13 +7,15 @@ import { Worker, isMainThread, parentPort, workerData } from "node:worker_thread
 export function createStudioTaskRunner({ limit = 2, workerUrl = new URL(import.meta.url) } = {}) {
   if (!Number.isSafeInteger(limit) || limit < 1) throw new Error("Task concurrency must be a positive integer");
   const active = new Set();
+  const previewHashCaches = new Map();
   let running = 0;
   return function runProjectTask(task, projectRoot, options = {}) {
-    if (!["status", "run", "observe", "probe", "preview", "compile", "content-start"].includes(task)) throw new Error("Unknown project task");
+    if (!["status", "run", "observe", "probe", "preview", "compile", "real-preview", "real-preview-status", "content-start"].includes(task)) throw new Error("Unknown project task");
     if (typeof projectRoot !== "string" || !path.isAbsolute(projectRoot)) throw new Error("项目或媒体路径必须是绝对路径");
     const creating = task === "content-start";
     const root = canonicalTaskPath(projectRoot, creating);
-    const mediaTask = ["probe", "preview", "compile"].includes(task);
+    const previewTask = ["real-preview", "real-preview-status"].includes(task);
+    const mediaTask = ["probe", "preview", "compile", "real-preview", "real-preview-status"].includes(task);
     // Canonicalize only the lock. A media symlink's selected directory owns
     // its config discovery, display name and default output destination.
     const executionRoot = mediaTask ? path.resolve(projectRoot) : root;
@@ -32,7 +34,7 @@ export function createStudioTaskRunner({ limit = 2, workerUrl = new URL(import.m
     const release = () => { resources.forEach(key => active.delete(key)); running--; };
     return new Promise((resolve, reject) => {
       let worker;
-      try { worker = new Worker(workerUrl, { workerData: { task, projectRoot: executionRoot, options } }); }
+      try { worker = new Worker(workerUrl, { workerData: { task, projectRoot: executionRoot, options, hashCache: previewTask ? previewHashCaches.get(root) : undefined } }); }
       catch (error) { release(); reject(error); return; }
       let result;
       let failure;
@@ -42,7 +44,14 @@ export function createStudioTaskRunner({ limit = 2, workerUrl = new URL(import.m
         release();
         if (failure || code !== 0 || !result) reject(failure ?? new Error(`项目任务异常退出 (${code})；请读取当前状态后再决定是否重试。`));
         else if (result.error) reject(Object.assign(new Error(result.error), { statusCode: result.statusCode }));
-        else resolve(result.value);
+        else {
+          if (previewTask && result.hashCache) {
+            previewHashCaches.delete(root);
+            if (previewHashCaches.size >= limit) previewHashCaches.delete(previewHashCaches.keys().next().value);
+            previewHashCaches.set(root, result.hashCache);
+          }
+          resolve(result.value);
+        }
       });
     });
   };
@@ -67,6 +76,8 @@ export const createProjectTaskRunner = createStudioTaskRunner;
 if (!isMainThread) {
   try {
     const { task, projectRoot, options } = workerData;
+    const { importFileHashCache, exportFileHashCache } = await import('./kacha_utils.mjs');
+    importFileHashCache(workerData.hashCache);
     let value;
     if (task === "observe") {
       const { observeProject } = await import("./project_observation.mjs");
@@ -75,6 +86,9 @@ if (!isMainThread) {
       const { inspectProductionVideo, compileProductionRequest } = await import("./kacha_studio.mjs");
       value = task === "probe" ? inspectProductionVideo(projectRoot)
         : compileProductionRequest({ ...options, videoPath: projectRoot }, { write: task === "compile" });
+    } else if (["real-preview", "real-preview-status"].includes(task)) {
+      const { requestRealPreview, realPreviewStatus } = await import("./real_preview.mjs");
+      value = task === "real-preview" ? requestRealPreview(projectRoot, options) : realPreviewStatus(projectRoot, options.key);
     } else if (task === "content-start") {
       const { loadProductionCatalog } = await import("./kacha_studio.mjs");
       const { initializeProject } = await import("./project_orchestrator.mjs");
@@ -94,6 +108,6 @@ if (!isMainThread) {
       const { projectStatus, runProject } = await import("./project_orchestrator.mjs");
       value = task === "status" ? projectStatus(projectRoot) : runProject(projectRoot, options);
     }
-    parentPort.postMessage({ value });
+    parentPort.postMessage({ value, hashCache: ['real-preview','real-preview-status'].includes(task) ? exportFileHashCache() : undefined });
   } catch (error) { parentPort.postMessage({ error: error.message, statusCode: error.statusCode }); }
 }

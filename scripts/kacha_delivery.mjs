@@ -152,8 +152,16 @@ function assertAssetsCurrent(assets) {
   }
 }
 
+function restrictedMediaPolicy(policy) {
+  return Boolean(policy && (policy.private === true || policy.redistributionAllowed === false
+    || (policy.distribution && !['public_distribution_allowed', 'public_bundle', 'public_bundle_allowed'].includes(policy.distribution))
+    || policy.kind === 'project_sfx_library' || restrictedMediaPolicy(policy.provenance)
+    || policy.sources?.some(restrictedMediaPolicy)));
+}
+
 function mediaAuthorized(asset) {
   if (!asset.entry || typeof asset.entry !== "object" || Array.isArray(asset.entry)) return false;
+  if (restrictedMediaPolicy(asset.entry)) return false;
   const license = String(asset.entry.license ?? "").trim().toLowerCase();
   const provenanceKind = String(asset.entry.provenance?.kind ?? "").trim().toLowerCase();
   const evidence = asset.entry.provenance?.evidence;
@@ -245,7 +253,7 @@ export function createSelfContainedBundle(timelineFile, outputDirectory, { inclu
   if (fileIdentity(timelinePath).sha256 !== timelineIdentity.sha256) throw new Error("Timeline 在工程包读取期间已变化");
   const assets = timelineAssets(timelinePath, timeline);
   const unauthorized = includeMedia ? assets.filter((asset) => !mediaAuthorized(asset)) : [];
-  if (unauthorized.length) throw new Error(`以下媒体缺少 license/provenance，禁止自包含：${unauthorized.map((asset) => asset.label).join(", ")}`);
+  if (unauthorized.length) throw new Error(`以下媒体缺少 license/provenance 或禁止源文件分发，禁止自包含；可导出不含媒体的合同包：${unauthorized.map((asset) => asset.label).join(", ")}`);
   const stage = `${output}.stage-${randomUUID()}`;
   fs.mkdirSync(stage, { recursive: false, mode: 0o700 });
   try {
@@ -281,6 +289,17 @@ export function createSelfContainedBundle(timelineFile, outputDirectory, { inclu
       }
     }
     const portableTimeline = replaceAssetPaths(timeline, timelinePath, mapping);
+    for (const overlay of portableTimeline.visual?.overlays ?? []) {
+      const provenance = overlay.provenance;
+      if (['stock_illustration', 'reviewed_source'].includes(provenance?.kind)
+        && /^[a-f0-9]{64}$/.test(provenance.selectionSha256 ?? '') && path.isAbsolute(provenance.evidence ?? '')) {
+        // Transfer the source/attribution and review digest, never local evidence
+        // files or an approval that belongs to the previous project location.
+        provenance.evidence = `./Missing/network-review-${provenance.selectionSha256}.json`;
+        provenance.requiresNetworkReview = true;
+        provenance.reviewBindingStatus = 'requires_rebind';
+      }
+    }
     assertPortableValue(portableTimeline);
     if (fileIdentity(timelinePath).sha256 !== timelineIdentity.sha256) throw new Error("Timeline 在工程包生成期间已变化");
     assertAssetsCurrent(assets);

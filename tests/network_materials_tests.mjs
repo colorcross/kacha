@@ -94,6 +94,7 @@ try {
   fs.appendFileSync(director,' ');assert.equal(validateAssetInbox(built.path).status,'blocked');
  });
  test('replacement uses source range and rejects too-short selected range',()=>{
+  index.items[0].provenance={kind:'owned_local',evidence:'synthetic source selection',externalUpload:false};index.digest=mediaIndexDigest(index);save('.kacha/media-index.json',index);
   plan.visual.overlays=[{id:'old',kind:'video',path:asset,start:0,end:1,x:0,y:0,width:160,height:90,sourceOffsetSeconds:0}];save('timeline.json',plan);
   const command={schemaVersion:'1.0',kind:'kacha-editor-command',itemId:'overlay:old',operation:'replace_media',arguments:{assetRef:'@asset:stock',indexPath:indexFile}};
   assert.throws(()=>compileEditorOperation(projection(),command),/选段不足/);

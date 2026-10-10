@@ -7,6 +7,9 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import patch
 from email.message import Message
 from io import BytesIO
@@ -97,6 +100,24 @@ class StockTests(unittest.TestCase):
             with patch.object(stock.urllib.request,'urlopen',return_value=Response(body,declared=declared)):
                 with self.assertRaises(RuntimeError): stock.download('https://media.invalid/x.png',target,'photo',max_bytes=limit)
             self.assertFalse(target.exists())
+    def test_slow_trickle_obeys_total_body_deadline_and_cleans_temporary_file(self):
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args): pass
+            def do_GET(self):
+                self.send_response(200); self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", "50"); self.end_headers()
+                for _ in range(50):
+                    try: self.wfile.write(b'x'); self.wfile.flush(); time.sleep(.1)
+                    except (BrokenPipeError, ConnectionResetError): break
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+        target = self.root/'slow.png'; started = time.monotonic()
+        try:
+            with self.assertRaises((RuntimeError, TimeoutError)):
+                stock.download(f'http://127.0.0.1:{server.server_port}/slow.png', target, 'photo', timeout=.4)
+            self.assertLess(time.monotonic()-started, 1.5)
+            self.assertFalse(target.exists()); self.assertFalse(list(self.root.glob('*.part')))
+        finally: server.shutdown(); server.server_close(); thread.join()
     def test_partial_batch_preserves_each_completed_source_and_indexes_it(self):
         destination=self.root/'downloads'
         with patch.object(stock.urllib.request,'urlopen',side_effect=[Response(self.body),OSError('offline')]):
