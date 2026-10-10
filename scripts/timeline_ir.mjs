@@ -1424,7 +1424,10 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
   } else {
     filters.push("[vcut]setsar=1[vgeom]");
   }
-  let currentVideo = "vgeom";
+  // Evaluate timeline effects on the output frame clock. Converting only after
+  // compositing can move an overlay boundary by a frame when source FPS differs.
+  filters.push(`[vgeom]fps=${graph.geometry.fps}[vtimeline]`);
+  let currentVideo = "vtimeline";
   if (graph.visual.breathing.length > 0) {
     const scale = breathingExpression(graph.visual.breathing, graph.geometry.fps, "scale");
     const anchorX = breathingExpression(graph.visual.breathing, graph.geometry.fps, "anchorX");
