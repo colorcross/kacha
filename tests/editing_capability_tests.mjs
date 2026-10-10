@@ -48,6 +48,21 @@ try {
     const result=JSON.parse(exec('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=nb_read_frames,r_frame_rate','-of','json',output]).stdout);
     assert.equal(Number(result.streams[0].nb_read_frames),65);
   });
+  await check('hard-cuts-and-dissolves-share-a-render-clock-in-full-and-preview-ranges',()=>{
+    for (const boundary of [0,1]) {
+      const plan=base(),file=path.join(root,`mixed-${boundary}.json`);
+      plan.edl=[0,1,2].map(n=>({id:`clip-${n}`,sourceStart:n,sourceEnd:n+1}));
+      plan.transitions=[{boundaryIndex:boundary,durationFrames:5,effectId:'soft_dissolve'}];write(file,plan);
+      for (const partial of [false,true]) {
+        const output=path.join(root,`mixed-${boundary}-${partial}.mp4`);
+        cli('render',file,'--output',output,...(partial?['--range-start','.4','--range-end','2.4']:[]));
+        const probe=JSON.parse(exec('ffprobe',['-v','error','-count_frames','-show_streams','-of','json',output]).stdout);
+        assert.equal(Number(probe.streams.find(s=>s.codec_type==='video').nb_read_frames),partial?50:70);
+        assert.ok(probe.streams.some(s=>s.codec_type==='audio'));
+        exec('ffmpeg',['-v','error','-i',output,'-f','null','-']);
+      }
+    }
+  });
   await check('overlay-keyframe-trim-keeps-motion-phase-and-valid-boundaries',()=>{
     const plan=base(),file=path.join(root,'keyframes.json');
     plan.visual.overlays=[{id:'insert',kind:'video',path:insert,start:0,end:2,x:0,y:0,width:100,height:100,keyframes:{x:[{tick:0,time:0,value:0},{tick:240000,time:2,value:200}]}}];write(file,plan);

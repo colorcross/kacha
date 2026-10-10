@@ -1317,7 +1317,9 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
         + `crop=${graph.geometry.width}:${graph.geometry.height}:`
         + `x='(iw-ow)*${formatNumber(segment.anchorX ?? 0.5)}':`
         + `y='(ih-oh)*${formatNumber(segment.anchorY ?? 0.5)}',`
-        + `setsar=1[vseg${index}]`,
+        // concat emits AVTB; xfade requires both inputs to share a CFR and
+        // timebase, including when a hard cut precedes a dissolve.
+        + `setsar=1,fps=${graph.geometry.fps},settb=AVTB[vseg${index}]`,
     );
     videoSegments.push(`[vseg${index}]`);
     if (graph.sourceMedia.hasAudio && !graph.audio.dialogue) {
