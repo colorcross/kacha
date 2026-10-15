@@ -16,7 +16,7 @@
         "face_swapper_weight": 0.8,
         "face_mask_blur": 0.3,
         "execution_providers": ["coreml", "cpu"],
-        "output_video_scale": 100
+        "output_video_scale": 1.0
       },
       "authorizationFields": [
         "canExecute",
@@ -44,7 +44,7 @@
         "lip_syncer_model": "edtalk_256",
         "lip_syncer_weight": 0.75,
         "execution_providers": ["coreml", "cpu"],
-        "output_video_scale": 100
+        "output_video_scale": 1.0
       },
       "authorizationFields": [
         "canExecute",
@@ -72,7 +72,7 @@
         "face_enhancer_model": "gfpgan_1.4",
         "face_enhancer_blend": 45,
         "execution_providers": ["coreml", "cpu"],
-        "output_video_scale": 100
+        "output_video_scale": 1.0
       },
       "authorizationFields": [
         "canExecute",
@@ -97,7 +97,7 @@
         "frame_enhancer_model": "real_esrgan_x2",
         "frame_enhancer_blend": 35,
         "execution_providers": ["coreml", "cpu"],
-        "output_video_scale": 100
+        "output_video_scale": 1.0
       },
       "authorizationFields": [
         "canExecute",

@@ -253,6 +253,10 @@ function validatePlan(plan, { forExecution = false } = {}) {
     errors.push("output.path 不能覆盖 inputs.target");
   }
   if (profile) {
+    const scale = plan.options?.output_video_scale ?? profile.options.output_video_scale;
+    if (typeof scale !== "number" || !Number.isFinite(scale) || scale < 0.25 || scale > 8 || !Number.isInteger(scale * 4)) {
+      errors.push("output_video_scale 使用 0.25–8.0 的倍率（步长 0.25）；原尺寸请用 1.0，不能填百分比 100");
+    }
     const allowedOptions = new Set(Object.keys(profile.options));
     for (const key of Object.keys(plan.options ?? {})) {
       if (!allowedOptions.has(key)) {

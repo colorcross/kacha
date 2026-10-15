@@ -17,7 +17,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version-file: ".nvmrc"
 
       - name: Check syntax
         run: make check-static
@@ -34,18 +34,18 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version-file: ".nvmrc"
 
       - name: Install media dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg jq librsvg2-bin fonts-noto-cjk fonts-dejavu-core
-          python3 -m pip install --user Pillow fonttools
+          python3 -m pip install --user -r scripts/requirements-render.txt
 
       - name: Install whiteboard engine dependencies
         if: matrix.suite == 'whiteboard'
         run: |
-          python3 -m pip install --user "opencv-python-headless>=4.9" "numpy>=1.26" "av>=11"
+          python3 -m pip install --user -r scripts/whiteboard_engine/requirements.txt
           echo "KACHA_WHITEBOARD_PYTHON=python3" >> "$GITHUB_ENV"
 
       - name: Run ${{ matrix.suite }} suite
@@ -59,7 +59,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version-file: ".nvmrc"
 
       - name: Install ffmpeg for the first-run demo
         run: |
@@ -79,12 +79,12 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version-file: ".nvmrc"
       - name: Install media dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg jq librsvg2-bin fonts-noto-cjk fonts-dejavu-core
-          python3 -m pip install --user Pillow fonttools
+          python3 -m pip install --user -r scripts/requirements-render.txt
       - name: Check editorial, costs, runtime, preview, execution and recovery
         run: make check-specialized
 
@@ -95,12 +95,12 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version-file: ".nvmrc"
       - name: Install media and browser test runtime
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-          npm install --prefix "$RUNNER_TEMP/kacha-browser" --no-save playwright@1.63.0
+          npm install --prefix "$RUNNER_TEMP/kacha-browser" --no-save playwright@1.64.1
           "$RUNNER_TEMP/kacha-browser/node_modules/.bin/playwright" install --with-deps chromium
           browser_root="$RUNNER_TEMP/kacha-browser"
           browser_module="$browser_root/node_modules/playwright/index.mjs"
@@ -116,7 +116,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version-file: ".nvmrc"
 
       - name: Test safe installer behavior
         run: bash tests/test_installer.sh
@@ -129,7 +129,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: "24"
+          node-version-file: ".nvmrc"
           cache: npm
           cache-dependency-path: website/package-lock.json
 

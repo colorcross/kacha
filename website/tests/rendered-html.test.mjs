@@ -1,30 +1,32 @@
 import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
-import test from "node:test";
+import test, { before, after } from "node:test";
+import { fileURLToPath } from "node:url";
+import { unstable_dev } from "wrangler";
 
 const productTruth = JSON.parse(await readFile(new URL("../app/product-truth.json", import.meta.url), "utf8"));
 const releaseChannels = JSON.parse(await readFile(new URL("../../config/release-channels.json", import.meta.url), "utf8"));
 const regressionMetric = new RegExp(`>${productTruth.regressionChecks}<`);
 
-async function render(pathname = "/") {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
+let worker;
+before(async () => {
+  // Vinext emits Cloudflare runtime imports. Exercise the built Worker in
+  // workerd, including its assets and bindings, instead of importing it in Node.
+  worker = await unstable_dev(fileURLToPath(new URL("../dist/server/index.js", import.meta.url)), {
+    config: fileURLToPath(new URL("../dist/server/wrangler.json", import.meta.url)),
+    local: true,
+    ip: "127.0.0.1",
+    port: 0,
+    inspect: false,
+    persist: false,
+    logLevel: "error",
+    experimental: { disableExperimentalWarning: true, disableDevRegistry: true, watch: false },
+  });
+});
+after(async () => { await worker?.stop(); });
 
-  return worker.fetch(
-    new Request(`http://localhost${pathname}`, {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
+async function render(pathname = "/") {
+  return worker.fetch(`http://localhost${pathname}`, { headers: { accept: "text/html" } });
 }
 
 test("server-renders the Chinese Kacha product page", async () => {

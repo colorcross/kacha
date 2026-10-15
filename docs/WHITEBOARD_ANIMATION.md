@@ -86,14 +86,14 @@ node scripts/kacha.mjs whiteboard merge \
 ## 环境准备
 
 渲染引擎需要独立 Python 环境（首次自动创建于
-`scripts/whiteboard_engine/.venv/`，已被 git 忽略）：
+用户数据目录 `kacha/render-envs/<依赖锁摘要>/`，已被 git 忽略）：
 
 ```bash
 node scripts/kacha.mjs whiteboard env-check     # 仅探测
 node scripts/kacha.mjs whiteboard env-prepare   # 建环境 + 补依赖
 ```
 
-依赖：`opencv-python-headless`、`numpy`、`av`、`Pillow`。系统 ffmpeg 可用时
+依赖：`opencv-python-headless`、`numpy`、`av`、`Pillow`、`fonttools`（版本见引擎 `requirements.txt`）。系统 ffmpeg 可用时
 优先用于 H.264 转码与无损拼接；缺失时引擎回退 PyAV。也可用
 `--engine-python` 或环境变量 `KACHA_WHITEBOARD_PYTHON` 指定现成解释器。
 

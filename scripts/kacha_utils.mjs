@@ -399,10 +399,39 @@ export function rationalToNumber(value) {
   return denominator ? numerator / denominator : NaN;
 }
 
-export function resolveRuntimeCommand(command) {
+function renderDependencyDigest() {
+  const hash = crypto.createHash("sha256");
+  for (const file of ["requirements-render.txt", "whiteboard_engine/requirements.txt"]) {
+    hash.update(fs.readFileSync(new URL(file, import.meta.url)));
+  }
+  return hash.digest("hex").slice(0, 16);
+}
+
+export function managedRenderVenv(environment = process.env) {
+  if (environment.KACHA_RENDER_VENV) return path.resolve(environment.KACHA_RENDER_VENV);
+  const dataRoot = environment.XDG_DATA_HOME || path.join(os.homedir(), ".local", "share");
+  return path.join(dataRoot, "kacha", "render-envs", renderDependencyDigest());
+}
+
+export function managedRenderPython(environment = process.env) {
+  const root = managedRenderVenv(environment);
+  const python = path.join(root, ...(process.platform === "win32" ? ["Scripts", "python.exe"] : ["bin", "python"]));
+  // A partially installed environment must never replace a working interpreter.
+  try {
+    return fs.readFileSync(path.join(root, ".kacha-ready"), "utf8").trim() === renderDependencyDigest()
+      && fs.existsSync(python) ? python : null;
+  } catch {
+    return null;
+  }
+}
+
+export function resolveRuntimeCommand(command, environment = process.env) {
+  if (command === "python3") {
+    return environment.KACHA_PYTHON_BIN || managedRenderPython(environment) || command;
+  }
   if (command === "ffmpeg") {
     const candidates = [
-      process.env.KACHA_FFMPEG_BIN,
+      environment.KACHA_FFMPEG_BIN,
       "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg",
       "/usr/local/opt/ffmpeg-full/bin/ffmpeg",
     ].filter(Boolean);
@@ -413,9 +442,9 @@ export function resolveRuntimeCommand(command) {
   }
   if (command === "ffprobe") {
     const candidates = [
-      process.env.KACHA_FFPROBE_BIN,
-      process.env.KACHA_FFMPEG_BIN
-        ? path.join(path.dirname(process.env.KACHA_FFMPEG_BIN), "ffprobe")
+      environment.KACHA_FFPROBE_BIN,
+      environment.KACHA_FFMPEG_BIN
+        ? path.join(path.dirname(environment.KACHA_FFMPEG_BIN), "ffprobe")
         : null,
       "/opt/homebrew/opt/ffmpeg-full/bin/ffprobe",
       "/usr/local/opt/ffmpeg-full/bin/ffprobe",
@@ -433,8 +462,14 @@ export function runtimeEnvironment(requestedEnvironment = {}) {
     ...process.env,
     ...requestedEnvironment,
   };
-  const ffmpeg = resolveRuntimeCommand("ffmpeg");
-  const ffprobe = resolveRuntimeCommand("ffprobe");
+  const ffmpeg = resolveRuntimeCommand("ffmpeg", environment);
+  const ffprobe = resolveRuntimeCommand("ffprobe", environment);
+  const python = environment.KACHA_PYTHON_BIN || managedRenderPython(environment);
+  if (python && path.isAbsolute(python)) {
+    environment.PATH = [path.dirname(python), ...(environment.PATH ?? "").split(path.delimiter)
+      .filter((entry) => entry && entry !== path.dirname(python))].join(path.delimiter);
+    environment.KACHA_PYTHON_BIN = python;
+  }
   if (path.isAbsolute(ffmpeg)) {
     const runtimeDirectory = path.dirname(ffmpeg);
     environment.PATH = [
@@ -484,7 +519,7 @@ export function run(command, args, options = {}) {
     ...spawnOptions
   } = options;
   const environment = runtimeEnvironment(requestedEnvironment ?? {});
-  const result = spawnSync(resolveRuntimeCommand(command), args, {
+  const result = spawnSync(resolveRuntimeCommand(command, environment), args, {
     encoding: "utf8",
     maxBuffer: 64 * 1024 * 1024,
     ...spawnOptions,

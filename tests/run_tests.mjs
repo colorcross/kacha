@@ -12,6 +12,7 @@ import {
   fileIdentity,
   writeJsonAtomic,
   mediaIndexDigest,
+  managedRenderPython,
   mediaSummary,
   readJson,
   run,
@@ -8604,6 +8605,13 @@ await test("FaceFusion plans enforce consent, loopback and a mock end-to-end can
   plan.inputs.target = baseVideo;
   plan.output.path = firstOutput;
   plan.authorization.evidence = "synthetic regression authorization";
+  for (const invalidScale of [100, 0, 1.1, "1.0"]) {
+    plan.options = { output_video_scale: invalidScale };
+    writeJson(planFile, plan);
+    const invalid = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "facefusion", "validate", "--plan", planFile]);
+    if (!invalid.stderr.includes("output_video_scale")) throw new Error("Invalid FaceFusion scale was not rejected clearly");
+  }
+  plan.options = {};
   writeJson(planFile, plan);
   execute(process.execPath, [
     path.join(scripts, "kacha.mjs"),
@@ -12187,7 +12195,7 @@ const whiteboardEnginePython = process.platform.startsWith("win")
   : path.join(whiteboardEngineVenv, "bin", "python");
 
 function ensureWhiteboardEngine() {
-  if (fs.existsSync(whiteboardEnginePython)) return;
+  if (managedRenderPython() || fs.existsSync(whiteboardEnginePython)) return;
   // CI 通过 KACHA_WHITEBOARD_PYTHON 指定系统解释器（矩阵 job 已 pip 安装依赖），
   // 此时跳过 venv 引导，避免无谓下载。
   if (process.env.KACHA_WHITEBOARD_PYTHON) return;
@@ -12196,7 +12204,7 @@ function ensureWhiteboardEngine() {
 }
 
 function makeWhiteboardLineArt(target, width = 640, height = 360) {
-  const venvPython = fs.existsSync(whiteboardEnginePython) ? whiteboardEnginePython : "python3";
+  const venvPython = process.env.KACHA_WHITEBOARD_PYTHON || managedRenderPython() || (fs.existsSync(whiteboardEnginePython) ? whiteboardEnginePython : "python3");
   const script = [
     "from PIL import Image, ImageDraw",
     `img = Image.new("RGB", (${width}, ${height}), "#F6F1E3")`,

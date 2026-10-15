@@ -1,0 +1,3 @@
+# Verified against PyPI on 2026-10-15. Keep CI and managed rendering identical.
+Pillow==12.3.0
+fonttools==4.67.0

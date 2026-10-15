@@ -53,7 +53,7 @@ export default defineConfig(async () => {
       ? { watch: { useFsEvents: false, usePolling: true } }
       : undefined,
     plugins: [
-      vinext(),
+      vinext({ prerender: pagesBasePath ? { routes: "*" } : undefined }),
       sites(),
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },

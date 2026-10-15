@@ -11,7 +11,7 @@ The installer requires:
 The complete workflow recommends:
 
 - Git
-- Node.js 20 or later
+- Node.js (the verified version is pinned in `.nvmrc`)
 - FFmpeg and FFprobe
 - `jq`
 
@@ -28,10 +28,10 @@ sudo apt-get update
 sudo apt-get install -y nodejs ffmpeg jq python3
 ```
 
-Local font indexing, font previews, and spoken-caption overlays also require:
+Font, caption and whiteboard rendering require Python 3.12+. Prepare the isolated environment (Pillow, fontTools, OpenCV, NumPy and PyAV):
 
 ```bash
-python3 -m pip install --user Pillow fonttools
+node scripts/kacha.mjs whiteboard env-prepare
 ```
 
 Verify the environment:
@@ -42,7 +42,7 @@ ffmpeg -version
 ffprobe -version
 jq --version
 python3 --version
-python3 -c "from PIL import Image; from fontTools.ttLib import TTFont"
+node scripts/kacha.mjs whiteboard env-check
 ```
 
 ## Recommended: let the Agent install it

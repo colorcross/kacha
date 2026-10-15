@@ -9,7 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { firstPositional } from "./kacha_config.mjs";
-import { readJson, run, sha256File, writeJsonAtomic, acquireFileLock } from "./kacha_utils.mjs";
+import { readJson, run, sha256File, writeJsonAtomic, acquireFileLock, managedRenderPython } from "./kacha_utils.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const engineDirectory = path.join(scriptDirectory, "whiteboard_engine");
@@ -64,6 +64,7 @@ function loadContract() {
 // ──────────────────────────────────────────────────────────────
 
 function engineVenvPython() {
+  if (!process.env.KACHA_WHITEBOARD_VENV && managedRenderPython()) return managedRenderPython();
   const override = process.env.KACHA_WHITEBOARD_VENV
     ? path.resolve(process.env.KACHA_WHITEBOARD_VENV)
     : path.join(engineDirectory, ".venv");

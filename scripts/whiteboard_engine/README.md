@@ -28,12 +28,14 @@
 所有改动都保持上游算法不变：
 
 1. `prepare_env.py`
-   - 虚拟环境默认建在引擎目录内（`scripts/whiteboard_engine/.venv`），
-     可用 `KACHA_WHITEBOARD_VENV` 覆盖；上游固定建在 skill 根目录，会污染
-     咔嚓安装根。
+   - 虚拟环境默认建在用户数据目录 `kacha/render-envs/<依赖锁摘要>`，
+     可用 `KACHA_WHITEBOARD_VENV` / `KACHA_RENDER_VENV` 覆盖。仅完成版本、导入
+     和依赖冲突校验的环境可供咔嚓自动使用；旧依赖环境保留用于回退。
    - OpenCV 使用 `opencv-python-headless`：渲染只用 imread/imwrite/VideoWriter，
      不需要 GUI 会话（CI 无显示器环境必需）。
-   - 增加 Python >= 3.10 的显式版本检查。
+   - 增加 Python >= 3.12 的显式版本检查。
+   - 按 `requirements.txt` 和 `../requirements-render.txt` 精确对齐依赖；
+     `--check` 只读检查，普通引导可升级过时库。
 2. `annotation_preview.py`（由上游 `render_annotation_preview.py` 改名）
    - 字体可移植：上游硬编码 `C:/Windows/Fonts/msyh.ttc`，macOS/Linux 直接崩溃。
      现按 `--font` 参数 → `KACHA_WHITEBOARD_PREVIEW_FONT` 环境变量 → 常见平台

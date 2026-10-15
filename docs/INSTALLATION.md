@@ -11,7 +11,7 @@
 运行完整工作流建议：
 
 - Git
-- Node.js 20 或更高版本
+- Node.js（当前验证版本见仓库 `.nvmrc`）
 - FFmpeg 与 FFprobe
 - `jq`
 
@@ -28,10 +28,10 @@ sudo apt-get update
 sudo apt-get install -y nodejs ffmpeg jq python3
 ```
 
-使用本地字体索引、字体预览和口播字幕图层时，还需要：
+本地字体、字幕和白板渲染使用 Python 3.12+。建立隔离环境（包含 Pillow、fontTools、OpenCV、NumPy、PyAV）：
 
 ```bash
-python3 -m pip install --user Pillow fonttools
+node scripts/kacha.mjs whiteboard env-prepare
 ```
 
 安装后先确认版本：
@@ -42,7 +42,7 @@ ffmpeg -version
 ffprobe -version
 jq --version
 python3 --version
-python3 -c "from PIL import Image; from fontTools.ttLib import TTFont"
+node scripts/kacha.mjs whiteboard env-check
 ```
 
 ## 推荐：让 Agent 自动安装
