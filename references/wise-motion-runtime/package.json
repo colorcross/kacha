@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "wise-motion": "0.1.16"
+  },
+  "name": "kacha-wise-motion-runtime",
+  "version": "1.0.0",
+  "private": true
+}

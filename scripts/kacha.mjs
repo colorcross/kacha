@@ -91,6 +91,7 @@ function usage() {
       + "  kacha.mjs nle export --format otio|fcpxml|premiere-xml|cmx3600 | import --format otio|fcpxml [options]\n"
       + "  kacha.mjs nle-app detect|session|record|validate [options]\n"
       + "  kacha.mjs pro-tools detect|prepare|status|render|receive [options]\n"
+      + "  kacha.mjs wise-motion setup|doctor|search|show|render|status|attach [options]\n"
       + "  kacha.mjs install status|sync [options]\n"
       + "  kacha.mjs cache key|run|inspect [options]\n"
       + "  kacha.mjs efficiency validate-policy|plan|validate|schedule|execute|cache-audit|compare [options]\n"
@@ -162,6 +163,7 @@ if (
   process.exit(0);
 }
 const delegatedCommands = {
+  "wise-motion": "wise_motion.mjs",
   doctor: "kacha_doctor.mjs",
   config: "kacha_config.mjs",
   design: "kacha_design.mjs",

@@ -12,6 +12,7 @@
 | 字体、字幕 | Pillow 12.3.0、fonttools 4.67.0：`scripts/requirements-render.txt` |
 | 白板渲染 | OpenCV headless 5.0.0.93、NumPy 2.5.4、PyAV 19.0.1：`scripts/whiteboard_engine/requirements.txt` |
 | 浏览器回归 | Playwright 1.64.1，见 CI workflow |
+| 可选动效运行时 | wise-motion 0.1.16、配套 Remotion 4.0.532 / React 19.3.0；独立锁 `references/wise-motion-runtime/package-lock.json`，不影响网站 React |
 | 本机媒体工具核验 | FFmpeg full 9.0.2、librsvg 2.63.2、jq 1.8.2 |
 | 本机渲染解释器 | Python 3.14.8；旧解释器和更新前的渲染环境保留用于回退 |
 | 白板上游 | `geeklee/srt-whiteboard-animation` @ `696a7243c0e6ffb6827676e539c2ca5ebae2bf6b`；核验时仍为上游 HEAD，本地补丁见引擎 README |

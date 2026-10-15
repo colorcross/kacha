@@ -44,6 +44,7 @@ export function professionalCapabilityMap() {
     .filter((profile) => profile.status === "available")
     .map((profile) => `${profile.id}: ${profile.selectedEncoder} + ${profile.selectedAudioEncoder} + ${profile.container} + ${profile.pixelFormat}`);
   const capabilities = [
+    capability("motion.wise-motion", "picture", "wise-motion 文字、数字与步骤动效", "partial", ["scripts/wise_motion.mjs", "tests/wise_motion_tests.mjs", "references/wise-motion.md"], ["需独立安装运行时；12 项可配置原创效果，16:9 素材与 3 项透明叠层；目录其他项目仅供检索，节目仍需审片"], ["kacha wise-motion doctor", "kacha wise-motion search", "kacha wise-motion render", "kacha wise-motion attach"]),
     capability("delivery.professional-tools", "delivery", "AE / 剪映专业工具交接", "partial", ["scripts/professional_tools.mjs"], ["基础 EDL 媒体包、AE JSX 与技术候选回收；真实应用操作/渲染需本机安装和单独验证，复杂层不静默转换"], ["kacha pro-tools detect", "kacha pro-tools prepare", "kacha pro-tools receive"]),
     capability("timeline.multitrack", "timeline", "多轨视频、音频和文字投影", "available", ["Timeline IR", "scripts/timeline_projection.mjs", "studio/editor.js"], ["当前主画面为单视频轨 EDL；字幕已渲染层的正文需回到字幕计划修改"], ["kacha editor project", "/editor"]),
     capability("timeline.operations", "timeline", "trim / split / move / reorder", "available", ["scripts/editor_operations.mjs", "Command Journal"], ["主画面不允许任意留白移动；已执行转场时结构修改失败关闭"], ["kacha editor command apply", "/editor"]),
