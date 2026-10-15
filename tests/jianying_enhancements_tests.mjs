@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileIdentity } from '../scripts/kacha_utils.mjs';
+import { fileIdentity, sha256Value } from '../scripts/kacha_utils.mjs';
 import { buildJianyingEnhancementPlan as build, validateJianyingEnhancementRecord as validate, writeEnhancementPlan } from '../scripts/jianying_enhancements.mjs';
 const manifest = { tool: 'jianying', digest: 'package', timeline: { sha256: 'timeline' }, media: { audio: true }, clips: [{ id: 'a' }, { id: 'b' }, { id: 'c' }], output: { frames: 100 } };
 const request = [{ capability: 'denoise', reason: '持续空调底噪', clipIds: ['a'] }];
@@ -15,6 +15,9 @@ test('enhancement planning is selective, unverified, and rejects invalid scope',
   assert.throws(() => build({ ...manifest, media: { audio: false } }, request));
   assert.throws(() => build({ ...manifest, tool: 'after-effects' }, request));
   assert.equal(build(manifest, [{ capability: 'transition', reason: '换场', clipIds: ['a', 'b'] }]).operations[0].phase, 'assembly');
+  const cuts = [['a', 'b'], ['b', 'c']].map(clipIds => ({ capability: 'transition', reason: '换场', clipIds }));
+  assert.equal(build(manifest, cuts).operations.length, 2);
+  assert.throws(() => build(manifest, [...cuts, cuts[0]]), /重复/);
 });
 test('enhancement records bind current export and operation evidence without claiming quality', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'kacha-enhance-')); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
@@ -23,6 +26,9 @@ test('enhancement records bind current export and operation evidence without cla
   const rec = { planDigest: p.digest, exportSha256: output.sha256, applicationVersion: 'fixture', projectName: 'isolated', membership: 'unknown', operations: [{ id: 'op-1', status: 'applied', entitlement: 'free', settings: 'light', evidence: [fileIdentity(evidence)] }] };
   assert.equal(validate(manifest, p, rec, output).qualityVerified, false);
   assert.throws(() => validate(manifest, { ...p, packageDigest: 'other' }, rec, output));
+  const changedPlan = structuredClone(p); delete changedPlan.digest;
+  changedPlan.operations[0].clipIds = ['missing']; changedPlan.digest = sha256Value(changedPlan);
+  assert.throws(() => validate(manifest, changedPlan, { ...rec, planDigest: changedPlan.digest }, output), /clipIds/);
   assert.throws(() => validate(manifest, p, rec, { sha256: 'other' }));
   assert.throws(() => validate(manifest, p, { ...rec, operations: [] }, output));
   for (const changed of [{ status: 'pending' }, { entitlement: 'included' }, { entitlement: 'credits' }, { evidence: [] }, { id: 'op-2' }, { settings: '' }]) assert.throws(() => validate(manifest, p, { ...rec, operations: [{ ...rec.operations[0], ...changed }] }, output));

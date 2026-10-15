@@ -111,6 +111,14 @@ function styleFamily(style) {
   return style.design.profile === "clean-editorial" ? "generic" : style.design.profile === "dahui-ai" ? "dahui" : "legacy";
 }
 function renderStyles() {
+  const unavailable = state.catalog.unavailableStyles ?? [];
+  $("unavailableStyles").hidden = unavailable.length === 0;
+  $("unavailableStylesSummary").textContent = `${unavailable.length} 个自定义风格暂不可用`;
+  $("unavailableStylesList").replaceChildren(...unavailable.map((style) => {
+    const item = document.createElement("li");
+    item.textContent = `${style.name}：${style.reason}（${style.source}）`;
+    return item;
+  }));
   const family = styleFamily(selectedStyle());
   $("styleFamily").value = family;
   $("styleList").innerHTML = state.catalog.styles.filter(style => styleFamily(style) === family).map((style) => `

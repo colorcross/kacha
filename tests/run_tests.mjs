@@ -1588,7 +1588,7 @@ await test("built-in beauty is removed and legacy enablement fails explicitly", 
   execute(process.execPath, [path.join(scripts, "kacha.mjs"), "config", "validate", "--config", legacy]);
 }, "visual");
 
-await test("studio removes beauty controls and rejects retired custom styles", () => {
+await test("studio removes beauty controls and rejects retired custom styles", async () => {
   const html = fs.readFileSync(path.join(skillDirectory, "studio", "index.html"), "utf8");
   if (/customBeautyEnabled|projectBeautyEnabled|Beauty v2/.test(html)) throw new Error("retired controls remain");
   const catalog = JSON.parse(execute(process.execPath, [path.join(scripts, "kacha.mjs"), "studio", "catalog"]).stdout);
@@ -1597,6 +1597,23 @@ await test("studio removes beauty controls and rejects retired custom styles", (
   writeJson(input, {schemaVersion: "1.0", id: "retired-beauty", name: "Retired", baseStyleId: "xingzhe", beauty: {enabled: true}});
   const rejected = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "studio", "save-style", "--input", input]);
   if (!rejected.stderr.includes("已移除")) throw new Error("retired style accepted");
+  const { loadProductionCatalog, saveCustomStyle } = await import(pathToFileURL(path.join(scripts, "kacha_studio.mjs")).href);
+  const environment = { ...process.env, KACHA_CONFIG_HOME: path.join(temporary, "retired-style-isolation") };
+  saveCustomStyle({ id: "valid-custom", name: "可用风格", baseStyleId: "clean-editorial" }, { environment });
+  const directory = path.join(environment.KACHA_CONFIG_HOME, "studio", "styles");
+  const retired = path.join(directory, "retired.json");
+  fs.copyFileSync(input, retired);
+  const original = fs.readFileSync(retired, "utf8");
+  fs.writeFileSync(path.join(directory, "broken.json"), "{broken");
+  writeJson(path.join(directory, "duplicate.json"), { id: "clean-editorial", name: "重复", baseStyleId: "clean-editorial" });
+  writeJson(path.join(directory, "unknown-base.json"), { id: "unknown", name: "未知基础", baseStyleId: "missing" });
+  const isolated = loadProductionCatalog({ environment });
+  if (!isolated.styles.some(style => style.id === "valid-custom") || !isolated.styles.some(style => style.id === "clean-editorial")) throw new Error("invalid custom style blocked working styles");
+  if (isolated.unavailableStyles.length !== 4 || !isolated.unavailableStyles.some(style => style.id === "retired-beauty" && style.reason.includes("已移除"))) throw new Error("unavailable styles missing recovery diagnostics");
+  if (isolated.styles.some(style => style.id === "retired-beauty") || fs.readFileSync(retired, "utf8") !== original) throw new Error("retired style enabled or original modified");
+  writeJson(retired, { ...JSON.parse(original), beauty: { enabled: false } });
+  const recovered = loadProductionCatalog({ environment });
+  if (!recovered.styles.some(style => style.id === "retired-beauty") || recovered.unavailableStyles.length !== 3 || recovered.digest === isolated.digest) throw new Error("repaired style did not become available with new identity");
 }, "visual");
 
 await test("Shared Vision mask generator typechecks and can verify a real-face fixture", () => {

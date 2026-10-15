@@ -232,8 +232,13 @@ function readCustomStyles(environment = process.env) {
     .sort()
     .map((name) => {
       const file = path.join(directory, name);
-      const style = readJson(file);
-      return { ...style, builtIn: false, source: file };
+      try {
+        const style = readJson(file);
+        if (!isPlainObject(style)) throw new Error("自定义风格必须是 object");
+        return { ...style, builtIn: false, source: file };
+      } catch (error) {
+        return { source: file, readError: error.message };
+      }
     });
 }
 
@@ -810,19 +815,33 @@ export function loadProductionCatalog({
   const builtIns = cached.catalog.styles;
   const builtInById = new Map(builtIns.map((style) => [style.id, style]));
   const openingIds = new Set(cached.catalog.openings.map((effect) => effect.id));
-  const custom = includeCustom
-    ? readCustomStyles(environment).map((style, index) => {
+  const unavailableStyles = [];
+  const custom = [];
+  const seenIds = new Set(builtInById.keys());
+  for (const [index, style] of (includeCustom ? readCustomStyles(environment) : []).entries()) {
+    try {
+      if (style.readError) throw new Error(style.readError);
       const baseId = style.baseStyleId ?? cached.catalog.defaultStyleId;
       const base = builtInById.get(baseId);
       if (!base) throw new Error(`customStyles[${index}].baseStyleId 不存在：${baseId}`);
-      return normalizeStylePreset(style, {
+      const normalized = normalizeStylePreset(style, {
         label: `customStyles[${index}]`,
         builtIn: false,
         base,
         openingIds,
       });
-    })
-    : [];
+      if (seenIds.has(normalized.id)) throw new Error(`风格 ID 重复：${normalized.id}`);
+      seenIds.add(normalized.id);
+      custom.push(normalized);
+    } catch (error) {
+      unavailableStyles.push({
+        id: typeof style.id === "string" ? style.id : null,
+        name: typeof style.name === "string" ? style.name : path.basename(style.source),
+        source: style.source,
+        reason: error.message,
+      });
+    }
+  }
   const styles = [...builtIns, ...custom];
   const duplicateIds = styles
     .map((style) => style.id)
@@ -833,6 +852,7 @@ export function loadProductionCatalog({
   }
   const catalog = clone(cached.catalog);
   catalog.styles = clone(styles);
+  catalog.unavailableStyles = unavailableStyles;
   catalog.digest = sha256Value({
     ...cached.digestInputs,
     custom: custom.map(({ source: _source, ...style }) => style),

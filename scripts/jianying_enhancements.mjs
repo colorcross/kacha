@@ -34,7 +34,11 @@ export function buildJianyingEnhancementPlan(manifest, requests) {
       const positions = r.clipIds.map(id => manifest.clips.findIndex(c => c.id === id));
       if (positions.length !== 2 || positions[1] !== positions[0] + 1) throw Error('转场必须指定按时间顺序相邻的两个片段');
     }
-    for (const id of r.clipIds) { const key = `${r.capability}:${id}`; if (seen.has(key)) throw Error('同一片段重复请求同种处理'); seen.add(key); }
+    // Transitions belong to cut boundaries; adjacent cuts legitimately share a clip.
+    const keys = r.capability === 'transition'
+      ? [JSON.stringify([r.capability, ...r.clipIds])]
+      : r.clipIds.map(id => JSON.stringify([r.capability, id]));
+    for (const key of keys) { if (seen.has(key)) throw Error('同一片段或切点重复请求同种处理'); seen.add(key); }
     return { id: `op-${index + 1}`, capability: r.capability, name: capability.name, reason: text(r.reason, '处理原因'), clipIds: r.clipIds, phase: capability.phase, review: capability.review, status: 'requires_live_ui_check' };
   });
   const plan = { schemaVersion: '1.0', kind: 'kacha-jianying-enhancements', packageDigest: manifest.digest, originalTimeline: manifest.timeline, output: manifest.output, operations,

@@ -527,6 +527,18 @@ textarea:focus {
   border-left: 1px solid var(--line);
 }
 
+.unavailable-styles {
+  margin-top: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.unavailable-styles summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
 .style-choice {
   position: relative;
   min-height: 166px;

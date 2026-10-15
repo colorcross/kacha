@@ -26,6 +26,21 @@ try {
  assert.equal(await failed.locator('#generateProject').isEnabled(),true);
  await failed.close();
  checks.push('bootstrap-failure-has-visible-recovery-and-no-false-defaults');
+ const legacy = await browser.newPage();
+ await legacy.route('**/api/bootstrap', async route => {
+  const response = await route.fetch(); const catalog = await response.json();
+  catalog.unavailableStyles = [{id:'retired', name:'<img src=x onerror=alert(1)>', source:'/fixture/retired.json', reason:'内置美颜已移除'}];
+  await route.fulfill({json:catalog});
+ });
+ await legacy.goto(`${origin}/`);
+ await legacy.locator('#styleList button').first().waitFor();
+ assert.equal(await legacy.locator('#generateProject').isEnabled(),true);
+ assert.equal(await legacy.locator('#unavailableStyles').isVisible(),true);
+ await legacy.locator('#unavailableStylesSummary').click();
+ assert.match(await legacy.locator('#unavailableStylesList').textContent(),/内置美颜已移除/);
+ assert.equal(await legacy.locator('#unavailableStylesList img').count(),0);
+ await legacy.close();
+ checks.push('retired-custom-style-warning-preserves-working-studio-and-escapes-text');
  const page=await browser.newPage({viewport:{width:1440,height:1000}});
  page.on('pageerror',e=>errors.push(e.message));
  const requests=[];let unblock;let delay=false;
