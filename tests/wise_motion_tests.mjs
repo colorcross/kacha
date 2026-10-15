@@ -21,7 +21,7 @@ test('motion candidate preserves existing edit, paths and sound while binding ac
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const kit = path.join(root, 'motion'); fs.mkdirSync(kit);
   const source = path.join(root, 'source.mp4'), video = path.join(kit, 'motion.mp4');
-  run('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=blue:s=320x180:r=25:d=3', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000:duration=3', '-c:v', 'libx264', '-c:a', 'aac', source]);
+  run('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=blue:s=320x180:r=25:d=3', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000:duration=3', '-vf', "drawbox=color=lime:t=fill:enable='eq(n,74)'", '-c:v', 'libx264', '-c:a', 'aac', source]);
   run('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=red:s=160x90:r=25:d=1', '-an', '-c:v', 'libx264', video]);
   const spec = validateSpec({ effectId: 'type-reveal', content: { text: '测试' }, width: 160, height: 90 });
   const manifest = { kind: 'kacha-wise-motion-package', spec, frames: 25, source: { origin: 'original', license: 'Apache-2.0' }, fixture: true };
@@ -57,6 +57,8 @@ test('motion candidate preserves existing edit, paths and sound while binding ac
     assert.ok(data.streams.some(s => s.codec_type === 'audio')); assert.equal(Number(data.streams.find(s => s.codec_type === 'video').nb_frames), 75);
     const sample = second => spawnSync('ffmpeg', ['-v', 'error', '-ss', String(second), '-i', candidate.output.path, '-vf', 'crop=2:2:20:20,format=rgb24', '-frames:v', '1', '-f', 'rawvideo', '-']).stdout;
     assert.ok(sample(0.2)[2] > 180); assert.ok(sample(1.2)[0] > 180); assert.ok(sample(2.2)[2] > 180);
+    const last = spawnSync('ffmpeg', ['-v', 'error', '-i', candidate.output.path, '-vf', 'select=eq(n\\,74),crop=2:2:20:20,format=rgb24', '-frames:v', '1', '-f', 'rawvideo', '-']).stdout;
+    assert.ok(last.length && last[1] > 180 && last[2] < 30, 'the unique final green source frame must survive; duplicating the previous blue frame is not sufficient');
     assert.throws(() => attachWiseMotion(options), /新 JSON/);
   });
   await t.test('changed media, manifests or notices invalidate the receipt', () => {

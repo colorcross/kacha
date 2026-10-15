@@ -1470,7 +1470,10 @@ function buildRenderCommand(graph, { hardwareDecode = process.platform === "darw
     );
     currentVideo = "vsub";
   }
-  filters.push(`[${currentVideo}]fps=${graph.geometry.fps},format=${graph.mediaContract.pixelFormat}[vout]`);
+  // The output clock is already normalized before compositing (and zoompan
+  // explicitly uses that same fps). Older FFmpeg overlay framesync reports EOF
+  // at the last frame PTS; another fps filter can then discard that real frame.
+  filters.push(`[${currentVideo}]format=${graph.mediaContract.pixelFormat}[vout]`);
 
   const hasVoice = audioSegments.length > 0 || inputIndexes.dialogue !== null;
   let voiceForMix = null;
