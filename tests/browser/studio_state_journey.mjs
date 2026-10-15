@@ -13,6 +13,12 @@ try {
  await failed.locator('#retryConnection:not([hidden])').waitFor();
  assert.equal(await failed.locator('#generateProject').isDisabled(),true);
  assert.match(await failed.locator('#configurationStatus').textContent(),/503/);
+ const errorContrast=await failed.locator('#configurationStatus').evaluate(node=>{
+   const luminance=color=>{const channels=color.match(/[\d.]+/g).slice(0,3).map(v=>{v=Number(v)/255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});return channels[0]*.2126+channels[1]*.7152+channels[2]*.0722;};
+   const fg=luminance(getComputedStyle(node).color),bg=luminance(getComputedStyle(node.closest('.inspector')).backgroundColor);
+   return (Math.max(fg,bg)+.05)/(Math.min(fg,bg)+.05);
+ });
+ assert.ok(errorContrast>=4.5,'persistent error remains readable on the dark inspector');
  assert.equal(await failed.locator('#summaryStyle').textContent(),'待读取');
  await failed.unroute('**/api/bootstrap');
  await failed.locator('#retryConnection').click();

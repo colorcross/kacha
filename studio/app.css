@@ -1756,7 +1756,8 @@ input[type="range"] {
 /* Keep selection scope explicit and recovery messages visible until resolved. */
 .style-family { display: grid; gap: 8px; margin-bottom: 16px; font-size: 14px; }
 .style-family select { width: 100%; min-height: 44px; }
-.configuration-error { color: #9e3422; overflow-wrap: anywhere; line-height: 1.6; }
+.configuration-error { grid-column: 1 / -1; color: #ffc19e; overflow-wrap: anywhere; line-height: 1.6; }
+#retryConnection { grid-column: 1 / -1; min-height: 44px; }
 
 .optional-effects { border-block: 1px solid var(--line, #dedbd4); margin-bottom: 24px; }
 .optional-effects summary { cursor: pointer; padding: 18px 0; font-size: 15px; font-weight: 600; }
