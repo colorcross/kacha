@@ -288,6 +288,7 @@ function buildManifest({ projectId, projectRoot, input, runtimeLock, options }) 
     schemaVersion: "2.0",
     kind: "kacha-project-manifest",
     projectId,
+    ...(options.productionPack !== "xingzhe-dahui" ? { workflowPolicy: { version: "adaptive-v1" } } : {}),
     lifecycle: {
       status: "planning",
       createdBy: "kacha-start",

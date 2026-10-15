@@ -28,7 +28,7 @@ node scripts/kacha.mjs run PROJECT --confirm-execute
 node scripts/kacha.mjs resume PROJECT --confirm-execute
 ```
 
-`observe` / `status --quick` 只读进度，不能用于放行执行；`status --summary` 保留完整验证语义。唯一下一步由当前工程推导，不能根据对话记忆跳阶段。初始化、提交 job、自动 QC 都不等于完成。
+`observe` / `status --quick` 只读进度，不能用于放行执行；`status --summary` 保留完整验证语义。当前就绪任务由工程依赖推导，不能根据对话记忆跳过依赖。新工程使用 adaptive-v1；guided 提供单步建议，adaptive 可批量处理独立任务。初始化、提交 job、自动 QC 都不等于完成。
 
 ## 所有任务保留的边界
 
@@ -38,7 +38,7 @@ node scripts/kacha.mjs resume PROJECT --confirm-execute
 - 字体、素材、蒙版、模型、配置与实现按当前身份验证；未知许可、缺字、缺失证据不静默替换。不得把生成素材冒充真实事实依据。
 - 用户点名及叙事必需的表达不能为省成本删除。条件增强须有真实触发；可选装饰只按项目已允许的回退执行。政策切换绑定项目版本，旧工程不自动降门槛。
 - 普通字幕不配音效；同屏最多一个主焦点，保护人物头脸、字幕、安全区和阅读时间。真实反应、留白与现场声不能被配额挤掉。
-- 音频处理前按合同分离人声，residual 不回混；现场声需来自真实源录音。BGM 按段落功能与留白编排，SFX 峰值对齐真实落位，不盖人声。
+- 音频处理先按当前源诊断选择直通、轻处理或分离；旧工程和明确分离要求保持原合同，residual 不回混；现场声需来自真实源录音。BGM 按段落功能与留白编排，SFX 峰值对齐真实落位，不盖人声。
 - 美颜默认关闭；明确启用只用本地 Beauty v2。FaceFusion、身份/声音处理读取专门合同，保留授权和逐镜复核。
 - 缓存须匹配源、实现/模型、参数、schema 及产物 SHA。付费结果状态未知时先查询对账，不重复提交或把未知金额记 0。
 - 重任务使用已有 jobs、主机资源锁与 telemetry；MPS、视频编码默认各单槽。取消先确认进程树退出，失败产物隔离后才恢复。
@@ -72,6 +72,10 @@ node scripts/kacha.mjs resume PROJECT --confirm-execute
 原入口的条件细节已分拆到 `references/production/`；首剪/返工详细命令见 `first-edit-and-rework.md`，只在对应步骤读取。
 
 ## 紧凑执行
+
+新工程只维护一次目标与方案，可省略重复的 executionFlow；后台派生节点和四步用户视图：理解素材、形成初稿、针对问题修改、验证交付。每项完成绑定当前输入和实际证据；局部改动只失效依赖下游。详见 `references/project-workflow.md`。
+
+模型分档与客户端无关。`prepare --execution-mode adaptive|guided --capabilities FILE` 使用当前会话的实际图像/音视频输入能力；未知能力不视为可用，能力声明也不授予外传权限。旧工程显式保留 legacy 路径。
 
 不确定路由时用 `route_references.mjs --task TASK --modules ...`；阶段包用 `prepare --task TASK --stage inventory|content|edit|visual_audio|release`。按返回的 readOrder 阅读；高风险模块的必需合同不能因 Token 预算省略。缺能力时明确升级或阻断。
 

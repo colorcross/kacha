@@ -17,10 +17,13 @@ import {
   diagnostic,
 } from "./kacha_error_catalog.mjs";
 import {
+  stageInputDigest,
   firstIncompleteV2Stage,
   loadOrInitializeV2State,
   V2_STAGE_IDS,
 } from "./workflow_state.mjs";
+
+import { isAdaptive, readyStages, WORKFLOW_PHASES } from './adaptive_workflow.mjs';
 
 const scriptsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -440,12 +443,17 @@ function nextV2() {
     return action(
       "complete_workflow_stage",
       "stage_pending",
-      `完成 ${incompleteStage.id}，生成真实文件证据后按顺序登记`,
+      `完成 ${incompleteStage.id}，生成真实文件证据后登记`,
       null,
       {
         owner: "agent",
         safeToAutoExecute: false,
         stage: incompleteStage.id,
+        ...(isAdaptive(workflow.state) ? {
+          availableStages: readyStages(workflow.state).map(id => ({ id, expectedInputDigest: stageInputDigest(workflow.state, id) })),
+          phases: WORKFLOW_PHASES,
+          expectedInputDigest: stageInputDigest(workflow.state, incompleteStage.id),
+        } : {}),
         stateFile: workflow.stateFile,
         recordCommandTemplate: shellCommand([
           process.execPath,
@@ -459,6 +467,7 @@ function nextV2() {
           "complete",
           "--evidence",
           "EVIDENCE_FILE",
+          ...(isAdaptive(workflow.state) ? ["--expected-input", stageInputDigest(workflow.state, incompleteStage.id)] : []),
         ]),
       },
     );
@@ -638,11 +647,13 @@ function nextV2() {
         "complete",
         "--evidence",
         qcFile,
+        ...(isAdaptive(workflow.state) ? ["--expected-input", stageInputDigest(workflow.state, "final_qc")] : []),
       ],
       {
         owner: "agent",
         safeToAutoExecute: true,
         stage: "final_qc",
+        ...(isAdaptive(workflow.state) ? { expectedInputDigest: stageInputDigest(workflow.state, "final_qc"), availableStages: readyStages(workflow.state).map(id => ({ id, expectedInputDigest: stageInputDigest(workflow.state, id) })) } : {}),
         stateFile: workflow.stateFile,
       },
     );
@@ -679,11 +690,13 @@ function nextV2() {
         "complete",
         "--evidence",
         releaseFile,
+        ...(isAdaptive(workflow.state) ? ["--expected-input", stageInputDigest(workflow.state, "release_package")] : []),
       ],
       {
         owner: "agent",
         safeToAutoExecute: true,
         stage: "release_package",
+        ...(isAdaptive(workflow.state) ? { expectedInputDigest: stageInputDigest(workflow.state, "release_package"), availableStages: readyStages(workflow.state).map(id => ({ id, expectedInputDigest: stageInputDigest(workflow.state, id) })) } : {}),
         stateFile: workflow.stateFile,
       },
     );
@@ -715,5 +728,7 @@ emit({
   workflow: project.schemaVersion === "3.0" ? "incremental" : "full",
   currentState: nextAction.state,
   nextAction,
-  rule: "一次只执行 nextAction；执行完成后重新运行 next，不自行跳级。",
+  rule: isAdaptive(project)
+    ? "可安排 availableStages 中的独立任务；每项登记绑定当前 expectedInputDigest，输入或依赖变化后重新运行 next。"
+    : "一次只执行 nextAction；执行完成后重新运行 next，不自行跳级。",
 });

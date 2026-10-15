@@ -20,7 +20,7 @@ node scripts/kacha.mjs gate-render project-manifest.json
 node scripts/kacha.mjs render project-manifest.json
 ```
 
-十三阶段为：`inventory → transcript_structure → rough_cut →
+旧工程按以下十三阶段顺序；新 adaptive-v1 使用相同专业节点的真实依赖，阶段清单由方案派生，参见 `references/project-workflow.md`：`inventory → transcript_structure → rough_cut →
 dialogue_preprocess → connection_qc → fine_cut → visual_packaging →
 subtitles → final_mix → cover → preview_render → final_qc →
 release_package`。前一阶段没有证据，不得把后一阶段写成完成。

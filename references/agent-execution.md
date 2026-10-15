@@ -29,7 +29,7 @@ node scripts/kacha.mjs next PROJECT.json
 QC 或人工审片，禁止一次自行推进多个不可逆阶段。
 
 `prepare` 支持 `economy / balanced / frontier` 三档 reference 预算。
-`economy` 会自动加入本协议；Claude 遇到视觉模块会自动加入视觉证据协议。
+`economy` 默认 guided 并加入本协议；所有客户端按实际输入能力加载视觉证据协议。`--execution-mode adaptive` 可连续处理当前依赖就绪的任务，不按客户端名称分档。
 若路由结果超过预算，命令直接阻塞，要求拆分阶段/模块，不能靠截断 reference
 强行执行。`--max-reference-tokens` 只用于明确知道模型上下文上限时覆盖。
 
@@ -117,7 +117,7 @@ node scripts/kacha.mjs state record .kacha/project-state.json \
   --decision "切镜由信息变化触发"
 ```
 
-v2 状态按十三阶段顺序记录并绑定当前 evidence SHA-256；五种 packet 是读取
+旧v2状态按十三阶段顺序记录，新 adaptive-v1 按依赖记录并要求当前 `--expected-input`；两者均绑定 evidence SHA-256。五种 packet 是读取
 路由，不是阶段状态。重新 `snapshot` 会保留合同未变且证据仍当前的决定，并
 从真实文件重新推导唯一下一步。
 
@@ -171,7 +171,7 @@ node scripts/kacha.mjs rules compile \
 - `metrics run` 自动记录时间、Token、缓存、编码数与产物，完整日志不回填
   提示词；
 - 媒体哈希、ffprobe 和流哈希在同一进程按文件身份复用；
-- Claude Code 只先读取视觉证据 JSON/Markdown，不把整批图片内容塞进上下文；
+- 按当前会话的实际输入能力检查代表帧；能力未知时技术JSON不能冒充视觉语义证据；
 - 远程视觉只对少量关键帧按需调用，并缓存相同帧、提示词和运行时的结果。
 
 ## 失败边界

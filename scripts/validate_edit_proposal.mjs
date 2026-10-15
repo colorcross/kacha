@@ -9,6 +9,10 @@ import {
   sha256File,
 } from "./kacha_utils.mjs";
 
+import { isAdaptive, effectiveExecutionFlow, STAGE_DEPENDENCIES, unmetDependencies } from './adaptive_workflow.mjs';
+
+import { validateDialogueDiagnosis } from './dialogue_diagnosis.mjs';
+
 const TASK_PATHS = new Set([
   "proposal_review",
   "source_edit",
@@ -220,7 +224,7 @@ function validateModules(plan, errors) {
   }
 }
 
-function validateDialogueSeparation(plan, errors) {
+function validateDialogueSeparation(plan, proposalFile, errors) {
   const module = plan.planModules?.dialogueAudio;
   const goal = plan.goal ?? {};
   if (typeof goal.hasSpokenDialogue !== "boolean") {
@@ -245,6 +249,21 @@ function validateDialogueSeparation(plan, errors) {
     return;
   }
 
+  const processing = module.processing;
+  if (isAdaptive(plan) && ['passthrough','light'].includes(processing?.mode)) {
+    if (module.sourceSeparation?.required !== false || plan.goal.sourceSeparationRequired === true) errors.push('明确分离要求不能由直通或轻处理覆盖');
+    if (module.sourceSeparation?.mixResidualIntoFinal !== false) errors.push('直通/轻处理不能回混 residual');
+    const record = processing.diagnosis;
+    const file = resolveFrom(proposalFile, record?.path);
+    try {
+      if (!file || !record.sha256 || sha256File(file) !== record.sha256) throw new Error('诊断文件身份失效');
+      const sourcePaths = (plan.sourceInventory ?? []).map(s => resolveFrom(proposalFile,s.path)).filter(Boolean);
+      if (!sourcePaths.length) throw new Error('诊断缺少方案源');
+      errors.push(...validateDialogueDiagnosis(readJson(file),{sourcePaths,mode:processing.mode}));
+    } catch(error) { errors.push(error.message); }
+    return;
+  }
+  if (processing?.mode && !['separate','passthrough','light'].includes(processing.mode)) errors.push('未知人声处理模式');
   const separation = module.sourceSeparation;
   requireFields(
     separation,
@@ -489,7 +508,7 @@ function validateSeriesIdentity(plan, errors) {
 }
 
 function validateFlow(plan, proposalFile, errors) {
-  const flow = plan.executionFlow;
+  const flow = effectiveExecutionFlow(plan);
   if (!Array.isArray(flow)) {
     errors.push("executionFlow: 必须是数组");
     return;
@@ -503,7 +522,7 @@ function validateFlow(plan, proposalFile, errors) {
   const ids = flow.map((stage) => stage?.id);
   if (
     ids.length !== requiredStages.length
-    || ids.some((id, index) => id !== requiredStages[index])
+    || (isAdaptive(plan) ? new Set(ids).size !== requiredStages.length || ids.some(id => !requiredStages.includes(id)) : ids.some((id, index) => id !== requiredStages[index]))
   ) {
     errors.push(`executionFlow 阶段顺序必须严格为 ${requiredStages.join(" -> ")}`);
   }
@@ -517,12 +536,16 @@ function validateFlow(plan, proposalFile, errors) {
       errors.push(`${label}.status 无效：${stage?.status}`);
       return;
     }
-    if (stage.status === "in_progress" && encounteredPending) {
+    if (!isAdaptive(plan) && stage.status === "in_progress" && encounteredPending) {
       errors.push(`${label}: 前置阶段仍为 pending 或 blocked，不得开始`);
+    }
+    if (isAdaptive(plan) && ['in_progress','passed'].includes(stage.status)) {
+      const missing = unmetDependencies({stages:Object.fromEntries(flow.map(s => [s.id,{status:['passed','not_applicable'].includes(s.status)?'complete':s.status}]))},stage.id);
+      if (missing.length) errors.push(`${label}: 依赖未完成 ${missing.join(', ')}`);
     }
     if (stage.status === "in_progress") inProgressCount += 1;
     if (stage.status === "pending" || stage.status === "blocked") encounteredPending = true;
-    if (stage.status === "passed" && encounteredPending) {
+    if (!isAdaptive(plan) && stage.status === "passed" && encounteredPending) {
       errors.push(`${label}: 前置阶段尚未通过，不得标记 passed`);
     }
     if (stage.status === "not_applicable" && !hasValue(stage.notApplicableReason)) {
@@ -552,7 +575,7 @@ function validateFlow(plan, proposalFile, errors) {
       }
     }
   });
-  if (inProgressCount > 1) {
+  if (!isAdaptive(plan) && inProgressCount > 1) {
     errors.push("executionFlow 同一时刻最多一个阶段为 in_progress");
   }
 }
@@ -575,7 +598,7 @@ function validateProposal(plan, proposalFile) {
       "creativeLock",
       "seriesIdentity",
       "planModules",
-      "executionFlow",
+      ...(!isAdaptive(plan) ? ["executionFlow"] : []),
       "approvedScope",
       "assumptions",
       "riskFallbacks",
@@ -585,6 +608,7 @@ function validateProposal(plan, proposalFile) {
     errors,
   );
 
+  if (plan.workflowPolicy && !isAdaptive(plan)) errors.push('未知 workflowPolicy.version');
   if (!TASK_PATHS.has(plan.taskPath)) {
     errors.push(`taskPath 无效：${plan.taskPath}`);
   }
@@ -651,7 +675,7 @@ function validateProposal(plan, proposalFile) {
     errors,
   );
   validateModules(plan, errors);
-  validateDialogueSeparation(plan, errors);
+  validateDialogueSeparation(plan, proposalFile, errors);
   validateFlow(plan, proposalFile, errors);
 
   for (const field of [

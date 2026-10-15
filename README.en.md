@@ -314,7 +314,7 @@ Planning is not authorization to modify files. Rendering is not QC. Automated te
 
 ## The shortest complete workflow
 
-### Lower-capability models and Claude Code
+### Capability-aware execution
 
 ```bash
 node scripts/kacha.mjs doctor --profile claude-vision
@@ -325,12 +325,10 @@ node scripts/kacha.mjs prepare \
 node scripts/kacha.mjs next /path/to/project.json
 ```
 
-The Agent reads the packet's `readOrder`, then executes exactly one
-`nextAction` at a time. Common changes can be compiled from
-`examples/change-request.json`. Claude Code reads local
-`visual-evidence.md/.json` first; MiniMax is an explicitly authorized optional
+The Agent reads the packet's `readOrder`. Guided mode executes one `nextAction`; adaptive mode may work on independently ready stages, recording each with its current input digest. Common changes can be compiled from
+`examples/change-request.json`. When native visual input is unavailable, the Agent first reads local technical evidence and obtains actual visual review through an authorized capable interface; MiniMax is an explicitly authorized optional
 semantic layer, not a default dependency. `prepare` automatically routes the
-economy-model and Claude visual support references, and fails closed when the
+guided-mode and capability-based visual support references, and fails closed when the
 conservative multilingual token budget is exceeded.
 
 ### First edit or structural rebuild
@@ -489,3 +487,5 @@ dedicated [asset license](assets/sfx/LICENSE.md). The logo and social card use
 the separate [brand-asset rules](assets/brand/README.md) and are not covered by
 MIT. Third-party media, fonts, models, templates, and platform content are not
 licensed by this repository.
+
+New general and Dahui projects use `adaptive-v1`: dependency-aware scheduling, input-bound completion, selective invalidation, derived execution stages, and diagnosis-based dialogue processing. Existing frozen projects retain their policy. See `docs/WORKFLOW_SIMPLIFICATION_V1.md`.

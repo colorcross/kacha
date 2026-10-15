@@ -4,12 +4,24 @@
 
 音频拆成两个阶段：
 
-1. `dialogue_preprocess`：先分离人声与非人声，再只处理通过验收的 dialogue stem；
+1. `dialogue_preprocess`：诊断后选择直通、轻处理或分离，保留通过验收的人声；
 2. `final_mix`：视觉时序冻结后再加入 BGM、SFX、闪避和母带。
 
 这样可以避免转场、文字动画和插镜时序变化后重复整链处理人声。
 
-## 人声分离：必须先于降噪和增强
+## 新工程：先诊断，再选择处理
+
+`adaptive-v1` 新工程按实际声音选择，不因“含口播”强制运行源分离。先用 `kacha dialogue diagnose --input SOURCE --output diagnosis.json` 完整解码当前音轨。自动报告仅提供技术事实，review 为 pending，不会判断“声音干净”或代签听审。
+
+实际审听后填写绑定 `subjectDigest` 的 reviewer、reviewedAt、reason 和 checks。`passthrough` 要求干净录音、语音完整、无原有BGM/竞争人声；`light` 额外要求轻处理适用。混有音乐、其他说话声、明确要求分离或诊断不确定时仍走分离。录音事实不能靠文件名或来源标签推断。
+
+方案 `dialogueAudio.processing` 记录 mode、diagnosis `{path,sha256}`；直通/轻处理要求 `sourceSeparation.required=false`，不得覆盖 `goal.sourceSeparationRequired=true` 或其他明确分离要求。诊断源必须属于当前 sourceInventory。
+
+`kacha dialogue prepare --diagnosis diagnosis.json --timeline timeline.json --mode passthrough|light --output dialogue.wav` 输出独立PCM音轨与处理回执。按当前源时间码、剪点和转场生成最终时间轴音轨，保留源音轨起始偏移。剪点或转场变化必须重新准备；直通不施加增强；轻处理输出仍为 `candidate_requires_ab`。源/声道/时长不匹配或目标已存在时拒绝。最终Timeline使用这份实际音轨，方案 processing.preparation 引用回执 `{path,sha256}`；轻处理回执还需当前输出的A/B审听记录 `review: {status,reviewer,reviewedAt,outputSha256,speechIntact,noArtifacts}`。原有最终混音与技术QC、节目审片继续执行。
+
+## 分离路线与旧工程
+
+以下分离步骤适用于明确选择分离的 adaptive 工程，以及没有新政策字段的旧工程。新政策不会自动迁移旧工程或将分离失败降级成直通。
 
 原始音轨、相机机内声、来源不明的导出音轨或已经混有环境声/BGM 的音轨，默认先生成分离候选：
 
@@ -27,7 +39,7 @@ Demucs model、device、时长容差和可选二进制路径默认从咔嚓配�
 - `non_dialogue_residual.wav`：环境声、原有音乐及其他非人声候选残余；
 - `separation-report.json`：引擎、模型、源文件哈希、时长/采样率/声道和验收状态。
 
-这不是可选的“增强插件”。只要项目包含口播并进入音频处理，`sourceSeparation.required` 就必须为 `true`。最终 dialogue stem 的合同是“只保留验收通过的人声内容”：讲话、语义相关的自然换气、笑声和叹气可以保留；风扇、空调、交通、碰撞、房间底噪、原有音乐和其他无关声音必须从 dialogue stem 中剔除。
+旧工程或明确选择分离时，`sourceSeparation.required` 就必须为 `true`。最终 dialogue stem 的合同是“只保留验收通过的人声内容”：讲话、语义相关的自然换气、笑声和叹气可以保留；风扇、空调、交通、碰撞、房间底噪、原有音乐和其他无关声音必须从 dialogue stem 中剔除。
 
 处理顺序固定为：
 

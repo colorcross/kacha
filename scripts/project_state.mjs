@@ -59,7 +59,8 @@ function snapshot(projectFile, output) {
     delete stable.updatedAt;
     stable.digest = sha256Value(stable);
     const report = { ...stable, updatedAt: new Date().toISOString() };
-    writeJsonAtomic(output, report);
+    // Adaptive state has one lock-owning writer; observations are returned, not persisted over concurrent work.
+    if (initialized.state.workflowPolicy?.version !== 'adaptive-v1') writeJsonAtomic(output, report);
     return report;
   }
   const next = run(process.execPath, [
@@ -178,6 +179,7 @@ if (state.schemaVersion === "2.0" && V2_STAGE_IDS.includes(stage)) {
       status,
       evidenceFile: evidence,
       decision: option("--decision"),
+      expectedInputDigest: option("--expected-input"),
     });
     console.log(JSON.stringify({
       status: "pass",

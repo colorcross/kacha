@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
+  acquireFileLock,
   fileIdentity,
   fileIdentityMatches,
   readJson,
@@ -8,6 +9,8 @@ import {
   sha256Value,
   writeJsonAtomic,
 } from "./kacha_utils.mjs";
+
+import { unmetDependencies, stageInputDigest, effectiveExecutionFlow, isAdaptive, adaptiveStageDigests, reconcileAdaptiveStages, readyStages, STAGE_DEPENDENCIES, WORKFLOW_PHASES } from './adaptive_workflow.mjs';
 
 export const V2_STAGE_IDS = [
   "inventory",
@@ -97,6 +100,10 @@ export function v2Contract(projectFile, project = readJson(projectFile)) {
     projectPath: path.resolve(projectFile),
     schemaVersion: project.schemaVersion,
     projectId: project.projectId,
+    source: project.source ?? null,
+    productionPack: project.productionPack ?? null,
+    show: project.show ?? null,
+    workflowPolicy: project.workflowPolicy ?? null,
     plans: stableManifestShape(project.plans ?? {}),
     capabilityManifest: stableManifestShape(project.capabilityManifest ?? null),
     requiredCapabilities: stableManifestShape(project.requiredCapabilities ?? []),
@@ -141,7 +148,7 @@ function initialV2Stages(projectFile, project) {
   const proposalFile = resolveFrom(projectFile, entryPath(project.plans?.proposal));
   const proposal = proposalFile ? readJson(proposalFile) : null;
   const flow = new Map(
-    (proposal?.executionFlow ?? []).map((stage) => [stage.id, stage]),
+    (proposal ? effectiveExecutionFlow(proposal) ?? [] : []).map((stage) => [stage.id, stage]),
   );
   return Object.fromEntries(V2_STAGE_IDS.map((id) => {
     const stage = flow.get(id);
@@ -167,11 +174,18 @@ function evidenceStillCurrent(entry) {
 }
 
 export function loadOrInitializeV2State(projectFile, stateFile = defaultStateFile(projectFile)) {
+  const release = acquireFileLock(`${stateFile}.lock`, { purpose: 'workflow-snapshot' });
+  try { return initializeState(projectFile, stateFile); } finally { release(); }
+}
+function initializeState(projectFile, stateFile) {
   const resolvedProject = path.resolve(projectFile);
   const project = readJson(resolvedProject);
   if (project.schemaVersion !== "2.0") {
     throw new Error("V2 workflow state only supports schemaVersion 2.0");
   }
+  const proposalPath = resolveFrom(resolvedProject, entryPath(project.plans?.proposal));
+  const proposal = proposalPath && fs.existsSync(proposalPath) ? readJson(proposalPath) : null;
+  if (proposal && isAdaptive(project) !== isAdaptive(proposal)) throw new Error('工程与方案 workflowPolicy 不一致；旧工程须显式迁移');
   const contract = v2Contract(resolvedProject, project);
   let previous = null;
   if (fs.existsSync(stateFile)) {
@@ -186,14 +200,24 @@ export function loadOrInitializeV2State(projectFile, stateFile = defaultStateFil
     && previous.projectId === project.projectId
     && previous.contract?.digest === contract.digest
     && V2_STAGE_IDS.every((id) => evidenceStillCurrent(previous.stages?.[id]));
+  const adaptive = isAdaptive(project);
+  const stageDigests = adaptive ? adaptiveStageDigests(resolvedProject, project) : null;
+  const initial = initialV2Stages(resolvedProject, project);
+  const sameProject = previous?.projectId === project.projectId && previous?.workflowPolicy?.version === 'adaptive-v1'
+    && previous?.contract?.manifestSpec?.projectPath === resolvedProject;
+  const stages = adaptive ? reconcileAdaptiveStages(sameProject ? previous : null, initial, stageDigests, evidenceStillCurrent)
+    : reusable ? previous.stages : initial;
   const stable = {
     schemaVersion: "2.0",
     kind: "kacha_project_state",
     projectId: project.projectId,
     workflow: "full",
     contract,
-    stages: reusable ? previous.stages : initialV2Stages(resolvedProject, project),
-    decisions: reusable ? previous.decisions ?? [] : [],
+    ...(adaptive ? { workflowPolicy: project.workflowPolicy, stageDigests, phases: WORKFLOW_PHASES } : {}),
+    stages,
+    decisions: adaptive ? (sameProject ? previous.decisions ?? [] : []).filter(d =>
+      stages[d.stage]?.status === 'complete' && stages[d.stage]?.evidence?.sha256 === d.evidenceSha256)
+      : reusable ? previous.decisions ?? [] : [],
   };
   stable.digest = sha256Value(stable);
   const report = { ...stable, updatedAt: new Date().toISOString() };
@@ -202,6 +226,10 @@ export function loadOrInitializeV2State(projectFile, stateFile = defaultStateFil
 }
 
 export function firstIncompleteV2Stage(state) {
+  if (isAdaptive(state)) {
+    const id = readyStages(state)[0] ?? V2_STAGE_IDS.find(id => state.stages[id]?.status !== 'complete');
+    return id ? { id, entry: state.stages[id] } : null;
+  }
   for (const id of V2_STAGE_IDS) {
     const entry = state.stages?.[id];
     if (entry?.status !== "complete") return { id, entry: entry ?? { status: "pending" } };
@@ -209,22 +237,34 @@ export function firstIncompleteV2Stage(state) {
   return null;
 }
 
-export function recordV2Stage({
+export { stageInputDigest };
+export function recordV2Stage(options) {
+  const release = acquireFileLock(`${options.stateFile}.lock`, { purpose: 'workflow-record' });
+  try { return recordStage(options); } finally { release(); }
+}
+function recordStage({
   stateFile,
   stage,
   status,
   evidenceFile,
   decision = null,
+  expectedInputDigest = null,
 }) {
   if (!V2_STAGE_IDS.includes(stage)) throw new Error(`未知 V2 阶段：${stage}`);
   if (!["complete", "blocked"].includes(status)) throw new Error("阶段状态无效");
-  const state = readJson(stateFile);
+  let state = readJson(stateFile);
   if (state.kind !== "kacha_project_state" || state.schemaVersion !== "2.0") {
     throw new Error("state 文件类型无效");
   }
+  if (isAdaptive(state)) {
+    state = initializeState(state.contract.manifestSpec.projectPath, stateFile).state;
+    if (!expectedInputDigest || stageInputDigest(state, stage) !== expectedInputDigest) {
+      throw new Error('阶段输入已变化或缺少 --expected-input；重新读取 next，不得登记旧任务结果');
+    }
+  }
   const stageIndex = V2_STAGE_IDS.indexOf(stage);
-  const incompletePrerequisite = V2_STAGE_IDS.slice(0, stageIndex)
-    .find((id) => state.stages?.[id]?.status !== "complete");
+  const incompletePrerequisite = isAdaptive(state) ? unmetDependencies(state,stage)[0]
+    : V2_STAGE_IDS.slice(0, stageIndex).find((id) => state.stages?.[id]?.status !== "complete");
   if (incompletePrerequisite) {
     throw new Error(`前置阶段 ${incompletePrerequisite} 尚未完成`);
   }
@@ -234,9 +274,11 @@ export function recordV2Stage({
     [stage]: {
       status,
       recordedAt: new Date().toISOString(),
+      ...(isAdaptive(state) ? { inputDigest: expectedInputDigest } : {}),
       evidence,
     },
   };
+  if (isAdaptive(state)) state.stages = reconcileAdaptiveStages(state, state.stages, state.stageDigests, evidenceStillCurrent);
   if (decision) {
     state.decisions = [
       ...(state.decisions ?? []),

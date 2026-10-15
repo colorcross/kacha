@@ -66,7 +66,7 @@ AI 负责组织证据、编译计划、执行获批修改并把技术结果留�
 | 效率证据门禁 | 至少 8 个同源成对真人审片项目且六项关键护栏无退化，才允许宣称效率提升 |
 | 一次正式编码 | EDL、动效、字幕和混音编译成统一 Render Graph，并冻结所有输入内容身份 |
 | 高成本复用 | ASR、人声分离、蒙版、Beauty、样式帧和生成素材按模型/实现强指纹缓存 |
-| 弱模型稳定生产 | 五种紧凑 packet + 十三阶段文件证据状态机，减少上下文与临场猜测 |
+| 弱模型稳定生产 | 可选 guided 紧凑 packet；新工程按依赖调度，当前输入与证据绑定 |
 | Agent 对话控制面 | 自然语言仍是主入口；Mutation Delta、确定性对象 `@` 引用、本地句向量素材搜索和终态受保护的异步任务在后台运行 |
 | 精确时间与调整工作台 | 120000 tick/s、有理帧率、类型化 Timeline Projection、Command Journal、撤销/重做和本地 `/editor` 校正界面 |
 | 人机共编 Workbench V3 | 多时间线版本/画幅、trim/ripple/split/overwrite/EDL 重排、Marker/工作区、波形、Project Bin、能力地图、Agent Activity 与交付中心 |
@@ -202,7 +202,7 @@ node scripts/kacha.mjs workflows list
 交付；132 个注册效果支持搜索，生成前必须通过视频、输出目录、授权字体、
 设计系统与效果解析预检。它不会上传素材、覆盖源片或跳过质量门禁。详见
 [本地视频生产台](references/production-studio.md)。项目建立后可在 `/project`
-查看四个里程碑、十三阶段证据、素材收件箱和唯一下一步。
+查看四个里程碑、阶段证据、素材收件箱和下一步；Agent 的 next 返回依赖就绪任务，旧工程保留原阶段顺序。
 
 候选片阶段从生产台顶部进入“统一审片中心”，或直接打开
 `http://127.0.0.1:4179/review`。它围绕正常速度视频逐项呈现 AI 的高影响剪辑
@@ -295,8 +295,7 @@ node scripts/kacha.mjs gate-release PROJECT.json
 人工通看。
 
 已有成片的局部返工从
-[v3 增量工作流](docs/INCREMENTAL_WORKFLOW_V3.md)开始。较弱模型或
-Claude Code 可使用 `prepare → next` 确定性执行协议，详见
+[v3 增量工作流](docs/INCREMENTAL_WORKFLOW_V3.md)开始。所有客户端均可按实际能力选择 `prepare --execution-mode adaptive|guided`，不按客户端名称分档；详见 `docs/WORKFLOW_SIMPLIFICATION_V1.md`。guided 使用 `prepare → next` 执行协议，详见
 [V4 工程化优化](docs/ENGINEERING_OPTIMIZATION_V4.md)与
 [V5 性能、Token 和弱模型稳定生产](docs/PERFORMANCE_TOKEN_STABILITY_V5.md)。
 全片导演、素材缺口、语义审片、偏好学习、真实编辑评测和 NLE 交换见
@@ -329,7 +328,7 @@ node scripts/kacha.mjs doctor --profile core
 ## 质量与安全
 
 - 默认保持原视频像素尺寸和宽高比；
-- 含口播的音频先做人声/非人声分离，只让验收通过的人声进入后续处理；
+- 新工程口播先诊断和实际审听，按需直通、轻处理或分离；旧工程和明确分离要求保持原合同，只让验收通过的人声进入后续处理；
 - 背景音乐按最终对白的语速、情绪、叙事功能和信息密度分段规划，允许主动
   留白；禁止一条循环音乐、固定配器和固定响度铺满全片；
 - 自动发现的项目配置不能改写 provider、凭证入口或本机工具路径；

@@ -19,6 +19,7 @@
   BGM 默认已登录 MiniMax Audio 网页版；不可用时再考虑 MiniMax Design 和 mmx。
   含音频的视频默认本机 MiniMax Design，读取 `references/generated-media-assets.md`。
   提交结果未知先对账，不跨渠道重复提交；本地音效库仍优先。
+- 新 adaptive-v1 的人声先诊断，干净录音可直通、轻处理须对实际输出 A/B；混有音乐/竞争人声或明确分离要求保留分离。读取 `references/audio.md`，诊断不由自动工具代签。
 - Demucs、ASR、蒙版、跟踪、Beauty、样式帧和生成素材一律使用内容指纹缓存；
   Demucs/ASR 额外冻结真实模型内容与服务实现 SHA。
 - `production-quality` execution 门禁按项目政策版本执行：legacy 保留原主开场与逐项 SFX 要求；

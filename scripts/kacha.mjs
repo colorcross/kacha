@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import { validatePreparedDialogue } from './dialogue_diagnosis.mjs';
 import { resolveProductionSelection, requiresProductionQuality } from "./production_pack.mjs";
 import { dispatchBoundRuntime } from "./runtime_bundle.mjs";
 import path from "node:path";
@@ -50,6 +51,7 @@ function usage() {
       + "  kacha.mjs workflow validate\n"
       + "  kacha.mjs netstyle list|validate|preview|showcase [options]\n"
       + "  kacha.mjs netstyle plan|validate-plan|render-plan [options]\n"
+      + "  kacha.mjs dialogue diagnose|prepare [options]\n"
       + "  kacha.mjs connections VIDEO --output connection-candidates.json\n"
       + "  kacha.mjs prepare --task TASK [--modules a,b] [--agent codex|claude]\n"
       + "  kacha.mjs next <project-manifest.json>\n"
@@ -191,6 +193,7 @@ const delegatedCommands = {
   content: "content_project.mjs",
   netstyle: "kacha_netstyle.mjs",
   connections: "scan_connections.mjs",
+  dialogue: "dialogue_diagnosis.mjs",
   prepare: "prepare_agent_packet.mjs",
   next: "next_action.mjs",
   "compile-change": "compile_change_request.mjs",
@@ -306,6 +309,10 @@ function gatePlanV2() {
     project.plans.editPlan,
     "plans.editPlan",
   );
+  const proposalValue = readJson(proposal);
+  if ((project.workflowPolicy?.version ?? 'legacy') !== (proposalValue.workflowPolicy?.version ?? 'legacy')) {
+    throw new Error('工程与方案 workflowPolicy 不一致');
+  }
   invoke("validate_edit_proposal.mjs", [proposal]);
   invoke("validate_edit_plan.mjs", [editPlan]);
   let adaptiveBgm = null;
@@ -399,6 +406,8 @@ function gatePlanV2() {
         process.exit(1);
       }
     }
+    const dialogueErrors = validatePreparedDialogue(proposalPlan, proposal, timelinePlan, timeline);
+    if (dialogueErrors.length) { console.error(dialogueErrors.join('\n')); process.exit(1); }
     const timelineAssets = [
       ...(timelinePlan.visual?.overlays ?? []),
       ...(timelinePlan.visual?.subtitles ? [timelinePlan.visual.subtitles] : []),

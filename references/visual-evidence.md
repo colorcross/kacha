@@ -1,7 +1,6 @@
-# Claude Code 视觉证据与 MiniMax 条件增强
+# 当前模型的视觉证据与条件增强
 
-Claude Code 没有原生图片/视频识别时，不能把“无法直接看画面”变成跳过视觉
-QC。咔嚓把视频先转换成 Claude 可消费的本地证据，再按需补语义。
+当前会话没有可用的图片/视频输入时，不能跳过视觉QC，也不能把技术报告当成画面语义。先提取本地证据；有实际视觉能力的模型直接检查代表帧或视频，其他入口仅在能力与外传授权允许时使用。客户端名称不决定能力。
 
 ## 三层证据
 
@@ -26,7 +25,7 @@ node scripts/kacha.mjs visual-evidence INPUT.mov \
 输出：
 
 - `visual-evidence.json`：机器可读完整证据；
-- `visual-evidence.md`：Claude Code 的低 token 摘要；
+- `visual-evidence.md`：按需读取的低 token 摘要；
 - `contact-sheet.jpg`：供具备视觉能力的代理和人工快速总览；
 - `frames/`：带精确时间码映射的有限关键帧。
 
@@ -36,7 +35,7 @@ node scripts/kacha.mjs visual-evidence INPUT.mov \
 模式帧数、场景阈值、并发数和输出图片边长可由咔嚓配置提供；命令行参数
 优先，实际生效值和配置 digest 会进入证据 provenance。
 
-## Claude Code 消费顺序
+## 输入受限时的消费顺序
 
 1. 读 `visual-evidence.md`；
 2. 对问题时间码查 `visual-evidence.json.frames`；
@@ -86,7 +85,7 @@ node scripts/kacha.mjs vision-enrich \
 
 - 检查普通人物镜头是否切头、人物大致位置和头顶余量；
 - 找画面文字、字幕/卡片潜在冲突和亮暗底；
-- 给 Claude 提供场景、对象、动作和构图的有限语义；
+- 给当前模型提供场景、对象、动作和构图的有限语义；
 - 在返工时只复核受影响时间码。
 
 不能独立证明：

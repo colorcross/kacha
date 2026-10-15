@@ -241,7 +241,7 @@ if (stage) {
     selected.add("references/incremental-workflow.md");
     if (release) selected.add("references/qc-release.md");
   } else {
-    selected.add("references/project-workflow.md");
+    selected.add(args.includes("--legacy-workflow") ? "references/legacy/project-workflow-v2.md" : "references/project-workflow.md");
     selected.add("references/editing-theory.md");
     if (release) selected.add("references/qc-release.md");
   }

@@ -45,6 +45,8 @@ const agent = option("--agent", "codex");
 const source = option("--source");
 const project = option("--project");
 const output = option("--output");
+const currentProject = project && fs.existsSync(project) ? readJson(path.resolve(project)) : null;
+const legacyWorkflow = currentProject && currentProject.schemaVersion === '2.0' && currentProject.workflowPolicy?.version !== 'adaptive-v1';
 const transcriptInput = option("--transcript");
 const transcriptWindow = option("--transcript-window");
 let loadedConfig;
@@ -69,9 +71,21 @@ const DEFAULT_STAGE_BY_TASK = {
   content_generation: "content",
   local_optimization: "edit",
 };
+const capabilityInput = option("--capabilities");
+let capabilities = { imageInput: 'unknown', audioInput: 'unknown', videoInput: 'unknown' };
+if (capabilityInput) {
+  const supplied = readJson(path.resolve(capabilityInput));
+  if (supplied.schemaVersion !== '1.0' || typeof supplied.evidence !== 'string' || !supplied.evidence.trim()
+      || ['imageInput','audioInput','videoInput'].some(key => typeof supplied[key] !== 'boolean')) {
+    throw new Error('能力配置需要 schemaVersion 1.0、实际会话 evidence 和三项 boolean 输入能力');
+  }
+  capabilities = { ...supplied, identity: fileIdentity(path.resolve(capabilityInput)) };
+}
+const executionMode = option('--execution-mode', modelTier === 'economy' ? 'guided' : 'adaptive');
+if (!['guided','adaptive'].includes(executionMode)) throw new Error('--execution-mode 必须为 guided 或 adaptive');
 const stage = option(
   "--stage",
-  modelTier === "economy" ? DEFAULT_STAGE_BY_TASK[task] : null,
+  executionMode === "guided" ? DEFAULT_STAGE_BY_TASK[task] : null,
 );
 if (stage && !STAGES.has(stage)) {
   console.error(`--stage 无效：${stage}`);
@@ -110,6 +124,7 @@ if (
 }
 
 const visualModules = new Set([
+  "video_generation",
   "visual",
   "masks",
   "beauty",
@@ -129,8 +144,8 @@ const visualModules = new Set([
 ]);
 const needsVisualEvidence = modules.some((item) => visualModules.has(item));
 const routedModules = new Set(modules);
-if (modelTier === "economy") routedModules.add("low_model");
-if (agent === "claude" && needsVisualEvidence) routedModules.add("claude_visual");
+if (executionMode === "guided") routedModules.add("low_model");
+if (needsVisualEvidence) routedModules.add("visual_evidence");
 const supportModules = [...routedModules].filter((item) => !modules.includes(item));
 const editingDefaults = applicableEditingDefaults(loadedConfig, {
   task,
@@ -144,6 +159,7 @@ const route = run(process.execPath, [
   "--modules",
   [...routedModules].join(","),
   ...(stage ? ["--stage", stage] : []),
+  ...(legacyWorkflow ? ["--legacy-workflow"] : []),
   ...(release ? ["--release"] : []),
 ]);
 if (route.status !== 0) {
@@ -366,12 +382,22 @@ const artifactProtocol = task === "local_optimization"
 const packet = {
   schemaVersion: "1.0",
   generatedAt: new Date().toISOString(),
-  purpose: "low-capability-model execution packet",
+  purpose: "capability-aware editing execution packet",
+  executionMode,
+  capabilities,
   agent,
   modelTier,
   stage,
   task,
   workflow,
+  resolvedContract: {
+    workflowPolicy: legacyWorkflow ? 'legacy' : currentProject?.workflowPolicy?.version ?? 'adaptive-v1',
+    productionPack: currentProject?.productionPack ?? null,
+    show: currentProject?.show ?? null,
+    proposalDefaults: legacyWorkflow ? { preserveExisting: true } : { workflowPolicy: { version: 'adaptive-v1' }, executionFlow: 'derived_from_plan_modules' },
+    decisionSource: 'editProposal + Timeline IR; derived views must reference current identities',
+    finalReview: 'current_candidate_required',
+  },
   modules,
   supportModules,
   release,
@@ -436,10 +462,12 @@ const packet = {
             : []),
         ]
       : []),
-    "若 projectState 存在，只执行 projectState.nextAction。",
+    executionMode === 'guided' ? "若 projectState 存在，只执行 projectState.nextAction。"
+      : "按当前 nextAction.availableStages 安排独立任务；一轮可完成多项判断，每项记录前核对 expectedInputDigest，不能跨越真实依赖。",
     "已有对象先用 refs resolve 缩小读取；小合同修改用 delta apply。",
     "耗时步骤可提交 jobs，但 placeholder ready 前不得假定产物存在。",
-    "每完成一步重新运行 kacha.mjs next；不要自行跳级。",
+    executionMode === 'guided' ? "每完成一步重新运行 kacha.mjs next；不要自行跳级。"
+      : "复用当前素材理解统一决定结构、切点、素材与声音；只有输入/依赖变化时刷新，昂贵任务仍受资源锁和授权约束。",
     "遇到 diagnostics 按 code/remediation 处理，不用猜测填空。",
   ],
   visualEvidencePolicy: needsVisualEvidence
@@ -458,15 +486,15 @@ const packet = {
               ...(option("--config") ? ["--config", path.resolve(option("--config"))] : []),
             ].map((item) => JSON.stringify(item)).join(" ")
           : null,
-        claudePolicy: agent === "claude"
-          ? "先消费 visual-evidence.json/.md；只有本地语义不足且项目授权外传时才运行 vision-enrich。"
-          : "代表帧、时间码和机器证据必须与模型视觉判断交叉核对。",
+        inputPolicy: capabilities.imageInput === true
+          ? "直接检查当前代表帧，结合时间码和技术证据；视频/音频能力以本次会话配置为准。"
+          : "图像输入能力未知或不可用；先检查本地技术证据，语义审阅须选择有实际能力且获授权的入口，不从文本猜画面。",
       }
     : { required: false },
   prohibitedShortcuts: [
     "不得把预览、自动报告或渲染完成提示称为最终发布成片。",
     "不得静默更换美颜、人声分离、视觉分析或生成媒体后端。",
-    "不得上传整段视频补偿 Claude 的视觉缺口。",
+    "能力声明不授予上传权限；不能为补偿任何模型的输入限制而擅自外传素材。",
   ],
   ruleRetrieval: stage
     ? {

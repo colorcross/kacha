@@ -6,7 +6,7 @@
 
 ## 较弱模型的确定性入口
 
-较低能力模型、较低推理强度和 Claude Code 使用确定性入口，不手写复杂状态：
+较低能力模型、较低推理强度或显式 guided 使用确定性入口，不手写复杂状态：
 
 ```bash
 node scripts/kacha.mjs doctor --profile core
@@ -20,14 +20,12 @@ node scripts/kacha.mjs visual-evidence INPUT.mov \
   --output-dir output/visual-evidence --mode review
 ```
 
-完整读取 packet 的 `readOrder`，每次只执行一个 `nextAction`。Claude 先读
-本地视觉 JSON/Markdown；只有明确允许外传时才用 MiniMax 增强最多 6 张
-关键帧。`prepare` 会自动补入弱模型执行协议和 Claude 视觉 reference，并
+完整读取 packet 的 `readOrder`，每次只执行一个 `nextAction`。输入能力未知时先读本地技术证据，不能由文本猜测画面。实际图像/音视频输入能力通过 `prepare --capabilities FILE` 声明；外传仍需项目授权。`prepare` 只在 guided 模式补入弱模型执行协议，并
 阻止 reference 超过所选模型档位预算。详细配方、错误码和授权见对应
 reference。
 
 弱模型的上下文按 `inventory / content / edit / visual_audio / release`
-五种 packet 路由；这只是省 Token 的读取边界，不替代 v2 十三阶段执行状态。
+五种 packet 路由；这是可选读取边界。新工程按 adaptive-v1 的真实依赖推进，旧工程继续十三阶段顺序。
 每个 packet 只读一个紧凑合同。完整转写和逐词 JSON 不进入 packet，使用
 `transcript index` 与最多 180 秒的 `transcript slice` 按需读取。剪辑与效果
 先用 `rules query` 取 1–3 个候选；相同 cues、配置、规则和 seed 必须得到
