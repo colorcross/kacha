@@ -3,7 +3,7 @@ import { studioRequest } from "/shared.js";
 const $ = (id) => document.getElementById(id);
 let mode = "script";
 let busy = false;
-const api = (path, body) => studioRequest(path, { body });
+const api = (path, body) => studioRequest(path, { body, timeoutMs: path === "/api/pick-document" ? 0 : 300000 });
 
 function status(message, error = false) {
   $("contentStatus").textContent = message;

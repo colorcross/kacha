@@ -132,13 +132,20 @@
                 </div>
                 <small>BRAND PROFILE</small>
               </div>
+              <label class="style-family">制作类型
+                <select id="styleFamily" aria-label="制作类型">
+                  <option value="generic">通用剪辑</option>
+                  <option value="dahui">大灰AI栏目</option>
+                  <option value="legacy">历史风格</option>
+                </select>
+              </label>
               <div class="style-list" id="styleList" aria-label="基础视频风格"></div>
 
               <div class="visual-language-panel">
                 <div class="style-tier-heading">
                   <div>
                     <span>剪辑视觉语言</span>
-                    <p>大灰AI按内容与证据编排；历史工程可继续选择原有视觉语言。</p>
+                    <p>按内容与证据编排；历史工程可继续选择原有视觉语言。</p>
                   </div>
                   <small>EDITING GRAMMAR</small>
                 </div>
@@ -282,7 +289,7 @@
                 <div class="tuning-group">
                   <div class="subsection-label">
                     <span>人声气质</span>
-                    <p>先做人声分离与降噪，再应用听感预设；不靠抬高音量制造清晰。</p>
+                    <p>先检查原声，按需直通、轻处理或分离；预设用于表达听感，不强制降噪。</p>
                   </div>
                   <div class="preset-choice-grid" id="projectAudioPresets"></div>
                 </div>
@@ -355,6 +362,8 @@
                 </label>
               </div>
 
+              <details id="effectOptions" class="optional-effects">
+                <summary>按需指定开场与效果 <span id="effectOptionsLabel"></span></summary>
               <div class="subsection">
                 <div class="subsection-label">
                   <span>开场效果</span>
@@ -383,6 +392,8 @@
                   <div class="effect-assignment-list" id="effectAssignments"></div>
                 </div>
               </div>
+
+              </details>
 
               <div class="subsection">
                 <div class="subsection-label">
@@ -475,10 +486,6 @@
                   <input id="preserveSource" type="checkbox" checked />
                   <span>保持原尺寸、宽高比和有效帧率</span>
                 </label>
-                <label>
-                  <input id="bgmEnabled" type="checkbox" checked />
-                  <span>使用当前风格的背景音乐策略</span>
-                </label>
               </div>
             </div>
           </section>
@@ -507,7 +514,7 @@
             </div>
             <div>
               <dt>风格</dt>
-              <dd id="summaryStyle">行者风</dd>
+              <dd id="summaryStyle">待读取</dd>
             </div>
             <div>
               <dt>剪辑语言</dt>
@@ -515,15 +522,15 @@
             </div>
             <div>
               <dt>字幕字体</dt>
-              <dd id="summaryFont">真正金陵体 · 待验证</dd>
+              <dd id="summaryFont">待读取</dd>
             </div>
             <div>
               <dt>人声</dt>
-              <dd id="summaryAudio">温暖柔声版</dd>
+              <dd id="summaryAudio">待读取</dd>
             </div>
             <div>
               <dt>BGM</dt>
-              <dd id="summaryBgm">轻知识氛围</dd>
+              <dd id="summaryBgm">待读取</dd>
             </div>
             <div>
               <dt>美颜</dt>
@@ -552,6 +559,8 @@
           </div>
 
           <div class="inspector-actions">
+        <p id="configurationStatus" class="configuration-error" role="alert" hidden></p>
+        <button type="button" id="retryConnection" hidden>重新连接（刷新页面）</button>
             <button type="button" class="button ghost-light" id="validateProject">
               检查配置
             </button>

@@ -7,14 +7,14 @@ import { Worker, isMainThread, parentPort, workerData } from "node:worker_thread
 export function createStudioTaskRunner({ limit = 2, workerUrl = new URL(import.meta.url) } = {}) {
   if (!Number.isSafeInteger(limit) || limit < 1) throw new Error("Task concurrency must be a positive integer");
   const active = new Set();
-  const previewHashCaches = new Map();
+  const taskHashCaches = new Map();
   let running = 0;
   return function runProjectTask(task, projectRoot, options = {}) {
     if (!["status", "run", "observe", "probe", "preview", "compile", "real-preview", "real-preview-status", "content-start"].includes(task)) throw new Error("Unknown project task");
     if (typeof projectRoot !== "string" || !path.isAbsolute(projectRoot)) throw new Error("项目或媒体路径必须是绝对路径");
     const creating = task === "content-start";
     const root = canonicalTaskPath(projectRoot, creating);
-    const previewTask = ["real-preview", "real-preview-status"].includes(task);
+    const cacheable = ["status", "probe", "preview", "compile", "real-preview", "real-preview-status"].includes(task);
     const mediaTask = ["probe", "preview", "compile", "real-preview", "real-preview-status"].includes(task);
     // Canonicalize only the lock. A media symlink's selected directory owns
     // its config discovery, display name and default output destination.
@@ -34,7 +34,7 @@ export function createStudioTaskRunner({ limit = 2, workerUrl = new URL(import.m
     const release = () => { resources.forEach(key => active.delete(key)); running--; };
     return new Promise((resolve, reject) => {
       let worker;
-      try { worker = new Worker(workerUrl, { workerData: { task, projectRoot: executionRoot, options, hashCache: previewTask ? previewHashCaches.get(root) : undefined } }); }
+      try { worker = new Worker(workerUrl, { workerData: { task, projectRoot: executionRoot, options, hashCache: cacheable ? taskHashCaches.get(root) : undefined } }); }
       catch (error) { release(); reject(error); return; }
       let result;
       let failure;
@@ -45,10 +45,10 @@ export function createStudioTaskRunner({ limit = 2, workerUrl = new URL(import.m
         if (failure || code !== 0 || !result) reject(failure ?? new Error(`项目任务异常退出 (${code})；请读取当前状态后再决定是否重试。`));
         else if (result.error) reject(Object.assign(new Error(result.error), { statusCode: result.statusCode }));
         else {
-          if (previewTask && result.hashCache) {
-            previewHashCaches.delete(root);
-            if (previewHashCaches.size >= limit) previewHashCaches.delete(previewHashCaches.keys().next().value);
-            previewHashCaches.set(root, result.hashCache);
+          if (cacheable && result.hashCache) {
+            taskHashCaches.delete(root);
+            if (taskHashCaches.size >= limit) taskHashCaches.delete(taskHashCaches.keys().next().value);
+            taskHashCaches.set(root, result.hashCache);
           }
           resolve(result.value);
         }
@@ -110,6 +110,6 @@ if (!isMainThread) {
       const { projectStatus, runProject } = await import("./project_orchestrator.mjs");
       value = task === "status" ? projectStatus(projectRoot) : runProject(projectRoot, options);
     }
-    parentPort.postMessage({ value, hashCache: ['real-preview','real-preview-status'].includes(task) ? exportFileHashCache() : undefined });
+    parentPort.postMessage({ value, hashCache: ['status','probe','preview','compile','real-preview','real-preview-status'].includes(task) ? exportFileHashCache() : undefined });
   } catch (error) { parentPort.postMessage({ error: error.message, statusCode: error.statusCode }); }
 }

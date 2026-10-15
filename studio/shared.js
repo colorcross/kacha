@@ -24,20 +24,42 @@ export function jsonErrorMessage(value, response, { includeStatus = false } = {}
   return includeStatus ? `请求失败：${response.status}` : "请求失败";
 }
 
-export async function studioRequest(url, { body, signal, rejectBlocked = false } = {}) {
-  const response = await fetch(url, {
-    method: body === undefined ? "GET" : "POST",
-    headers: studioHeaders(),
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    signal,
-  });
-  let value;
-  try { value = await response.json(); }
-  catch { throw new Error(`服务响应无法读取 (${response.status})；请检查本地服务，写入操作请先核对当前状态。`); }
-  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("服务返回了无效数据，请重新读取当前状态。");
-  if (!response.ok || (rejectBlocked && value.status === "blocked")) throw new Error(jsonErrorMessage(value, response, { includeStatus: true }));
-  return value;
+export async function studioRequest(url, { body, signal, rejectBlocked = false, timeoutMs = 300000 } = {}) {
+  // A timed-out write may still finish on the server. Never retry it automatically.
+  const controller = new AbortController();
+  const abort = () => controller.abort(signal.reason);
+  if (signal?.aborted) abort();
+  else signal?.addEventListener("abort", abort, { once: true });
+  let timedOut = false;
+  const timer = timeoutMs > 0 ? setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs) : null;
+  try {
+    const response = await fetch(url, {
+      method: body === undefined ? "GET" : "POST",
+      headers: studioHeaders(),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      signal: controller.signal,
+    });
+    let value;
+    try { value = await response.json(); }
+    catch (error) {
+      if (controller.signal.aborted) throw error;
+      throw new Error(`服务响应无法读取 (${response.status})；请检查本地服务，写入操作请先核对当前状态。`);
+    }
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("服务返回了无效数据，请重新读取当前状态。");
+    if (!response.ok || (rejectBlocked && value.status === "blocked")) throw new Error(jsonErrorMessage(value, response, { includeStatus: true }));
+    return value;
+  } catch (error) {
+    if (timedOut) throw new Error("等待本地服务超时；操作可能仍在继续。请先读取项目或任务状态，核对结果后再重试。");
+    if (error instanceof TypeError) throw new Error("无法连接本地服务；请确认咔嚓正在运行。写入操作请先核对当前状态，不要重复提交。");
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", abort);
+  }
 }
+
+// Polling gets cheaper during long renders. Hidden tabs do not start more reads.
+export function previewPollDelay(attempt) { return Math.min(8000, 1200 * 2 ** Math.min(3, Math.floor(attempt / 3))); }
 
 // One pointer owns a gesture. Cancellation never commits a preview as a command.
 const pointerOwners = new WeakSet();

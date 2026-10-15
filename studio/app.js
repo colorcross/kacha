@@ -1,4 +1,4 @@
-import { escapeHtml, studioHeaders, jsonErrorMessage } from "/shared.js";
+import { escapeHtml, studioRequest } from "/shared.js";
 
 const state = {
   catalog: null,
@@ -21,19 +21,18 @@ const state = {
 
 const $ = (id) => document.getElementById(id);
 
-async function api(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: studioHeaders(options.headers),
+function api(path, options = {}) {
+  return studioRequest(path, {
+    body: options.body === undefined ? undefined : JSON.parse(options.body),
+    rejectBlocked: true,
+    timeoutMs: path.startsWith("/api/pick-") ? 0 : path === "/api/bootstrap" ? 30000 : 300000,
   });
-  const value = await response.json();
-  if (!response.ok || value.status === "blocked") {
-    throw new Error(jsonErrorMessage(value, response, { includeStatus: true }));
-  }
-  return value;
 }
 
 function toast(message, isError = false) {
+  const persistent = $("configurationStatus");
+  persistent.hidden = !isError;
+  persistent.textContent = isError ? message : "";
   const element = $("toast");
   element.textContent = message;
   element.classList.toggle("is-error", isError);
@@ -108,8 +107,13 @@ function markContractDirty() {
   updateReadiness();
 }
 
+function styleFamily(style) {
+  return style.design.profile === "clean-editorial" ? "generic" : style.design.profile === "dahui-ai" ? "dahui" : "legacy";
+}
 function renderStyles() {
-  $("styleList").innerHTML = state.catalog.styles.map((style) => `
+  const family = styleFamily(selectedStyle());
+  $("styleFamily").value = family;
+  $("styleList").innerHTML = state.catalog.styles.filter(style => styleFamily(style) === family).map((style) => `
     <button
       type="button"
       class="style-choice${style.id === state.selectedStyleId ? " is-selected" : ""}"
@@ -327,7 +331,7 @@ function renderProjectAudioPresets() {
       aria-pressed="${preset.id === state.selectedAudioPresetId}"
     >
       <strong>${escapeHtml(preset.name)}</strong>
-      <span>${escapeHtml(preset.description)}</span>
+      <span>${escapeHtml(preset.description.replace("；咔嚓默认", ""))}</span>
     </button>
   `).join("");
   $("projectAudioPresets").querySelectorAll("[data-audio-preset]").forEach((button) => {
@@ -342,11 +346,10 @@ function renderProjectAudioPresets() {
 
 function syncProjectTuningFromStyle(style) {
   state.selectedAudioPresetId = style.audio.presetId;
-  state.selectedBgmPresetId = style.bgm.presetId;
+  state.selectedBgmPresetId = style.bgm.enabled ? style.bgm.presetId : "none";
   state.selectedEffectDensity = style.direction.effectDensity;
   renderProjectAudioPresets();
-  $("projectBgmPreset").value = style.bgm.presetId;
-  $("bgmEnabled").checked = style.bgm.enabled;
+  $("projectBgmPreset").value = state.selectedBgmPresetId;
   $("projectBeautyEnabled").checked = style.beauty.enabled;
   setRangeValue(
     "projectSmoothing",
@@ -427,13 +430,15 @@ function updateReadiness() {
 function updateSummary() {
   const style = selectedStyle();
   if (!style) return;
+  const opening = state.catalog.openings.find(item => item.id === state.selectedOpeningId);
+  $("effectOptionsLabel").textContent = `${opening?.label ?? "按内容开场"} · ${state.effects.length}组指定效果`;
   $("summarySource").textContent = state.media?.fileName || "未选择";
   $("summaryStyle").textContent = style.name;
   $("summaryVisualLanguage").textContent = visualLanguageSummary();
   $("summaryFont").textContent =
     state.preflight?.brief?.style?.captionFontEvidence?.resolvedFamily ?? `${style.caption.preferredFontFamily}${style.id === "xingzhe" ? " · 默认" : ""}`;
   $("summaryAudio").textContent = audioPresetName(state.selectedAudioPresetId);
-  $("summaryBgm").textContent = $("bgmEnabled").checked
+  $("summaryBgm").textContent = state.selectedBgmPresetId !== "none"
     ? bgmPresetName(state.selectedBgmPresetId)
     : "关闭";
   const beautyMaximum = Math.max(
@@ -548,7 +553,6 @@ function setupProjectTuning() {
   });
   $("projectBgmPreset").addEventListener("change", () => {
     state.selectedBgmPresetId = $("projectBgmPreset").value;
-    $("bgmEnabled").checked = state.selectedBgmPresetId !== "none";
     markContractDirty();
     updateSummary();
   });
@@ -802,7 +806,7 @@ function requestPayload() {
     targetDuration: $("targetDuration").value.trim(),
     preserveSource: $("preserveSource").checked,
     backgroundMusicEnabled:
-      $("bgmEnabled").checked && state.selectedBgmPresetId !== "none",
+      state.selectedBgmPresetId !== "none",
     styleId: state.selectedStyleId,
     visualLanguageSelection: state.selectedVisualLanguageMode === "automatic"
       ? { mode: "automatic" }
@@ -899,6 +903,9 @@ async function generateProject() {
       method: "POST",
       body: JSON.stringify(payload),
     });
+    if (typeof result.projectDirectory !== "string" || !result.projectDirectory.startsWith("/")) {
+      throw new Error("服务未返回有效项目目录；请核对输出目录中的项目后再重试。");
+    }
     state.generatedProjectPath = result.projectDirectory;
     $("resultPath").textContent = result.projectDirectory;
     $("openGeneratedProject").href = `/project?path=${encodeURIComponent(result.projectDirectory)}`;
@@ -950,6 +957,11 @@ function setupEffectLibrary() {
 }
 
 async function bootstrap() {
+  const main = document.querySelector("main");
+  main.inert = true;
+  main.setAttribute("aria-busy", "true");
+  $("validateProject").disabled = true;
+  $("generateProject").disabled = true;
   try {
     const catalog = await api("/api/bootstrap");
     state.catalog = catalog;
@@ -973,8 +985,14 @@ async function bootstrap() {
     setupStyleEditor();
     hydrateStyleEditor(style.id);
     selectStyle(style.id);
+    main.inert = false;
+    main.setAttribute("aria-busy", "false");
+    $("validateProject").disabled = false;
+    $("generateProject").disabled = false;
   } catch (error) {
+    main.setAttribute("aria-busy", "false");
     $("runtimeStatus").textContent = "本地引擎连接失败";
+    $("retryConnection").hidden = false;
     toast(error.message, true);
   }
 }
@@ -996,12 +1014,13 @@ $("closeStyleEditor").addEventListener("click", () => {
 });
 $("saveStyle").addEventListener("click", saveCustomStyle);
 $("autoDirector").addEventListener("change", () => {
+  if (!$("autoDirector").checked) $("effectOptions").open = true;
   markContractDirty();
   updateSummary();
 });
-$("bgmEnabled").addEventListener("change", () => {
-  markContractDirty();
-  updateSummary();
+$("styleFamily").addEventListener("change", () => {
+  const style = state.catalog?.styles.find(item => styleFamily(item) === $("styleFamily").value);
+  if (style) selectStyle(style.id);
 });
 $("show").addEventListener("change", () => {
   if (selectedStyle()?.design.profile === "dahui-ai") {
@@ -1050,9 +1069,10 @@ $("videoPath").addEventListener("input", () => {
 });
 $("copyResultPath").addEventListener("click", async () => {
   if (!state.generatedProjectPath) return;
-  await navigator.clipboard.writeText(state.generatedProjectPath);
-  toast("项目路径已复制");
+  try { await navigator.clipboard.writeText(state.generatedProjectPath); toast("项目路径已复制"); }
+  catch { toast("无法访问剪贴板，请选择上方项目路径手动复制。", true); }
 });
 
+$("retryConnection").addEventListener("click", () => window.location.reload());
 observeSections();
 await bootstrap();

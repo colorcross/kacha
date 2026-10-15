@@ -1,5 +1,5 @@
 const $ = (selector) => document.querySelector(selector);
-import { studioRequest, trackPointer } from "/shared.js";
+import { studioRequest, trackPointer, previewPollDelay } from "/shared.js";
 
 const state = {
   project: null,
@@ -748,13 +748,17 @@ $("#realPreviewButton").addEventListener("click", () => {
     $("#realPreviewStatus").textContent = "正在生成真实声画…";
     try {
       let result = await api("/api/editor/real-preview", { sessionId, baseSha256: revision, start, end });
+      const pollingStarted = Date.now();
+      let attempt = 0;
       while (current() && !result.ready && !result.stale && ["queued", "running", "submitted"].includes(result.status)) {
-        await new Promise(resolve => setTimeout(resolve, 1200));
+        if (Date.now() - pollingStarted > 10 * 60 * 1000) throw new Error("预览仍未完成，后台任务继续保留。可查看任务记录，或再次点击读取同一区间结果。");
+        await new Promise(resolve => setTimeout(resolve, previewPollDelay(attempt++)));
         if (!current()) return;
+        if (document.hidden) continue;
         result = await api("/api/editor/real-preview-status", { sessionId, key: result.key });
       }
       if (!current()) return;
-      if (!result.ready) throw new Error(result.stale ? "时间线已更新，请重新生成预览" : result.error?.message ?? `预览${result.status}；可重新生成或查看任务日志`);
+      if (!result.ready) throw new Error(result.stale ? "时间线已更新，请重新生成预览" : (typeof result.error === "string" ? result.error : result.error?.message) ?? `预览${result.status}；可重新生成或查看任务日志`);
       const video = $("#realPreviewVideo");
       video.src = `/api/editor/real-preview-media?session=${encodeURIComponent(sessionId)}&key=${result.key}`;
       video.hidden = false;

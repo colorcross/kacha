@@ -70,8 +70,27 @@ try {
   assert.equal((await cached('real-preview-status',media)).bytes,0);
   fs.appendFileSync(media,' changed');assert.ok((await cached('real-preview-status',media)).bytes>0);
   checked.push('preview-workers-reuse-current-media-hashes-and-invalidate-changes');
+  const crossTaskCache = createProjectTaskRunner({workerUrl:pathToFileURL(cacheWorker)});
+  assert.ok((await crossTaskCache('probe',media)).bytes>0);
+  assert.equal((await crossTaskCache('preview',media)).bytes,0);
+  assert.equal((await crossTaskCache('compile',media)).bytes,0);
+  fs.writeFileSync(media,'replaced same source');
+  assert.ok((await crossTaskCache('preview',media)).bytes>0);
+  checked.push('probe-preflight-compile-reuse-hashes-with-change-invalidation');
   const originalFetch = globalThis.fetch;
   try {
+    let calls = 0;
+    globalThis.fetch = async (_url, {signal}) => new Promise((_,reject) => {
+      calls++;
+      if(signal.aborted) reject(signal.reason);
+      else signal.addEventListener('abort',()=>reject(signal.reason),{once:true});
+    });
+    await assert.rejects(shared.studioRequest('/write',{body:{},timeoutMs:10}),/操作可能仍在继续/);
+    assert.equal(calls,1,'uncertain writes must not retry automatically');
+    const abort = new AbortController();abort.abort(new Error('user-cancel'));
+    await assert.rejects(shared.studioRequest('/read',{signal:abort.signal}),/user-cancel/);
+    globalThis.fetch = async () => {throw new TypeError('Failed to fetch');};
+    await assert.rejects(shared.studioRequest('/offline'),/无法连接本地服务/);
     globalThis.fetch = async () => new Response('oops', {status: 503});
     await assert.rejects(shared.studioRequest('/test'), /503/);
     globalThis.fetch = async () => Response.json(null);
@@ -80,7 +99,12 @@ try {
     assert.equal((await shared.studioRequest('/test')).status, 'blocked');
     await assert.rejects(shared.studioRequest('/test',{rejectBlocked:true}), /boundary/);
   } finally { globalThis.fetch = originalFetch; }
-  checked.push('response-contract-and-explicit-blocked-policy');
+  checked.push('response-contract-timeout-abort-offline-and-no-write-retry');
+  assert.equal(shared.previewPollDelay(0),1200);
+  assert.equal(shared.previewPollDelay(99),8000);
+  let elapsed=0,polls=0;while(elapsed<60000){elapsed+=shared.previewPollDelay(polls++);}
+  assert.ok(polls<=16);
+  checked.push('preview-polling-backs-off-with-bounded-read-frequency');
   globalThis.window = new EventTarget();
   globalThis.document = new EventTarget();
   const node = new EventTarget(); let captured = null;
