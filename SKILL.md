@@ -67,6 +67,7 @@ node scripts/kacha.mjs resume PROJECT --confirm-execute
 | 节目文稿 | `references/shows/README.md` 和本栏目风格卡；大灰AI遵守调用项目基础资料索引所指的当前主方案与 `docs/DAHUI_AI_EDITING_SYSTEM_V1.md`，旧V3.3仅用于明确指定的历史作品 |
 | 资源/渲染效率、缓存、量化比较 | `docs/QUALITY_PRESERVING_EFFICIENCY_V8.md`、`references/production/control-and-orchestration.md` |
 | 清理与保留 | `references/cleanup-retention.md` |
+| AE / 剪映辅助精剪、动效与回收 | `references/professional-tools.md`；先 detect，实际安装/脚本/渲染分别验证 |
 | 白板视频 | `docs/WHITEBOARD_ANIMATION.md` |
 
 原入口的条件细节已分拆到 `references/production/`；首剪/返工详细命令见 `first-edit-and-rework.md`，只在对应步骤读取。

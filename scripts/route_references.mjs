@@ -24,6 +24,7 @@ const STAGES = new Set([
   "release",
 ]);
 const MODULE_REFERENCES = {
+  professional_tools: ["references/professional-tools.md", "docs/PROFESSIONAL_TOOLS.md"],
   materials: ["references/material-editing.md"],
   audio: ["references/audio.md"],
   dialogue: ["references/audio.md"],

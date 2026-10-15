@@ -234,6 +234,7 @@ function verifyBundle(bundle, source) {
     bundle,
     { env: verificationEnvironment },
   );
+  run(process.execPath, ["--test", path.join(bundle, "tests", "professional_tools_tests.mjs")], bundle, { env: verificationEnvironment });
   for (const test of fs.readdirSync(path.join(bundle, "tests")).filter(name => /^optimization_.*_tests\.mjs$/.test(name)).sort()) {
     run(process.execPath, [path.join(bundle, "tests", test)], bundle, { env: verificationEnvironment });
   }

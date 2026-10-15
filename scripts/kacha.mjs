@@ -90,6 +90,7 @@ function usage() {
       + "  kacha.mjs release-review open|init|record|approve <project-manifest.json> [options]\n"
       + "  kacha.mjs nle export --format otio|fcpxml|premiere-xml|cmx3600 | import --format otio|fcpxml [options]\n"
       + "  kacha.mjs nle-app detect|session|record|validate [options]\n"
+      + "  kacha.mjs pro-tools detect|prepare|status|render|receive [options]\n"
       + "  kacha.mjs install status|sync [options]\n"
       + "  kacha.mjs cache key|run|inspect [options]\n"
       + "  kacha.mjs efficiency validate-policy|plan|validate|schedule|execute|cache-audit|compare [options]\n"
@@ -229,6 +230,7 @@ const delegatedCommands = {
   "release-review": "release_review.mjs",
   nle: "kacha_nle.mjs",
   "nle-app": "nle_application_validation.mjs",
+  "pro-tools": "professional_tools.mjs",
   install: "kacha_install.mjs",
   runtime: "runtime_bundle.mjs",
   cache: "artifact_cache.mjs",

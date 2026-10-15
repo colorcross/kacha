@@ -44,6 +44,7 @@ export function professionalCapabilityMap() {
     .filter((profile) => profile.status === "available")
     .map((profile) => `${profile.id}: ${profile.selectedEncoder} + ${profile.selectedAudioEncoder} + ${profile.container} + ${profile.pixelFormat}`);
   const capabilities = [
+    capability("delivery.professional-tools", "delivery", "AE / 剪映专业工具交接", "partial", ["scripts/professional_tools.mjs"], ["基础 EDL 媒体包、AE JSX 与技术候选回收；真实应用操作/渲染需本机安装和单独验证，复杂层不静默转换"], ["kacha pro-tools detect", "kacha pro-tools prepare", "kacha pro-tools receive"]),
     capability("timeline.multitrack", "timeline", "多轨视频、音频和文字投影", "available", ["Timeline IR", "scripts/timeline_projection.mjs", "studio/editor.js"], ["当前主画面为单视频轨 EDL；字幕已渲染层的正文需回到字幕计划修改"], ["kacha editor project", "/editor"]),
     capability("timeline.operations", "timeline", "trim / split / move / reorder", "available", ["scripts/editor_operations.mjs", "Command Journal"], ["主画面不允许任意留白移动；已执行转场时结构修改失败关闭"], ["kacha editor command apply", "/editor"]),
     capability("timeline.ripple-overwrite", "timeline", "ripple trim / overwrite", "available", ["scripts/editor_operations.mjs", "tests/run_tests.mjs"], ["仅支持单源主画面 EDL；需整帧边界且重新执行 connection QC"], ["kacha editor command apply", "/editor"]),
