@@ -212,7 +212,7 @@ export const zhContent: SiteContent = {
       {
         kicker: "AUDIO + CAPTIONS",
         title: "听得清，也看得懂",
-        body: "先分离人声，再处理噪声、齿音与动态；字幕以口播为主、文稿校准，并服从平台安全区。",
+        body: "先诊断并审听，再按需要直通、轻处理或分离人声；字幕以口播为主、文稿校准，并服从平台安全区。",
         proof: "对白、字幕、BGM 与 SFX 使用同一时间合同。",
       },
       {
@@ -316,7 +316,7 @@ export const zhContent: SiteContent = {
       {
         kicker: "GLOBAL DIRECTOR",
         title: "项目编排与全片导演",
-        body: "运行版本、唯一开场、内容主线、留白预算和十三阶段被锁进同一项目；中断后可从真实证据继续。",
+        body: "运行版本、内容主线、留白预算与当前证据保存在同一项目；按真实依赖安排任务，中断后可继续。",
       },
       {
         kicker: "SEMANTIC REVIEW",
@@ -343,7 +343,7 @@ export const zhContent: SiteContent = {
   workflow: {
     title: "从脚本或素材开始，四个可确认节点。",
     intro:
-      "十三个专业阶段被收束成四个用户里程碑，并编译成十个依赖波次。每次停下都保存输入、版本、证据和下一步；没有真实证据就不会跳到“已完成”。",
+      "四个用户里程碑保留清晰的确认点。新工程按实际依赖推进，小改动只重做受影响的部分；每项完成都绑定当前输入和真实证据，旧工程继续原合同。",
     steps: [
       { title: "方案确认", body: "冻结运行版本、输入身份、栏目与授权；完成内容主线、转写、全片导演和素材缺口。", stages: "库存盘点 · 转写与结构", state: "CONFIRM" },
       { title: "首剪确认", body: "完成粗剪、人声预处理、所有连接点检查和精剪；语义、口型、动作与节奏一起看。", stages: "粗剪 · 人声 · 连接 · 精剪", state: "CONFIRM" },
@@ -526,7 +526,7 @@ export const enContent: SiteContent = {
       {
         kicker: "AUDIO + CAPTIONS",
         title: "Clear to hear and easy to read",
-        body: "Separate dialogue before cleanup. Speech leads caption timing while the script calibrates names, numbers, and context.",
+        body: "Diagnose and listen first, then pass through, lightly process, or separate dialogue as needed. Speech leads caption timing while the script calibrates names, numbers, and context.",
         proof: "Dialogue, captions, music, and SFX share one timing contract.",
       },
       {
@@ -630,7 +630,7 @@ export const enContent: SiteContent = {
       {
         kicker: "GLOBAL DIRECTOR",
         title: "Project orchestration and direction",
-        body: "Lock runtime, source identity, one opening, story structure, quiet budget, and thirteen stages into one resumable project.",
+        body: "Keep runtime, source identity, story structure, quiet budget, and current evidence in one resumable project. Schedule work by its actual dependencies.",
       },
       {
         kicker: "SEMANTIC REVIEW",
@@ -657,7 +657,7 @@ export const enContent: SiteContent = {
   workflow: {
     title: "Start with a script or footage. Confirm four milestones.",
     intro:
-      "Thirteen professional stages collapse into four user checkpoints and ten dependency waves. Every pause preserves inputs, runtime, evidence, and the next action; missing evidence never becomes a completion claim.",
+      "Four user milestones keep decisions clear. New projects follow actual dependencies and rebuild only affected work. Completion binds to current inputs and real evidence; existing projects retain their contracts.",
     steps: [
       { title: "Proposal confirmed", body: "Freeze runtime, source identity, show, and authority; complete the content spine, transcript, director plan, and asset gaps.", stages: "inventory · transcript · structure", state: "CONFIRM" },
       { title: "First cut confirmed", body: "Complete rough cut, dialogue preprocessing, every connection check, and fine cut across meaning, lip sync, action, and rhythm.", stages: "rough cut · dialogue · connections · fine cut", state: "CONFIRM" },
