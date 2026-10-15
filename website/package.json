@@ -40,11 +40,19 @@
   },
   "overrides": {
     "next": {
-      "postcss": "8.5.30"
+      "postcss": "8.5.30",
+      "styled-jsx": "5.1.7"
     },
     "fast-glob": "$fast-glob",
     "sharp": "0.35.5",
-    "fflate": "0.8.3"
+    "fflate": "0.8.3",
+    "ws": "8.22.0",
+    "@cspotcode/source-map-support": {
+      "@jridgewell/trace-mapping": "0.3.31"
+    },
+    "@tailwindcss/node": {
+      "lightningcss": "1.33.0"
+    }
   },
   "type": "module",
   "allowScripts": {

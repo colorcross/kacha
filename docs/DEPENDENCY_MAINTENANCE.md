@@ -13,6 +13,7 @@
 | 白板渲染 | OpenCV headless 5.0.0.93、NumPy 2.5.4、PyAV 19.0.1：`scripts/whiteboard_engine/requirements.txt` |
 | 浏览器回归 | Playwright 1.64.1，见 CI workflow |
 | 本机媒体工具核验 | FFmpeg full 9.0.2、librsvg 2.63.2、jq 1.8.2 |
+| 本机渲染解释器 | Python 3.14.8；旧解释器和更新前的渲染环境保留用于回退 |
 | 白板上游 | `geeklee/srt-whiteboard-animation` @ `696a7243c0e6ffb6827676e539c2ca5ebae2bf6b`；核验时仍为上游 HEAD，本地补丁见引擎 README |
 
 语言运行时、操作系统工具和独立模型服务不进入网站 lockfile。发行版为兼容性固定的传递依赖应单独记录；不能强制突破 NumPy、Python、ONNX 或模型的兼容约束，也不能把“最新可兼容”写成“所有包绝对最新”。CI 的系统媒体工具来自 runner 的软件源，与本机 Homebrew 验证是不同环境。
@@ -59,8 +60,24 @@ Vinext 1.2 使用 Vite 的 `dev/build` 入口；Pages 全路由预渲染通过 V
 - `fast-glob` 使用仓库内 tinyglobby 适配器；其构建接口有回归，避免重新带入不需要的旧依赖链。
 - `postcss`、`sharp` 锁到已核验版本。
 - `fflate` 0.8.3 修复 [GHSA-px8p-9vwx-vf98](https://github.com/advisories/GHSA-px8p-9vwx-vf98)。新版 Vinext 的传递依赖仍可能选择受影响的 0.7.x，必须继续保留覆盖，直到上游修复。
+- `ws` 8.22.0、Next 内部的 `styled-jsx` 5.1.7：覆盖上游固定的旧小版本，保留同一主版本 API，并验证真实 WebSocket 连接、关闭和网站 SSR。
+- `@cspotcode/source-map-support` 内部的 `@jridgewell/trace-mapping` 0.3.31：验证实际 source map 解析及调用方使用的 `resolvedSources` 接口。
+- `@tailwindcss/node` 内部的 `lightningcss` 1.33.0：与 Vite 的较新版本合并；必须验证 CSS 构建和实际页面渲染，不能只检查安装成功。
+
+这些覆盖应随上游更新复核；上游采用同版或更高兼容版本后移除多余覆盖。`npm outdated --all` 同时显示平台可选包和版本标签差异，需要查看调用方的约束，不能把全部输出机械变成升级列表。
+
+仍需随上游成套升级的典型依赖：
+
+| 依赖 | 保留原因 |
+| --- | --- |
+| Cloudflare 的 `workerd` / `miniflare` / `unenv` | Wrangler 与 Vite 插件精确选择配套版本；部分预发布版本比 registry 的 `latest` 稳定标签更新，不能反向降级 |
+| `undici-types` | 遵循 `@types/node` 的版本约束，避免类型声明承诺当前运行时尚未支持的接口 |
+| `magic-string`、`path-to-regexp`、`nanoid` 等跨主版本项 | 上游调用方仍依赖旧 API；需先升级调用方或完成针对性迁移 |
+| FaceFusion 的 Gradio / NumPy / ONNX Runtime | 使用 FaceFusion 3.9.1 官方支持组合；Gradio 6.x、ONNX Runtime 1.31 等独立最新版不等于已获该应用支持 |
 
 不使用 `npm audit fix --force` 自动降级主框架。生产和完整依赖审计均要求零漏洞。
+
+网站既有 `.npmrc` 使用 `legacy-peer-deps=true`：Vinext 使用 React Server Components 接口，构建由 Vite 执行，不安装未使用的 webpack 构建链。因此 `npm ls --all` 会报告 `react-server-dom-webpack` 的 webpack peer 缺失；该已知项不等于实际运行依赖缺失。保留干净 `npm ci`、真实 workerd SSR 与 Pages 构建验证，其他 invalid/missing 项仍需逐项解决。
 
 ## 独立服务与发布
 
