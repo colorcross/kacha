@@ -379,7 +379,8 @@ const checks = {
     ),
   cacheShaVerificationMandatory:
     config.execution.artifactCache.verifySha256 === true,
-  beautyDefaultOff: config.editingDefaults.parameters.beauty.enabled === false,
+  builtInBeautyRemoved: !fs.existsSync(path.join(scriptDirectory, "beauty_v2.mjs"))
+    && config.editingDefaults.parameters.beauty?.enabled !== true,
   humanQcContractPreserved: Array.isArray(golden.remainingHumanEvidence)
     && golden.remainingHumanEvidence.length >= 3,
   doubleInstallVerified: currentInstallVerification.pass,
