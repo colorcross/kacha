@@ -412,7 +412,6 @@ function validateEffectiveConfig(config) {
   validateBeautyPreference(
     config.editingDefaults.parameters.beauty,
     "effectiveConfig.editingDefaults.parameters.beauty",
-    { complete: true },
   );
   resolveDesignSystem(config.style);
   if (!["economy", "balanced", "frontier"].includes(config.execution.modelTier)) {

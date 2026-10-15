@@ -1584,6 +1584,8 @@ await test("built-in beauty is removed and legacy enablement fails explicitly", 
   writeJson(legacy, {schemaVersion: "1.0", editingDefaults: {parameters: {beauty: {enabled: true, engine: "beauty-v2", profile: "natural"}}}});
   const rejected = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "config", "validate", "--config", legacy]);
   if (!rejected.stderr.includes("已移除")) throw new Error("legacy beauty silently accepted");
+  writeJson(legacy, {schemaVersion: "1.0", editingDefaults: {parameters: {beauty: {enabled: false}}}});
+  execute(process.execPath, [path.join(scripts, "kacha.mjs"), "config", "validate", "--config", legacy]);
 }, "visual");
 
 await test("studio removes beauty controls and rejects retired custom styles", () => {
