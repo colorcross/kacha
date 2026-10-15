@@ -85,7 +85,9 @@ export function adaptiveStageDigests(projectFile, project) {
       for (const id of Object.keys(inputs)) {
         const stage = (effectiveExecutionFlow(entry.value) ?? []).find(s => s.id === id);
         // Completion evidence is checked separately; writing progress must not invalidate work.
-        inputs[id].applicability = { notApplicable: stage?.status === 'not_applicable', reason: stage?.notApplicableReason ?? null };
+        const { status, evidence, recordedAt, updatedAt, ...contract } = stage ?? {};
+        inputs[id].stageContract = identity(entry.file, contract);
+        inputs[id].applicability = { notApplicable: status === 'not_applicable', blocked: status === 'blocked' };
       }
     } else if (key === 'timeline' || key === 'timelineIr') {
       const entry = readEntry(projectFile, value);
@@ -121,7 +123,8 @@ export function reconcileAdaptiveStages(previous, initial, digests, evidenceCurr
   for (const id of Object.keys(STAGE_DEPENDENCIES)) {
     const old = previous?.stages?.[id];
     const same = previous?.stageDigests?.[id] === digests[id] && evidenceCurrent(old);
-    stages[id] = same && old ? old : initial[id]?.notApplicable ? initial[id] : { status: 'pending' };
+    stages[id] = initial[id]?.status === 'blocked' && initial[id]?.source === 'proposal'
+      ? initial[id] : same && old ? old : initial[id]?.notApplicable ? initial[id] : { status: 'pending' };
   }
   // Propagate invalidation along true dependencies, never across independent branches.
   let changed;

@@ -36,7 +36,7 @@ function approximateTokens(value) {
   return Math.ceil(ascii / 4 + nonAscii / 1.6);
 }
 
-const task = option("--task");
+const requestedTask = option("--task");
 const modules = option("--modules", "")
   .split(",")
   .map((item) => item.trim())
@@ -46,6 +46,8 @@ const source = option("--source");
 const project = option("--project");
 const output = option("--output");
 const currentProject = project && fs.existsSync(project) ? readJson(path.resolve(project)) : null;
+const task = currentProject?.kind === 'kacha_material_project' ? 'material_edit'
+  : currentProject?.schemaVersion === '3.0' ? 'local_optimization' : requestedTask;
 const legacyWorkflow = currentProject && currentProject.schemaVersion === '2.0' && currentProject.workflowPolicy?.version !== 'adaptive-v1';
 const transcriptInput = option("--transcript");
 const transcriptWindow = option("--transcript-window");
@@ -70,6 +72,7 @@ const DEFAULT_STAGE_BY_TASK = {
   source_edit: "edit",
   content_generation: "content",
   local_optimization: "edit",
+  material_edit: "edit",
 };
 const capabilityInput = option("--capabilities");
 let capabilities = { imageInput: 'unknown', audioInput: 'unknown', videoInput: 'unknown' };
@@ -234,10 +237,9 @@ if (source) {
 
 let projectState = null;
 if (project) {
-  const result = run(process.execPath, [
-    path.join(scriptsDirectory, "next_action.mjs"),
-    path.resolve(project),
-  ]);
+  const result = run(process.execPath, currentProject?.kind === 'kacha_material_project'
+    ? [path.join(scriptsDirectory, 'kacha_materials.mjs'), 'status', '--project-root', path.dirname(path.dirname(path.resolve(project)))]
+    : [path.join(scriptsDirectory, "next_action.mjs"), path.resolve(project)]);
   try {
     projectState = JSON.parse(result.stdout);
   } catch {
@@ -344,8 +346,16 @@ if (transcriptInput) {
   }
 }
 
-const workflow = task === "local_optimization" ? "v3_incremental" : "v2_full";
-const artifactProtocol = task === "local_optimization"
+const materialWorkflow = task === "material_edit";
+const workflow = materialWorkflow ? "material_edit" : task === "local_optimization" ? "v3_incremental" : "v2_full";
+const incrementalWorkflow = workflow === 'v3_incremental';
+const adaptiveState = !materialWorkflow && !incrementalWorkflow && !legacyWorkflow;
+const artifactProtocol = materialWorkflow ? {
+  stableInputs: ['material-project.json', 'material-brief.json'],
+  perVersionInputs: ['storyboard.json', 'material-edit-plan.json'],
+  templates: ['Use the current project storyboardTemplate returned by start --materials'],
+  preferredCompiler: 'kacha.mjs materials compose',
+} : task === "local_optimization"
   ? {
       stableInputs: [
         "project-context.json",
@@ -389,13 +399,18 @@ const packet = {
   modelTier,
   stage,
   task,
+  requestedTask,
   workflow,
   resolvedContract: {
-    workflowPolicy: legacyWorkflow ? 'legacy' : currentProject?.workflowPolicy?.version ?? 'adaptive-v1',
+    workflowPolicy: materialWorkflow ? 'material-v1' : incrementalWorkflow ? 'incremental-v3' : legacyWorkflow ? 'legacy' : currentProject?.workflowPolicy?.version ?? 'adaptive-v1',
     productionPack: currentProject?.productionPack ?? null,
     show: currentProject?.show ?? null,
-    proposalDefaults: legacyWorkflow ? { preserveExisting: true } : { workflowPolicy: { version: 'adaptive-v1' }, executionFlow: 'derived_from_plan_modules' },
-    decisionSource: 'editProposal + Timeline IR; derived views must reference current identities',
+    proposalDefaults: materialWorkflow || incrementalWorkflow || legacyWorkflow ? { preserveExisting: true } : { workflowPolicy: { version: 'adaptive-v1' }, executionFlow: 'derived_from_plan_modules' },
+    decisionSource: materialWorkflow
+      ? 'material project + brief + reviewed inspections + storyboard; preserve frozen source identities'
+      : incrementalWorkflow
+      ? 'project-context + version-delta + artifact-index; preserve frozen layers and current input hashes'
+      : 'editProposal + Timeline IR; derived views must reference current identities',
     finalReview: 'current_candidate_required',
   },
   modules,
@@ -452,7 +467,7 @@ const packet = {
     "完整读取 readOrder 中的文件。",
     ...(stage
       ? [
-          `只处理 ${stage} 阶段；完成后写入项目状态文件，再进入下一阶段。`,
+          `聚焦 ${stage} 阶段；完成后按 resolvedContract 对应执行器刷新状态，不套用其他工程的阶段登记。`,
           "需要效果或剪辑规则时先运行 rules query，只接收每条规则的 1–3 个候选。",
           ...(transcriptEvidence
             ? [
@@ -462,11 +477,14 @@ const packet = {
             : []),
         ]
       : []),
-    executionMode === 'guided' ? "若 projectState 存在，只执行 projectState.nextAction。"
+    materialWorkflow ? '按素材工程状态执行 inspect → compose → run/resume；不用V2的next/state record。'
+      : !adaptiveState ? '只执行当前 kacha.mjs next 给出的动作；v3按增量计划保留冻结层。'
+      : executionMode === 'guided' ? "若 projectState 存在，只执行 projectState.nextAction。"
       : "按当前 nextAction.availableStages 安排独立任务；一轮可完成多项判断，每项记录前核对 expectedInputDigest，不能跨越真实依赖。",
     "已有对象先用 refs resolve 缩小读取；小合同修改用 delta apply。",
     "耗时步骤可提交 jobs，但 placeholder ready 前不得假定产物存在。",
-    executionMode === 'guided' ? "每完成一步重新运行 kacha.mjs next；不要自行跳级。"
+    materialWorkflow ? '每次修改后运行 materials status 或 kacha.mjs status；检查当前分镜与真实产物。'
+      : executionMode === 'guided' || !adaptiveState ? "每完成一步重新运行 kacha.mjs next；不要自行跳级。"
       : "复用当前素材理解统一决定结构、切点、素材与声音；只有输入/依赖变化时刷新，昂贵任务仍受资源锁和授权约束。",
     "遇到 diagnostics 按 code/remediation 处理，不用猜测填空。",
   ],

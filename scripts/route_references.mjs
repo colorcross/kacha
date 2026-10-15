@@ -221,10 +221,11 @@ for (const module of modules) {
 }
 
 const selected = new Set();
+if (task === "local_optimization") selected.add("references/incremental-workflow.md");
 if (!stage) selected.add("references/optimization-execution.md");
 if (task === "material_edit") selected.add("references/material-editing.md");
 if (stage) {
-  selected.add(`references/stages/${stage}.md`);
+  if (!["local_optimization", "material_edit"].includes(task)) selected.add(`references/stages/${stage}.md`);
   // Explicit generation requests retain the paid-call recovery contract even in
   // compact packets. Other stages keep their existing bounded context.
   if (modules.some(module => ["audio_generation", "bgm", "sfx", "minimax"].includes(module))

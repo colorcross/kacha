@@ -164,7 +164,7 @@ function initialV2Stages(projectFile, project) {
         source: "proposal",
       }];
     }
-    return [id, { status: stage?.status === "blocked" ? "blocked" : "pending" }];
+    return [id, stage?.status === "blocked" ? { status: "blocked", source: "proposal" } : { status: "pending" }];
   }));
 }
 
@@ -227,7 +227,9 @@ function initializeState(projectFile, stateFile) {
 
 export function firstIncompleteV2Stage(state) {
   if (isAdaptive(state)) {
-    const id = readyStages(state)[0] ?? V2_STAGE_IDS.find(id => state.stages[id]?.status !== 'complete');
+    const id = readyStages(state)[0]
+      ?? Object.keys(STAGE_DEPENDENCIES).find(id => state.stages[id]?.status === 'blocked')
+      ?? Object.keys(STAGE_DEPENDENCIES).find(id => state.stages[id]?.status !== 'complete');
     return id ? { id, entry: state.stages[id] } : null;
   }
   for (const id of V2_STAGE_IDS) {
@@ -262,6 +264,9 @@ function recordStage({
       throw new Error('阶段输入已变化或缺少 --expected-input；重新读取 next，不得登记旧任务结果');
     }
   }
+  if (isAdaptive(state) && state.stages[stage]?.status === 'blocked' && state.stages[stage]?.source === 'proposal') {
+    throw new Error('方案仍阻断此阶段；先解除方案阻断再登记结果');
+  }
   const stageIndex = V2_STAGE_IDS.indexOf(stage);
   const incompletePrerequisite = isAdaptive(state) ? unmetDependencies(state,stage)[0]
     : V2_STAGE_IDS.slice(0, stageIndex).find((id) => state.stages?.[id]?.status !== "complete");
@@ -285,6 +290,8 @@ function recordStage({
       { stage, text: decision, evidenceSha256: evidence.sha256 },
     ];
   }
+  if (isAdaptive(state)) state.decisions = (state.decisions ?? []).filter(d =>
+    state.stages[d.stage]?.status === 'complete' && state.stages[d.stage]?.evidence?.sha256 === d.evidenceSha256);
   delete state.digest;
   delete state.updatedAt;
   state.digest = sha256Value(state);

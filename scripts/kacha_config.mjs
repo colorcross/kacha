@@ -18,6 +18,7 @@ const TASKS = new Set([
   "all",
   "proposal_review",
   "source_edit",
+  "material_edit",
   "content_generation",
   "local_optimization",
 ]);

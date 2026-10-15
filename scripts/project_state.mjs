@@ -37,7 +37,7 @@ function snapshot(projectFile, output) {
     const initialized = loadOrInitializeV2State(projectFile, output);
     const next = run(process.execPath, [
       path.join(scriptDirectory, "next_action.mjs"),
-      projectFile,
+      projectFile, "--state-file", output,
     ]);
     let nextAction = null;
     let issues = [];

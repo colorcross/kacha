@@ -544,7 +544,8 @@ await test("doctor and low-model packet expose deterministic execution", () => {
   if (
     packet.stage !== "edit"
     || packet.readOrder.length !== 1
-    || !packet.readOrder[0].endsWith("references/stages/edit.md")
+    || !packet.readOrder[0].endsWith("references/incremental-workflow.md")
+    || packet.resolvedContract.workflowPolicy !== "incremental-v3"
     || packet.ruleRetrieval === null
     || packet.agentControlPlane?.primaryInterface !== "natural_language_chat"
     || packet.agentControlPlane?.mutationDelta !== "kacha.mjs delta apply"

@@ -27,7 +27,9 @@ import { isAdaptive, readyStages, WORKFLOW_PHASES } from './adaptive_workflow.mj
 
 const scriptsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
-const input = args.find((item) => !item.startsWith("--"));
+const input = args.find((item, index) => !item.startsWith("--") && !["--output", "--state-file"].includes(args[index - 1]));
+const stateIndex = args.indexOf("--state-file");
+const stateFile = stateIndex >= 0 && args[stateIndex + 1] ? path.resolve(args[stateIndex + 1]) : undefined;
 const outputIndex = args.indexOf("--output");
 const output = outputIndex >= 0 ? args[outputIndex + 1] : null;
 
@@ -412,7 +414,7 @@ function nextV2() {
   }
   let workflow;
   try {
-    workflow = loadOrInitializeV2State(projectFile);
+    workflow = loadOrInitializeV2State(projectFile, stateFile);
   } catch (error) {
     blockedFromValidation("workflow state", {
       pass: false,

@@ -4,8 +4,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { fileIdentity, sha256File, readJson, writeJsonAtomic } from '../scripts/kacha_utils.mjs';
+import { fileIdentity, sha256File, readJson, writeJsonAtomic, resolveRuntimeCommand } from '../scripts/kacha_utils.mjs';
 import { loadOrInitializeV2State, recordV2Stage, stageInputDigest } from '../scripts/workflow_state.mjs';
+import { initializeMaterialProject } from '../scripts/material_project.mjs';
 import { readyStages, effectiveExecutionFlow } from '../scripts/adaptive_workflow.mjs';
 import { diagnoseDialogue, diagnosisReviewDigest, validateDialogueDiagnosis, prepareDialogue, validatePreparedDialogue } from '../scripts/dialogue_diagnosis.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -120,6 +121,75 @@ try{
   prepareDialogue({diagnosisFile:df,timelineFile:tf,output:out,mode:'passthrough'});
   const raw=spawnSync('ffmpeg',['-v','error','-i',out,'-f','f32le','-'],{maxBuffer:2*1024*1024}).stdout;assert.equal(raw.length,3*48000*4);
   let early=0,late=0;for(let i=0;i<24000;i++){early+=Math.abs(raw.readFloatLE(i*4));late+=Math.abs(raw.readFloatLE((i+72000)*4));}assert.equal(early,0);assert(late>100);
+ });
+ test('proposal blockers cannot be overridden and contract edits invalidate only descendants',()=>{
+  const f=fixture('proposal-blocks'),p=readJson(f.proposal);p.executionFlow=effectiveExecutionFlow(p);json(f.proposal,p);f.complete();
+  const cover=p.executionFlow.find(s=>s.id==='cover');cover.status='blocked';json(f.proposal,p);
+  assert.equal(f.snapshot().stages.cover.status,'blocked');assert.throws(()=>f.record('cover'),/方案仍阻断/);
+  cover.status='pending';json(f.proposal,p);assert.equal(f.snapshot().stages.cover.status,'pending');f.complete();
+  for(const key of ['gate','deliverable']){cover[key]+=' new requirement';json(f.proposal,p);const s=f.snapshot();assert.equal(s.stages.cover.status,'pending');assert.equal(s.stages.release_package.status,'pending');assert.equal(s.stages.final_qc.status,'complete');f.complete();}
+  cover.status='passed';json(f.proposal,p);assert.equal(f.snapshot().stages.cover.status,'complete');
+ });
+ test('next surfaces a blocked prerequisite and custom snapshot keeps its own state and token',()=>{
+  const f=fixture('cli-state');const p=readJson(path.join(root,'examples/edit-proposal.json'));p.workflowPolicy={version:'adaptive-v1'};delete p.executionFlow;json(f.proposal,p);
+  const project=readJson(f.file);project.plans.editPlan=json(path.join(f.dir,'edit.json'),readJson(path.join(root,'examples/edit-plan.json')));json(f.file,project);
+  f.record('inventory');const report=JSON.parse(cli(['scripts/project_state.mjs','snapshot',f.file,'--output',f.stateFile]).stdout);
+  assert.equal(report.nextAction.stage,'transcript_structure');assert.equal(report.nextAction.stateFile,f.stateFile);assert(report.nextAction.recordCommandTemplate.includes(f.stateFile));assert.equal(report.nextAction.expectedInputDigest,stageInputDigest(f.snapshot(),'transcript_structure'));
+  for(const id of ['transcript_structure','rough_cut','dialogue_preprocess','cover'])f.record(id);
+  recordV2Stage({stateFile:f.stateFile,stage:'fine_cut',status:'blocked',expectedInputDigest:stageInputDigest(f.snapshot(),'fine_cut'),evidenceFile:json(path.join(f.dir,'block.json'),{reason:'fixture'})});
+  const next=JSON.parse(cli(['scripts/next_action.mjs',f.file,'--state-file',f.stateFile]).stdout);assert.equal(next.nextAction.id,'resolve_blocked_stage');assert.equal(next.nextAction.stage,'fine_cut');f.record('fine_cut');
+ });
+ test('upstream re-record removes stale downstream decisions immediately',()=>{
+  const f=fixture('decisions');f.complete();recordV2Stage({stateFile:f.stateFile,stage:'release_package',status:'complete',expectedInputDigest:stageInputDigest(f.snapshot(),'release_package'),evidenceFile:json(path.join(f.dir,'release.json'),{}),decision:'approved fixture'});
+  assert.equal(readJson(f.stateFile).decisions.length,1);const s=f.record('cover');assert.equal(s.decisions.length,0);assert.equal(readJson(f.stateFile).decisions.length,0);
+ });
+ test('compact v3 packets retain the incremental contract without adaptive proposal defaults',()=>{
+  const p=JSON.parse(cli(['scripts/prepare_agent_packet.mjs','--task','local_optimization','--project','examples/incremental-project.json','--model-tier','economy']).stdout);
+  assert.equal(p.workflow,'v3_incremental');assert.equal(p.resolvedContract.workflowPolicy,'incremental-v3');assert.deepEqual(p.resolvedContract.proposalDefaults,{preserveExisting:true});assert(p.readOrder.some(f=>f.endsWith('incremental-workflow.md')));assert(p.resolvedContract.decisionSource.includes('version-delta'));
+ });
+ test('existing project family overrides a generic task and material editing prepares its own contracts',()=>{
+  const p=JSON.parse(cli(['scripts/prepare_agent_packet.mjs','--task','source_edit','--project','examples/incremental-project.json','--model-tier','economy']).stdout);
+  assert.equal(p.task,'local_optimization');assert.equal(p.requestedTask,'source_edit');assert.equal(p.workflow,'v3_incremental');assert(!p.executionProtocol.join(' ').includes('availableStages'));assert(!p.readOrder.some(f=>f.endsWith('stages/edit.md')));assert(p.readOrder.some(f=>f.endsWith('incremental-workflow.md')));
+  for(const tier of ['economy','frontier']){const m=JSON.parse(cli(['scripts/prepare_agent_packet.mjs','--task','material_edit','--model-tier',tier]).stdout);assert.equal(m.workflow,'material_edit');assert(!m.executionProtocol.join(' ').includes('availableStages'));assert(!m.readOrder.some(f=>f.endsWith('stages/edit.md')));assert.equal(m.resolvedContract.workflowPolicy,'material-v1');assert.deepEqual(m.resolvedContract.proposalDefaults,{preserveExisting:true});assert.equal(m.artifactProtocol.preferredCompiler,'kacha.mjs materials compose');assert(m.readOrder.some(f=>f.endsWith('material-editing.md')));assert(!m.artifactProtocol.stableInputs.includes('edit-proposal.json'));}
+ });
+ test('dialogue transitions use render FPS including explicit timebase and fractional source',()=>{
+  for(const [name,rate,output,timebase] of [['default',30,{},undefined],['timebase',30,{fps:30},{ticksPerSecond:90000,frameRate:{numerator:25,denominator:1}}],['fractional','30000/1001',{},undefined]]){
+   const src=path.join(temp,`${name}.mov`);const r=spawnSync('ffmpeg',['-v','error','-f','lavfi','-i',`color=c=black:s=160x90:r=${rate}:d=3`,'-f','lavfi','-i','sine=frequency=600:duration=3:sample_rate=48000','-c:v','libx264','-c:a','pcm_s16le',src],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);
+   const d=diagnoseDialogue(src);d.review={...diagnosis.review,subjectDigest:diagnosisReviewDigest(d)};const df=json(path.join(temp,`${name}-diagnosis.json`),d);
+   const tf=json(path.join(temp,`${name}-timeline.json`),{schemaVersion:'1.0',projectId:name,mode:'preview',source:{path:src},edl:[{id:'a',sourceStart:0,sourceEnd:1.5},{id:'b',sourceStart:1.5,sourceEnd:3}],transitions:[{boundaryIndex:0,effectId:'soft_dissolve',durationFrames:15}],visual:{},audio:{},output:{width:160,height:90,path:path.join(temp,`${name}.mp4`),...output},...(timebase?{timebase}:{})});
+   const receipt=prepareDialogue({diagnosisFile:df,timelineFile:tf,output:path.join(temp,`${name}.wav`),mode:'passthrough'});
+   const compiled=JSON.parse(cli(['scripts/timeline_ir.mjs','compile','--plan',tf]).stdout),graph=readJson(compiled.output);assert(Math.abs(receipt.mapping.durationSeconds-graph.durationSeconds)<.00001);assert(Math.abs(receipt.mapping.transitions[0].durationSeconds-graph.transitions[0].durationSeconds)<.00001);
+  }
+ });
+ test('actual material project preparation reads material status instead of rejecting its schema',()=>{
+  const projectRoot=path.join(temp,'actual-material'),src=path.join(temp,'default.mov');
+  initializeMaterialProject({materials:[src],requirements:'synthetic material routing fixture',projectRoot,duration:3,width:160,development:true});
+  const p=JSON.parse(cli(['scripts/prepare_agent_packet.mjs','--task','source_edit','--project',path.join(projectRoot,'.kacha/material-project.json'),'--model-tier','economy']).stdout);
+  assert.equal(p.workflow,'material_edit');assert.equal(p.projectState.kind,'kacha-material-project-status');assert.equal(p.projectState.status,'awaiting_storyboard');assert(!p.projectState.diagnostics?.length);
+ });
+ test('receipt publication failure rolls back owned audio and retry succeeds without overwriting others',()=>{
+  const output=path.join(temp,'retry.wav'),link=fs.linkSync;
+  try{fs.linkSync=(from,to)=>{if(to===`${output}.json`)throw new Error('synthetic receipt ENOSPC');return link(from,to);};assert.throws(()=>prepareDialogue({diagnosisFile,timelineFile,output,mode:'passthrough'}),/ENOSPC/);}finally{fs.linkSync=link;}
+  assert(!fs.existsSync(output));assert(!fs.existsSync(`${output}.json`));prepareDialogue({diagnosisFile,timelineFile,output,mode:'passthrough'});
+  const other=path.join(temp,'occupied.wav');fs.writeFileSync(`${other}.json`,'keep');assert.throws(()=>prepareDialogue({diagnosisFile,timelineFile,output:other,mode:'passthrough'}),/覆盖/);assert.equal(fs.readFileSync(`${other}.json`,'utf8'),'keep');
+ });
+ test('approval withdrawn during processing cannot publish a stem or receipt',()=>{
+  const output=path.join(temp,'withdrawn.wav'),wrapper=path.join(temp,'withdraw-wrapper.mjs'),previous=process.env.KACHA_FFMPEG_BIN;
+  fs.writeFileSync(wrapper,`#!${process.execPath}\nimport {spawnSync} from 'node:child_process'; import fs from 'node:fs'; const r=spawnSync(${JSON.stringify(resolveRuntimeCommand('ffmpeg'))},process.argv.slice(2),{stdio:'inherit'}); if(r.status)process.exit(r.status); const file=${JSON.stringify(diagnosisFile)},d=JSON.parse(fs.readFileSync(file));d.review.status='pending';fs.writeFileSync(file,JSON.stringify(d));\n`);fs.chmodSync(wrapper,0o755);
+  try{process.env.KACHA_FFMPEG_BIN=wrapper;assert.throws(()=>prepareDialogue({diagnosisFile,timelineFile,output,mode:'passthrough'}),/诊断已改变/);}
+  finally{if(previous===undefined)delete process.env.KACHA_FFMPEG_BIN;else process.env.KACHA_FFMPEG_BIN=previous;json(diagnosisFile,diagnosis);}
+  assert(!fs.existsSync(output));assert(!fs.existsSync(`${output}.json`));
+ });
+ test('multi-track diagnosis requires explicit stream and preparation preserves that selection',()=>{
+  const src=path.join(temp,'multitrack.mkv');const r=spawnSync('ffmpeg',['-v','error','-f','lavfi','-i','sine=frequency=400:duration=1:sample_rate=48000','-f','lavfi','-i','sine=frequency=1000:duration=1:sample_rate=48000','-map','0:a','-map','1:a','-c:a','pcm_s16le',src],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);
+  assert.throws(()=>diagnoseDialogue(src),/多音轨/);assert.throws(()=>diagnoseDialogue(src,{audioStreamIndex:9}),/不存在/);
+  const d=diagnoseDialogue(src,{audioStreamIndex:1});d.review={...diagnosis.review,subjectDigest:diagnosisReviewDigest(d)};const df=json(path.join(temp,'multi-diagnosis.json'),d),tf=json(path.join(temp,'multi-timeline.json'),{source:{path:src},edl:[{sourceStart:0,sourceEnd:1}]}),output=path.join(temp,'selected.wav');
+  const receipt=prepareDialogue({diagnosisFile:df,timelineFile:tf,output,mode:'passthrough'});assert.equal(receipt.audioStreamIndex,1);
+  const other=diagnoseDialogue(src,{audioStreamIndex:0});other.review={...diagnosis.review,subjectDigest:diagnosisReviewDigest(other)};const otherFile=json(path.join(temp,'other-track.json'),other);
+  receipt.diagnosis=fileIdentity(otherFile);json(`${output}.json`,receipt);
+  const p={workflowPolicy:{version:'adaptive-v1'},planModules:{dialogueAudio:{processing:{mode:'passthrough',diagnosis:fileIdentity(otherFile),preparation:fileIdentity(`${output}.json`)}}}};
+  assert(validatePreparedDialogue(p,tf,{...readJson(tf),audio:{dialogue:{path:output}}},tf).some(e=>e.includes('所选音轨不同')));
+  const raw=spawnSync('ffmpeg',['-v','error','-i',output,'-f','f32le','-'],{maxBuffer:1024*1024}).stdout;let crossings=0;for(let i=4801;i<24000;i++)if(raw.readFloatLE((i-1)*4)<0&&raw.readFloatLE(i*4)>=0)crossings++;assert(Math.abs(crossings/.4-1000)<5);
  });
  test('background music, explicit separation, missing and altered diagnosis reject bypass',()=>{
   const bad=structuredClone(diagnosis);bad.review.checks.noBackgroundMusic=false;assert(validateDialogueDiagnosis(bad,{mode:'passthrough'}).length>0);
