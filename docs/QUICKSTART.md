@@ -23,13 +23,13 @@ node scripts/kacha.mjs studio serve
 生成主线、待核事实、录制方案和素材清单。
 项目建立后进入 `/project` 查看四个里程碑与唯一下一步，进入 `/review` 完成
 语义决策和十一项发布审片。效果目录支持搜索，
-当前项目的人声、BGM、Beauty v2 与效果密度可以独立覆盖，不会污染可复用
+当前项目的人声、BGM 与效果密度可以独立覆盖，不会污染可复用
 风格。点击“检查配置”确认源视频、输出目录、授权字体、设计系统和效果均可
 执行后，页面会生成独立项目目录及
 `production-brief.json`、`kacha.config.json`、`AGENT_INSTRUCTIONS.md` 和
 `.kacha/orchestration.json`。
 默认“行者风”使用已授权的真正金陵体、`warm-soft` 人声和克制的暖色视觉；
-Beauty v2 默认关闭。页面不上传素材、不覆盖源文件，也不代表已经完成剪辑。
+内置美颜已移除，美颜需求由剪映增强流程处理。页面不上传素材、不覆盖源文件，也不代表已经完成剪辑。
 完整说明见[本地视频生产台](../references/production-studio.md)。
 
 ## 最短可恢复入口

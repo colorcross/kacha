@@ -36,7 +36,7 @@ node scripts/kacha.mjs studio serve --port 4187 --no-open
 - 明亮暖色、克制的编辑感和自然画面呼吸；
 - 默认人声 `warm-soft`，目标 `-21 LUFS / -4 dBTP`；
 - BGM 默认在人声下约 `18 dB`，功能音效默认在人声下约 `12 dB`；
-- Beauty v2 默认关闭；
+- 内置美颜已移除，需要美颜时由 Agent 走剪映增强流程；
 - 默认开场 `editorial_label_reveal`；
 - 普通字幕单行、无底色、60% 阴影；
 - 默认字幕使用已授权的真正金陵体
@@ -56,7 +56,7 @@ node scripts/kacha.mjs studio serve --port 4187 --no-open
    `沉静纪录`等继承行者风效果库的制作预设，再选择“自动按语义”或优先使用
    `浅暖轻浮层`、`空间光路`、`幽默漫画`、`像素风`、`暗黑科技风`中的一套剪辑视觉语言；
    也可基于现有基础风格另存本地自定义风格；
-3. **声音**：为当前项目独立覆盖人声、BGM、Beauty v2 和效果密度，不必
+3. **声音**：为当前项目独立覆盖人声、BGM 和效果密度，不必
    为一次性调整创建永久风格；
 4. **效果**：选择注册开场，在 129 个生产效果中搜索，并添加任意多组
    “自然语言位置 + 已注册效果”；
@@ -126,23 +126,9 @@ SHA-256；成片变化使旧报告失效，未通过项只建立待编译返工�
 任何会改变合同的操作都会立即清除旧预检和旧生成结果。生成按钮会在需要时
 重新预检，不能复用过期检查。
 
-## Beauty v2 参数
+## 剪映美颜
 
-页面支持磨皮、美白、匀肤、法令纹弱化四个 0–100 参数。参数进入
-`editingDefaults.parameters.beauty.tuning`，由本地 Beauty v2 在
-`natural` 或 `visible` 档位内解析到受硬上限约束的 FFmpeg 参数。它们不会
-启用云端处理、脸型或五官调整。
-
-即使风格中保存了参数，Beauty v2 仍默认关闭。只有当前项目明确设置
-`enabled=true` 才能授权本地渲染，并且仍需人物跟踪、同帧 A/B、动态闪烁、
-皮肤与颈部连续性人工复核。
-
-可检查最终解析参数：
-
-```bash
-node scripts/kacha.mjs beauty parameters \
-  --profile natural --config /absolute/path/kacha.config.json
-```
+内置参数面板已移除；需要美颜时由 Agent 按 `jianying-enhancements.md` 处理。
 
 ## 专业自动判断
 

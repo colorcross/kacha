@@ -9,6 +9,7 @@ import { buildTimelineProjection, assertProjectionSourceCurrent } from './timeli
 
 import { acquireResourceLeases } from './resource_pool.mjs';
 import { loadKachaConfig } from './kacha_config.mjs';
+import { jianyingCapabilities, buildJianyingEnhancementPlan, validateJianyingEnhancementRecord, writeEnhancementPlan } from './jianying_enhancements.mjs';
 
 const self = fileURLToPath(import.meta.url), scripts = path.dirname(self);
 const definitions = {
@@ -205,10 +206,15 @@ export function renderProfessionalWorker(directory, intentSha) {
 function assertAudioCoverage(media, duration, fps) {
   if (media.audio && (!Number.isFinite(media.audioDuration) || !Number.isFinite(media.audioStart) || Math.abs(media.audioStart) > 1 / fps + 0.001 || Math.abs(media.audioDuration - duration) > 1 / fps + 0.001)) throw Error('音轨起点或完整时长不匹配');
 }
-export function receiveProfessionalResult({ directory, media, output } = {}) {
+export function receiveProfessionalResult({ directory, media, output, enhancementPlan, enhancementRecord } = {}) {
   const { root, m } = loadPackage(directory, true);
   const resultFile = fs.realpathSync(required(media, 'media')), resultIdentity = fileIdentity(resultFile);
   if (resultFile === m.source.path || m.clips.some(c => resultFile === path.join(root, c.file))) throw Error('不能把源片或单个准备片段作为外部输出回收');
+  if (Boolean(enhancementPlan) !== Boolean(enhancementRecord)) throw Error('增强回收必须同时提供计划和操作记录');
+  const enhancementInputs = enhancementPlan ? [fileIdentity(enhancementPlan), fileIdentity(enhancementRecord)] : [];
+  const planData = enhancementPlan ? readJson(enhancementPlan) : null, recordData = enhancementRecord ? readJson(enhancementRecord) : null;
+  const enhancement = planData ? validateJianyingEnhancementRecord(m, planData, recordData, resultIdentity) : null;
+  enhancementInputs.forEach(checkIdentity);
   const actual = probe(resultFile), expected = m.output;
   if (actual.width !== expected.width || actual.height !== expected.height || Math.abs(actual.fps - expected.fps) > 0.0001 || Math.abs(actual.duration - expected.duration) > 1 / expected.fps + 0.001 || actual.audio !== m.media.audio || actual.channels !== m.media.channels) throw Error('外部结果几何、帧率、时长或音轨不匹配');
   assertAudioCoverage(actual, expected.duration, expected.fps);
@@ -225,8 +231,15 @@ export function receiveProfessionalResult({ directory, media, output } = {}) {
     const storedIdentity = fileIdentity(stored); if (storedIdentity.sha256 !== resultIdentity.sha256) throw Error('复制时外部产物发生变化');
     checkIdentity(resultIdentity); loadPackage(root, true);
     const candidate = { schemaVersion: '1.0', projectId: `${m.projectId}-external-candidate`, mode: 'preview', source: storedIdentity, edl: [{ id: 'external-program', sourceStart: 0, sourceEnd: expected.duration }], output: { width: expected.width, height: expected.height, fps: expected.fps, path: path.join(dest, 'candidate-preview.mp4') }, externalTool: { package: fileIdentity(path.join(root, 'package.json')), originalTimeline: m.timeline, tool: m.tool, status: 'technical_candidate_requires_review', flattened: true } };
+    if (enhancement) {
+      enhancementInputs.forEach(checkIdentity);
+      validateJianyingEnhancementRecord(m, planData, recordData, resultIdentity);
+      exclusive(path.join(dest, 'enhancement-plan.json'), planData);
+      exclusive(path.join(dest, 'enhancement-record.json'), recordData);
+      candidate.externalTool.enhancement = { ...enhancement, plan: fileIdentity(path.join(dest, 'enhancement-plan.json')), record: fileIdentity(path.join(dest, 'enhancement-record.json')) };
+    }
     exclusive(path.join(dest, 'candidate.timeline.json'), candidate);
-    const report = { status: 'technical_candidate_requires_review', packageDigest: m.digest, originalTimeline: m.timeline, received: storedIdentity, candidate: fileIdentity(path.join(dest, 'candidate.timeline.json')), technicalChecks: { decoded: true, frames: expected.frames, geometry: true, audioPresenceAndChannels: true, audioTimeCoverage: true }, applicationVerified: false, reviewRequired: ['source_content', 'normal_speed_with_audio', 'fonts_and_visuals', 'final_mix', 'current_project_contracts'] };
+    const report = { status: 'technical_candidate_requires_review', packageDigest: m.digest, originalTimeline: m.timeline, received: storedIdentity, candidate: fileIdentity(path.join(dest, 'candidate.timeline.json')), technicalChecks: { decoded: true, frames: expected.frames, geometry: true, audioPresenceAndChannels: true, audioTimeCoverage: true }, applicationVerified: false, enhancement, reviewRequired: ['source_content', 'normal_speed_with_audio', 'fonts_and_visuals', 'final_mix', 'current_project_contracts'] };
     exclusive(path.join(dest, 'receipt.json'), report); return report;
   } catch (e) {
     // Quarantine this new output directory; never remove user input or the base timeline.
@@ -237,14 +250,20 @@ function option(args, name) { const i = args.indexOf(name); return i < 0 ? undef
 function main(args) {
   const command = args[0], roots = option(args, '--apps-root') ? [option(args, '--apps-root')] : undefined;
   let result;
-  if (command === 'detect') result = detectProfessionalTools(roots);
+  if (command === 'capabilities') result = { tool: 'jianying', verification: 'requires_live_ui_check', capabilities: jianyingCapabilities };
+  else if (command === 'enhance-plan') {
+    const { m } = loadPackage(option(args, '--package'), true);
+    const plan = buildJianyingEnhancementPlan(m, readJson(required(option(args, '--request'), 'request')).operations);
+    result = { plan: writeEnhancementPlan(required(option(args, '--output'), 'output'), plan), status: plan.status };
+  }
+  else if (command === 'detect') result = detectProfessionalTools(roots);
   else if (command === 'prepare') result = prepareProfessionalPackage({ timeline: option(args, '--timeline'), tool: option(args, '--tool'), output: option(args, '--output'), title: option(args, '--title') });
   else if (command === 'stage') result = stageProfessionalPackage(option(args, '--package'));
   else if (command === 'status') result = professionalPackageStatus(option(args, '--package'), roots);
   else if (command === 'render-worker') result = renderProfessionalWorker(option(args, '--package'), option(args, '--intent-sha'));
   else if (command === 'render') result = renderProfessionalPackage(option(args, '--package'), option(args, '--output-module'), roots);
-  else if (command === 'receive') result = receiveProfessionalResult({ directory: option(args, '--package'), media: option(args, '--media'), output: option(args, '--output') });
-  else throw Error('用法：pro-tools detect|prepare|status|render|receive；参见 references/professional-tools.md');
+  else if (command === 'receive') result = receiveProfessionalResult({ directory: option(args, '--package'), media: option(args, '--media'), output: option(args, '--output'), enhancementPlan: option(args, '--enhancement-plan'), enhancementRecord: option(args, '--enhancement-record') });
+  else throw Error('用法：pro-tools detect|capabilities|enhance-plan|prepare|status|render|receive；参见 references/professional-tools.md');
   console.log(JSON.stringify(result, null, 2));
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === self) { try { main(process.argv.slice(2)); } catch (e) { console.error(e.message); process.exitCode = 1; } }

@@ -104,11 +104,7 @@
 
 ## 人物美化
 
-美颜默认关闭。明确启用后只使用 `references/beauty-v2.md` 定义的本地
-Beauty v2，并且只处理磨皮、美白、匀肤和法令纹弱化。
-
-`natural` 是显式启用后的起始档；`visible` 只有用户明确要求、人物跟踪稳定
-且同源同帧 A/B 通过时启用。它们是最终观感档位，不是允许绕过检查的参数档位。
+内置美颜已移除。美颜需求使用 `references/jianying-enhancements.md` 的剪映流程，从轻量自然处理开始，先验证代表片段。
 
 禁止默认瘦脸、大眼、改鼻形、改变族群肤色或删除永久特征。所谓“祛法令纹”只能在稳定正脸中用极轻局部提亮和纹理柔化降低对比，不能承诺语义级删除。
 
@@ -128,14 +124,6 @@ Beauty v2，并且只处理磨皮、美白、匀肤和法令纹弱化。
 scripts/generate_vision_masks.swift SOURCE.mov MASK_DIR SOURCE_FPS accurate
 node scripts/build_mask_video.mjs MASK_DIR/manifest.json person MASK_DIR/person.mkv
 node scripts/build_mask_video.mjs MASK_DIR/manifest.json face MASK_DIR/face.mkv
-node scripts/build_mask_video.mjs MASK_DIR/manifest.json skin MASK_DIR/skin.mkv
-node scripts/build_mask_video.mjs \
-  MASK_DIR/manifest.json nasolabial MASK_DIR/nasolabial.mkv
-scripts/apply_beauty_v2.sh \
-  SOURCE.mov MASK_DIR/skin.mkv MASK_DIR/nasolabial.mkv OUTPUT.mov natural \
-  --vision-manifest MASK_DIR/manifest.json \
-  --config /path/to/beauty-enabled.json \
-  --report /path/to/beauty-technical-report.json
 scripts/compose_text_behind_person.sh SOURCE.mov MASK_DIR/person.mkv TEXT.mov OUTPUT.mov
 ```
 

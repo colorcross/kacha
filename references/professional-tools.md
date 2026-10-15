@@ -31,3 +31,7 @@ node scripts/kacha.mjs pro-tools receive --package handoff-ae --media exported.m
 回收复制外部输出，原时间线只读；验证视频总帧数、帧率、时长、几何、音轨存在性/声道和全片可解码，生成独立 `candidate.timeline.json` 与 receipt。回收视频是扁平化候选；可编辑图层保留在 AE/剪映工程，不伪造双向效果重建。技术通过不验证音频语义、字幕准确、字体、切点或审美；按当前节目合同进行正常速度带声音复核后，才可作为交付候选推进，旧审批不继承。
 
 缺少专业软件时可完成媒体准备与回收代码测试，必须明确 `applicationVerified: false`。不得为了显示可用而写假安装、伪造 JSX 成功回执或把合成测试标为真实节目终审。
+
+## 剪映增强任务
+
+美颜、降噪、人声美化、画质提升、防抖、去闪烁、抠像、调色、转场、特效与跟踪按 `jianying-enhancements.md` 执行。`pro-tools capabilities` 查看任务目录，`enhance-plan` 将具体问题和片段绑定当前素材包；Agent 操作应用，CLI 不冒充剪映自动化 API。

@@ -23,7 +23,7 @@ node scripts/kacha.mjs facefusion run --plan /absolute/plan.json --project-root 
 | `face_restore` | `face_enhancer` | `face-restore-natural` | 人脸因压缩、失焦或生成素材出现真实损伤 |
 | `post_process` | `frame_enhancer` | `frame-postprocess-natural` | 画面存在可见压缩损伤、锯齿或低清，不用于普通全片重绘 |
 
-Beauty v2 与 `face_restore` 不等价：Beauty v2 负责磨皮、美白、匀肤和法令纹；FaceFusion 人脸修复只补救真实画质损伤。
+剪映美颜与 `face_restore` 不等价；FaceFusion 人脸修复只补救真实画质损伤，不作为已移除内置美颜的替代。
 
 ## 授权与许可门禁
 

@@ -266,7 +266,6 @@ const commandChecks = [
   ["config", "kacha_config.mjs", ["validate", "--no-secrets"]],
   ["rules", "decision_rules.mjs", ["validate"]],
   ["design", "kacha_design.mjs", ["validate"]],
-  ["beauty", "kacha_beauty.mjs", ["validate"]],
 ].map(([id, script, commandArgs]) => {
   const result = execute(script, commandArgs);
   return {

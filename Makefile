@@ -19,6 +19,7 @@ check-core:
 check-specialized:
 	node --test tests/wise_motion_tests.mjs
 	node --test tests/professional_tools_tests.mjs
+	node --test tests/jianying_enhancements_tests.mjs
 	node --test tests/dependency_runtime_tests.mjs
 	node tests/workflow_simplification_tests.mjs
 	node tests/general_custom_tests.mjs

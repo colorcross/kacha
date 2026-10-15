@@ -350,38 +350,9 @@ function syncProjectTuningFromStyle(style) {
   state.selectedEffectDensity = style.direction.effectDensity;
   renderProjectAudioPresets();
   $("projectBgmPreset").value = state.selectedBgmPresetId;
-  $("projectBeautyEnabled").checked = style.beauty.enabled;
-  setRangeValue(
-    "projectSmoothing",
-    "projectSmoothingOutput",
-    style.beauty.tuning.smoothing,
-  );
-  setRangeValue(
-    "projectWhitening",
-    "projectWhiteningOutput",
-    style.beauty.tuning.whitening,
-  );
-  setRangeValue(
-    "projectTone",
-    "projectToneOutput",
-    style.beauty.tuning.toneEvening,
-  );
-  setRangeValue(
-    "projectNasolabial",
-    "projectNasolabialOutput",
-    style.beauty.tuning.nasolabialSoftening,
-  );
   document.querySelectorAll('input[name="effectDensity"]').forEach((input) => {
     input.checked = input.value === style.direction.effectDensity;
   });
-  toggleProjectBeauty();
-}
-
-function toggleProjectBeauty() {
-  $("projectBeautyControls").classList.toggle(
-    "is-enabled",
-    $("projectBeautyEnabled").checked,
-  );
 }
 
 function selectStyle(styleId) {
@@ -441,15 +412,6 @@ function updateSummary() {
   $("summaryBgm").textContent = state.selectedBgmPresetId !== "none"
     ? bgmPresetName(state.selectedBgmPresetId)
     : "关闭";
-  const beautyMaximum = Math.max(
-    Number($("projectSmoothing").value),
-    Number($("projectWhitening").value),
-    Number($("projectTone").value),
-    Number($("projectNasolabial").value),
-  );
-  $("summaryBeauty").textContent = $("projectBeautyEnabled").checked
-    ? `${beautyMaximum > 55 ? "明显" : "自然"} · 已开启`
-    : "关闭";
   $("summaryEffects").textContent = `${state.effects.length} 组`;
   $("summaryDelivery").textContent =
     `${platformLabel($("platform").value)} · ${outputLabel($("outputPreset").value)}`;
@@ -488,10 +450,6 @@ function setupStyleEditor() {
     ["customFontSize", "fontSizeOutput", (value) => `${value}%`],
     ["customBaseline", "baselineOutput", (value) => `${value}%`],
     ["customShadow", "shadowOutput", (value) => `${value}%`],
-    ["customSmoothing", "smoothingOutput", String],
-    ["customWhitening", "whiteningOutput", String],
-    ["customTone", "toneOutput", String],
-    ["customNasolabial", "nasolabialOutput", String],
   ];
   ranges.forEach(([inputId, outputId, format]) => {
     const input = $(inputId);
@@ -503,11 +461,6 @@ function setupStyleEditor() {
     input.addEventListener("input", update);
     update();
   });
-  const toggleBeauty = () => {
-    $("beautyControls").classList.toggle("is-enabled", $("customBeautyEnabled").checked);
-  };
-  $("customBeautyEnabled").addEventListener("change", toggleBeauty);
-  toggleBeauty();
   $("customBaseStyle").addEventListener("change", () => {
     hydrateStyleEditor($("customBaseStyle").value);
   });
@@ -530,21 +483,11 @@ function hydrateStyleEditor(styleId = state.catalog.defaultStyleId) {
   $("customFontSize").value = String(style.caption.fontSizeRatio * 100);
   $("customBaseline").value = String(style.caption.baselineYRatio * 100);
   $("customShadow").value = String(style.caption.shadowOpacity * 100);
-  $("customBeautyEnabled").checked = style.beauty.enabled;
-  $("customSmoothing").value = String(style.beauty.tuning.smoothing);
-  $("customWhitening").value = String(style.beauty.tuning.whitening);
-  $("customTone").value = String(style.beauty.tuning.toneEvening);
-  $("customNasolabial").value = String(style.beauty.tuning.nasolabialSoftening);
   [
     "customFontSize",
     "customBaseline",
     "customShadow",
-    "customSmoothing",
-    "customWhitening",
-    "customTone",
-    "customNasolabial",
   ].forEach((id) => $(id).dispatchEvent(new Event("input")));
-  $("customBeautyEnabled").dispatchEvent(new Event("change"));
 }
 
 function setupProjectTuning() {
@@ -555,24 +498,6 @@ function setupProjectTuning() {
     state.selectedBgmPresetId = $("projectBgmPreset").value;
     markContractDirty();
     updateSummary();
-  });
-  $("projectBeautyEnabled").addEventListener("change", () => {
-    toggleProjectBeauty();
-    markContractDirty();
-    updateSummary();
-  });
-  [
-    ["projectSmoothing", "projectSmoothingOutput"],
-    ["projectWhitening", "projectWhiteningOutput"],
-    ["projectTone", "projectToneOutput"],
-    ["projectNasolabial", "projectNasolabialOutput"],
-  ].forEach(([inputId, outputId]) => {
-    $(inputId).addEventListener("input", () => {
-      $(outputId).value = $(inputId).value;
-      $(outputId).textContent = $(inputId).value;
-      markContractDirty();
-      updateSummary();
-    });
   });
   document.querySelectorAll('input[name="effectDensity"]').forEach((input) => {
     input.addEventListener("change", () => {
@@ -644,22 +569,6 @@ function customStylePayload() {
       ...base.bgm,
       enabled: bgm.id !== "none",
       presetId: bgm.id,
-    },
-    beauty: {
-      enabled: $("customBeautyEnabled").checked,
-      engine: "beauty-v2",
-      profile: Math.max(
-        Number($("customSmoothing").value),
-        Number($("customWhitening").value),
-        Number($("customTone").value),
-        Number($("customNasolabial").value),
-      ) > 55 ? "visible" : "natural",
-      tuning: {
-        smoothing: Number($("customSmoothing").value),
-        whitening: Number($("customWhitening").value),
-        toneEvening: Number($("customTone").value),
-        nasolabialSoftening: Number($("customNasolabial").value),
-      },
     },
     direction: {
       ...base.direction,
@@ -820,22 +729,6 @@ function requestPayload() {
       audioPresetId: state.selectedAudioPresetId,
       bgmPresetId: state.selectedBgmPresetId,
       effectDensity: state.selectedEffectDensity,
-      beauty: {
-        enabled: $("projectBeautyEnabled").checked,
-        engine: "beauty-v2",
-        profile: Math.max(
-          Number($("projectSmoothing").value),
-          Number($("projectWhitening").value),
-          Number($("projectTone").value),
-          Number($("projectNasolabial").value),
-        ) > 55 ? "visible" : "natural",
-        tuning: {
-          smoothing: Number($("projectSmoothing").value),
-          whitening: Number($("projectWhitening").value),
-          toneEvening: Number($("projectTone").value),
-          nasolabialSoftening: Number($("projectNasolabial").value),
-        },
-      },
     },
     effectAssignments: assignments,
     notes: $("notes").value.trim(),

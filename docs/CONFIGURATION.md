@@ -97,34 +97,26 @@ chmod 600 ~/.config/kacha/secrets.json
       "subtitle": {
         "singleLine": true,
         "safeAreaBottomRatio": 0.18
-      },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 35,
-          "whitening": 22,
-          "toneEvening": 30,
-          "nasolabialSoftening": 24
-        }
       }
     },
     "instructions": [
       {
         "id": "calm-delivery",
         "text": "保留淡定、幽默、娓娓道来的表达，不要把自然停顿全部剪掉。",
-        "appliesTo": ["source_edit", "local_optimization"],
-        "modules": ["dialogue", "bgm", "sfx"],
+        "appliesTo": [
+          "source_edit",
+          "local_optimization"
+        ],
+        "modules": [
+          "dialogue",
+          "bgm",
+          "sfx"
+        ],
         "priority": "high"
       },
       "外加画面必须匹配当前视频的对象、动作、角色、时态和整体风格。"
     ],
-    "recipeParameters": {
-      "beauty": {
-        "profile": "natural"
-      }
-    }
+    "recipeParameters": {}
   }
 }
 ```
@@ -134,20 +126,7 @@ chmod 600 ~/.config/kacha/secrets.json
 - `recipeParameters`：为 `compile-change` 的稳定配方提供默认参数；
 - 当前 change request 的 `parameters` 会覆盖配方默认值。
 
-`editingDefaults.parameters.beauty` 是严格结构，只允许：
-
-- `enabled`: boolean；
-- `engine`: 固定为 `beauty-v2`；
-- `profile`: `natural` 或 `visible`；
-- `tuning`: 可选的四项 0–100 数值：`smoothing`、`whitening`、
-  `toneEvening`、`nasolabialSoftening`。
-
-未知字段、字符串形式的真假值、GPUPixel 或未注册档位都会使配置校验失败。
-内置值始终为 `enabled=false`；运行 Beauty 渲染时会再次读取当前项目/显式
-配置，不能靠命令行 profile 绕过默认关闭。存在 `tuning` 时，本地 Beauty v2
-会把四项强度解析到档位参数，并受亮度、gamma、平滑和时间窗口硬上限约束。
-可用 `node scripts/kacha.mjs beauty parameters --profile natural
---config FILE` 检查实际解析结果。
+内置美颜参数已移除。旧 `beauty.enabled=true` 配置会明确报错，需关闭或迁移至剪映增强；旧关闭配置可读取，但新工程不再生成这些字段。
 
 `prepare` 把适用于当前任务/模块的要求写入 `agent-packet.json`。
 `compile-change` 把配方默认参数、自然语言要求和配置摘要写入当前 delta，
@@ -248,13 +227,13 @@ node scripts/kacha.mjs facefusion probe
 ### 本地生产台
 
 `node scripts/kacha.mjs studio serve` 提供本机生产页面。内置风格、字幕、
-声音、BGM、Beauty v2、开场、效果目录和专业自动判断规则统一来自
+声音、BGM、开场、效果目录和专业自动判断规则统一来自
 `config/production-studio.json`。自定义风格只保存在
 `~/.config/kacha/studio/styles/`。
 
 页面把长期复用的 `style` 和只影响当前项目的 `projectOverrides` 分开。
 `projectOverrides` 可覆盖 `audioPresetId`、`bgmPresetId`、`effectDensity`
-与 Beauty v2 的启用、档位和四项参数，不会自动保存为新的永久风格。
+与效果密度，不会自动保存为新的永久风格。
 同名自定义风格禁止覆盖；需要新版本时必须修改名称。
 
 行者风默认字幕字体是已授权的真正金陵体
@@ -334,7 +313,7 @@ Python/Shell 子渲染器；能力探测会实际运行 `-version`，不能只�
 - `resourceScheduling.scope=host`，且 `capacities.mps=1` 与
   `videoEncode=1`；
 - Whisper endpoint 只能指向 loopback；
-- Beauty v2 仍默认关闭。
+- 内置美颜已移除。
 
 运行和审计方法见
 [`PERFORMANCE_TOKEN_STABILITY_V5.md`](PERFORMANCE_TOKEN_STABILITY_V5.md)。
@@ -357,9 +336,15 @@ Python/Shell 子渲染器；能力探测会实际运行 `-version`，不能只�
 {
   "schemaVersion": "1.0",
   "providers": {
-    "minimax": { "apiKey": "" },
-    "pixabay": { "apiKey": "" },
-    "pexels": { "apiKey": "" }
+    "minimax": {
+      "apiKey": ""
+    },
+    "pixabay": {
+      "apiKey": ""
+    },
+    "pexels": {
+      "apiKey": ""
+    }
   }
 }
 ```

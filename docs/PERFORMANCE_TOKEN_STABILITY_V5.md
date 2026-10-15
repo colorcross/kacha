@@ -86,7 +86,7 @@ stream-copy 视频，封面修改不处理视频。
 node scripts/kacha.mjs cache inspect --project-root PROJECT_DIR
 node scripts/kacha.mjs transcribe INPUT.mov --output transcript.json
 node scripts/kacha.mjs masks INPUT.mov --output-dir masks
-node scripts/kacha.mjs beauty render INPUT.mov ... --output beauty.mov
+# Built-in beauty removed; use the Jianying enhancement workflow.
 node scripts/kacha.mjs styleframe render --scene info_single --output frame.svg
 node scripts/kacha.mjs generated-cache run \
   --plan generated.json --shot SHOT_ID --output shot.mp4 -- GENERATOR...

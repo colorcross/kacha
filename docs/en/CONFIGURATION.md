@@ -19,7 +19,7 @@ system through a localhost-only interface. Reusable styles come from
 `~/.config/kacha/studio/styles/`.
 
 One-off `projectOverrides` may select the voice and BGM presets, effect
-density, and the enabled/profile/tuning fields for Beauty v2 without creating
+and density without creating
 or mutating a permanent style. A custom style name cannot silently overwrite
 an existing file.
 
@@ -111,27 +111,25 @@ chmod 600 ~/.config/kacha/secrets.json
       "subtitle": {
         "singleLine": true,
         "safeAreaBottomRatio": 0.18
-      },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural"
       }
     },
     "instructions": [
       {
         "id": "calm-delivery",
         "text": "Keep the delivery calm and lightly humorous; do not remove every natural pause.",
-        "appliesTo": ["source_edit", "local_optimization"],
-        "modules": ["dialogue", "bgm", "sfx"],
+        "appliesTo": [
+          "source_edit",
+          "local_optimization"
+        ],
+        "modules": [
+          "dialogue",
+          "bgm",
+          "sfx"
+        ],
         "priority": "high"
       }
     ],
-    "recipeParameters": {
-      "beauty": {
-        "profile": "natural"
-      }
-    }
+    "recipeParameters": {}
   }
 }
 ```
@@ -184,14 +182,7 @@ node scripts/kacha.mjs design qc --matrix \
 
 The resolved design digest and resolver/renderer implementation digest are
 part of every dependent artifact fingerprint.
-Beauty is disabled by default. Explicitly enabled projects use only local
-Beauty v2 for skin smoothing, whitening, tone evening, and restrained
-nasolabial-fold softening. The Beauty preference is strict: `enabled` must be
-a boolean, `engine` must be `beauty-v2`, and `profile` must be `natural` or
-`visible`. Rendering requires a frame-accurate Vision manifest and cannot be
-enabled merely by passing a profile on the command line.
-Its technical report records both the strict configuration digest and the
-complete local implementation-chain digest.
+Built-in beauty is removed. New configurations do not include it. Legacy enabled settings fail explicitly; use the Jianying enhancement workflow and review the actual returned output.
 
 See [`examples/kacha.config.json`](../../examples/kacha.config.json). A
 user-level example for trusted provider and tool settings is available at
@@ -244,7 +235,7 @@ renderers. Capability checks execute `-version`; file existence or
 
 Non-negotiable performance contracts include host-scoped resource scheduling,
 `mps=1`, `videoEncode=1`, cache SHA verification, compact mandatory telemetry,
-a loopback-only Whisper endpoint, one final visual encode, and Beauty v2
+a loopback-only Whisper endpoint, one final visual encode, and explicit enhancement
 disabled by default.
 
 Authorization, source immutability, output isolation, semantic integrity,
@@ -264,9 +255,15 @@ Shape:
 {
   "schemaVersion": "1.0",
   "providers": {
-    "minimax": { "apiKey": "" },
-    "pixabay": { "apiKey": "" },
-    "pexels": { "apiKey": "" }
+    "minimax": {
+      "apiKey": ""
+    },
+    "pixabay": {
+      "apiKey": ""
+    },
+    "pexels": {
+      "apiKey": ""
+    }
   }
 }
 ```

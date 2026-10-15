@@ -39,7 +39,7 @@ node scripts/kacha.mjs resume PROJECT --confirm-execute
 - 用户点名及叙事必需的表达不能为省成本删除。条件增强须有真实触发；可选装饰只按项目已允许的回退执行。政策切换绑定项目版本，旧工程不自动降门槛。
 - 普通字幕不配音效；同屏最多一个主焦点，保护人物头脸、字幕、安全区和阅读时间。真实反应、留白与现场声不能被配额挤掉。
 - 音频处理先按当前源诊断选择直通、轻处理或分离；旧工程和明确分离要求保持原合同，residual 不回混；现场声需来自真实源录音。BGM 按段落功能与留白编排，SFX 峰值对齐真实落位，不盖人声。
-- 美颜默认关闭；明确启用只用本地 Beauty v2。FaceFusion、身份/声音处理读取专门合同，保留授权和逐镜复核。
+- 咔嚓内置美颜已移除。美颜需求按 `references/jianying-enhancements.md` 交给剪映专业版，保持自然身份并做 A/B 复核。FaceFusion、身份/声音处理读取专门合同，保留授权和逐镜复核。
 - 缓存须匹配源、实现/模型、参数、schema 及产物 SHA。付费结果状态未知时先查询对账，不重复提交或把未知金额记 0。
 - 重任务使用已有 jobs、主机资源锁与 telemetry；MPS、视频编码默认各单槽。取消先确认进程树退出，失败产物隔离后才恢复。
 - 返工先做覆盖变化及 handle 的代表预览；同图复用，纯音频改动 stream-copy 视频，封面返工不动视频。一次成功终编预算与失败尝试成本分别记录，不能靠换版本掩盖试错。
@@ -60,13 +60,14 @@ node scripts/kacha.mjs resume PROJECT --confirm-execute
 | 信息图、空间/语义动效、字景 | `references/visual-design-preflight.md`、`references/production/visual-execution.md` |
 | 风格、效果合同 | `references/style-effects-library.md`、`references/effect-templates-resources.md` |
 | 字幕、封面、系列身份 | `references/subtitles-covers-brand.md`；复杂身份/布局另读 `references/production/quality-contracts.md` |
-| 美颜 / FaceFusion | `references/beauty-v2.md` / `references/facefusion.md` |
+| 美颜 / FaceFusion | `references/jianying-enhancements.md` / `references/facefusion.md` |
 | 从网络找图片/视频并匹配当前片段 | `references/network-materials.md`；搜索→下载→实际观察/选段→许可→可撤销剪入，不用检索命中冒充事实证据 |
 | 生成或外部素材 | `references/generated-media-assets.md`；费用、许可及参考派生另读 `references/production/control-and-orchestration.md` |
 | 模型能力较弱、低推理强度、长任务续跑 | `references/agent-execution.md`；视觉证据另读 `references/visual-evidence.md` |
 | 节目文稿 | `references/shows/README.md` 和本栏目风格卡；大灰AI遵守调用项目基础资料索引所指的当前主方案与 `docs/DAHUI_AI_EDITING_SYSTEM_V1.md`，旧V3.3仅用于明确指定的历史作品 |
 | 资源/渲染效率、缓存、量化比较 | `docs/QUALITY_PRESERVING_EFFICIENCY_V8.md`、`references/production/control-and-orchestration.md` |
 | 清理与保留 | `references/cleanup-retention.md` |
+| 剪映美颜、降噪、人声美化、画质提升、转场和特效 | `references/jianying-enhancements.md`；按问题选择能力，Agent 通过当前 UI 操作，核验权益并回收独立候选 |
 | AE / 剪映辅助精剪、动效与回收 | `references/professional-tools.md`；先 detect，实际安装/脚本/渲染分别验证 |
 | wise-motion 动效、文字/数字/步骤卡片 | `references/wise-motion.md`；先检索内容槽，再渲染为无声素材，按叙事触发加入候选时间线 |
 | 白板视频 | `docs/WHITEBOARD_ANIMATION.md` |

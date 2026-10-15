@@ -24,7 +24,7 @@ const STAGES = new Set([
   "release",
 ]);
 const MODULE_REFERENCES = {
-  professional_tools: ["references/professional-tools.md", "docs/PROFESSIONAL_TOOLS.md"],
+  professional_tools: ["references/professional-tools.md", "references/jianying-enhancements.md", "docs/PROFESSIONAL_TOOLS.md"],
   materials: ["references/material-editing.md"],
   audio: ["references/audio.md"],
   dialogue: ["references/audio.md"],
@@ -35,7 +35,7 @@ const MODULE_REFERENCES = {
   copywriting: ["references/shows/README.md"],
   visual: ["references/visuals-masks.md"],
   masks: ["references/visuals-masks.md"],
-  beauty: ["references/beauty-v2.md", "references/visuals-masks.md"],
+  beauty: ["references/jianying-enhancements.md", "references/visuals-masks.md"],
   facefusion: [
     "references/facefusion.md",
     "references/visuals-masks.md",

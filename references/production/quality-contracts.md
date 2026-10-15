@@ -78,11 +78,7 @@
 - 增量音频返工创建 manifest 时传入 `--dialogue-stem`、`--bgm-stem` 与
   `--mix-stem`（有 SFX 时再传 `--sfx-stem`），沿用相同 BGM 可感知和成片
   漏混门禁，不能把局部返工当成例外。
-- 美颜默认关闭。明确启用时只使用本地 Beauty v2，并且只做磨皮、美白、匀肤
-  和法令纹弱化；不得回退 GPUPixel、生成式人脸修复或云端美颜。
-- Beauty v2 渲染必须由当前项目配置显式 `enabled=true`，携带逐帧 Vision
-  manifest，并通过主脸跟踪、媒体保真、同帧 A/B 和人工动态复核；仅指定
-  profile 不构成启用授权。QC 报告必须冻结配置与完整实现链 digest。
+- 内置美颜已移除；美颜需求按 `references/jianying-enhancements.md` 交给剪映，绑定当前源片、实际设置、导出与同帧 A/B、动态复核。
 - FaceFusion 默认不执行。换脸、口型同步、人脸修复或后期增强必须绑定冻结
   输入哈希、逐项目人物/素材/声音授权、模型许可和单独输出；API 只允许本机
   loopback，token 不进日志。自动媒体检查通过后仍是候选，必须正常速度逐镜

@@ -157,9 +157,7 @@ Scan or open the full-size images to follow **行者大灰** and see editing dem
   file hash without redistributing the font binaries. The default Xingzhe
   style requires the licensed real Jinling typeface for spoken captions and
   fails closed instead of silently substituting the old fallback.
-- Provides local Beauty v2 for skin smoothing, whitening, tone evening, and
-  restrained nasolabial-fold softening. Beauty is disabled by default and does
-  not use GPUPixel, cloud beautification, or generative face repair.
+- Built-in beauty has been removed. Beauty tasks use the Jianying Pro workflow with current entitlement checks, source-bound operation records and before/after review.
 - Resolves 65 production effect templates across openings, transitions,
   semantic visuals, gaze guidance, spatial depth, keyframes, parallel
   typography, captions, and visual breathing, backed by original visual
@@ -289,11 +287,7 @@ Visual configuration resolves
 `style.system + style.profile + style.modes + style.overrides`; see
 [Video Design System V1](docs/VIDEO_DESIGN_SYSTEM_V1.md). The resulting design
 digest and implementation digest invalidate only dependent visual artifacts.
-Beauty remains off unless
-the project or current change request explicitly enables Beauty v2. Beauty
-rendering also requires a frame-accurate Vision manifest; a technical pass is
-reported separately from the required same-frame dynamic human review, and
-the report freezes the full Beauty implementation-chain digest.
+Built-in beauty is removed. Use the Jianying enhancement workflow for beauty; technical checks remain separate from dynamic human review.
 
 For a release-level design-system check:
 

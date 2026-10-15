@@ -69,17 +69,6 @@
         "targetBelowDialogueDb": 18,
         "ducking": "gentle"
       },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 35,
-          "whitening": 22,
-          "toneEvening": 30,
-          "nasolabialSoftening": 24
-        }
-      },
       "direction": {
         "openingId": "editorial_label_reveal",
         "transitionBias": "semantic-minimal",
@@ -144,17 +133,6 @@
         "targetBelowDialogueDb": 19,
         "ducking": "gentle"
       },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 28,
-          "whitening": 18,
-          "toneEvening": 25,
-          "nasolabialSoftening": 18
-        }
-      },
       "direction": {
         "openingId": "cold_open_marker",
         "transitionBias": "clean-structural",
@@ -210,17 +188,6 @@
         "targetBelowDialogueDb": 21,
         "ducking": "gentle",
         "coverage": "opening_chapter_ending_only"
-      },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 22,
-          "whitening": 12,
-          "toneEvening": 20,
-          "nasolabialSoftening": 14
-        }
       },
       "direction": {
         "openingId": "cold_open_marker",
@@ -293,17 +260,6 @@
         "targetBelowDialogueDb": 18,
         "ducking": "responsive"
       },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 30,
-          "whitening": 20,
-          "toneEvening": 28,
-          "nasolabialSoftening": 20
-        }
-      },
       "direction": {
         "openingId": "typewriter_command",
         "transitionBias": "directional-ui",
@@ -372,17 +328,6 @@
         "presetId": "ambient-documentary",
         "targetBelowDialogueDb": 20,
         "ducking": "gentle"
-      },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 22,
-          "whitening": 12,
-          "toneEvening": 20,
-          "nasolabialSoftening": 14
-        }
       },
       "direction": {
         "openingId": "cold_open_marker",
@@ -584,17 +529,6 @@
         "targetBelowDialogueDb": 18,
         "ducking": "gentle"
       },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 35,
-          "whitening": 22,
-          "toneEvening": 30,
-          "nasolabialSoftening": 24
-        }
-      },
       "direction": {
         "openingId": "natural",
         "transitionBias": "semantic-minimal",
@@ -656,17 +590,6 @@
         "presetId": "quiet-knowledge",
         "targetBelowDialogueDb": 18,
         "ducking": "gentle"
-      },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 35,
-          "whitening": 22,
-          "toneEvening": 30,
-          "nasolabialSoftening": 24
-        }
       },
       "direction": {
         "openingId": "natural",
@@ -730,17 +653,6 @@
         "targetBelowDialogueDb": 18,
         "ducking": "gentle"
       },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 35,
-          "whitening": 22,
-          "toneEvening": 30,
-          "nasolabialSoftening": 24
-        }
-      },
       "direction": {
         "openingId": "natural",
         "transitionBias": "semantic-minimal",
@@ -802,17 +714,6 @@
         "presetId": "quiet-knowledge",
         "targetBelowDialogueDb": 18,
         "ducking": "gentle"
-      },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 35,
-          "whitening": 22,
-          "toneEvening": 30,
-          "nasolabialSoftening": 24
-        }
       },
       "direction": {
         "openingId": "natural",
@@ -876,17 +777,6 @@
         "targetBelowDialogueDb": 18,
         "ducking": "gentle"
       },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 35,
-          "whitening": 22,
-          "toneEvening": 30,
-          "nasolabialSoftening": 24
-        }
-      },
       "direction": {
         "openingId": "natural",
         "transitionBias": "semantic-minimal",
@@ -948,17 +838,6 @@
         "presetId": "quiet-knowledge",
         "targetBelowDialogueDb": 18,
         "ducking": "gentle"
-      },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 35,
-          "whitening": 22,
-          "toneEvening": 30,
-          "nasolabialSoftening": 24
-        }
       },
       "direction": {
         "openingId": "natural",
@@ -1022,17 +901,6 @@
         "targetBelowDialogueDb": 18,
         "ducking": "gentle"
       },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 35,
-          "whitening": 22,
-          "toneEvening": 30,
-          "nasolabialSoftening": 24
-        }
-      },
       "direction": {
         "openingId": "natural",
         "transitionBias": "semantic-minimal",
@@ -1094,17 +962,6 @@
         "presetId": "quiet-knowledge",
         "targetBelowDialogueDb": 18,
         "ducking": "gentle"
-      },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 35,
-          "whitening": 22,
-          "toneEvening": 30,
-          "nasolabialSoftening": 24
-        }
       },
       "direction": {
         "openingId": "natural",
@@ -1169,17 +1026,6 @@
         "presetId": "quiet-knowledge",
         "targetBelowDialogueDb": 18,
         "ducking": "gentle"
-      },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural",
-        "tuning": {
-          "smoothing": 35,
-          "whitening": 22,
-          "toneEvening": 30,
-          "nasolabialSoftening": 24
-        }
       },
       "direction": {
         "openingId": "natural",

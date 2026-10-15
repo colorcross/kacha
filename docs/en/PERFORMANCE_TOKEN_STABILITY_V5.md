@@ -72,7 +72,7 @@ official canvas fails compilation instead of being silently clipped.
 ```bash
 node scripts/kacha.mjs transcribe INPUT.mov --output transcript.json
 node scripts/kacha.mjs masks INPUT.mov --output-dir masks
-node scripts/kacha.mjs beauty render INPUT.mov [options]
+# Built-in beauty removed; use the Jianying enhancement workflow.
 node scripts/kacha.mjs styleframe render --scene SCENE --output frame.svg
 node scripts/kacha.mjs generated-cache run \
   --plan generated.json --shot SHOT_ID --output shot.mp4 -- GENERATOR...

@@ -55,7 +55,8 @@ test("server-renders the Chinese Kacha product page", async () => {
   assert.match(html, /近似构图 0/);
   assert.match(html, /跨风格完全重复 0/);
   assert.match(html, /本地优先/);
-  assert.match(html, /Beauty v2/);
+  assert.match(html, /剪映专业版/);
+  assert.doesNotMatch(html, /Beauty v2/);
   assert.match(html, /dodofun@126\.com/);
   assert.match(html, /扫码查看真实视频效果/);
   assert.match(html, /colorcross\/kacha/);

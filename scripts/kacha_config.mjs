@@ -267,7 +267,9 @@ function assertNoAuthorityOverride(value, label = "editingDefaults.parameters") 
 }
 
 function validateBeautyPreference(value, label, { complete = false } = {}) {
+  if (value === undefined) return;
   assertPlainObject(value, label);
+  if (value.enabled !== false) throw new Error(`${label}: 内置美颜已移除，请关闭旧配置或使用剪映增强工作流`);
   rejectUnknownKeys(value, BEAUTY_PREFERENCE_KEYS, label);
   if (complete || value.enabled !== undefined) {
     if (typeof value.enabled !== "boolean") {

@@ -21,11 +21,6 @@
       "audio": {
         "backgroundMusicRelativeDb": -24,
         "soundEffectRelativeDb": -14
-      },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural"
       }
     },
     "instructions": [

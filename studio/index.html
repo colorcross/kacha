@@ -230,39 +230,7 @@
                   </label>
                 </div>
 
-                <div class="beauty-editor">
-                  <div class="toggle-line">
-                    <div>
-                      <strong>Beauty v2</strong>
-                      <span>本地磨皮、美白、匀肤、法令纹弱化</span>
-                    </div>
-                    <label class="switch">
-                      <input id="customBeautyEnabled" type="checkbox" />
-                      <span></span>
-                    </label>
-                  </div>
-                  <div class="beauty-controls" id="beautyControls">
-                    <label class="range-field">
-                      <span>磨皮 <output id="smoothingOutput">35</output></span>
-                      <input id="customSmoothing" type="range" min="0" max="100" value="35" />
-                    </label>
-                    <label class="range-field">
-                      <span>美白 <output id="whiteningOutput">22</output></span>
-                      <input id="customWhitening" type="range" min="0" max="100" value="22" />
-                    </label>
-                    <label class="range-field">
-                      <span>匀肤 <output id="toneOutput">30</output></span>
-                      <input id="customTone" type="range" min="0" max="100" value="30" />
-                    </label>
-                    <label class="range-field">
-                      <span>法令纹弱化 <output id="nasolabialOutput">24</output></span>
-                      <input id="customNasolabial" type="range" min="0" max="100" value="24" />
-                    </label>
-                  </div>
-                  <p>
-                    美颜仍默认关闭。启用后必须先做同帧 A/B 和动态人脸复核；滑杆不会授权云端处理或改变脸型。
-                  </p>
-                </div>
+
 
                 <div class="editor-actions">
                   <button type="button" class="button primary" id="saveStyle">
@@ -302,36 +270,7 @@
                   <select id="projectBgmPreset" aria-label="本次项目的背景音乐风格"></select>
                 </div>
 
-                <div class="tuning-group beauty-project">
-                  <div class="subsection-label">
-                    <span>Beauty v2</span>
-                    <p>默认关闭。只处理磨皮、美白、匀肤和法令纹，不改脸型。</p>
-                  </div>
-                  <div>
-                    <label class="switch-line">
-                      <input id="projectBeautyEnabled" type="checkbox" />
-                      <span>为本次视频开启本地美颜</span>
-                    </label>
-                    <div class="beauty-controls project-beauty-controls" id="projectBeautyControls">
-                      <label class="range-field">
-                        <span>磨皮 <output id="projectSmoothingOutput">35</output></span>
-                        <input id="projectSmoothing" type="range" min="0" max="100" value="35" />
-                      </label>
-                      <label class="range-field">
-                        <span>美白 <output id="projectWhiteningOutput">22</output></span>
-                        <input id="projectWhitening" type="range" min="0" max="100" value="22" />
-                      </label>
-                      <label class="range-field">
-                        <span>匀肤 <output id="projectToneOutput">30</output></span>
-                        <input id="projectTone" type="range" min="0" max="100" value="30" />
-                      </label>
-                      <label class="range-field">
-                        <span>法令纹弱化 <output id="projectNasolabialOutput">24</output></span>
-                        <input id="projectNasolabial" type="range" min="0" max="100" value="24" />
-                      </label>
-                    </div>
-                  </div>
-                </div>
+
 
                 <div class="tuning-group">
                   <div class="subsection-label">
@@ -533,8 +472,6 @@
               <dd id="summaryBgm">待读取</dd>
             </div>
             <div>
-              <dt>美颜</dt>
-              <dd id="summaryBeauty">关闭</dd>
             </div>
             <div>
               <dt>指定效果</dt>

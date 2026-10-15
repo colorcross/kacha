@@ -14,7 +14,7 @@ MODE:
 The mask must match the input duration, frame rate and start PTS within one
 frame. White applies the effect; black preserves the original. Any mismatch
 fails closed. The output is a high-quality ProRes 422 HQ intermediate.
-Use apply_beauty_v2.sh for beauty processing.
+For beauty use the Jianying professional-tools workflow.
 EOF
 }
 

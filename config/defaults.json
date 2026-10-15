@@ -36,11 +36,6 @@
           "highShelfGainDb": -1.5
         }
       },
-      "beauty": {
-        "enabled": false,
-        "engine": "beauty-v2",
-        "profile": "natural"
-      },
       "cleanup": {
         "automatic": false
       }

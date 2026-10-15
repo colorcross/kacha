@@ -42,7 +42,7 @@ node scripts/kacha.mjs studio serve
 
 Use the five-step flow—source, style, sound, effects, and delivery. Search the
 129 registered effects and assign them to natural-language positions. Current
-project voice, BGM, Beauty v2, and density overrides do not modify the reusable
+project voice, BGM, and density overrides do not modify the reusable
 style. Run preflight before generation; it verifies source media, writable
 output, licensed font evidence, the design system, and every selected effect.
 The studio stays on `127.0.0.1` and does not upload, render, publish, or

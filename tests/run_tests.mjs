@@ -1572,147 +1572,37 @@ await test("visual design normal-speed preview renders seekable motion evidence"
   });
 }, "visual");
 
-await test("beauty v2 is local, scoped, bounded and disabled by default", async () => {
-  const report = JSON.parse(execute(process.execPath, [
-    path.join(scripts, "kacha.mjs"),
-    "config",
-    "show",
-    "--no-secrets",
-  ]).stdout);
-  const beauty = report.config.editingDefaults.parameters.beauty;
-  if (
-    beauty.enabled !== false
-    || beauty.engine !== "beauty-v2"
-    || beauty.profile !== "natural"
-  ) {
-    throw new Error("Beauty v2 defaults are not disabled and explicit");
+await test("built-in beauty is removed and legacy enablement fails explicitly", () => {
+  const report = JSON.parse(execute(process.execPath, [path.join(scripts, "kacha.mjs"), "config", "show", "--no-secrets"]).stdout);
+  if (report.config.editingDefaults.parameters.beauty !== undefined) throw new Error("new config exposes removed beauty");
+  for (const command of ["validate", "authorize", "render", "qc"]) {
+    const failure = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "beauty", command]);
+    if (!failure.stderr.includes("已移除")) throw new Error("missing migration guidance");
   }
-  const beautyConfig = readJson(
-    path.join(skillDirectory, "config", "beauty-v2.json"),
-  );
-  const beautyValidation = JSON.parse(execute(process.execPath, [
-    path.join(scripts, "kacha.mjs"),
-    "beauty",
-    "validate",
-  ]).stdout);
-  const expectedScope = [
-    "skin_smoothing",
-    "whitening",
-    "tone_evening",
-    "nasolabial_softening",
-  ];
-  if (
-    beautyConfig.defaultEnabled !== false
-    || beautyValidation.defaultEnabled !== false
-    || !/^[a-f0-9]{64}$/.test(beautyValidation.implementation?.digest)
-    || beautyValidation.implementation?.files?.length < 7
-    || JSON.stringify(beautyConfig.scope) !== JSON.stringify(expectedScope)
-    || beautyConfig.hardLimits.forbidFaceGeometryChange !== true
-    || beautyConfig.hardLimits.forbidCloudProcessing !== true
-    || beautyConfig.qc.minimumPrimaryFaceCoverage < 0.97
-    || beautyConfig.qc.minimumLandmarkCoverage < 0.97
-    || Object.values(beautyConfig.profiles)
-      .some((profile) => (
-        profile.skin.maskTemporalFrames !== 1
-        || profile.nasolabial.maskTemporalFrames !== 1
-      ))
-  ) {
-    throw new Error("Beauty v2 scope or safety limits drifted");
-  }
-
-  const unsafeBeauty = path.join(temporary, "unsafe-beauty-config.json");
-  writeJson(unsafeBeauty, {
-    schemaVersion: "1.0",
-    editingDefaults: {
-      parameters: {
-        beauty: {
-          enabled: "yes",
-          engine: "GPUPixel",
-          profile: "extreme",
-        },
-      },
-    },
-  });
-  const unsafeTuning = path.join(temporary, "unsafe-beauty-tuning.json");
-  writeJson(unsafeTuning, {
-    schemaVersion: "1.0",
-    editingDefaults: {
-      parameters: {
-        beauty: {
-          enabled: true,
-          engine: "beauty-v2",
-          profile: "natural",
-          tuning: {
-            smoothing: 101,
-            whitening: 22,
-            toneEvening: 30,
-            nasolabialSoftening: 24,
-          },
-        },
-      },
-    },
-  });
-  expectFailure(process.execPath, [
-    path.join(scripts, "kacha.mjs"),
-    "config",
-    "validate",
-    "--config",
-    unsafeTuning,
-    "--no-secrets",
-  ]);
-  const beautyApi = await import(
-    `${pathToFileURL(path.join(scripts, "beauty_v2.mjs")).href}?test=${Date.now()}`
-  );
-  const tampered = JSON.parse(JSON.stringify(beautyConfig));
-  tampered.hardLimits.maximumTemporalMaskFrames = 99;
-  tampered.profiles.visible.skin.brightness = 0.5;
-  tampered.profiles.extreme = tampered.profiles.visible;
-  const errors = beautyApi.validateBeautyV2(tampered);
-  if (
-    !errors.some((error) => error.includes("maximumTemporalMaskFrames"))
-    || !errors.some((error) => error.includes("brightness"))
-    || !errors.some((error) => error.includes("extreme"))
-  ) {
-    throw new Error("Beauty v2 accepted parameters outside immutable safety limits");
-  }
-
-  const tuned = beautyApi.resolveBeautyV2Parameters(
-    beautyConfig,
-    "natural",
-    {
-      smoothing: 35,
-      whitening: 22,
-      toneEvening: 30,
-      nasolabialSoftening: 24,
-    },
-  );
-  if (
-    !/^[a-f0-9]{64}$/.test(tuned.digest)
-    || tuned.resolved.skin.smoothingSigmaR
-      >= beautyConfig.profiles.natural.skin.smoothingSigmaR
-    || tuned.resolved.skin.brightness
-      >= beautyConfig.profiles.natural.skin.brightness
-    || tuned.resolved.nasolabial.smoothingSigmaR
-      >= beautyConfig.profiles.natural.nasolabial.smoothingSigmaR
-  ) {
-    throw new Error("Beauty v2 tuning did not resolve into bounded local parameters");
-  }
-  expectFailure(process.execPath, [
-    path.join(scripts, "kacha.mjs"),
-    "config",
-    "validate",
-    "--config",
-    unsafeBeauty,
-    "--no-secrets",
-  ]);
+  for (const file of ["beauty_v2.mjs", "beauty_qc.mjs", "render_beauty_cached.mjs", "apply_beauty_v2.sh"]) if (fs.existsSync(path.join(scripts, file))) throw new Error("retired renderer still shipped");
+  const legacy = path.join(temporary, "legacy-enabled-beauty.json");
+  writeJson(legacy, {schemaVersion: "1.0", editingDefaults: {parameters: {beauty: {enabled: true, engine: "beauty-v2", profile: "natural"}}}});
+  const rejected = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "config", "validate", "--config", legacy]);
+  if (!rejected.stderr.includes("已移除")) throw new Error("legacy beauty silently accepted");
 }, "visual");
 
-await test("Beauty v2 Vision generator typechecks and can verify a real-face fixture", () => {
+await test("studio removes beauty controls and rejects retired custom styles", () => {
+  const html = fs.readFileSync(path.join(skillDirectory, "studio", "index.html"), "utf8");
+  if (/customBeautyEnabled|projectBeautyEnabled|Beauty v2/.test(html)) throw new Error("retired controls remain");
+  const catalog = JSON.parse(execute(process.execPath, [path.join(scripts, "kacha.mjs"), "studio", "catalog"]).stdout);
+  if (catalog.styles.some(style => style.beauty !== undefined)) throw new Error("retired beauty exposed in catalog");
+  const input = path.join(temporary, "retired-beauty-style.json");
+  writeJson(input, {schemaVersion: "1.0", id: "retired-beauty", name: "Retired", baseStyleId: "xingzhe", beauty: {enabled: true}});
+  const rejected = expectFailure(process.execPath, [path.join(scripts, "kacha.mjs"), "studio", "save-style", "--input", input]);
+  if (!rejected.stderr.includes("已移除")) throw new Error("retired style accepted");
+}, "visual");
+
+await test("Shared Vision mask generator typechecks and can verify a real-face fixture", () => {
   const generator = path.join(scripts, "generate_vision_masks.swift");
   const source = fs.readFileSync(generator, "utf8");
   for (const contract of [
     "primaryTrackingStatus",
-    "beautyMaskApplied",
+    "faceMaskApplied",
     "ambiguousFrameRatio",
     "previousPrimaryBox",
     "isPrimary",
@@ -1761,7 +1651,7 @@ await test("Beauty v2 Vision generator typechecks and can verify a real-face fix
     throw new Error(`KACHA_REAL_FACE_FIXTURE not found: ${realFixture}`);
   }
   const summary = mediaSummary(realFixture);
-  const masks = path.join(temporary, "beauty-v2-real-face-masks");
+  const masks = path.join(temporary, "vision-real-face-masks");
   execute(generator, [
     realFixture,
     masks,
@@ -1773,9 +1663,9 @@ await test("Beauty v2 Vision generator typechecks and can verify a real-face fix
     manifest.tracking.primaryFaceCoverage < 0.97
     || manifest.tracking.landmarkCoverage < 0.97
     || manifest.tracking.ambiguousFrameRatio > 0.02
-    || manifest.frames.some((frame) => frame.beautyMaskApplied !== true)
+    || manifest.frames.some((frame) => frame.faceMaskApplied !== true)
   ) {
-    throw new Error("real-face Beauty v2 tracking fixture failed its coverage gate");
+    throw new Error("real-face Vision tracking fixture failed its coverage gate");
   }
 }, "visual");
 
@@ -2836,17 +2726,6 @@ await test("local production studio compiles an auditable project with verified 
     audioPresetId: "clear",
     bgmPresetId: "minimal-piano",
     effectDensity: "active",
-    beauty: {
-      enabled: true,
-      engine: "beauty-v2",
-      profile: "visible",
-      tuning: {
-        smoothing: 58,
-        whitening: 32,
-        toneEvening: 44,
-        nasolabialSoftening: 36,
-      },
-    },
   };
   const previewFile = path.join(temporary, "studio-preview-request.json");
   writeJson(previewFile, previewRequest);
@@ -2863,8 +2742,7 @@ await test("local production studio compiles an auditable project with verified 
     || preview.projectConfig.execution.voiceEnhancement.preset !== "clear"
     || preview.projectConfig.editingDefaults.parameters.audio.bgm.presetId
       !== "minimal-piano"
-    || preview.projectConfig.editingDefaults.parameters.beauty.enabled !== true
-    || preview.projectConfig.editingDefaults.parameters.beauty.tuning.smoothing !== 58
+    || preview.projectConfig.editingDefaults.parameters.beauty !== undefined
     || preview.projectConfig.editingDefaults.parameters.delivery.container !== "source"
     || preview.brief.style.visualLanguageSelection.mode !== "preferred"
     || preview.brief.style.visualLanguageSelection.preferredId
@@ -2909,8 +2787,7 @@ await test("local production studio compiles an auditable project with verified 
     || brief.source.readOnly !== true
     || brief.style.captionFontEvidence.sha256 !== registry.records[0].sha256
     || brief.style.captionFontEvidence.authorizationStatus !== "authorized"
-    || projectConfig.editingDefaults.parameters.beauty.enabled !== false
-    || projectConfig.editingDefaults.parameters.beauty.tuning.smoothing !== 35
+    || projectConfig.editingDefaults.parameters.beauty !== undefined
     || projectConfig.editingDefaults.parameters.productionStudio
       .effectAssignments[0].effectId !== "logic_emphasis_inline"
     || projectConfig.editingDefaults.parameters.productionStudio
@@ -7312,319 +7189,6 @@ await test("aligned mask and text pipelines preserve base duration", () => {
       throw new Error(`${path.basename(file)} duration drifted by ${delta}s`);
     }
   }
-});
-
-await test("Beauty v2 profiles preserve duration and produce distinct outputs", () => {
-  ensureMediaFixtures();
-  const natural = path.join(temporary, "beauty-v2-natural.mov");
-  const visible = path.join(temporary, "beauty-v2-visible.mov");
-  const naturalConfig = path.join(temporary, "beauty-v2-natural-config.json");
-  const visibleConfig = path.join(temporary, "beauty-v2-visible-config.json");
-  writeJson(naturalConfig, {
-    schemaVersion: "1.0",
-    editingDefaults: {
-      parameters: {
-        beauty: {
-          enabled: true,
-          engine: "beauty-v2",
-          profile: "natural",
-        },
-      },
-    },
-  });
-  writeJson(visibleConfig, {
-    schemaVersion: "1.0",
-    editingDefaults: {
-      parameters: {
-        beauty: {
-          enabled: true,
-          engine: "beauty-v2",
-          profile: "visible",
-        },
-      },
-    },
-  });
-  const sourceMedia = mediaSummary(baseVideo);
-  const visionManifest = path.join(temporary, "beauty-v2-vision-manifest.json");
-  const frameCount = Math.round(sourceMedia.duration * sourceMedia.fps);
-  writeJson(visionManifest, {
-    input: baseVideo,
-    sourceSha256: sha256File(baseVideo),
-    sampleFPS: sourceMedia.fps,
-    sourceFPS: sourceMedia.fps,
-    sourceDuration: sourceMedia.duration,
-    frames: Array.from({ length: frameCount }, (_, index) => ({
-      index: index + 1,
-      primaryFaceIndex: 0,
-      primaryTrackingStatus: index === 0 ? "acquired" : "locked",
-      primaryLandmarksAvailable: true,
-      primaryJumpRatio: index === 0 ? null : 0.01,
-      candidateCount: 1,
-      beautyMaskApplied: true,
-      faces: [{
-        isPrimary: true,
-        landmarksAvailable: true,
-      }],
-    })),
-  });
-  expectFailure(path.join(scripts, "apply_beauty_v2.sh"), [
-    baseVideo,
-    exactMask,
-    exactMask,
-    path.join(temporary, "beauty-v2-disabled.mov"),
-    "natural",
-    "--vision-manifest",
-    visionManifest,
-  ]);
-  const naturalReport = path.join(temporary, "beauty-v2-natural-report.json");
-  execute(path.join(scripts, "apply_beauty_v2.sh"), [
-    baseVideo,
-    exactMask,
-    exactMask,
-    natural,
-    "natural",
-    "--vision-manifest",
-    visionManifest,
-    "--config",
-    naturalConfig,
-    "--report",
-    naturalReport,
-  ]);
-  const cachedNatural = path.join(temporary, "beauty-v2-cached-natural.mov");
-  const cachedNaturalReport = path.join(
-    temporary,
-    "beauty-v2-cached-natural-report.json",
-  );
-  const cachedBeautyArguments = [
-    path.join(scripts, "kacha.mjs"),
-    "beauty",
-    "render",
-    baseVideo,
-    "--skin-mask",
-    exactMask,
-    "--nasolabial-mask",
-    exactMask,
-    "--vision-manifest",
-    visionManifest,
-    "--output",
-    cachedNatural,
-    "--report",
-    cachedNaturalReport,
-    "--profile",
-    "natural",
-    "--config",
-    naturalConfig,
-    "--project-root",
-    temporary,
-  ];
-  const cachedBeautyMiss = JSON.parse(
-    execute(process.execPath, cachedBeautyArguments).stdout,
-  );
-  fs.unlinkSync(cachedNatural);
-  fs.unlinkSync(cachedNaturalReport);
-  const cachedBeautyHit = JSON.parse(
-    execute(process.execPath, cachedBeautyArguments).stdout,
-  );
-  if (
-    cachedBeautyMiss.cache?.status !== "miss"
-    || cachedBeautyHit.cache?.status !== "hit"
-    || !fs.existsSync(cachedNatural)
-    || !fs.existsSync(cachedNaturalReport)
-  ) {
-    throw new Error("Beauty v2 wrapper did not reuse its content-addressed render");
-  }
-  execute(path.join(scripts, "apply_beauty_v2.sh"), [
-    baseVideo,
-    exactMask,
-    exactMask,
-    visible,
-    "visible",
-    "--vision-manifest",
-    visionManifest,
-    "--config",
-    visibleConfig,
-  ]);
-  const baseDuration = mediaSummary(baseVideo).duration;
-  for (const file of [natural, visible]) {
-    if (Math.abs(mediaSummary(file).duration - baseDuration) > 1 / 25 + 0.0005) {
-      throw new Error(`${path.basename(file)} duration drifted`);
-    }
-  }
-  if (sha256File(natural) === sha256File(visible)) {
-    throw new Error("Beauty v2 natural and visible unexpectedly produced identical files");
-  }
-  const localizedOutput = path.join(temporary, "beauty-v2-localized.mov");
-  execute(path.join(scripts, "apply_beauty_v2.sh"), [
-    baseVideo,
-    localizedMask,
-    localizedMask,
-    localizedOutput,
-    "visible",
-    "--vision-manifest",
-    visionManifest,
-    "--config",
-    visibleConfig,
-  ]);
-  const control = path.join(temporary, "beauty-v2-control.mov");
-  execute("ffmpeg", [
-    "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-    "-i", baseVideo,
-    "-vf", "format=yuv444p10le,format=yuv422p10le",
-    "-map", "0:v:0", "-map", "0:a?",
-    "-c:v", "prores_ks", "-profile:v", "3", "-pix_fmt", "yuv422p10le",
-    "-c:a", "copy",
-    control,
-  ]);
-  const chromaCheck = run("ffmpeg", [
-    "-hide_banner", "-loglevel", "info",
-    "-i", control,
-    "-i", localizedOutput,
-    "-filter_complex",
-    "[0:v]crop=96:180:0:0[a];[1:v]crop=96:180:0:0[b];[a][b]psnr",
-    "-f", "null", "-",
-  ]);
-  if (chromaCheck.status !== 0) {
-    throw new Error(`Beauty v2 chroma isolation check failed: ${chromaCheck.stderr}`);
-  }
-  const psnr = /PSNR y:([^ ]+) u:([^ ]+) v:([^ ]+) average:([^ ]+)/.exec(
-    chromaCheck.stderr,
-  );
-  const acceptable = (value) => value === "inf" || Number(value) >= 55;
-  if (!psnr || !acceptable(psnr[2]) || !acceptable(psnr[3])) {
-    throw new Error(`Beauty v2 leaked chroma outside its mask: ${psnr?.[0] ?? "no PSNR"}`);
-  }
-  const report = readJson(naturalReport);
-  if (
-    report.status !== "pass_with_review"
-    || report.technicalStatus !== "pass"
-    || report.manualStatus !== "review_required"
-    || report.tracking.metrics.primaryFaceCoverage !== 1
-    || !/^[a-f0-9]{64}$/.test(report.implementation?.digest)
-    || report.implementation?.files?.some(
-      (file) => !/^[a-f0-9]{64}$/.test(file.sha256),
-    )
-  ) {
-    throw new Error("Beauty v2 did not emit a gated technical QC report");
-  }
-  const manualReview = path.join(temporary, "beauty-v2-manual-review.json");
-  writeJson(manualReview, {
-    schemaVersion: "1.0",
-    reviewer: "automated-test-fixture",
-    reviewedAt: "2026-07-28T00:00:00.000Z",
-    outputSha256: sha256File(natural),
-    visionManifestSha256: sha256File(visionManifest),
-    profile: "natural",
-    sameFrameAB: true,
-    temporalFlickerReviewed: true,
-    skinNeckContinuityReviewed: true,
-    dynamicReviewRef: natural,
-    dynamicReviewSha256: sha256File(natural),
-    requiredFrames: Object.fromEntries(
-      [
-        "front_neutral",
-        "front_speaking",
-        "head_turn",
-        "blink",
-        "glasses_reflection",
-        "hand_near_face",
-      ].map((id, index) => [id, {
-        status: "pass",
-        timeSeconds: Math.min(
-          sourceMedia.duration - 1 / sourceMedia.fps,
-          index / sourceMedia.fps,
-        ),
-        evidenceRef: natural,
-        evidenceSha256: sha256File(natural),
-      }]),
-    ),
-  });
-  const releaseQc = JSON.parse(execute(process.execPath, [
-    path.join(scripts, "kacha.mjs"),
-    "beauty",
-    "qc",
-    baseVideo,
-    natural,
-    "--skin-mask",
-    exactMask,
-    "--nasolabial-mask",
-    exactMask,
-    "--vision-manifest",
-    visionManifest,
-    "--profile",
-    "natural",
-    "--manual-review",
-    manualReview,
-    "--ab-dir",
-    path.join(temporary, "beauty-v2-release-ab"),
-  ]).stdout);
-  if (releaseQc.status !== "pass" || releaseQc.manualStatus !== "pass") {
-    throw new Error("Beauty v2 release QC did not honor complete manual evidence");
-  }
-  const staleReview = readJson(manualReview);
-  staleReview.outputSha256 = "0".repeat(64);
-  const staleReviewFile = path.join(temporary, "beauty-v2-stale-review.json");
-  writeJson(staleReviewFile, staleReview);
-  expectFailure(process.execPath, [
-    path.join(scripts, "kacha.mjs"),
-    "beauty",
-    "qc",
-    baseVideo,
-    natural,
-    "--skin-mask",
-    exactMask,
-    "--nasolabial-mask",
-    exactMask,
-    "--vision-manifest",
-    visionManifest,
-    "--profile",
-    "natural",
-    "--manual-review",
-    staleReviewFile,
-    "--ab-dir",
-    path.join(temporary, "beauty-v2-stale-review-ab"),
-  ]);
-  const ambiguousManifest = readJson(visionManifest);
-  ambiguousManifest.frames.slice(0, 3).forEach((frame) => {
-    frame.primaryTrackingStatus = "ambiguous";
-    frame.beautyMaskApplied = false;
-  });
-  const ambiguousFile = path.join(temporary, "beauty-v2-ambiguous-manifest.json");
-  writeJson(ambiguousFile, ambiguousManifest);
-  expectFailure(process.execPath, [
-    path.join(scripts, "beauty_qc.mjs"),
-    baseVideo,
-    natural,
-    "--skin-mask",
-    exactMask,
-    "--nasolabial-mask",
-    exactMask,
-    "--vision-manifest",
-    ambiguousFile,
-    "--profile",
-    "natural",
-    "--technical-only",
-  ]);
-  const staleSourceManifest = readJson(visionManifest);
-  staleSourceManifest.sourceSha256 = "0".repeat(64);
-  const staleSourceFile = path.join(
-    temporary,
-    "beauty-v2-stale-source-manifest.json",
-  );
-  writeJson(staleSourceFile, staleSourceManifest);
-  expectFailure(process.execPath, [
-    path.join(scripts, "beauty_qc.mjs"),
-    baseVideo,
-    natural,
-    "--skin-mask",
-    exactMask,
-    "--nasolabial-mask",
-    exactMask,
-    "--vision-manifest",
-    staleSourceFile,
-    "--profile",
-    "natural",
-    "--technical-only",
-  ]);
 });
 
 await test("Claude visual evidence is local, cacheable and upload-gated", () => {

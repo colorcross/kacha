@@ -817,11 +817,6 @@ input[type="range"] {
   accent-color: var(--signal);
 }
 
-.beauty-editor {
-  margin-top: 28px;
-  padding-top: 22px;
-  border-top: 1px solid rgb(255 255 255 / 16%);
-}
 
 .toggle-line {
   display: flex;
@@ -877,25 +872,8 @@ input[type="range"] {
   transform: translateX(20px);
 }
 
-.beauty-controls {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
-  margin-top: 22px;
-  opacity: 0.35;
-  pointer-events: none;
-}
 
-.beauty-controls.is-enabled {
-  opacity: 1;
-  pointer-events: auto;
-}
 
-.beauty-editor > p {
-  margin: 18px 0 0;
-  color: rgb(255 255 255 / 46%);
-  font-size: 10px;
-}
 
 .editor-actions {
   display: flex;
@@ -986,10 +964,6 @@ input[type="range"] {
   accent-color: var(--signal);
 }
 
-.project-beauty-controls {
-  margin-top: 16px;
-  color: var(--ink);
-}
 
 .density-choice {
   display: grid;
@@ -1680,7 +1654,6 @@ input[type="range"] {
   .opening-list,
   .delivery-grid,
   .editor-grid,
-  .beauty-controls,
   .contract-list {
     grid-template-columns: 1fr;
   }

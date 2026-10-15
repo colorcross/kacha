@@ -110,7 +110,6 @@ const EFFECT_DENSITIES = new Set(["restrained", "balanced", "active"]);
 const VISUAL_LANGUAGE_SELECTION_MODES = new Set(["automatic", "preferred"]);
 const PRESET_KINDS = new Set(["master-style", "production-preset"]);
 const EFFECT_LIBRARY_POLICIES = new Set(["authoritative", "inherit-master"]);
-const BEAUTY_PROFILES = new Set(["natural", "visible"]);
 const TASKS = new Set(["source_edit", "content_generation", "local_optimization"]);
 const LANGUAGES = new Set(["zh", "en", "bilingual"]);
 const DAHUI_SHOWS = loadProductionPack("dahui-ai", "ai-practice").supportedShows;
@@ -519,30 +518,10 @@ function normalizeBgm(value, label) {
   };
 }
 
-function normalizeTuning(value, label) {
-  if (!isPlainObject(value)) throw new Error(`${label} 必须是 object`);
-  return {
-    smoothing: finiteNumber(value.smoothing, `${label}.smoothing`, 0, 100),
-    whitening: finiteNumber(value.whitening, `${label}.whitening`, 0, 100),
-    toneEvening: finiteNumber(value.toneEvening, `${label}.toneEvening`, 0, 100),
-    nasolabialSoftening: finiteNumber(
-      value.nasolabialSoftening,
-      `${label}.nasolabialSoftening`,
-      0,
-      100,
-    ),
-  };
-}
-
-function normalizeBeauty(value, label) {
-  if (!isPlainObject(value)) throw new Error(`${label} 必须是 object`);
-  if (value.engine !== "beauty-v2") throw new Error(`${label}.engine 必须为 beauty-v2`);
-  return {
-    enabled: booleanValue(value.enabled, `${label}.enabled`),
-    engine: "beauty-v2",
-    profile: enumValue(value.profile, BEAUTY_PROFILES, `${label}.profile`),
-    tuning: normalizeTuning(value.tuning, `${label}.tuning`),
-  };
+function rejectRetiredBeauty(value, label) {
+  if (value !== undefined && value !== null && (!isPlainObject(value) || value.enabled !== false)) {
+    throw new Error(`${label}: 内置美颜已移除，请关闭旧配置或使用剪映增强工作流`);
+  }
 }
 
 function normalizeDirection(value, label, openingIds) {
@@ -571,28 +550,13 @@ function normalizeProjectOverrides(value, catalog) {
       audioPresetId: null,
       bgmPresetId: null,
       effectDensity: null,
-      beauty: null,
     };
   }
   if (!isPlainObject(value)) throw new Error("projectOverrides 必须是 object");
   rejectAuthority(value, "projectOverrides");
   const audioPresetIds = new Set(catalog.audioPresets.map((preset) => preset.id));
   const bgmPresetIds = new Set(catalog.bgmPresets.map((preset) => preset.id));
-  const beauty = value.beauty === undefined || value.beauty === null
-    ? null
-    : {
-        enabled: booleanValue(value.beauty.enabled, "projectOverrides.beauty.enabled"),
-        engine: "beauty-v2",
-        profile: enumValue(
-          value.beauty.profile ?? "natural",
-          BEAUTY_PROFILES,
-          "projectOverrides.beauty.profile",
-        ),
-        tuning: normalizeTuning(
-          value.beauty.tuning,
-          "projectOverrides.beauty.tuning",
-        ),
-      };
+  rejectRetiredBeauty(value.beauty, "projectOverrides.beauty");
   return {
     audioPresetId: value.audioPresetId
       ? enumValue(value.audioPresetId, audioPresetIds, "projectOverrides.audioPresetId")
@@ -603,7 +567,6 @@ function normalizeProjectOverrides(value, catalog) {
     effectDensity: value.effectDensity
       ? enumValue(value.effectDensity, EFFECT_DENSITIES, "projectOverrides.effectDensity")
       : null,
-    beauty,
   };
 }
 
@@ -686,9 +649,6 @@ function applyProjectOverrides(style, overrides, catalog) {
   if (overrides.effectDensity) {
     resolved.direction.effectDensity = overrides.effectDensity;
   }
-  if (overrides.beauty) {
-    resolved.beauty = clone(overrides.beauty);
-  }
   return resolved;
 }
 
@@ -714,6 +674,7 @@ function normalizeStylePreset(value, {
   if (!isPlainObject(value)) throw new Error(`${label} 必须是 object`);
   rejectAuthority(value, label);
   const merged = base ? deepMerge(base, value) : clone(value);
+  rejectRetiredBeauty(merged.beauty, `${label}.beauty`);
   const ids = openingIds ?? new Set(
     (readJson(openingFile).effects ?? []).map((effect) => effect.id),
   );
@@ -739,7 +700,6 @@ function normalizeStylePreset(value, {
     caption: normalizeCaption(merged.caption, `${label}.caption`),
     audio: normalizeAudio(merged.audio, `${label}.audio`),
     bgm: normalizeBgm(merged.bgm, `${label}.bgm`),
-    beauty: normalizeBeauty(merged.beauty, `${label}.beauty`),
     direction: normalizeDirection(merged.direction, `${label}.direction`, ids),
   };
 }
@@ -1299,12 +1259,6 @@ function buildProjectConfig(request, media, catalog) {
             highShelfGainDb: -1.5,
           },
         },
-        beauty: {
-          enabled: style.beauty.enabled,
-          engine: "beauty-v2",
-          profile: style.beauty.profile,
-          tuning: clone(style.beauty.tuning),
-        },
         productionStudio: {
           styleId: style.id,
           styleName: style.name,
@@ -1352,10 +1306,6 @@ function buildProjectConfig(request, media, catalog) {
       },
       instructions: productionInstructions(request, catalog),
       recipeParameters: {
-        beauty: {
-          profile: style.beauty.profile,
-          tuning: clone(style.beauty.tuning),
-        },
         bgm: {
           adaptive: style.bgm.adaptive,
           policyId: style.bgm.policyId,
@@ -1520,7 +1470,6 @@ export function compileProductionRequest(request, {
           normalized.backgroundMusicEnabled
           && normalized.style.bgm.presetId !== "none",
       },
-      beauty: clone(normalized.style.beauty),
       direction: clone(normalized.style.direction),
       projectOverrides: clone(normalized.projectOverrides),
       visualLanguageSelection: clone(normalized.visualLanguageSelection),

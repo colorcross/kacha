@@ -25,7 +25,6 @@ function usage() {
       + "  kacha.mjs design validate|list|show|resolve|preview|render|qc|gallery|library-qc [options]\n"
       + "  kacha.mjs design motion-preview [--output DIR] [--scenes ID,ID] [--overwrite]\n"
       + "  kacha.mjs styleframe render --scene ID --output FILE [options]\n"
-      + "  kacha.mjs beauty validate|show|authorize|render|qc [options]\n"
       + "  kacha.mjs effects list|show|validate|preview [options]\n"
       + "  kacha.mjs sfx validate|import|align [options]\n"
       + "  kacha.mjs bgm plan|validate [options]\n"
@@ -90,7 +89,7 @@ function usage() {
       + "  kacha.mjs release-review open|init|record|approve <project-manifest.json> [options]\n"
       + "  kacha.mjs nle export --format otio|fcpxml|premiere-xml|cmx3600 | import --format otio|fcpxml [options]\n"
       + "  kacha.mjs nle-app detect|session|record|validate [options]\n"
-      + "  kacha.mjs pro-tools detect|prepare|status|render|receive [options]\n"
+      + "  kacha.mjs pro-tools detect|capabilities|enhance-plan|prepare|status|render|receive [options]\n"
       + "  kacha.mjs wise-motion setup|doctor|search|show|render|status|attach [options]\n"
       + "  kacha.mjs install status|sync [options]\n"
       + "  kacha.mjs cache key|run|inspect [options]\n"
@@ -140,14 +139,19 @@ function invoke(script, args, options = {}) {
     [path.join(scriptDirectory, script), ...args],
     options,
   );
-  if (result.stdout.trim()) process.stdout.write(`${result.stdout.trim()}\n`);
+  if (result.stdout.trim()) fs.writeFileSync(1, `${result.stdout.trim()}\n`);
   if (result.status !== 0) {
-    if (result.stderr.trim()) process.stderr.write(`${result.stderr.trim()}\n`);
+    if (result.stderr.trim()) fs.writeFileSync(2, `${result.stderr.trim()}\n`);
     process.exit(result.status ?? 1);
   }
 }
 
 const [, , command, projectInput, ...remainingArguments] = process.argv;
+// Retired beauty must not dispatch into an older bound runtime.
+if (command === "beauty") {
+  fs.writeFileSync(2, "咔嚓内置美颜已移除；请关闭旧 beauty.enabled 或使用剪映增强工作流。\n");
+  process.exit(1);
+}
 try { if (dispatchBoundRuntime(process.argv.slice(2))) process.exit(process.exitCode ?? 0); } catch (error) { console.error(error.message); process.exit(1); }
 if (
   command === "netstyle"
@@ -168,7 +172,6 @@ const delegatedCommands = {
   config: "kacha_config.mjs",
   design: "kacha_design.mjs",
   styleframe: "render_styleframe_cached.mjs",
-  beauty: "kacha_beauty.mjs",
   effects: "kacha_effects.mjs",
   sfx: "kacha_sfx.mjs",
   bgm: "adaptive_bgm.mjs",

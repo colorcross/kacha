@@ -83,6 +83,30 @@ test('professional tool bridge preserves media, isolates candidates and fails cl
     assert.ok(Math.abs(crosses / 0.4 - 1000) < 5);
     assert.throws(() => receiveProfessionalResult({ directory: kit, media: returned, output: destination }), /EEXIST/);
   });
+  await t.test('Jianying enhancement CLI and receive preserve bound records and reject stale exports', async () => {
+    const jyKit = path.join(root, 'jianying-kit');
+    prepareProfessionalPackage({ timeline, tool: 'jianying', output: jyKit });
+    const deadline = Date.now() + 60000;
+    while (!fs.existsSync(path.join(jyKit, 'staged.json'))) {
+      const job = read(path.join(jyKit, '.kacha/jobs/stage/job.json'));
+      assert.ok(!['failed', 'cancelled'].includes(job.status), JSON.stringify(job.error));
+      assert.ok(Date.now() < deadline); await pause(200);
+    }
+    const requestFile = path.join(root, 'enhance-request.json'), planFile = path.join(root, 'enhance-plan.json'), recordFile = path.join(root, 'enhance-record.json');
+    write(requestFile, { operations: [{ capability: 'denoise', reason: 'fixture only', clipIds: ['blue-tail'] }] });
+    run(process.execPath, [path.join(repo, 'scripts/kacha.mjs'), 'pro-tools', 'enhance-plan', '--package', jyKit, '--request', requestFile, '--output', planFile]);
+    const enhancement = read(planFile);
+    const record = { planDigest: enhancement.digest, exportSha256: fileIdentity(returned).sha256, applicationVersion: 'test-only', projectName: 'synthetic fixture', membership: 'unknown', operations: [{ id: 'op-1', status: 'applied', entitlement: 'free', settings: 'fixture, not real Jianying processing', evidence: [fileIdentity(requestFile)] }] };
+    write(recordFile, record);
+    const received = receiveProfessionalResult({ directory: jyKit, media: returned, output: path.join(root, 'enhanced-candidate'), enhancementPlan: planFile, enhancementRecord: recordFile });
+    assert.equal(received.applicationVerified, false); assert.equal(received.enhancement.qualityVerified, false);
+    const candidate = read(received.candidate.path);
+    assert.equal(read(candidate.externalTool.enhancement.record.path).exportSha256, fileIdentity(returned).sha256);
+    assert.throws(() => receiveProfessionalResult({ directory: jyKit, media: returned, output: path.join(root, 'bad-pair'), enhancementPlan: planFile }), /同时/);
+    write(recordFile, { ...record, exportSha256: 'stale' });
+    assert.throws(() => receiveProfessionalResult({ directory: jyKit, media: returned, output: path.join(root, 'bad-record'), enhancementPlan: planFile, enhancementRecord: recordFile }), /不匹配/);
+    assert.ok(!fs.existsSync(path.join(root, 'bad-record')));
+  });
   await t.test('delayed audio keeps leading and trailing silence and short audio is rejected', async () => {
     const delayed = path.join(root, 'delayed.mov'), delayedPlan = path.join(root, 'delayed.json'), delayedKit = path.join(root, 'delayed-kit');
     run('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=red:s=160x90:r=25:d=4', '-itsoffset', '1', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000:duration=2', '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-c:a', 'pcm_s16le', delayed]);

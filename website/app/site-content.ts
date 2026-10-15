@@ -306,7 +306,7 @@ export const zhContent: SiteContent = {
       {
         kicker: "OPTIONAL PORTRAIT",
         title: "克制的人像优化",
-        body: "Beauty v2 默认关闭；明确启用后只做磨皮、美白、匀肤和法令纹弱化，不改变身份。",
+        body: "内置美颜已移除；美颜需求交给剪映专业版，核验当前权益并保留处理前后对比。",
       },
       {
         kicker: "FAIL-CLOSED QC",
@@ -620,7 +620,7 @@ export const enContent: SiteContent = {
       {
         kicker: "OPTIONAL PORTRAIT",
         title: "Restrained portrait polish",
-        body: "Beauty v2 is off by default and limited to smoothing, whitening, tone evening, and fold softening without changing identity.",
+        body: "Built-in beauty has been removed. Beauty tasks use the Jianying Pro workflow with entitlement checks and before/after review.",
       },
       {
         kicker: "FAIL-CLOSED QC",
