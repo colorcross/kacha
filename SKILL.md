@@ -57,6 +57,7 @@ node scripts/kacha.mjs resume PROJECT --confirm-execute
 | 人声、BGM、SFX、同步 | `references/audio.md`；SFX 另读 `references/sfx-library.md`；生成 BGM 默认 MiniMax Audio 已登录网页版；缺失音效按 `references/minimax-audio-fallback.md` |
 | 含音频的视频生成 | 默认本机 MiniMax Design；`references/generated-media-assets.md` 与 `config/generation-routing.json`，实际检查音轨后接回工程 |
 | 视觉、PIP、蒙版、调色 | `references/visuals-masks.md` |
+| 同内容候选比较、叙事配方、代码短音效 | `references/narrative-samples.md`；`samples recipes/render/status/select/attach`，`sfx synth/status/attach`；现有音效库优先，选择不等于审片通过 |
 | 信息图、空间/语义动效、字景 | `references/visual-design-preflight.md`、`references/production/visual-execution.md` |
 | 风格、效果合同 | `references/style-effects-library.md`、`references/effect-templates-resources.md` |
 | 字幕、封面、系列身份 | `references/subtitles-covers-brand.md`；复杂身份/布局另读 `references/production/quality-contracts.md` |

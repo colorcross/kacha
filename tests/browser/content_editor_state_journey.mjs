@@ -142,15 +142,15 @@ try {
   assert.doesNotMatch(await page.locator('#deliveryStatus').textContent(), /current-plan.json/);
   checks.push('failed-open-clears-old-editable-target-and-reopen-recovers');
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const route of ['/content', '/', '/project', '/editor', '/review']) {
+  for (const route of ['/content', '/', '/project', '/samples', '/editor', '/review']) {
     await page.goto(`${origin}${route}`);
     const nav = page.getByRole('navigation', { name: '生产台页面' });
-    assert.deepEqual(await nav.getByRole('link').allTextContents(), ['内容', '配置', '项目', '调整', '审片']);
+    assert.deepEqual(await nav.getByRole('link').allTextContents(), ['内容', '配置', '项目', '样片', '调整', '审片']);
     assert.equal(await nav.locator('[aria-current=page]').getAttribute('href'), route);
     for (const link of await nav.getByRole('link').all()) assert.equal(await link.isVisible(), true);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `navigation overflow on ${route}`);
   }
-  checks.push('five-page-consistent-navigation-current-state-and-mobile-layout');
+  checks.push('six-page-consistent-navigation-current-state-and-mobile-layout');
   assert.deepEqual(errors, []);
   fs.writeFileSync(path.join(artifacts, 'content-editor-state.json'), JSON.stringify({ status: 'pass', checks }, null, 2));
   console.log(JSON.stringify({ status: 'pass', checks }, null, 2));

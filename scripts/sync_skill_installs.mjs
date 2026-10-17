@@ -236,6 +236,7 @@ function verifyBundle(bundle, source) {
   );
   run(process.execPath, ["--test", path.join(bundle, "tests", "professional_tools_tests.mjs")], bundle, { env: verificationEnvironment });
   run(process.execPath, ["--test", path.join(bundle, "tests", "jianying_enhancements_tests.mjs")], bundle, { env: verificationEnvironment });
+  run(process.execPath, ["--test", path.join(bundle, "tests", "narrative_sfx_tests.mjs")], bundle, { env: verificationEnvironment });
   run(process.execPath, ["--test", path.join(bundle, "tests", "wise_motion_tests.mjs")], bundle, { env: verificationEnvironment });
   for (const test of fs.readdirSync(path.join(bundle, "tests")).filter(name => /^optimization_.*_tests\.mjs$/.test(name)).sort()) {
     run(process.execPath, [path.join(bundle, "tests", test)], bundle, { env: verificationEnvironment });

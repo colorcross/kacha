@@ -430,3 +430,7 @@ npm audit --audit-level=high
 提交问题或改动前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 和
 [SECURITY.md](SECURITY.md)。代码使用 [MIT License](LICENSE)；仓库内原创
 音效适用独立的 [Kacha SFX Asset License](assets/sfx/LICENSE.md)。
+
+### 叙事样片与代码音效
+
+Studio 的“样片”页可用同一内容生成全局并列 / 逐项聚焦两份真实 MP4，支持步骤、证据对比、事件时间线，以及通用 / 大灰AI与横竖版。保存选择后插入新时间线候选；选择绑定内容、字体、依赖及视频摘要。`sfx synth` 可在现有库不匹配时生成五类抽象短音效，实测峰值并对齐画面。操作与边界见 [叙事样片与代码音效](references/narrative-samples.md)。

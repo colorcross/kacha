@@ -26,7 +26,7 @@ function usage() {
       + "  kacha.mjs design motion-preview [--output DIR] [--scenes ID,ID] [--overwrite]\n"
       + "  kacha.mjs styleframe render --scene ID --output FILE [options]\n"
       + "  kacha.mjs effects list|show|validate|preview [options]\n"
-      + "  kacha.mjs sfx validate|import|align [options]\n"
+      + "  kacha.mjs sfx validate|import|align|synth|attach|status [options]\n"
       + "  kacha.mjs bgm plan|validate [options]\n"
       + "  kacha.mjs facefusion probe|profiles|template|validate|run [options]\n"
       + "  kacha.mjs templates validate|list|show|resolve|recipes [--recipe ID] [options]\n"
@@ -90,6 +90,7 @@ function usage() {
       + "  kacha.mjs nle export --format otio|fcpxml|premiere-xml|cmx3600 | import --format otio|fcpxml [options]\n"
       + "  kacha.mjs nle-app detect|session|record|validate [options]\n"
       + "  kacha.mjs pro-tools detect|capabilities|enhance-plan|prepare|status|render|receive [options]\n"
+      + "  kacha.mjs samples recipes|render|status|select|attach [options]\n"
       + "  kacha.mjs wise-motion setup|doctor|search|show|render|status|attach [options]\n"
       + "  kacha.mjs install status|sync [options]\n"
       + "  kacha.mjs cache key|run|inspect [options]\n"
@@ -167,6 +168,7 @@ if (
   process.exit(0);
 }
 const delegatedCommands = {
+  samples: "narrative_samples.mjs",
   "wise-motion": "wise_motion.mjs",
   doctor: "kacha_doctor.mjs",
   config: "kacha_config.mjs",

@@ -55,6 +55,15 @@ const studioRoot = path.join(skillRoot, "studio");
 const brandLogo = path.join(skillRoot, "assets", "brand", "kacha-logo.png");
 const MAX_BODY_BYTES = 1024 * 1024;
 const runStudioTask = createStudioTaskRunner();
+// Metadata requests from both comparison players share one in-flight read.
+// No completed result is cached: a new request rechecks hashes and dependencies.
+const sampleReads = new Map();
+function readGeneratedPackage(task, root) {
+  const key = `${task}:${root}`;
+  if (sampleReads.has(key)) return sampleReads.get(key);
+  const pending = Promise.resolve().then(() => runStudioTask(task, root)).finally(() => sampleReads.delete(key));
+  sampleReads.set(key, pending); return pending;
+}
 const editorSessions = new Map();
 const EDITOR_SESSION_LIMIT = 32;
 const EDITOR_SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
@@ -91,6 +100,7 @@ const MIME_TYPES = {
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
   ".svg": "image/svg+xml",
+  ".wav": "audio/wav",
   ".mp4": "video/mp4",
   ".m4v": "video/mp4",
   ".mov": "video/quicktime",
@@ -591,6 +601,10 @@ function safeStaticFile(urlPath) {
     "/project.html": path.join(studioRoot, "project.html"),
     "/project.css": path.join(studioRoot, "project.css"),
     "/project.js": path.join(studioRoot, "project.js"),
+    "/samples": path.join(studioRoot, "samples.html"),
+    "/samples.html": path.join(studioRoot, "samples.html"),
+    "/samples.js": path.join(studioRoot, "samples.js"),
+    "/samples.css": path.join(studioRoot, "samples.css"),
     "/content": path.join(studioRoot, "content.html"),
     "/content.html": path.join(studioRoot, "content.html"),
     "/content.css": path.join(studioRoot, "content.css"),
@@ -614,6 +628,29 @@ async function handleApi(request, response, url, port) {
       localOnly: true,
     });
     return;
+  }
+  if (["GET", "HEAD"].includes(request.method) && pathname === "/api/samples/media") {
+    if (!sameOrigin(request, port) || request.headers["sec-fetch-site"] === "cross-site") throw new Error("拒绝跨站样片读取");
+    const directory = url.searchParams.get("package");
+    const status = await readGeneratedPackage("samples-status", directory);
+    const entry = status.entries?.find(item => item.id === url.searchParams.get("variant"));
+    if (!status.ready || !entry || entry.video.sha256 !== url.searchParams.get("sha")) throw new Error("样片未就绪或版本已改变");
+    const identity = fileIdentity(entry.video.path);
+    if (identity.sha256 !== entry.video.sha256) throw new Error("读取期间样片已改变");
+    serveMedia(request, response, {path: entry.video.path, identity}); return;
+  }
+  if (["GET", "HEAD"].includes(request.method) && pathname === "/api/sfx/media") {
+    if (!sameOrigin(request, port) || request.headers["sec-fetch-site"] === "cross-site") throw new Error("拒绝跨站音效读取");
+    const receipt = await readGeneratedPackage("sfx-status", url.searchParams.get("package"));
+    if (receipt.audio.sha256 !== url.searchParams.get("sha")) throw new Error("音效版本已改变");
+    const identity = fileIdentity(receipt.audio.path);
+    if (identity.sha256 !== receipt.audio.sha256) throw new Error("读取期间音效已改变");
+    serveMedia(request, response, {path: receipt.audio.path, identity}); return;
+  }
+  if (request.method === "GET" && pathname === "/api/samples/recipes") {
+    requireLocalRead(request, port);
+    const { recipes } = await import("./narrative_samples.mjs");
+    json(response, 200, {recipes}); return;
   }
   if (request.method === "GET" && pathname === "/api/bootstrap") {
     const catalog = loadProductionCatalog();
@@ -682,6 +719,10 @@ async function handleApi(request, response, url, port) {
   }
   requireLocalMutation(request, port);
   const body = await readRequestBody(request);
+  if (["/api/samples/render", "/api/samples/status", "/api/samples/select", "/api/samples/attach", "/api/samples/target", "/api/sfx/synth", "/api/sfx/status", "/api/sfx/attach"].includes(pathname)) {
+    const task = pathname.slice(5).replace("/", "-");
+    json(response, task === "samples-render" ? 202 : 200, await (["samples-status", "sfx-status"].includes(task) ? readGeneratedPackage(task, body.package) : runStudioTask(task, body.package, body))); return;
+  }
   if (pathname === "/api/pick-video") {
     json(response, 200, { status: "pass", ...(await nativePick("video")) });
     return;

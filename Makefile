@@ -17,6 +17,7 @@ check-core:
 	node tests/run_tests.mjs --suite core
 
 check-specialized:
+	node --test tests/narrative_sfx_tests.mjs
 	node --test tests/wise_motion_tests.mjs
 	node --test tests/professional_tools_tests.mjs
 	node --test tests/jianying_enhancements_tests.mjs

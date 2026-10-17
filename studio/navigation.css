@@ -5,3 +5,5 @@ nav.studio-navigation a[aria-current="page"] { color: var(--ink); font-weight: 7
 nav.studio-navigation a:hover { color: var(--ink); }
 nav.studio-navigation a:focus-visible { outline: 2px solid var(--signal, #ed6035); outline-offset: 2px; }
 @media (max-width: 620px) { nav.studio-navigation { gap: 0; } nav.studio-navigation a { padding: 8px 6px; } }
+
+@media (max-width: 620px) { .topbar { height: auto; min-height: 78px; flex-wrap: wrap; gap: 8px; padding-top: 10px; padding-bottom: 10px; } }

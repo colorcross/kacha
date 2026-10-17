@@ -18,6 +18,9 @@ const action = firstPositional(args, [
 ]);
 const rest = args.slice(1);
 const scripts = {
+  synth: "sfx_synthesize.mjs",
+  attach: "sfx_synthesize.mjs",
+  status: "sfx_synthesize.mjs",
   validate: "validate_sfx_library.mjs",
   import: "import_private_sfx.mjs",
   align: "align_sfx_peak.mjs",
@@ -30,7 +33,7 @@ if (!Object.hasOwn(scripts, action)) {
   );
   process.exit(2);
 }
-const result = run(process.execPath, [path.join(scriptDirectory, scripts[action]), ...rest]);
+const result = run(process.execPath, [path.join(scriptDirectory, scripts[action]), ...(["attach", "status"].includes(action) ? [action] : []), ...rest]);
 if (result.stdout) process.stdout.write(result.stdout);
 if (result.stderr) process.stderr.write(result.stderr);
 process.exit(result.status ?? 1);

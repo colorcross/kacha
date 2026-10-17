@@ -10,12 +10,12 @@ export function createStudioTaskRunner({ limit = 2, workerUrl = new URL(import.m
   const taskHashCaches = new Map();
   let running = 0;
   return function runProjectTask(task, projectRoot, options = {}) {
-    if (!["status", "run", "observe", "probe", "preview", "compile", "real-preview", "real-preview-status", "content-start"].includes(task)) throw new Error("Unknown project task");
+    if (!["status", "run", "observe", "probe", "preview", "compile", "real-preview", "real-preview-status", "content-start", "samples-render", "samples-status", "samples-select", "samples-attach", "samples-target", "sfx-synth", "sfx-status", "sfx-attach"].includes(task)) throw new Error("Unknown project task");
     if (typeof projectRoot !== "string" || !path.isAbsolute(projectRoot)) throw new Error("项目或媒体路径必须是绝对路径");
-    const creating = task === "content-start";
+    const creating = ["content-start", "samples-render", "sfx-synth"].includes(task);
     const root = canonicalTaskPath(projectRoot, creating);
     const cacheable = ["status", "probe", "preview", "compile", "real-preview", "real-preview-status"].includes(task);
-    const mediaTask = ["probe", "preview", "compile", "real-preview", "real-preview-status"].includes(task);
+    const mediaTask = ["probe", "preview", "compile", "real-preview", "real-preview-status", "samples-target"].includes(task);
     // Canonicalize only the lock. A media symlink's selected directory owns
     // its config discovery, display name and default output destination.
     const executionRoot = mediaTask ? path.resolve(projectRoot) : root;
@@ -79,7 +79,13 @@ if (!isMainThread) {
     const { importFileHashCache, exportFileHashCache } = await import('./kacha_utils.mjs');
     importFileHashCache(workerData.hashCache);
     let value;
-    if (task === "observe") {
+    if (task.startsWith("samples-")) {
+      const api = await import("./narrative_samples.mjs");
+      value = task === "samples-target" ? api.inspectSampleTarget(projectRoot) : task === "samples-render" ? api.prepareSamples({ spec: options.spec, output: projectRoot }) : task === "samples-select" ? api.selectSample({ ...options, directory: projectRoot }) : task === "samples-attach" ? api.attachSample({ ...options, directory: projectRoot }) : api.sampleStatus(projectRoot);
+    } else if (task.startsWith("sfx-")) {
+      const api = await import("./sfx_synthesize.mjs");
+      value = task === "sfx-synth" ? api.synthesizeSfx({ spec: options.spec, output: projectRoot }) : task === "sfx-attach" ? api.attachSfx({ ...options, directory: projectRoot }) : api.readSfx(projectRoot);
+    } else if (task === "observe") {
       const { observeProject } = await import("./project_observation.mjs");
       value = observeProject(projectRoot);
     } else if (["probe", "preview", "compile"].includes(task)) {

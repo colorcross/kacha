@@ -3,7 +3,7 @@
 本合同用于 Agent 为剪辑生成 BGM，以及现有音效库无法满足的明确 SFX。
 **背景音乐默认从 MiniMax 音频网页版生成**：<https://www.minimax.cn/audio>，复用用户已有登录会话。
 网页确实不可用且原尝试状态已查明时，依次考虑 MiniMax Design、mmx。
-SFX 仍先用本地库；缺失音效保留 mmx → 网页 → 桌面的能力回退，不把音色设计当音效。
+SFX 仍先用本地库；不匹配的抽象短音效可按 `references/narrative-samples.md` 使用本地代码合成。其他缺失音效保留 mmx → 网页 → 桌面的能力回退，不把音色设计当音效。
 含音频的视频默认使用 MiniMax Design，见 `references/generated-media-assets.md`；
 机器可读默认值为 `config/generation-routing.json`。最新明确需求可覆盖默认值。
 这是 Agent 的工具选择和恢复流程；不是后台渲染器的自动浏览器任务，也不扩展到

@@ -36,7 +36,7 @@ node scripts/kacha.mjs sfx validate \
 
 1. 用户明确点名具体音效时，必须按 `assetId`、`title` 和哈希精确命中；
 2. 没有点名时，按画面 trigger 选择本地优先候选；
-3. 本地候选不匹配时，才使用许可清楚的 fallback；确需生成缺失音效时，按 `references/minimax-audio-fallback.md` 的 mmx → 默认浏览器 MiniMax 音频网页版 → MiniMax Design 顺序执行；
+3. 本地候选不匹配时，抽象短音效可先按 `references/narrative-samples.md` 使用本地 `sfx synth`；其他声音使用许可清楚的 fallback；确需生成缺失音效时，按 `references/minimax-audio-fallback.md` 的 mmx → 默认浏览器 MiniMax 音频网页版 → MiniMax Design 顺序执行；
 4. 所有候选都不合适时，可选音效按项目允许的回退省略；用户点名或叙事必需的音效说明缺口，不静默删除；
 5. 同一语义节拍通常只有一个主要声音事件。
 
