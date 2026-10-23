@@ -99,11 +99,16 @@ try {
  await page.locator('#styleFamily').selectOption('dahui');
  await page.locator('[data-style-id="dahui-book"]').click();
  assert.equal(await page.locator('#show').inputValue(),'ai-reading');assert.equal(await page.locator('#show option').count(),8);
+ assert.equal(await page.locator('#legacyFamilyOption').evaluate(node=>node.hidden && node.disabled),true);
+ await page.locator('details:has(#enableLegacyStyles) > summary').click();
+ await page.locator('#enableLegacyStyles').check();
  await page.locator('#styleFamily').selectOption('legacy');
  await page.locator('[data-style-id="xingzhe"]').click();
  assert.equal(await page.locator('#show option').count(),5);
  await page.locator('#styleFamily').selectOption('generic');
  await page.locator('[data-style-id="clean-editorial"]').click();
+ await page.locator('#enableLegacyStyles').uncheck();
+ assert.equal(await page.locator('#legacyFamilyOption').evaluate(node=>node.hidden && node.disabled),true);
  await page.locator('#show').selectOption('screen-demo');
  assert.equal(await page.locator('#notes').inputValue(),'保留我的要求');
  checks.push('general-brand-legacy-switching-preserves-user-input-and-scopes-shows');

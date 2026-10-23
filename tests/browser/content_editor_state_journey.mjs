@@ -25,9 +25,17 @@ try {
   assert.equal(await page.locator('#show').inputValue(), 'talking-head');
   assert.equal(await page.locator('#style').inputValue(), 'clean-editorial');
   assert.equal(await page.locator('#style option:disabled').count(), 6);
+  assert.equal(await page.locator('#show option[value="tool-share"]').evaluate(node=>node.hidden && node.disabled), true);
+  await page.locator('details:has(#enableLegacyStyles) > summary').click();
+  await page.locator('#enableLegacyStyles').check();
   await page.locator('#show').selectOption('tool-share');
   assert.equal(await page.locator('#style').inputValue(), 'xingzhe-light-overlay');
   assert.equal(await page.locator('#style option:disabled').count(), 2);
+  await page.locator('#enableLegacyStyles').uncheck();
+  assert.equal(await page.locator('#show').inputValue(), 'talking-head');
+  assert.equal(await page.locator('#style').inputValue(), 'clean-editorial');
+  assert.equal(await page.locator('#topic').inputValue(), '如何验证自己的工作？');
+  assert.equal(await page.locator('#show option[value="tool-share"]').evaluate(node=>node.hidden && node.disabled), true);
   await page.locator('#show').selectOption('ai-practice');
   await page.locator('#startContent').click(); await arrived.promise;
   for (const id of ['projectRoot', 'topic', 'chooseScript', 'show', 'style', 'startContent']) assert.equal(await page.locator(`#${id}`).isDisabled(), true);
