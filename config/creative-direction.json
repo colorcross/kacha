@@ -1,0 +1,269 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "kacha-creative-direction-registry",
+  "id": "open-direction-v1",
+  "policy": "先内容目标，再叙事方法，再画面形式，最后选择执行工具；方法可以扩展，不绑定五种外观。",
+  "intents": [
+    {
+      "id": "auto",
+      "label": "按内容决定",
+      "techniques": [
+        "continuity",
+        "annotation",
+        "relation",
+        "demonstration",
+        "comparison",
+        "evidence",
+        "comic",
+        "state",
+        "montage",
+        "atmosphere"
+      ]
+    },
+    {
+      "id": "explain",
+      "label": "讲清一个概念",
+      "techniques": [
+        "continuity",
+        "annotation",
+        "relation"
+      ]
+    },
+    {
+      "id": "demo",
+      "label": "演示一个产品或操作",
+      "techniques": [
+        "demonstration",
+        "state"
+      ]
+    },
+    {
+      "id": "compare",
+      "label": "解释差异或数据",
+      "techniques": [
+        "comparison"
+      ]
+    },
+    {
+      "id": "investigate",
+      "label": "核对证据与判断",
+      "techniques": [
+        "evidence"
+      ]
+    },
+    {
+      "id": "story",
+      "label": "讲一段经历或故事",
+      "techniques": [
+        "continuity",
+        "montage"
+      ]
+    },
+    {
+      "id": "comedy",
+      "label": "呈现真实反差或包袱",
+      "techniques": [
+        "comic"
+      ]
+    },
+    {
+      "id": "mood",
+      "label": "表达情绪或艺术场景",
+      "techniques": [
+        "atmosphere"
+      ]
+    },
+    {
+      "id": "custom",
+      "label": "另定表达方式",
+      "techniques": [
+        "custom"
+      ]
+    }
+  ],
+  "techniques": [
+    {
+      "id": "continuity",
+      "label": "连续表达",
+      "principle": "保留完整句意、现场声和有意义的停顿；按信息变化切镜。",
+      "providerCandidates": [
+        "native"
+      ],
+      "evidenceRequired": [
+        "完整语义与真实时序"
+      ]
+    },
+    {
+      "id": "annotation",
+      "label": "重点旁注",
+      "principle": "在人物或真实素材旁标注一个重点；画面已清楚时不加层。",
+      "providerCandidates": [
+        "native",
+        "huashu-motion",
+        "huashu-design"
+      ],
+      "evidenceRequired": [
+        "原始素材",
+        "阅读时间与安全区"
+      ]
+    },
+    {
+      "id": "relation",
+      "label": "关系与机制",
+      "principle": "用关系图、空间导航、白板或剖面讲清因果，不强制光路外观。",
+      "providerCandidates": [
+        "huashu-art-motion",
+        "huashu-motion"
+      ],
+      "evidenceRequired": [
+        "可核对的关系与因果"
+      ]
+    },
+    {
+      "id": "demonstration",
+      "label": "操作演示",
+      "principle": "保留真实操作顺序，结合局部放大、动作匹配与关键反馈。",
+      "providerCandidates": [
+        "native",
+        "huashu-motion"
+      ],
+      "evidenceRequired": [
+        "当前产品真实录屏或截图",
+        "操作结果"
+      ]
+    },
+    {
+      "id": "comparison",
+      "label": "比较与数据",
+      "principle": "用同尺度前后对照、分屏和图表表达差异。",
+      "providerCandidates": [
+        "native",
+        "huashu-art-motion",
+        "huashu-design"
+      ],
+      "evidenceRequired": [
+        "来源与口径",
+        "相同条件或明确差异"
+      ]
+    },
+    {
+      "id": "evidence",
+      "label": "证据揭示",
+      "principle": "先交代上下文，再定位原文或画面细节，最后得出有边界的判断。",
+      "providerCandidates": [
+        "native",
+        "huashu-art-motion",
+        "huashu-design"
+      ],
+      "evidenceRequired": [
+        "原始证据与上下文",
+        "结论适用范围"
+      ]
+    },
+    {
+      "id": "comic",
+      "label": "喜剧节拍",
+      "principle": "用铺垫、停顿、真实反应和回扣形成节拍；漫画只是可选形式。",
+      "providerCandidates": [
+        "native",
+        "huashu-art-motion"
+      ],
+      "evidenceRequired": [
+        "实际反差或表演",
+        "不能制造人物未发生的反应"
+      ]
+    },
+    {
+      "id": "state",
+      "label": "状态变化",
+      "principle": "清楚展示输入、变化与结果；可以实拍、UI或图解，不强制像素。",
+      "providerCandidates": [
+        "native",
+        "huashu-motion",
+        "huashu-art-motion"
+      ],
+      "evidenceRequired": [
+        "真实或明确标注的示意状态",
+        "变化前后对应关系"
+      ]
+    },
+    {
+      "id": "montage",
+      "label": "蒙太奇与声音桥",
+      "principle": "按动作、主题或情绪组织多素材；使用J/L-cut和现场声保持连贯。",
+      "providerCandidates": [
+        "native"
+      ],
+      "evidenceRequired": [
+        "可用镜头与声音",
+        "不得伪造因果和发生顺序"
+      ]
+    },
+    {
+      "id": "atmosphere",
+      "label": "情绪与艺术场景",
+      "principle": "用统一材质、光线、构图与运动建立情绪，为内容创作新场景。",
+      "providerCandidates": [
+        "lemo-opuscar",
+        "huashu-art-motion",
+        "huashu-motion"
+      ],
+      "evidenceRequired": [
+        "叙事目的",
+        "素材许可",
+        "生成与实拍的区分"
+      ]
+    },
+    {
+      "id": "custom",
+      "label": "自定义方法",
+      "principle": "为当前内容定义新的表达方式，说明触发、动作、退出与回退。",
+      "providerCandidates": [
+        "native",
+        "huashu-motion",
+        "huashu-art-motion",
+        "huashu-design",
+        "lemo-opuscar"
+      ],
+      "evidenceRequired": [
+        "具体方法说明",
+        "代表镜头预览"
+      ]
+    }
+  ],
+  "providers": [
+    "native",
+    "huashu-motion",
+    "huashu-art-motion",
+    "huashu-design",
+    "lemo-opuscar"
+  ],
+  "retiredPresetIds": [
+    "clear-knowledge",
+    "deep-reading",
+    "modern-tech",
+    "calm-documentary"
+  ],
+  "legacyMapping": {
+    "xingzhe-light-overlay": {
+      "technique": "annotation",
+      "optionalAppearance": "浅暖与轻浮层"
+    },
+    "xingzhe-spatial-lightpath": {
+      "technique": "relation",
+      "optionalAppearance": "光路与纵深"
+    },
+    "xingzhe-humor-comic": {
+      "technique": "comic",
+      "optionalAppearance": "漫画"
+    },
+    "xingzhe-pixel-editorial": {
+      "technique": "state",
+      "optionalAppearance": "像素"
+    },
+    "xingzhe-dark-tech": {
+      "technique": "evidence",
+      "optionalAppearance": "暗色科技"
+    }
+  }
+}

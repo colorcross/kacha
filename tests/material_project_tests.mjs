@@ -36,7 +36,7 @@ try {
   const sourceHashes = [video,image,portrait].map(sha256File);
   const projectRoot = path.join(temp,"project");
   const runtime = { sourceRef: "synthetic-development-test", productionReady: false };
-  const initial = initializeMaterialProject({ materials:[inputs,video], requirements:"6秒短片，红色开场，蓝色图片居中，竖屏绿色素材结尾；保持原声，完整保留画面。", projectRoot, duration:6, width:320, fps:25, development:true, confirmExecute:true, runtime });
+  const initial = initializeMaterialProject({ materials:[inputs,video], requirements:"6秒短片，红色开场，蓝色图片居中，竖屏绿色素材结尾；保持原声，完整保留画面。", creativeDirection:{intent:"mood",artDirection:"红蓝绿纯色构图，完整保留画面"}, projectRoot, duration:6, width:320, fps:25, development:true, confirmExecute:true, runtime });
   assert.equal(initial.assets.count,3); assert.equal(initial.assets.images,1); assert.equal(initial.status,"awaiting_storyboard");
   assert.equal(initial.assets.skipped.length,1);
   assert.throws(()=>initializeMaterialProject({materials:[inputs],requirements:"x",projectRoot,development:true,runtime}),/空目录/);
@@ -51,12 +51,15 @@ try {
     requirements:[{id:"sequence",text:"按红蓝绿顺序展示",check:"semantic",assetIds:[]},{id:"all",text:"三个素材都出现",check:"include_assets",assetIds:assets.map(a=>a.id)}],
     segments:assets.map((asset,i)=>({id:`shot-${i}`,assetId:asset.id,sourceIn:0,duration:2,fit:"contain",audio:"source",role:["opening","detail","ending"][i],observation:["红色画面伴随音调","蓝色正方形静态图","竖屏绿色视频且无音轨"][i],reason:"满足规定顺序并保留完整画面",satisfies:["sequence","all"],caption:["RED","BLUE","GREEN"][i]}))};
   const boardFile=path.join(temp,"storyboard.json");
+  board.requirements.push(brief.directionRequirement);
+  for (const segment of board.segments) segment.satisfies.push("creative-direction");
   const bad=(mutate,regex)=>{const copy=structuredClone(board);mutate(copy);write(boardFile,copy);assert.throws(()=>composeMaterialProject(projectRoot,boardFile),regex);};
   bad(b=>b.segments[0].sourceIn=3,/边界/);
   bad(b=>{b.segments[0].duration=1;delete b.segments[0].caption;},/总时长/);
   bad(b=>b.segments[0].fit="cover",/裁切/);
   bad(b=>b.segments[0].audio="mute",/静音/);
   bad(b=>b.segments[0].caption="这是一条在两秒钟内根本不可能读完的超长说明字幕",/停留不足/);
+  bad(b=>b.segments[0].signals=['comparison','comparison'],/signals/);
   bad(b=>b.requirements.push({id:"no-blue",text:"不能出现蓝图",check:"exclude_assets",assetIds:[assets[1].id]}),/排除/);
   bad(b=>b.briefDigest="0".repeat(64),/绑定/);
   for (const field of ["speed", "sourceStart", "transition", "motion"]) bad(b=>b.segments[0][field]=2,/不支持的字段/);
@@ -76,6 +79,7 @@ try {
   inspectMaterial(projectRoot,assets[0].id,{timestamps:[1.1]});
   assert.deepEqual(materialProjectStatus(projectRoot).activePlan,identity);
   const frozen=readJson(identity.path);
+  assert.equal(readJson(path.join(path.dirname(identity.path),"director.json")).creativeDirection.digest,brief.creativeDirection.digest);
   assert.ok(frozen.segments[0].inspection.path.includes("inspection-"));
   assert.ok(frozen.subtitle?.source?.sha256);
   checks.push("inspection-is-idempotent-and-added-frames-preserve-frozen-storyboard");

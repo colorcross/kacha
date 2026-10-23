@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "id": "clean-editorial",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "无个人品牌依赖的通用口播、录屏和多素材剪辑生产包。",
   "base": {
     "cinematicPolicyFile": "clean-editorial.json",
@@ -43,18 +43,19 @@
       "minimumDistinctMechanisms": 0,
       "minimumPeakAlignedSfx": 0,
       "maximumPrimaryEventsPer10Seconds": 2,
-      "minimumHumanPresenceRatio": 0.7,
-      "maximumFullScreenTakeoverRatio": 0.3,
-      "minimumBreathingRoomRatio": 0.3,
+      "minimumHumanPresenceRatio": 0,
+      "maximumFullScreenTakeoverRatio": 1,
+      "minimumBreathingRoomRatio": 0,
       "minimumHumanReactionWindows": 0,
-      "openingHookRequired": true,
+      "openingHookRequired": false,
       "audioVisualIntentMustMatch": true,
       "normalSpeedPreviewRequired": true
     },
     "editorialPolicy": "narrative-v1",
     "opening": {
-      "firstVisibleChangeBySeconds": 3,
-      "promiseBySeconds": 30
+      "timingMode": "content-led",
+      "firstVisibleChangeBySeconds": null,
+      "promiseBySeconds": null
     }
   },
   "shows": {

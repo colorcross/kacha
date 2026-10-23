@@ -62,7 +62,7 @@ export function readSfx(directory) {
   need(r.kind==='kacha-procedural-sfx'&&r.digest===digest(r)&&r.implementation===sha256File(self)&&r.audio.path===path.join(root,'sound.wav')&&sha256File(r.audio.path)===r.audio.sha256,'代码音效回执、实现或 WAV 已变化');return r;
 }
 export function attachSfx({directory,timeline,expectedSha,output,target}) {
-  const r=readSfx(directory), input=fs.realpathSync(timeline), out=path.resolve(output);
+  const r=readSfx(directory), input=fs.realpathSync(timeline), out=path.join(fs.realpathSync(path.dirname(path.resolve(output))),path.basename(output));
   need(sha256File(input)===expectedSha,'时间线已改变');
   need(path.dirname(out)===path.dirname(input)&&out!==input&&!fs.existsSync(out),'候选须为原时间线同目录的新文件');
   const projection=buildTimelineProjection(input), source=assertProjectionSourceCurrent(projection,{requireDeclaredSha:true}).identity;

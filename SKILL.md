@@ -8,6 +8,8 @@ description: |
 
 先把内容、切点与同步做对，再做视觉包装。用户在 Agent 中用自然语言操作，Agent 负责命令、素材索引、最小 delta、任务执行与证据回读，不让用户填写工程 JSON。
 
+创作方向先读 `references/creative-direction.md`：内容目标 → 叙事方法 → 自由画面形式 → 执行工具。五套旧外观只作兼容配方；新项目不受其限制。`kacha direction plan` 仅出方案；`start --creative-direction` 对单源、文稿和多素材统一绑定，导演按内容信号提议方法，多素材分镜须落实显式要求。外部候选按 `references/creative-skills.md` 回收。
+
 ## 任务入口
 
 | 用户目标 | 路径与必读材料 |
@@ -70,6 +72,7 @@ node scripts/kacha.mjs resume PROJECT --confirm-execute
 | 清理与保留 | `references/cleanup-retention.md` |
 | 剪映美颜、降噪、人声美化、画质提升、转场和特效 | `references/jianying-enhancements.md`；按问题选择能力，Agent 通过当前 UI 操作，核验权益并回收独立候选 |
 | AE / 剪映辅助精剪、动效与回收 | `references/professional-tools.md`；先 detect，实际安装/脚本/渲染分别验证 |
+| 花叔 motion / art-motion / design、Lemo 代码短片、口播图解与生成插镜 | `references/creative-skills.md`；`creative catalog/doctor` → 读所选原 skill → 创作合同 → 原生渲染/回收 → 候选时间线；Agent 代填合同，真实节目保留方向选择与终审 |
 | wise-motion 动效、文字/数字/步骤卡片 | `references/wise-motion.md`；先检索内容槽，再渲染为无声素材，按叙事触发加入候选时间线 |
 | 白板视频 | `docs/WHITEBOARD_ANIMATION.md` |
 

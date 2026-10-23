@@ -123,11 +123,10 @@
         "PingFang SC",
         "Noto Sans CJK SC",
         "Source Han Sans SC",
-        "Source Han Sans CN Medium",
-        "Source Han Sans CN Light"
+        "Source Han Sans CN Medium"
       ],
-      "weight": 500,
-      "sizeRatio": 0.086,
+      "weight": 700,
+      "sizeRatio": 0.13,
       "letterSpacingEm": -0.01
     }
   },
@@ -237,12 +236,12 @@
     ]
   },
   "cover": {
-    "subjectHeightRatio": 0.44,
-    "subjectMinimumHeightRatio": 0.32,
-    "subjectMaximumHeightRatio": 0.48,
-    "subjectWidthRatio": 0.27,
-    "titleMaximumWidthRatio": 0.56,
-    "accentMaximumAreaRatio": 0.12,
+    "subjectHeightRatio": 0.68,
+    "subjectMinimumHeightRatio": 0.5,
+    "subjectMaximumHeightRatio": 0.82,
+    "subjectWidthRatio": 0.42,
+    "titleMaximumWidthRatio": 0.84,
+    "accentMaximumAreaRatio": 0.22,
     "safeMarginRatio": 0.07,
     "preferContextOverPortraitScale": true,
     "titleTypographyRole": "coverTitle",
@@ -250,7 +249,9 @@
     "specificCharacterImitation": "forbidden",
     "mode": "editorial_2d",
     "seriesLabelRequired": false,
-    "issueNumberRequired": false
+    "issueNumberRequired": false,
+    "generationStyleProfile": "dahui-ai-person-scene-bold",
+    "generationStyleProfileFile": "cover-profiles/dahui-ai.json"
   },
   "adaptiveLayout": {
     "requiredInputs": [

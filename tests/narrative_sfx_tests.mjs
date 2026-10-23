@@ -43,11 +43,12 @@ test('real queued narrative render, optimistic selection, composition and audio 
  });
  const source=path.join(root,'source.mp4');run('ffmpeg',['-v','error','-f','lavfi','-i','color=c=blue:s=1280x720:r=25:d=7','-f','lavfi','-i','sine=frequency=440:duration=7','-c:v','libx264','-threads','2','-pix_fmt','yuv420p','-c:a','aac','-shortest',source]);
  const timeline=path.join(root,'timeline.json');const original={schemaVersion:'1.0',projectId:'narrative-test',mode:'preview',source:{...fileIdentity(source),path:'./source.mp4'},edl:[{id:'all',sourceStart:0,sourceEnd:7}],output:{width:1280,height:720,fps:25,path:'old.mp4'},audio:{sourceGain:.5},review:{status:'pass'}};write(timeline,original);
- const base={directory:kit,timeline,expectedSha:sha256File(timeline),expectedSelection:status.selection.digest,output:path.join(root,'sample-candidate.json'),start:0,reason:'Explain the verification flow'};
+ const alias=path.join(root,'directory-alias');fs.symlinkSync(root,alias,'dir');
+ const base={directory:kit,timeline,expectedSha:sha256File(timeline),expectedSelection:status.selection.digest,output:path.join(alias,'sample-candidate.json'),start:0,reason:'Explain the verification flow'};
  for(const change of [{expectedSha:'bad'},{expectedSelection:'bad'},{start:.01},{start:2},{reason:''},{output:timeline}])assert.throws(()=>attachSample({...base,...change}));
  const attached=attachSample(base), plan=JSON.parse(fs.readFileSync(attached.candidate.path));assert.equal(plan.review,undefined);assert.deepEqual(plan.audio,original.audio);assert.equal(sha256File(timeline),base.expectedSha);
  const soundRoot=path.join(root,'sound'),sound=synthesizeSfx({spec:sfx,output:soundRoot});assert.equal(sound.apiCalls,0);assert.ok(sound.measurement.measuredPeakOffsetSeconds>=0);
- const soundBase={directory:soundRoot,timeline:attached.candidate.path,expectedSha:attached.candidate.sha256,output:path.join(root,'combined.json'),target:1};
+ const soundBase={directory:soundRoot,timeline:attached.candidate.path,expectedSha:attached.candidate.sha256,output:path.join(alias,'combined.json'),target:1};
  assert.throws(()=>attachSfx({...soundBase,target:7}),/尾部/);
  const audio=attachSfx(soundBase);assert.ok(audio.alignment.withinTolerance);assert.equal(JSON.parse(fs.readFileSync(audio.candidate.path)).audio.sfx.length,1);
  run(process.execPath,['scripts/kacha.mjs','timeline','render','--plan',audio.candidate.path]);

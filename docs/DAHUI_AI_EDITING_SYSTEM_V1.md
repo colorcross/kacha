@@ -102,7 +102,7 @@ node scripts/kacha.mjs episode bind --episode /PROJECT/contracts/episode.json --
 node scripts/kacha.mjs episode validate --episode /PROJECT/contracts/episode.json --stage plan
 node scripts/kacha.mjs production-quality validate --contract /PROJECT/contracts/production-quality-contract.json --project /PROJECT/contracts/project-manifest.json --stage plan
 node scripts/kacha.mjs visual-capabilities template --style dahui-ai --show ai-reading --duration 2700 --requirements /PROJECT/contracts/editorial-requirements.json --output /PROJECT/contracts/visual-plan.json
-node scripts/kacha.mjs cover template --pack dahui-ai --project-id DH6-102 --evidence /MEDIA/book-photo.jpg --output /PROJECT/contracts/cover.json
+node scripts/kacha.mjs cover template --pack dahui-ai --show ai-reading --aspect-ratio 16:9 --project-id DH6-102 --evidence /MEDIA/book-photo.jpg --output /PROJECT/contracts/cover.json
 ```
 
 模板包含空值，表示待准备，不是通过证据。实际 manifest 路径以初始化返回值为准，`--project` 绑定真实工程；正式工程命令会自动传入。节目合同变更后用 `episode bind` 重新检查并更新 production-quality 中该文件的摘要；不得顺手清空其他已审阅的执行记录。已冻结项目继续使用绑定运行时，更新当前工具不自动重剪历史片。
@@ -192,3 +192,9 @@ AI拆解室新增 `reviewScenario`：AI任务、普通产品体验、问题调�
 新建大灰AI节目采用 adaptive-v1：目标和编辑判断在一份方案中维护，执行节点与不适用状态由程序派生；素材、对白、封面等任务按真实依赖安排。局部修改只重做受影响结果，不自动沿用变化后的终审。四步用户流程为理解素材、形成初稿、针对问题修改、验证交付。
 
 声音先做当前源诊断，干净录音可直通，轻处理须审听实际输出；混有音乐/竞争人声或明确要求分离时保留分离链。新默认不降低问句、事实证据、读书完整母片、辩论实录、逐张封面和当前成片终审要求，也不迁移历史冻结工程。MiniMax生成默认与本地音效优先保持不变。
+
+## 2026-10-20 封面风格更新
+
+2026-10-20封面r3已获用户确认：以当前V3写实运动黑体版为默认视觉基准。本人原创3D形象偏写实，成年比例、黑框眼镜、自然细发丝短发；黑/白纯色V领长袖或短袖、运动裤，露鞋用运动跑步鞋。粗黑体、暖白主句与浅金渐变题眼，主题场景保留纵深，正式文字分层排版；不显示右下角常驻生成说明，来源留在工程。表情、动作、黑白衣色与场景按主题调整。完整要求以《大灰AI_封面生成规范_20261020》第2节为准。
+
+机器参数入口为`kacha/config/cover-profiles/dahui-ai.json`（咔嚓仓库内为`config/cover-profiles/dahui-ai.json`）。新合同绑定当前风格ID/SHA、栏目、变体与实际画幅；`cover prompt`只输出提示，不自动生成图片。正式文字独立排版，生成角色与辅助场景分别记录。逐张检查原尺寸、约240px缩略图与目标平台裁切；旧冻结工程不自动迁移，风格确认不代替节目内容审阅。

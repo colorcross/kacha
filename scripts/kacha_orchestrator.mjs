@@ -21,7 +21,7 @@ function usage() {
     "用法：\n"
       + "  kacha.mjs start --brief BRIEF [--project-root DIR] [--confirm-execute]\n"
       + "  kacha.mjs start --materials DIR --requirements TEXT --project-root DIR [--duration SEC --aspect 16:9|9:16]\n"
-      + "  kacha.mjs start --source VIDEO --project-root DIR [options]\n"
+      + "  kacha.mjs start --source VIDEO --project-root DIR [--creative-direction REQUEST.json] [options]\n"
       + "  kacha.mjs start --script FILE|--topic TEXT --task content_generation --project-root DIR\n"
       + "  kacha.mjs run PROJECT [--confirm-execute] [--include-render]\n"
       + "  kacha.mjs resume PROJECT [--confirm-execute] [--include-render]\n"
@@ -48,6 +48,7 @@ try {
       requirements: option(args, "--requirements-file") ? fs.readFileSync(option(args, "--requirements-file"), "utf8") : option(args, "--requirements"),
       duration: Number(option(args, "--duration", "60")), aspect: option(args, "--aspect", "16:9"),
       fps: Number(option(args, "--fps", "25")), width: args.includes("--width") ? Number(option(args, "--width")) : null,
+      creativeDirection: args.includes("--creative-direction") ? JSON.parse(fs.readFileSync(option(args, "--creative-direction"), "utf8")) : undefined,
       briefPath: option(args, "--brief"),
       source: option(args, "--source"),
       script: option(args, "--script"),

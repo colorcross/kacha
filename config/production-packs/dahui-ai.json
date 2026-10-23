@@ -36,7 +36,10 @@
       "requiredPoseFields": [],
       "seriesLabelRequired": false,
       "issueNumberRequired": false,
-      "syntheticIdentityForbidden": true
+      "syntheticIdentityForbidden": false,
+      "authorizedOriginal3dCharacterAllowed": true,
+      "characterPolicyRevision": "2026-10-20-r2",
+      "characterPolicy": "用户已授权当前大灰形象的原创电影级3D表现；允许按主题改变表情、动作、衣服和装饰；身份来源与生成层单列，不当实拍/实测证据。"
     },
     "firstMinute": {
       "windowSeconds": 60,

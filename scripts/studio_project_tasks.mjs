@@ -110,7 +110,7 @@ if (!isMainThread) {
         script: options.scriptPath || null, topic: options.topic || null,
         projectRoot, projectId: options.projectId, task: "content_generation",
         pack: selection.packId, show: selection.showId, style: options.style, platform: options.platform,
-        language: "zh", confirmExecute: false, development: false,
+        language: "zh", creativeDirection: options.creativeDirection, confirmExecute: false, development: false,
       });
     } else {
       const { projectStatus, runProject } = await import("./project_orchestrator.mjs");

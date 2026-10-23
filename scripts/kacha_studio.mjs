@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import { directionCatalog, planCreativeDirection, directionInstruction } from "./creative_direction.mjs";
 import { loadProductionPack, resolveProductionSelection } from "./production_pack.mjs";
 import os from "node:os";
 import path from "node:path";
@@ -752,7 +753,9 @@ function buildProductionCatalogBase() {
     }
   }
   const productionMotionPolicy = readJson(productionMotionPolicyFile);
+  const creativeDirection = directionCatalog();
   const catalog = {
+    creativeDirection,
     schemaVersion: "1.0",
     status: "pass",
     id: registry.id,
@@ -786,12 +789,14 @@ function buildProductionCatalogBase() {
       effects,
       productionMotionPolicy,
       visualLanguageRegistry,
+      creativeDirection,
       custom: [],
     }),
   };
   return {
     catalog,
     digestInputs: {
+      creativeDirection,
       registry,
       effects,
       productionMotionPolicy,
@@ -851,7 +856,8 @@ export function loadProductionCatalog({
     throw new Error(`默认风格不存在：${cached.catalog.defaultStyleId}`);
   }
   const catalog = clone(cached.catalog);
-  catalog.styles = clone(styles);
+  catalog.styles = clone(styles).map(style => ({ ...style, lifecycle: style.design.profile === "xingzhe" || catalog.creativeDirection.retiredPresetIds.includes(style.id) ? "compatibility-only" : "active" }));
+  catalog.selectableStyleIds = catalog.styles.filter(style => style.lifecycle === "active").map(style => style.id);
   catalog.unavailableStyles = unavailableStyles;
   catalog.digest = sha256Value({
     ...cached.digestInputs,
@@ -1056,6 +1062,7 @@ function normalizeProductionRequest(request, catalog, media) {
     catalog,
     style,
   );
+  const creativeDirection = planCreativeDirection(request.creativeDirection, catalog.creativeDirection);
   const openingId = request.openingId ?? style.direction.openingId;
   const openingEffect = catalog.openings.find((entry) => entry.id === openingId);
   if (!openingEffect) {
@@ -1112,6 +1119,7 @@ function normalizeProductionRequest(request, catalog, media) {
       ? path.resolve(nonEmptyString(request.outputDirectory, "outputDirectory"))
       : path.dirname(media.path),
     projectOverrides,
+    creativeDirection,
     visualLanguageSelection,
     style,
   };
@@ -1154,7 +1162,7 @@ function productionInstructions(request, catalog) {
     {
       id: "studio-visual-language-contract",
       text: request.visualLanguageSelection.mode === "automatic"
-        ? "五套行者风剪辑视觉语言按每个真实语义拍自动选择：浅暖轻浮层用于知识与方法，空间光路用于关系与流程，幽默漫画只用于真实喜剧反差，像素风只用于可核验状态变化，暗黑科技风只用于异常、风险、冲突证据、隐性机制或真伪裁决。每次选择必须记录 matchedSignal、semanticBeatId、sourceRange；没有匹配信号时保持干净画面或普通字幕，不强套风格。"
+        ? "仅在既有行者风效果渲染中，从五套兼容配方按真实语义拍选择；这不是新创作的风格边界：浅暖轻浮层用于知识与方法，空间光路用于关系与流程，幽默漫画只用于真实喜剧反差，像素风只用于可核验状态变化，暗黑科技风只用于异常、风险、冲突证据、隐性机制或真伪裁决。每次选择必须记录 matchedSignal、semanticBeatId、sourceRange；没有匹配信号时保持干净画面或普通字幕，不强套风格。"
         : `优先使用“${request.visualLanguageSelection.preferredLabel}”剪辑语法，但只有当前语义拍满足其注册触发时才能应用；不匹配时执行“${request.visualLanguageSelection.preferredFallback}”，并记录 fallbackReasonWhenNotApplied。不得把优先选择解释为整片滤镜。`,
       appliesTo: [request.task],
       modules: ["visual", "subtitles", "audio", "sfx"],
@@ -1249,6 +1257,7 @@ function buildProjectConfig(request, media, catalog) {
     },
     editingDefaults: {
       parameters: {
+        creativeDirection: clone(request.creativeDirection),
         preserveSourceDimensions: request.preserveSource,
         preserveSourceAspectRatio: request.preserveSource,
         preserveEffectiveFrameRate: request.preserveSource,
@@ -1298,7 +1307,7 @@ function buildProjectConfig(request, media, catalog) {
               ?? "按注册开场模板完成进入、语义峰值、停稳和退出",
             soundFunction: request.openingEffect.soundFunction ?? "visible_landing",
             fallback: request.openingEffect.fallback ?? "cold_open_marker",
-            startAtOrBeforeSeconds: style.design.profile !== "xingzhe" ? 3 : catalog.productionMotionPolicy.opening.startAtOrBeforeSeconds,
+            startAtOrBeforeSeconds: style.design.profile === "clean-editorial" ? null : style.design.profile !== "xingzhe" ? 3 : catalog.productionMotionPolicy.opening.startAtOrBeforeSeconds,
             promiseBySeconds: style.design.profile !== "xingzhe" ? loadProductionPack(style.design.profile, request.show).policies.opening.promiseBySeconds : catalog.productionMotionPolicy.opening.promiseBySeconds,
             normalSpeedPreviewRequired: true,
             representativeFrameRequired: true,
@@ -1324,7 +1333,7 @@ function buildProjectConfig(request, media, catalog) {
           targetDuration: request.targetDuration || null,
         },
       },
-      instructions: productionInstructions(request, catalog),
+      instructions: [...productionInstructions(request, catalog), directionInstruction(request.creativeDirection, request.task)],
       recipeParameters: {
         bgm: {
           adaptive: style.bgm.adaptive,
@@ -1456,6 +1465,7 @@ export function compileProductionRequest(request, {
   const baseBrief = {
     schemaVersion: "1.0",
     kind: "kacha-production-brief",
+    creativeDirection: clone(normalized.creativeDirection),
     generatedAt: new Date().toISOString(),
     projectName: normalized.projectName,
     task: normalized.task,
@@ -1501,7 +1511,7 @@ export function compileProductionRequest(request, {
       required: true,
       primaryEffectCount: normalized.openingId === "natural" ? 0 : 1,
       mode: normalized.openingId === "natural" ? "natural" : "registered",
-      startAtOrBeforeSeconds: normalized.style.design.profile !== "xingzhe" ? 3 : catalog.productionMotionPolicy.opening.startAtOrBeforeSeconds,
+      startAtOrBeforeSeconds: normalized.style.design.profile === "clean-editorial" ? null : normalized.style.design.profile !== "xingzhe" ? 3 : catalog.productionMotionPolicy.opening.startAtOrBeforeSeconds,
       promiseBySeconds: normalized.style.design.profile !== "xingzhe" ? loadProductionPack(normalized.style.design.profile, normalized.show).policies.opening.promiseBySeconds : catalog.productionMotionPolicy.opening.promiseBySeconds,
       normalSpeedPreviewRequired: true,
     },
@@ -1509,7 +1519,7 @@ export function compileProductionRequest(request, {
     professionalAutoDirector: {
       enabled: normalized.automaticProfessionalJudgment,
       rules: normalized.automaticProfessionalJudgment
-        ? (normalized.style.design.profile !== "xingzhe" ? productionInstructions(normalized, catalog).map(item => item.text) : clone(catalog.professionalAutoDirector.rules))
+        ? [directionInstruction(normalized.creativeDirection, normalized.task).text, ...(normalized.style.design.profile !== "xingzhe" ? productionInstructions(normalized, catalog).map(item => item.text) : clone(catalog.professionalAutoDirector.rules))]
         : [],
       decisionBoundary:
         "自动选择只适用于用户未明确指定的区间；不得越过内容、素材、授权和质量门禁。",
@@ -1660,6 +1670,10 @@ async function runCli() {
               supportedProductionPacks: Object.keys(catalog.showGroups),
               activeEditorialPresetCount: catalog.styles.filter(style => style.design.profile === "dahui-ai").length,
               legacyEffectLibrary: catalog.styleArchitecture.masterStyleId,
+              activeStyleCount: catalog.selectableStyleIds.length,
+              retiredPresetIds: catalog.creativeDirection.retiredPresetIds,
+              creativeDirectionModel: catalog.creativeDirection.id,
+              creativeMethodCount: catalog.creativeDirection.techniques.length,
               builtInStyleCount: catalog.styles.filter((style) => style.builtIn).length,
               customStyleCount: catalog.styles.filter((style) => !style.builtIn).length,
               masterStyleId: catalog.styleArchitecture.masterStyleId,

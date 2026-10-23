@@ -104,6 +104,7 @@ function markContractDirty() {
   state.generatedProjectPath = null;
   $("preflightPanel").hidden = true;
   $("resultPanel").hidden = true;
+  updateSummary();
   updateReadiness();
 }
 
@@ -121,7 +122,7 @@ function renderStyles() {
   }));
   const family = styleFamily(selectedStyle());
   $("styleFamily").value = family;
-  $("styleList").innerHTML = state.catalog.styles.filter(style => styleFamily(style) === family).map((style) => `
+  $("styleList").innerHTML = state.catalog.styles.filter(style => styleFamily(style) === family && (style.lifecycle !== "compatibility-only" || $("enableLegacyStyles").checked)).map((style) => `
     <button
       type="button"
       class="style-choice${style.id === state.selectedStyleId ? " is-selected" : ""}"
@@ -141,6 +142,7 @@ function renderStyles() {
 }
 
 function renderVisualLanguages() {
+  $("legacyLanguagePanel").hidden = ["dahui-ai", "clean-editorial"].includes(selectedStyle()?.design.profile);
   if (["dahui-ai", "clean-editorial"].includes(selectedStyle()?.design.profile)) {
     state.selectedVisualLanguageMode = "automatic";
     state.selectedVisualLanguageId = null;
@@ -157,7 +159,7 @@ function renderVisualLanguages() {
     >
       <small>RECOMMENDED</small>
       <h3>自动按语义</h3>
-      <strong>五套语言并列路由</strong>
+      <strong>既有行者风配方兼容</strong>
       <p>逐个语义拍匹配真实触发；没有合适信号时保持干净画面或普通字幕。</p>
       <span>内容 → 匹配 → 合同 → 回退</span>
     </button>
@@ -308,7 +310,7 @@ function applyPreview(style) {
     accent: style.design.overrides?.palette?.accent || style.caption.emphasisColor,
   };
   const preview = $("stylePreview");
-  preview.querySelector(".preview-caption").style.color = style.design.profile === "dahui-ai" ? palette.ink : "";
+  preview.querySelector(".preview-caption").style.color = ["dahui-ai", "clean-editorial"].includes(style.design.profile) ? palette.ink : "";
   preview.style.setProperty("--preview-canvas", palette.canvas);
   preview.style.setProperty("--preview-surface", palette.surface);
   preview.style.setProperty("--preview-ink", palette.ink);
@@ -413,7 +415,8 @@ function updateSummary() {
   $("effectOptionsLabel").textContent = `${opening?.label ?? "按内容开场"} · ${state.effects.length}组指定效果`;
   $("summarySource").textContent = state.media?.fileName || "未选择";
   $("summaryStyle").textContent = style.name;
-  $("summaryVisualLanguage").textContent = visualLanguageSummary();
+  $("summaryVisualLanguage").textContent = state.catalog.creativeDirection.intents.find(item => item.id === $("creativeIntent").value)?.label || "按内容决定";
+  $("summaryCreativeAppearance").textContent = $("creativeAppearance").value.trim() || "从内容与素材提炼";
   $("summaryFont").textContent =
     state.preflight?.brief?.style?.captionFontEvidence?.resolvedFamily ?? `${style.caption.preferredFontFamily}${style.id === "xingzhe" ? " · 默认" : ""}`;
   $("summaryAudio").textContent = audioPresetName(state.selectedAudioPresetId);
@@ -440,7 +443,7 @@ function populateSelect(select, values, { selected = null } = {}) {
 }
 
 function setupStyleEditor() {
-  const builtIns = state.catalog.styles.filter((style) => style.builtIn);
+  const builtIns = state.catalog.styles.filter((style) => style.builtIn && style.lifecycle !== "compatibility-only");
   populateSelect($("customBaseStyle"), builtIns, { selected: state.catalog.defaultStyleId });
   populateSelect($("customCaptionTemplate"), state.catalog.captionTemplates, {
     selected: "editorial-readable",
@@ -725,6 +728,12 @@ function requestPayload() {
     backgroundMusicEnabled:
       state.selectedBgmPresetId !== "none",
     styleId: state.selectedStyleId,
+    creativeDirection: {
+      intent: $("creativeIntent").value,
+      brief: $("creativeBrief").value.trim(),
+      artDirection: $("creativeAppearance").value.trim(),
+      customMethod: $("creativeIntent").value === "custom" ? $("creativeBrief").value.trim() : "",
+    },
     visualLanguageSelection: state.selectedVisualLanguageMode === "automatic"
       ? { mode: "automatic" }
       : {
@@ -866,6 +875,15 @@ async function bootstrap() {
   try {
     const catalog = await api("/api/bootstrap");
     state.catalog = catalog;
+    populateSelect($("creativeIntent"), catalog.creativeDirection.intents, { selected: "auto" });
+    const describeDirection = () => {
+      const choice = catalog.creativeDirection.intents.find(item => item.id === $("creativeIntent").value);
+      $("creativeMethodHint").textContent = choice ? choice.techniques.map(id => catalog.creativeDirection.techniques.find(item => item.id === id)?.principle).join(" ") : "";
+      markContractDirty();
+    };
+    $("creativeIntent").addEventListener("change", describeDirection);
+    ["creativeBrief", "creativeAppearance"].forEach(id => $(id).addEventListener("input", markContractDirty));
+    describeDirection();
     state.selectedStyleId = catalog.defaultStyleId;
     state.selectedVisualLanguageMode =
       catalog.visualLanguagePolicy.defaultSelectionMode;
@@ -922,6 +940,14 @@ $("autoDirector").addEventListener("change", () => {
 $("styleFamily").addEventListener("change", () => {
   const style = state.catalog?.styles.find(item => styleFamily(item) === $("styleFamily").value);
   if (style) selectStyle(style.id);
+});
+$("enableLegacyStyles").addEventListener("change", () => {
+  const enabled = $("enableLegacyStyles").checked;
+  $("legacyFamilyOption").hidden = !enabled;
+  $("legacyFamilyOption").disabled = !enabled;
+  if (!enabled && styleFamily(selectedStyle()) === "legacy") selectStyle(state.catalog.defaultStyleId);
+  else renderStyles();
+  markContractDirty();
 });
 $("show").addEventListener("change", () => {
   if (selectedStyle()?.design.profile === "dahui-ai") {

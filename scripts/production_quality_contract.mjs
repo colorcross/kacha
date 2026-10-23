@@ -100,8 +100,9 @@ export function template(projectId, {
       opening: {
         exactlyOnePrimaryEffect: editorialPolicy === "legacy",
         exactlyOneNarrativeOpening: true,
-        firstVisibleChangeBySeconds: productionPack.policies.opening?.firstVisibleChangeBySeconds ?? 0.5,
-        promiseBySeconds: productionPack.policies.opening?.promiseBySeconds ?? 3,
+        ...(packId === "clean-editorial" ? { timingMode: "content-led" } : {}),
+        firstVisibleChangeBySeconds: packId === "clean-editorial" ? null : productionPack.policies.opening?.firstVisibleChangeBySeconds ?? 0.5,
+        promiseBySeconds: packId === "clean-editorial" ? null : productionPack.policies.opening?.promiseBySeconds ?? 3,
         frameZeroFullCoverForClosedReveal: true,
         partialSubjectApertureForbidden: true,
       },
@@ -428,14 +429,14 @@ function validatePolicies(contract, errors) {
   ) errors.push("policies.connections 必须枚举全部连接点、说明动机并返剪错误剪点");
   const firstVisibleBy = Number(policy.opening?.firstVisibleChangeBySeconds);
   const promiseBy = Number(policy.opening?.promiseBySeconds);
+  const contentLedOpening = expectedPack?.id === "clean-editorial";
+  const openingTimingInvalid = contentLedOpening
+    ? policy.opening?.timingMode !== "content-led" || policy.opening?.firstVisibleChangeBySeconds !== null || policy.opening?.promiseBySeconds !== null
+    : !Number.isFinite(firstVisibleBy) || firstVisibleBy < 0 || firstVisibleBy !== (expectedPack?.policies.opening?.firstVisibleChangeBySeconds ?? 0.5)
+      || !Number.isFinite(promiseBy) || promiseBy <= 0 || promiseBy !== (expectedPack?.policies.opening?.promiseBySeconds ?? 3);
   if (
     (narrative ? policy.opening?.exactlyOneNarrativeOpening !== true || policy.opening?.exactlyOnePrimaryEffect !== false : policy.opening?.exactlyOnePrimaryEffect !== true)
-    || !Number.isFinite(firstVisibleBy)
-    || firstVisibleBy < 0
-    || firstVisibleBy !== (expectedPack?.policies.opening?.firstVisibleChangeBySeconds ?? 0.5)
-    || !Number.isFinite(promiseBy)
-    || promiseBy <= 0
-    || promiseBy !== (expectedPack?.policies.opening?.promiseBySeconds ?? 3)
+    || openingTimingInvalid
     || policy.opening?.frameZeroFullCoverForClosedReveal !== true
     || policy.opening?.partialSubjectApertureForbidden !== true
   ) errors.push(`policies.opening 必须符合所选栏目：${expectedPack?.policies.opening?.firstVisibleChangeBySeconds ?? 0.5} 秒可见变化、${expectedPack?.policies.opening?.promiseBySeconds ?? 3} 秒建立问题及完整揭幕`);
@@ -502,7 +503,7 @@ function validatePolicies(contract, errors) {
     || Number(firstMinute.maximumFullScreenTakeoverRatio) > (expectedPack?.id !== "xingzhe-dahui" ? 1 : 0.4)
     || Number(firstMinute.minimumBreathingRoomRatio) < (expectedPack?.id !== "xingzhe-dahui" ? 0 : 0.15)
     || Number(firstMinute.minimumBreathingRoomRatio) > 1
-    || firstMinute.openingHookRequired !== true
+    || firstMinute.openingHookRequired !== (expectedPack?.id !== "clean-editorial")
     || firstMinute.audioVisualIntentMustMatch !== true
     || firstMinute.normalSpeedPreviewRequired !== true
   ) errors.push("policies.firstMinute 未落实所选栏目在前 60 秒的吸引力、克制密度、呼吸空间和活人感门槛");
@@ -563,6 +564,7 @@ function validateCinematicEditorial(contractFile, contract, execution, errors) {
     if (!policy.cinematicMechanisms?.includes(event.mechanism)) {
       errors.push(`${prefix}.mechanism 不是已注册电影化机制`);
     }
+    if (event.mechanism === "custom" && !hasValue(event.methodDescription)) errors.push(`${prefix}.methodDescription 必须说明自定义方法的目的、画面动作与回退`);
     if (!policy.sourceTypes?.includes(event.sourceType)) {
       errors.push(`${prefix}.sourceType 不是已注册来源类型`);
     }
@@ -591,7 +593,7 @@ function validateCinematicEditorial(contractFile, contract, execution, errors) {
         || area <= 0
         || area > Number(policy.globalRules?.maximumRoundedContainerAreaRatio)
       ) errors.push(`${prefix}.containerAreaRatio 超过电影化容器面积上限`);
-      if (end - start > Number(policy.globalRules?.maximumSingleBoundedSurfaceSeconds)) {
+      if (policy.globalRules?.maximumSingleBoundedSurfaceSeconds !== null && end - start > Number(policy.globalRules?.maximumSingleBoundedSurfaceSeconds)) {
         errors.push(`${prefix} 单个有边界表面停留过长`);
       }
       if (
@@ -725,15 +727,17 @@ function validateExecution(contractFile, contract, errors) {
 
   const opening = execution.opening ?? {};
   const naturalOpening = contract.editorialPolicy?.version === NARRATIVE_POLICY && opening.mode === "natural";
+  const openingProgramDuration = Number(contract.release?.programDurationSeconds);
   if (naturalOpening && (!hasValue(opening.narrativeReason) || opening.primaryNarrativeCount !== 1)) errors.push("真实开场必须绑定唯一叙事落点与表达理由");
   if (
     !Number.isFinite(opening.firstVisibleChangeSeconds)
     || !Number.isFinite(opening.promiseSeconds)
     || Number(opening.primaryEffectCount) !== (naturalOpening ? 0 : 1)
     || Number(opening.firstVisibleChangeSeconds) < 0
-    || Number(opening.firstVisibleChangeSeconds) > contract.policies.opening.firstVisibleChangeBySeconds
+    || (!isGeneric(contract) && Number(opening.firstVisibleChangeSeconds) > contract.policies.opening.firstVisibleChangeBySeconds)
     || Number(opening.promiseSeconds) <= 0
-    || Number(opening.promiseSeconds) > contract.policies.opening.promiseBySeconds
+    || (!isGeneric(contract) && Number(opening.promiseSeconds) > contract.policies.opening.promiseBySeconds)
+    || (openingProgramDuration > 0 && (opening.firstVisibleChangeSeconds > openingProgramDuration || opening.promiseSeconds > openingProgramDuration))
     || (!naturalOpening && !hasValue(opening.effectId))
   ) errors.push(`execution.opening 未落实唯一开场、${contract.policies.opening.firstVisibleChangeBySeconds} 秒变化或 ${contract.policies.opening.promiseBySeconds} 秒问题建立`);
   identityFile(contractFile, opening.dynamicPreview, "execution.opening.dynamicPreview", errors);

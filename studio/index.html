@@ -118,7 +118,7 @@
               <div class="section-heading">
                 <div>
                   <p class="eyebrow">STYLE SYSTEM</p>
-                  <h2>基础风格与剪辑语言</h2>
+                  <h2>品牌配置与创作方向</h2>
                 </div>
                 <button type="button" class="text-action" id="openStyleEditor">
                   ＋ 新建风格
@@ -127,8 +127,8 @@
 
               <div class="style-tier-heading">
                 <div>
-                  <span>基础风格</span>
-                  <p>决定品牌、色彩、字幕、声音和整体密度。</p>
+                  <span>品牌身份</span>
+                  <p>品牌配置决定身份与默认值；叙事方法、画面形式和工具分别选择。</p>
                 </div>
                 <small>BRAND PROFILE</small>
               </div>
@@ -136,9 +136,10 @@
                 <select id="styleFamily" aria-label="制作类型">
                   <option value="generic">通用剪辑</option>
                   <option value="dahui">大灰AI栏目</option>
-                  <option value="legacy">历史风格</option>
+                  <option value="legacy" id="legacyFamilyOption" hidden disabled>历史配方兼容</option>
                 </select>
               </label>
+              <details><summary>恢复历史配方</summary><p>仅为重现既有行者风项目提供；新作品可在下方自由描述画面。</p><label><input type="checkbox" id="enableLegacyStyles" /> 显示历史配方入口</label></details>
               <div class="style-list" id="styleList" aria-label="基础视频风格"></div>
               <details id="unavailableStyles" class="unavailable-styles" hidden>
                 <summary id="unavailableStylesSummary"></summary>
@@ -146,13 +147,21 @@
                 <ul id="unavailableStylesList"></ul>
               </details>
 
-              <div class="visual-language-panel">
+              <div class="visual-language-panel" id="creativeDirectionPanel">
+                <div class="style-tier-heading"><div><span>这段内容要怎样表达？</span><p>先定表达目标，再选择方法和工具；不限于既有配方。</p></div></div>
+                <label class="field"><span>表达目标</span><select id="creativeIntent"></select></label>
+                <p id="creativeMethodHint" aria-live="polite"></p>
+                <label class="field"><span>具体要求</span><textarea id="creativeBrief" rows="3" maxlength="4000" placeholder="例如：用真实录屏说明操作，再用剖面图讲清原理。选择自定义时，说明目的、画面动作与回退。"></textarea></label>
+                <label class="field"><span>画面方向（可留空）</span><textarea id="creativeAppearance" rows="2" maxlength="4000" placeholder="例如：实拍与手绘标注，或统一的纸艺、拼贴、3D材质；不必套用固定风格。"></textarea></label>
+                <p>制作工具按任务与实际依赖选择。生成画面先预览，原素材和原声保留。</p>
+              </div>
+              <div class="visual-language-panel" id="legacyLanguagePanel">
                 <div class="style-tier-heading">
                   <div>
-                    <span>剪辑视觉语言</span>
-                    <p>按内容与证据编排；历史工程可继续选择原有视觉语言。</p>
+                    <span>既有项目的配方兼容</span>
+                    <p>仅供既有行者风效果复现；新表达由上方创作方向决定。</p>
                   </div>
-                  <small>EDITING GRAMMAR</small>
+
                 </div>
                 <div
                   class="visual-language-list"
@@ -457,12 +466,16 @@
               <dd id="summarySource">未选择</dd>
             </div>
             <div>
-              <dt>风格</dt>
+              <dt>品牌配置</dt>
               <dd id="summaryStyle">待读取</dd>
             </div>
             <div>
-              <dt>剪辑语言</dt>
-              <dd id="summaryVisualLanguage">自动按语义</dd>
+              <dt>表达目标</dt>
+              <dd id="summaryVisualLanguage">按内容决定</dd>
+            </div>
+            <div>
+              <dt>画面方向</dt>
+              <dd id="summaryCreativeAppearance">从内容与素材提炼</dd>
             </div>
             <div>
               <dt>字幕字体</dt>

@@ -238,6 +238,8 @@ function verifyBundle(bundle, source) {
   run(process.execPath, ["--test", path.join(bundle, "tests", "jianying_enhancements_tests.mjs")], bundle, { env: verificationEnvironment });
   run(process.execPath, ["--test", path.join(bundle, "tests", "narrative_sfx_tests.mjs")], bundle, { env: verificationEnvironment });
   run(process.execPath, ["--test", path.join(bundle, "tests", "wise_motion_tests.mjs")], bundle, { env: verificationEnvironment });
+  run(process.execPath, ["--test", path.join(bundle, "tests", "creative_direction_tests.mjs")], bundle, { env: verificationEnvironment });
+  run(process.execPath, ["--test", path.join(bundle, "tests", "creative_skills_tests.mjs")], bundle, { env: verificationEnvironment });
   for (const test of fs.readdirSync(path.join(bundle, "tests")).filter(name => /^optimization_.*_tests\.mjs$/.test(name)).sort()) {
     run(process.execPath, [path.join(bundle, "tests", test)], bundle, { env: verificationEnvironment });
   }
@@ -248,6 +250,7 @@ function verifyBundle(bundle, source) {
   run("python3", [path.join(bundle, "tests", "stock_media_tests.py")], bundle, { env: verificationEnvironment });
   run(process.execPath, [path.join(bundle, "tests", "dahui_editorial_tests.mjs")], bundle, { env: verificationEnvironment });
   run(process.execPath, [path.join(bundle, "tests", "dahui_review_tests.mjs")], bundle, { env: verificationEnvironment });
+  run(process.execPath, [path.join(bundle, "tests", "dahui_cover_tests.mjs")], bundle, { env: verificationEnvironment });
   const privateTests = path.join(bundle, "tests", "private");
   if (fs.existsSync(privateTests)) {
     for (const entry of fs.readdirSync(privateTests).sort()) {

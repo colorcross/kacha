@@ -26,11 +26,11 @@ test("packages Chinese and English GitHub Pages routes", async () => {
   assert.match(chinese, /<html[^>]+lang="zh-CN"/);
   assert.match(english, /<html[^>]+lang="en"/);
   assert.match(chinese, /四个可确认节点/);
-  assert.match(chinese, /五种风格，不是同一套卡片换颜色/);
-  assert.match(chinese, /1200 组语义三元组/);
-  assert.match(chinese, /近似构图 0/);
-  assert.match(chinese, /跨风格完全重复 0/);
-  assert.match(english, /Five styles, five editing grammars/);
+  assert.match(chinese, /从内容出发，选择自己的表达/);
+  assert.match(chinese, /四套创作工具按依赖与素材条件接入/);
+  assert.match(chinese, /重点旁注/);
+  assert.match(chinese, /证据揭示/);
+  assert.match(english, /Start with the story. Shape your own expression/);
   assert.match(chinese, /dodofun@126\.com/);
   assert.match(chinese, /href="\/kacha\/en\/"/);
   assert.match(english, /href="\/kacha\/"/);

@@ -153,7 +153,10 @@ function loadCinematicPolicy(fileName, showId, label, rootDirectory = designSyst
     ["maximumRoundedContainerAreaRatio", { min: 0.001, max: 1 }],
     ["minimumCleanReturnSecondsAfterBoundedSurface", { min: 0 }],
     ["sameMechanismMaximumShare", { min: 0.001, max: 1 }],
-  ]) requireNumber(source.globalRules[field], `${fileName}.globalRules.${field}`, options);
+  ]) {
+    if (field === "maximumSingleBoundedSurfaceSeconds" && source.id === "clean-editorial-cinematic" && source.globalRules[field] === null) continue;
+    requireNumber(source.globalRules[field], `${fileName}.globalRules.${field}`, options);
+  }
   requireObject(source.showBudgets, `${fileName}.showBudgets`);
   const budget = source.showBudgets[showId];
   requireObject(budget, `${fileName}.showBudgets.${showId}`);

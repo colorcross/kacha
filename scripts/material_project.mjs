@@ -7,6 +7,7 @@ import { resolveDesignSystem } from "./design_system.mjs";
 import { loadKachaConfig } from "./kacha_config.mjs";
 import { resolveProductionSelection, productionStyleProfile } from "./production_pack.mjs";
 import { buildDirectorPlan } from "./kacha_intelligence.mjs";
+import { planCreativeDirection, directionInstruction } from "./creative_direction.mjs";
 
 const scripts = path.dirname(fileURLToPath(import.meta.url));
 const marker = ".kacha/material-project.json";
@@ -84,7 +85,11 @@ function collect(inputs, outputRoot) {
 
 export function initializeMaterialProject({ materials, requirements, projectRoot, projectId = "material-film", duration = 60,
   aspect = "16:9", fps = 25, width = null, pack = null, show = null, style = null, development = false,
-  confirmExecute = false, runtime } = {}) {
+  confirmExecute = false, runtime, creativeDirection = undefined } = {}) {
+  const direction = planCreativeDirection(creativeDirection);
+  const directionRequirement = creativeDirection === undefined ? null : {
+    id: "creative-direction", text: directionInstruction(direction, "material_edit").text, check: "semantic", assetIds: [],
+  };
   const selection = resolveProductionSelection(pack, show ?? (!pack || pack === "clean-editorial" ? "montage" : null));
   pack = selection.packId; show = selection.showId;
   if (pack === "dahui-ai") throw new Error("大灰AI素材项目需要节目证据合同，请使用 source-edit 入口");
@@ -123,9 +128,10 @@ export function initializeMaterialProject({ materials, requirements, projectRoot
   fs.writeFileSync(path.join(root, ".gitignore"), ".kacha/\noutput/\npreviews/\n");
   json(path.join(root, "kacha.config.json"), {
     schemaVersion: "1.0", style: { system: "dahui-video-system", profile: productionStyleProfile(pack), modes: { show }, overrides: {} },
-    editingDefaults: { parameters: { audio: { bgm: { enabled: false } } } },
+    editingDefaults: { parameters: { creativeDirection: direction, audio: { bgm: { enabled: false } } }, instructions: [directionInstruction(direction, "material_edit")] },
   });
   const brief = signed({ schemaVersion: "1.0", kind: "kacha_material_brief", requirements: requirements.trim(),
+    creativeDirection: direction, directionRequirement,
     target: { durationSeconds: Math.round(duration * fps) / fps, fps, width: geometry[0], height: geometry[1], aspect },
     principles: ["根据实际内容选择镜头，不以文件名冒充内容理解", "保留因果、否定与完整说话语义", "默认完整适配画面，裁切必须注明依据", "只做本地候选，保留人工成片审阅"] });
   json(path.join(root, "contracts/material-brief.json"), brief);
@@ -135,7 +141,7 @@ export function initializeMaterialProject({ materials, requirements, projectRoot
   json(path.join(root, marker), project);
   json(path.join(root, "contracts/storyboard-template.json"), { schemaVersion: "1.0", kind: "kacha_material_storyboard",
     projectDigest: project.digest, briefDigest: brief.digest, interpretation: "填写对用户要求的具体理解",
-    requirements: [{ id: "requirement-1", text: "逐条拆解用户要求", check: "semantic", assetIds: [] }],
+    requirements: [...(directionRequirement ? [directionRequirement] : []), { id: "requirement-1", text: "逐条拆解用户要求", check: "semantic", assetIds: [] }],
     segments: [], notes: "由 Agent 读取实际素材后填写，不能将空模板作为成片方案" });
   json(path.join(root, ".kacha/material-agent-packet.json"), { project: fileIdentity(path.join(root, marker)), brief,
     assets, next: "先提取代表帧、按需转写并审阅素材；填写分镜，再调用 materials compose。用户只需提供素材和要求，不需编辑 JSON。",
@@ -233,6 +239,7 @@ function validateStoryboard(project, brief, storyboard, { frozen = false } = {})
     || storyboard.projectDigest !== project.digest || storyboard.briefDigest !== brief.digest) throw new Error("分镜未绑定当前素材与剪辑要求");
   if (!text(storyboard.interpretation)) throw new Error("分镜缺少对剪辑要求的理解");
   if (!Array.isArray(storyboard.requirements) || !storyboard.requirements.length) throw new Error("请逐条登记剪辑要求及覆盖关系");
+  if (brief.directionRequirement && !storyboard.requirements.some(item => sha256Value(item) === sha256Value(brief.directionRequirement))) throw new Error("分镜缺少当前创作方向要求；请从模板保留该要求，并由实际镜头覆盖");
   if (!Array.isArray(storyboard.segments) || !storyboard.segments.length || storyboard.segments.length > 500) throw new Error("分镜需要 1–500 个镜头");
   const ids = new Set(); const assets = new Map(project.assets.map((asset) => [asset.id, asset]));
   const rules = new Map();
@@ -246,7 +253,7 @@ function validateStoryboard(project, brief, storyboard, { frozen = false } = {})
   }
   let cursorFrames = 0;
   const segments = storyboard.segments.map((segment) => {
-    checkFields(segment, ["id", "assetId", "sourceIn", "duration", "fit", "audio", "role", "reason", "observation", "satisfies", "caption", "cropReason", "muteReason",
+    checkFields(segment, ["id", "assetId", "sourceIn", "duration", "fit", "audio", "role", "reason", "observation", "satisfies", "caption", "cropReason", "muteReason", "signals",
       ...(frozen ? ["frames", "start", "end", "source", "kind", "hasAudio", "inspection"] : [])], "镜头");
     const asset = assets.get(segment.assetId);
     if (!text(segment.id) || !/^[a-zA-Z0-9_-]+$/.test(segment.id) || ids.has(segment.id) || !asset) throw new Error("镜头 ID 重复/无效或引用未知素材");
@@ -260,6 +267,7 @@ function validateStoryboard(project, brief, storyboard, { frozen = false } = {})
     if (segment.fit === "cover" && !text(segment.cropReason)) throw new Error(`${segment.id} 裁切缺少主体安全依据`);
     if (asset.hasAudio && segment.audio === "mute" && !text(segment.muteReason)) throw new Error(`${segment.id} 静音缺少理由`);
     if (!text(segment.reason) || !text(segment.observation) || !text(segment.role)) throw new Error(`${segment.id} 缺少实际内容观察、叙事作用或选用理由`);
+    if (segment.signals !== undefined && (!Array.isArray(segment.signals) || segment.signals.length > 32 || !segment.signals.every(text) || new Set(segment.signals).size !== segment.signals.length)) throw new Error(`${segment.id}.signals 须为不重复的内容信号列表（最多 32 项），仅登记实际观察`);
     if (!Array.isArray(segment.satisfies) || segment.satisfies.some((id) => !rules.has(id))) throw new Error(`${segment.id} 要求覆盖引用无效`);
     if (segment.caption !== undefined && (!text(segment.caption) || [...segment.caption].length > 60)) throw new Error(`${segment.id} 字幕须为 1–60 字`);
     if (segment.caption && duration < Math.max(1.2, [...segment.caption.replace(/\s/g, "")].length / 5 + .4)) throw new Error(`${segment.id} 字幕停留不足，需减字或选更长区间`);
@@ -314,11 +322,11 @@ export function composeMaterialProject(root, storyboardFile) {
     const planFile = resolveContainedPath(root, path.join(dir, "plan.json")); immutableJson(planFile, proposal);
     const cuesFile = resolveContainedPath(root, path.join(dir, "cues.json")); immutableJson(cuesFile, { cues: segments.map((segment) => ({
       id: segment.id, start: segment.start, end: segment.end, text: segment.observation, confidence: 1,
-      signals: segment.caption ? ["reading"] : [],
+      signals: [...new Set([...(segment.signals ?? []), ...(segment.caption ? ["reading"] : [])])],
       craft: segment.caption ? { screenText: segment.caption, evidence: ["text_visible"] } : {},
     })) });
     const directorFile = resolveContainedPath(root, path.join(dir, "director.json"));
-    if (!fs.existsSync(directorFile)) json(directorFile, buildDirectorPlan(cuesFile, { projectId: project.projectId, showId: project.show, styleId: project.style }));
+    if (!fs.existsSync(directorFile)) json(directorFile, buildDirectorPlan(cuesFile, { projectId: project.projectId, showId: project.show, styleId: project.style, creativeDirection: brief.creativeDirection?.request }));
     json(path.join(root, ".kacha/material-active-plan.json"), { plan: fileIdentity(planFile) });
     return materialProjectStatus(root);
   } finally { unlock(); }

@@ -16,6 +16,17 @@ import {
 const args = process.argv.slice(2);
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 const action = isMain ? args[0] : null;
+const dahuiProfileFile = fileURLToPath(new URL("../config/cover-profiles/dahui-ai.json", import.meta.url));
+const coverRatios = ["3:4", "4:3", "16:9", "9:16", "1:1"];
+
+function editorialDesign({ showId = "ai-practice", variant = null, aspectRatio = "16:9" } = {}) {
+  const profile = readJson(dahuiProfileFile);
+  if (!profile.shows[showId]) throw new Error(`未知大灰AI栏目：${showId}`);
+  const selected = variant ?? profile.shows[showId].variant;
+  if (!profile.variants[selected]) throw new Error(`未知封面变体：${selected}`);
+  if (!coverRatios.includes(aspectRatio)) throw new Error(`不支持的封面画幅：${aspectRatio}`);
+  return { profileId: profile.id, profileSha256: sha256File(dahuiProfileFile), showId, variant: selected, aspectRatio };
+}
 function option(name, fallback = null) {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : fallback;
@@ -25,7 +36,8 @@ function usage() {
     "用法：\n"
       + "  kacha.mjs cover template --project-id ID --turnaround FILE [--real-photo FILE] --output FILE\n"
       + "  kacha.mjs cover validate --contract FILE\n"
-      + "  kacha.mjs cover prompt --contract FILE [--output FILE]",
+      + "  kacha.mjs cover prompt --contract FILE [--output FILE]"
+      + "\n大灰AI模板：--pack dahui-ai [--show ai-practice --variant tech-interface|scene-poster --aspect-ratio 3:4]",
   );
 }
 
@@ -107,6 +119,21 @@ export function validateCoverIdentityContract(contractFile, { requireQcPass = fa
       verifyIdentity(resolved, source, "封面实际来源", errors);
       if (!["real_photo", "real_evidence"].includes(source.role)) errors.push("不可使用合成人物或伪造证据冒充实际来源");
     }
+    if (contract.illustrations !== undefined && !Array.isArray(contract.illustrations)) errors.push("illustrations 必须为数组");
+    for (const layer of Array.isArray(contract.illustrations) ? contract.illustrations : []) {
+      verifyIdentity(resolved, layer, "封面生成示意层", errors);
+      if (layer.role !== "generated_illustration" || !hasValue(layer.purpose)) errors.push("生成层须标为generated_illustration并注明用途，不得冒充实际证据");
+    }
+    // Existing frozen editorial contracts retain their original brief until explicitly migrated.
+    if (contract.design !== undefined) {
+      try {
+        if (!contract.design || typeof contract.design !== "object" || Array.isArray(contract.design)) throw new Error("design 必须为对象");
+        const expected = editorialDesign(contract.design);
+        for (const key of Object.keys(expected)) {
+          if (contract.design[key] !== expected[key]) errors.push(`design.${key} 与当前封面风格不匹配；迁移时重新生成设计配置并审阅`);
+        }
+      } catch (error) { errors.push(error.message); }
+    }
     if (requireQcPass) {
       if (contract.qc?.thumbnailStatus !== "pass") errors.push("手机缩略图尚未验收");
       const candidate = verifyIdentity(resolved, contract.output, "实际封面", errors);
@@ -157,6 +184,36 @@ export function validateCoverIdentityContract(contractFile, { requireQcPass = fa
 }
 
 function promptFor(contract) {
+  if (contract.kind === "kacha-editorial-cover-contract" && contract.design) {
+    const profile = readJson(dahuiProfileFile);
+    const { showId, variant, aspectRatio } = contract.design;
+    const selected = profile.variants[variant];
+    const percentRange = values => values.map(value => Math.round(value * 100)).join("–");
+    return {
+      mode: "editorial_2d", references: contract.sources, design: contract.design,
+      compositingSources: contract.sources, generationInputReferences: [],
+      illustrationLayers: contract.illustrations ?? [],
+      generationRequired: false,
+      backgroundGenerationOptional: true,
+      layoutBrief: [
+        profile.direction, `画幅：${aspectRatio}，逐张独立构图。`,
+        `核心问题：${contract.question}；正式标题原文：${contract.headline}。`,
+        `本期构图：${contract.composition}。`, selected.direction, profile.shows[showId].direction,
+        profile.composition.rule, profile.composition.depth, profile.composition.identity,
+        profile.composition.cutout, profile.composition.generatedIllustrations,
+        `人物高度优先约${Math.round(profile.composition.subjectHeightPreferred * 100)}%，按素材可用性在${percentRange(profile.composition.subjectHeightRatio)}%调整；标题约占${percentRange(profile.composition.headlineAreaRatio)}%，安全边距约${Math.round(profile.composition.safeMarginRatio * 100)}%，最多${profile.composition.sceneElementsMaximum}个主题元素，不遮脸或关键证据。`,
+        `${profile.typography.family}；${profile.typography.treatment}。`,
+        `主文字优先${profile.typography.headlineLines.join("–")}行、${profile.typography.headlineCharactersPreferred.join("–")}字（书名与必要限定另留位置），最多${profile.typography.emphasisGroupsMaximum}组题眼；${profile.typography.numberRule}。`,
+        profile.typography.formalText, profile.composition.labels,
+      ].join("\n"),
+      palette: profile.palette,
+      typography: profile.typography,
+      formalText: { headline: contract.headline, seriesLabel: contract.seriesLabel ?? null, issueNumber: contract.issueNumber ?? null, rendering: "deterministic_typography_after_compositing" },
+      backgroundPrompt: `仅可选生成无字背景或明确示意层。${selected.direction} 按本期主题：${contract.question}；构图：${contract.composition}。为正式文字和本人实拍预留空间。不要生成任何人物、文字、界面、书封、数字或事实证据；本人及证据必须从已绑定真实来源单独合成。`,
+      negativePrompt: [...profile.negative, selected.avoid].join("；"),
+      qcChecklist: profile.qc,
+    };
+  }
   if (contract.kind === "kacha-editorial-cover-contract") return {
     mode: "editorial_2d", references: contract.sources,
     layoutBrief: `${contract.composition}；核心问题：${contract.question}；主文字：${contract.headline}。手机缩略图可读，保留真实来源含义；系列名和期号可选，不增加3D人物或高密度拼贴。`,
@@ -201,10 +258,12 @@ if (action === "template") {
   writeJsonAtomic(output, editorial ? {
     schemaVersion: "1.0", kind: "kacha-editorial-cover-contract", productionPack: "dahui-ai", projectId,
     question: null, headline: null, composition: null,
+    design: editorialDesign({ showId: option("--show", "ai-practice"), variant: option("--variant"), aspectRatio: option("--aspect-ratio", "16:9") }),
     sources: [
       ...(realPhoto ? [{ ...fileIdentity(realPhoto), role: "real_photo" }] : []),
       ...(option("--evidence") ? [{ ...fileIdentity(option("--evidence")), role: "real_evidence" }] : []),
     ],
+    illustrations: [],
     seriesLabel: null, issueNumber: null, output: null, qc: { thumbnailStatus: "pending", reviewEvidence: null },
   } : buildTemplate(projectId, turnaround, realPhoto));
   console.log(JSON.stringify({ status: "pass", output: path.resolve(output) }, null, 2));

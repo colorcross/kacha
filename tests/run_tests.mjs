@@ -2718,6 +2718,7 @@ await test("local production studio compiles an auditable project with verified 
     schemaVersion: "1.0",
     videoPath: input,
     projectName: "studio-regression",
+    creativeDirection: { intent: "explain", artDirection: "实拍与黑白手绘，不要科技光路" },
     outputDirectory,
     task: "source_edit",
     platform: "general",
@@ -2755,6 +2756,10 @@ await test("local production studio compiles an auditable project with verified 
   ]).stdout);
   if (
     preview.status !== "pass"
+    || preview.brief.creativeDirection.status !== "proposal"
+    || preview.brief.creativeDirection.request.artDirection !== "实拍与黑白手绘，不要科技光路"
+    || preview.projectConfig.editingDefaults.parameters.creativeDirection.digest !== preview.brief.creativeDirection.digest
+    || !preview.projectConfig.editingDefaults.instructions.some(x => x.id === "open-creative-direction" && x.text.includes("黑白手绘"))
     || !preview.validationDigest
     || preview.readiness.outputWritable !== true
     || preview.readiness.fontAuthorized !== true

@@ -1,3 +1,4 @@
+import { planCreativeDirection, directionInstruction } from "./creative_direction.mjs";
 import { isMaterialProject, initializeMaterialProject, materialProjectStatus, runMaterialProject } from "./material_project.mjs";
 import fs from "node:fs";
 import { episodeTemplate } from "./episode_editorial.mjs";
@@ -388,6 +389,7 @@ function appendEvent(projectRoot, event) {
 }
 
 export function initializeProject({
+  creativeDirection = undefined,
   materials = null, requirements = null, duration = 60, aspect = "16:9", fps = 25, width = null,
   briefPath = null,
   source = null,
@@ -407,13 +409,14 @@ export function initializeProject({
   home = os.homedir(),
 } = {}) {
   if (materials) {
+    if (creativeDirection !== undefined) planCreativeDirection(creativeDirection);
     const selection = resolveProductionSelection(pack, show);
     if (selection.packId === "dahui-ai") throw new Error("大灰AI须先用 episode template 建立栏目证据合同，再用单源主叙事工程添加录屏、原文与现场素材；当前 materials 自动拼接入口不支持栏目审片门禁，不能用于大灰AI正式交付");
     show = show ?? (selection.packId === "clean-editorial" ? "montage" : "casual-chat");
     loadProductionPack(selection.packId, show);
     let runtime = inspectRuntime({ home });
     if (!development && runtime.productionReady) runtime = freezeProjectRuntime(runtime, { home });
-    const result = initializeMaterialProject({ materials, requirements, duration, aspect, fps, width, projectRoot, projectId: projectId ?? "material-film", pack: selection.packId, show, style: selection.packId === "clean-editorial" ? "clean-editorial" : style, development, confirmExecute, runtime });
+    const result = initializeMaterialProject({ materials, requirements, duration, aspect, fps, width, projectRoot, projectId: projectId ?? "material-film", pack: selection.packId, show, style: selection.packId === "clean-editorial" ? "clean-editorial" : style, development, confirmExecute, runtime, creativeDirection });
     if (!development && runtime.mode === "frozen_bundle") bindRuntime(projectRoot, runtime.skillRoot);
     return result;
   }
@@ -440,6 +443,8 @@ export function initializeProject({
   const resolvedProjectId = slug(projectId ?? fromBrief?.brief?.projectName ?? path.parse(input.path ?? "content").name);
   const selection = resolveProductionSelection(fromBrief?.brief?.target?.productionPack ?? pack, fromBrief?.brief?.target?.show ?? show);
   loadProductionPack(selection.packId, selection.showId);
+  let direction = planCreativeDirection(creativeDirection ?? fromBrief?.brief?.creativeDirection?.request);
+  if (fromBrief?.brief?.creativeDirection && direction.digest !== fromBrief.brief.creativeDirection.digest) throw new Error("创作方向与 brief 不一致或注册表已更新，请重新生成一致方案");
   const options = {
     productionPack: selection.packId,
     bgmEnabled: fromBrief?.brief?.style?.bgm?.enabled ?? fromBrief?.brief?.target?.bgmEnabled ?? (selection.packId === "xingzhe-dahui"),
@@ -450,8 +455,15 @@ export function initializeProject({
   };
   const configFile = path.join(baseRoot, "kacha.config.json");
   const profile = selection.packId === "xingzhe-dahui" ? "xingzhe" : selection.packId;
+  let existingConfig = null;
   if (fs.existsSync(configFile)) {
     const existing = readJson(configFile);
+    existingConfig = existing;
+    const existingDirection = existing.editingDefaults?.parameters?.creativeDirection;
+    if (existingDirection) {
+      if (creativeDirection === undefined && !fromBrief?.brief?.creativeDirection) direction = planCreativeDirection(existingDirection.request);
+      if (existingDirection.digest !== direction.digest) throw new Error("项目配置与创作方向不一致，请保留原配置并重新核对方案");
+    }
     if (existing.style?.profile !== profile || existing.style?.modes?.show !== selection.showId) throw new Error("项目已有配置与新栏目不一致，请保留原工程并选择新目录，或明确迁移配置");
     options.bgmEnabled = fromBrief?.brief?.style?.bgm?.enabled ?? fromBrief?.brief?.target?.bgmEnabled ?? existing.editingDefaults?.parameters?.audio?.bgm?.enabled ?? options.bgmEnabled;
   }
@@ -463,8 +475,15 @@ export function initializeProject({
   if (!fs.existsSync(configFile)) writeJsonAtomic(configFile, {
     schemaVersion: "1.0",
     style: { system: "dahui-video-system", profile, modes: { show: selection.showId }, overrides: {} },
-    editingDefaults: { parameters: { audio: { dialogueFirst: true, bgm: { enabled: options.bgmEnabled } } } },
+    editingDefaults: { parameters: { creativeDirection: direction, audio: { dialogueFirst: true, bgm: { enabled: options.bgmEnabled } } }, instructions: [directionInstruction(direction, resolvedTask)] },
   });
+  if (existingConfig && !existingConfig.editingDefaults?.parameters?.creativeDirection) {
+    existingConfig.editingDefaults ??= {};
+    existingConfig.editingDefaults.parameters ??= {};
+    existingConfig.editingDefaults.parameters.creativeDirection = direction;
+    existingConfig.editingDefaults.instructions = [...(existingConfig.editingDefaults.instructions ?? []).filter(item => item.id !== "open-creative-direction"), directionInstruction(direction, resolvedTask)];
+    writeJsonAtomic(configFile, existingConfig);
+  }
   const runtimeLock = {
     sourceRef: runtime.sourceRef,
     sourceDirty: runtime.sourceDirty,
@@ -525,6 +544,7 @@ export function initializeProject({
       generatedAt: now(),
       projectName: resolvedProjectId,
       task: resolvedTask,
+      creativeDirection: direction,
       source: input,
       target: options,
       intelligenceV6: { required: input.type === "video" },
@@ -667,6 +687,7 @@ export function handoffContentProject(input, source, {
     pack: orchestration.productionPack,
     show: orchestration.show,
     style: orchestration.style,
+    creativeDirection: readJson(orchestration.files.brief).creativeDirection?.request,
     platform: orchestration.platform,
     language: orchestration.language,
     confirmExecute,

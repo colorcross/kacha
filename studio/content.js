@@ -33,17 +33,26 @@ function setMode(next) {
   });
 }
 function syncStyles() {
+  const allowLegacy = $("enableLegacyStyles").checked;
+  for (const option of $("show").querySelectorAll('optgroup[label="历史栏目"] option')) {
+    option.hidden = !allowLegacy; option.disabled = !allowLegacy;
+  }
+  if ($("show").selectedOptions[0]?.disabled) $("show").value = "talking-head";
   const generic = ["talking-head", "screen-demo", "montage"].includes($("show").value);
   const legacy = ["tool-share", "book-talk", "infinite-game", "very-ai", "casual-chat"].includes($("show").value);
   const preferred = generic ? "clean-editorial" : legacy ? "xingzhe-light-overlay" : "dahui-ai";
-  for (const option of $("style").options) option.disabled = generic ? option.value !== "clean-editorial"
-    : legacy ? ["clean-editorial", "dahui-ai"].includes(option.value) : option.value !== "dahui-ai";
+  for (const option of $("style").options) {
+    option.hidden = !allowLegacy && option.value.startsWith("xingzhe-");
+    option.disabled = generic ? option.value !== "clean-editorial"
+      : legacy ? ["clean-editorial", "dahui-ai"].includes(option.value) : option.value !== "dahui-ai";
+  }
   if ($("style").selectedOptions[0]?.disabled) $("style").value = preferred;
 }
 document.querySelectorAll("[data-mode]").forEach((button) => button.addEventListener("click", () => setMode(button.dataset.mode)));
 $("contentForm").addEventListener("input", invalidateResult);
 $("contentForm").addEventListener("change", invalidateResult);
 $("show").addEventListener("change", syncStyles);
+$("enableLegacyStyles").addEventListener("change", syncStyles);
 $("chooseScript").addEventListener("click", async () => {
   if (busy) return;
   invalidateResult(); setBusy(true, "请选择脚本或文稿。");
@@ -63,6 +72,7 @@ $("contentForm").addEventListener("submit", async (event) => {
       scriptPath: mode === "script" ? $("scriptPath").value.trim() : null,
       topic: mode === "topic" ? $("topic").value.trim() : null,
       projectRoot: $("projectRoot").value.trim(), projectId: $("projectId").value.trim() || null,
+      creativeDirection: { intent: "auto", brief: $("creativeBrief").value.trim(), artDirection: $("creativeAppearance").value.trim() },
       show: $("show").value, style: $("style").value, platform: $("platform").value,
     };
     if (!request.projectRoot.startsWith("/")) throw new Error("项目目录必须是绝对路径");

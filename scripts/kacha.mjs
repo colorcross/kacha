@@ -39,7 +39,7 @@ function usage() {
       + "  kacha.mjs captions plan|validate|render [options]\n"
       + "  kacha.mjs breathing plan|validate|render [options]\n"
       + "  kacha.mjs whiteboard parse-srt|scaffold|validate|preview|render|qc|merge|env-check|env-prepare [options]\n"
-      + "  kacha.mjs studio catalog|validate|probe|save-style|compile|serve [options]\n"
+      + "  kacha.mjs direction catalog|plan [--intent ID --brief TEXT --art-direction TEXT]\n  kacha.mjs studio catalog|validate|probe|save-style|compile|serve [options]\n"
       + "  kacha.mjs start --brief BRIEF|--source VIDEO|--script FILE [options]\n"
       + "  kacha.mjs run|resume|status|observe PROJECT [options]\n"
       + "  kacha.mjs runtime create|inspect|bind [options]\n"
@@ -91,6 +91,7 @@ function usage() {
       + "  kacha.mjs nle-app detect|session|record|validate [options]\n"
       + "  kacha.mjs pro-tools detect|capabilities|enhance-plan|prepare|status|render|receive [options]\n"
       + "  kacha.mjs samples recipes|render|status|select|attach [options]\n"
+      + "  kacha.mjs creative catalog|doctor|template|validate|render|ingest|status|attach [options]\n"
       + "  kacha.mjs wise-motion setup|doctor|search|show|render|status|attach [options]\n"
       + "  kacha.mjs install status|sync [options]\n"
       + "  kacha.mjs cache key|run|inspect [options]\n"
@@ -170,9 +171,11 @@ if (
 const delegatedCommands = {
   samples: "narrative_samples.mjs",
   "wise-motion": "wise_motion.mjs",
+  "creative": "creative_skills.mjs",
   doctor: "kacha_doctor.mjs",
   config: "kacha_config.mjs",
   design: "kacha_design.mjs",
+  direction: "creative_direction.mjs",
   styleframe: "render_styleframe_cached.mjs",
   effects: "kacha_effects.mjs",
   sfx: "kacha_sfx.mjs",

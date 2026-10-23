@@ -135,7 +135,7 @@ export function inspectSampleTarget(timeline) {
 }
 export function attachSample({directory,timeline,expectedSha,expectedSelection,output,start,reason}) {
   const s=sampleStatus(directory); need(s.ready && s.selection?.digest===expectedSelection,'先选择当前候选并绑定选择摘要');
-  const entry=s.entries.find(e=>e.id===s.selection.variant), input=fs.realpathSync(timeline), out=path.resolve(output);
+  const entry=s.entries.find(e=>e.id===s.selection.variant), input=fs.realpathSync(timeline), out=path.join(fs.realpathSync(path.dirname(path.resolve(output))),path.basename(output));
   need(sha256File(input)===expectedSha,'时间线已变化，请重新读取');
   need(path.dirname(out)===path.dirname(input) && out!==input && !fs.existsSync(out),'候选须为原时间线同目录的新文件');
   const projection=buildTimelineProjection(input), source=assertProjectionSourceCurrent(projection,{requireDeclaredSha:true}).identity;

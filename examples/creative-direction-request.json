@@ -1,0 +1,8 @@
+{
+  "intent": "demo",
+  "brief": "用当前产品的真实录屏说明一个操作，再比较前后结果。示例内容需替换为本片的真实任务与素材。",
+  "techniques": ["demonstration", "comparison", "relation"],
+  "artDirection": "以真实录屏为主，白底黑字与少量手绘注释；不强制像素、漫画或科技光路。",
+  "pacing": "操作步骤保留因果，结果停留到可读；机制动画只在录屏不足以解释时插入。",
+  "providerPreference": "auto"
+}

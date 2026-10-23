@@ -106,11 +106,10 @@
         "PingFang SC",
         "Noto Sans CJK SC",
         "Source Han Sans SC",
-        "Source Han Sans CN Medium",
-        "Source Han Sans CN Light"
+        "Source Han Sans CN Medium"
       ],
-      "targetWeight": 400,
-      "maximumWeight": 700,
+      "targetWeight": 700,
+      "maximumWeight": 900,
       "soundPolicy": "none",
       "shadowOpacity": 0.45
     },

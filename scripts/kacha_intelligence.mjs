@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { observeJob } from "./job_runtime.mjs";
 import { buildEditingCraft, loadEditingCraft } from "./editing_craft.mjs";
+import { planCreativeDirection, directionForBeat } from "./creative_direction.mjs";
+import { loadKachaConfig } from "./kacha_config.mjs";
 
 import fs from "node:fs";
 import path from "node:path";
@@ -236,6 +238,7 @@ export function buildDirectorPlan(cuesFile, options = {}) {
   const config = readJson(configFile);
   const styleId = options.styleId ?? "light-warm-overlay";
   const showId = options.showId ?? "tool-share";
+  const direction = options.creativeDirection === undefined ? null : planCreativeDirection(options.creativeDirection);
   const editingCraft = buildEditingCraft(cues, { recipeId: options.recipeId ?? "auto", showId });
   const protectedBeats = new Set(editingCraft.decisions.filter((item) => item.protectFromDecoration).map((item) => item.beatId));
   const craftReviewBeats = new Set([...editingCraft.decisions.filter((item) => item.treatments.length > 0).map((item) => item.beatId),
@@ -250,7 +253,8 @@ export function buildDirectorPlan(cuesFile, options = {}) {
   const candidates = cues.map((cue, index) => {
     const role = narrativeRole(cue, index, cues.length);
     const score = emphasisScore(cue, role);
-    return { cue, index, role, score };
+    const creativeDecision = direction ? directionForBeat(direction, cue, { protectedBeat: protectedBeats.has(cue.id) }) : null;
+    return { cue, index, role, score, creativeDecision };
   });
   const ranked = [...candidates]
     .sort((left, right) => right.score - left.score || left.index - right.index);
@@ -259,13 +263,14 @@ export function buildDirectorPlan(cuesFile, options = {}) {
   for (const item of ranked) {
     if (selected.size >= maximumHighImpact) break;
     const impactSeconds = Math.min(item.cue.end - item.cue.start, config.director.maximumImpactSecondsPerDecision);
-    if (!protectedBeats.has(item.cue.id) && item.score >= 0.58 && impactSeconds <= remainingImpactSeconds) {
+    const eligible = !item.creativeDecision || item.creativeDecision.candidateMethods.some(method => method.id !== "continuity");
+    if (eligible && !protectedBeats.has(item.cue.id) && item.score >= 0.58 && impactSeconds <= remainingImpactSeconds) {
       selected.add(item.cue.id);
       remainingImpactSeconds -= impactSeconds;
     }
   }
   let consecutiveHigh = 0;
-  const beats = candidates.map(({ cue, index, role, score }) => {
+  const beats = candidates.map(({ cue, index, role, score, creativeDecision }) => {
     let highImpact = selected.has(cue.id) && score >= 0.58;
     if (highImpact) consecutiveHigh += 1;
     else consecutiveHigh = 0;
@@ -289,7 +294,8 @@ export function buildDirectorPlan(cuesFile, options = {}) {
         ? Math.min(cue.end - cue.start, config.director.maximumImpactSecondsPerDecision)
         : 0,
       visualIntent: intent,
-      styleMechanism: styleMechanism(config, styleId, intent, highImpact, cue),
+      styleMechanism: direction ? "content_led_proposal" : styleMechanism(config, styleId, intent, highImpact, cue),
+      ...(creativeDecision ? { creativeDecision } : {}),
       effectDecision: highImpact ? "candidate" : "deliberate_none",
       effectReason: highImpact
         ? `全片强调预算内的 ${role} 语义拍`
@@ -320,11 +326,12 @@ export function buildDirectorPlan(cuesFile, options = {}) {
     kind: "kacha_global_director_plan",
     version: config.version,
     generatedAt: new Date().toISOString(),
+    ...(direction ? { creativeDirection: direction } : {}),
     project: {
       id: options.projectId ?? path.basename(sourceFile, path.extname(sourceFile)),
       showId,
       styleId,
-      styleGrammar: config.director.styles[styleId]?.grammar,
+      styleGrammar: direction ? "open-creative-direction" : config.director.styles[styleId]?.grammar,
       durationSeconds: duration,
     },
     source: fileIdentity(sourceFile),
@@ -344,7 +351,7 @@ export function buildDirectorPlan(cuesFile, options = {}) {
     opening: {
       count: 1,
       beatId: beats[0].id,
-      contract: "必须从首个有效声音或动作建立变化，并在 3 秒内兑现内容承诺",
+      contract: direction ? "按内容、受众与表达目标决定开场；保留必要的铺垫、现场声与阅读时间，不强制三秒钩子" : "必须从首个有效声音或动作建立变化，并在 3 秒内兑现内容承诺",
     },
     beats,
     editingCraft,
@@ -378,7 +385,7 @@ export function validateDirectorPlan(plan) {
     errors.push("director plan 的 project id/showId/styleId 必须是非空字符串");
   }
   if (plan.opening?.count !== 1) errors.push("全片必须且只能有一个主开场");
-  if (plan.project?.styleGrammar !== config.director.styles[plan.project?.styleId]?.grammar) {
+  if (plan.project?.styleGrammar !== (plan.creativeDirection ? "open-creative-direction" : config.director.styles[plan.project?.styleId]?.grammar)) {
     errors.push("全片风格语法与已注册 V6 风格不一致");
   }
   if (!currentFileIdentityMatches(plan.source)) errors.push("director plan 的语义 cues 内容已变化");
@@ -423,6 +430,7 @@ export function validateDirectorPlan(plan) {
         showId: plan.project?.showId,
         styleId: plan.project?.styleId,
         recipeId: plan.editingCraft?.requestedRecipe ?? "auto",
+        creativeDirection: plan.creativeDirection?.request,
       });
       if (plan.digest !== expected.digest) {
         errors.push("director plan 与当前语义 cues 和 V6 导演规则的确定性结果不一致");
@@ -1232,11 +1240,15 @@ export function runIntelligenceCli(args = process.argv.slice(2)) {
   }
   if (action === "director") {
     const cues = option(args, "--cues");
+    const directionFile = option(args, "--creative-direction");
+    const projectDirection = loadKachaConfig({ args: [], anchorPath: path.dirname(path.resolve(cues)), includeSecrets: false }).config.editingDefaults?.parameters?.creativeDirection;
+    if (!directionFile && projectDirection && planCreativeDirection(projectDirection.request).digest !== projectDirection.digest) throw new Error("项目创作方向摘要已失效，请先更新一致的方向方案");
     const plan = buildDirectorPlan(cues, {
       projectId: option(args, "--project-id"),
       showId: option(args, "--show", "tool-share"),
       styleId: option(args, "--style", "light-warm-overlay"),
       recipeId: option(args, "--recipe", "auto"),
+      creativeDirection: directionFile ? readJson(directionFile) : projectDirection?.request,
     });
     outputJson(plan, option(args, "--output"));
     return;

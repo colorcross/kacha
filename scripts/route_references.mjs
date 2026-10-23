@@ -24,6 +24,9 @@ const STAGES = new Set([
   "release",
 ]);
 const MODULE_REFERENCES = {
+  direction: ["references/creative-direction.md", "references/creative-skills.md"],
+  creative: ["references/creative-direction.md", "references/creative-skills.md", "docs/CREATIVE_SKILLS_INTEGRATION.md", "references/generated-media-assets.md"],
+  code_video: ["references/creative-skills.md"],
   professional_tools: ["references/professional-tools.md", "references/jianying-enhancements.md", "docs/PROFESSIONAL_TOOLS.md"],
   materials: ["references/material-editing.md"],
   audio: ["references/audio.md"],
@@ -45,6 +48,7 @@ const MODULE_REFERENCES = {
   color: ["references/visuals-masks.md"],
   reframe: ["references/visuals-masks.md"],
   design: [
+    "references/creative-direction.md",
     "references/visuals-masks.md",
     "references/visual-design-preflight.md",
     "references/style-effects-library.md",
@@ -252,6 +256,13 @@ if (stage) {
   }
 }
 
+if (modules.some(module => ["direction", "creative", "code_video", "design"].includes(module))) selected.add("references/creative-direction.md");
+
+// Explicit creative requests retain their source/receipt contract in compact stage packets.
+if (modules.some(module => ["creative", "code_video"].includes(module))) {
+  selected.add("references/creative-skills.md");
+  selected.add("references/generated-media-assets.md");
+}
 const generationModules = ["audio_generation", "bgm", "minimax", "generated", "video_generation"];
 if ((!stage || ["content", "visual_audio"].includes(stage))
   && modules.some(module => generationModules.includes(module))) {

@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import math
 import re
 import subprocess
@@ -118,6 +120,19 @@ def entropy(value: str) -> float:
     )
 
 
+def omit_png_payloads(line: str) -> str:
+    """Ignore only decoded PNG bytes for the entropy heuristic; pattern checks remain."""
+    def replace(match):
+        try:
+            data = base64.b64decode(match.group(1), validate=True)
+            if data.startswith(bytes([137, 80, 78, 71, 13, 10, 26, 10])) and data.endswith(bytes([0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130])):
+                return "data:image/png;validated-payload"
+        except (ValueError, binascii.Error):
+            pass
+        return match.group(0)
+    return re.sub(r"data:image/png;base64,([A-Za-z0-9+/]+={0,2})(?=[\"'])", replace, line)
+
+
 def main() -> int:
     findings: list[str] = []
     for path in candidates():
@@ -147,7 +162,7 @@ def main() -> int:
                     continue
                 if pattern.search(line):
                     findings.append(f"{relative}:{line_number}: {label}")
-            for candidate in re.findall(r"[A-Za-z0-9+/=_-]{40,}", line):
+            for candidate in re.findall(r"[A-Za-z0-9+/=_-]{40,}", omit_png_payloads(line)):
                 if (
                     entropy(candidate) >= 4.5
                     and not candidate.startswith(("http", "sha256"))

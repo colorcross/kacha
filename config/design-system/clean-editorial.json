@@ -1,8 +1,8 @@
 {
   "schemaVersion": "1.0",
   "id": "clean-editorial-cinematic",
-  "version": "1.1.0",
-  "intent": "以真人、真实空间和证据为主体，用克制的无边界排版、景别变化和少量信息表面帮助理解。",
+  "version": "1.2.0",
+  "intent": "按内容目标、素材与创作方向组织实拍、录屏、排版、动画或艺术场景；画面形式不设统一比例，来源、阅读和正常速度审阅保持可核验。",
   "selectionOrder": [
     "camera_reframe",
     "real_evidence_cutaway",
@@ -22,7 +22,9 @@
     "reaction_insert",
     "match_cut",
     "sound_bridge",
-    "bounded_information_surface"
+    "bounded_information_surface",
+    "authored_animation",
+    "custom"
   ],
   "sourceTypes": [
     "a_roll",
@@ -49,28 +51,17 @@
     "multi_item_progression",
     "privacy_boundary"
   ],
-  "forbiddenPatterns": [
-    "web_hero",
-    "centered_modal",
-    "sidebar_panel",
-    "pill_navigation",
-    "dashboard_grid",
-    "browser_chrome_decoration",
-    "uniform_three_card_row",
-    "full_width_ui_bar",
-    "card_wall",
-    "card_to_card_transition"
-  ],
+  "forbiddenPatterns": [],
   "globalRules": {
     "dialogueOrActionRemainsPrimaryClock": true,
-    "realPictureBeforeGraphicContainer": true,
-    "boundarylessBeforeBounded": true,
-    "noAdjacentBoundedSurfaces": true,
-    "compositionCooldownSeconds": 45,
-    "maximumSingleBoundedSurfaceSeconds": 8,
-    "maximumRoundedContainerAreaRatio": 0.34,
+    "realPictureBeforeGraphicContainer": false,
+    "boundarylessBeforeBounded": false,
+    "noAdjacentBoundedSurfaces": false,
+    "compositionCooldownSeconds": 0,
+    "maximumSingleBoundedSurfaceSeconds": null,
+    "maximumRoundedContainerAreaRatio": 1,
     "maximumSimultaneousReadingZones": 3,
-    "minimumCleanReturnSecondsAfterBoundedSurface": 1.2,
+    "minimumCleanReturnSecondsAfterBoundedSurface": 0,
     "sameMechanismMaximumShare": 1,
     "requireOneDominantMotionPerBeat": true,
     "requireNormalSpeedRepresentativePreview": true,
@@ -78,20 +69,20 @@
   },
   "showBudgets": {
     "talking-head": {
-      "minimumRealPictureRatio": 0.7,
-      "maximumBoundedSurfaceRatio": 0.3,
+      "minimumRealPictureRatio": 0,
+      "maximumBoundedSurfaceRatio": 1,
       "maximumDashboardRatio": 0,
       "minimumDistinctMechanismsPer120Seconds": 1
     },
     "screen-demo": {
-      "minimumRealPictureRatio": 0.7,
-      "maximumBoundedSurfaceRatio": 0.3,
+      "minimumRealPictureRatio": 0,
+      "maximumBoundedSurfaceRatio": 1,
       "maximumDashboardRatio": 0,
       "minimumDistinctMechanismsPer120Seconds": 1
     },
     "montage": {
-      "minimumRealPictureRatio": 0.7,
-      "maximumBoundedSurfaceRatio": 0.3,
+      "minimumRealPictureRatio": 0,
+      "maximumBoundedSurfaceRatio": 1,
       "maximumDashboardRatio": 0,
       "minimumDistinctMechanismsPer120Seconds": 1
     }
@@ -108,7 +99,9 @@
       "split_relationship",
       "reaction_insert",
       "match_cut",
-      "sound_bridge"
+      "sound_bridge",
+      "authored_animation",
+      "custom"
     ]
   }
 }

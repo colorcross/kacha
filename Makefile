@@ -17,8 +17,11 @@ check-core:
 	node tests/run_tests.mjs --suite core
 
 check-specialized:
+	python3 tests/secret_scan_tests.py
 	node --test tests/narrative_sfx_tests.mjs
 	node --test tests/wise_motion_tests.mjs
+	node --test tests/creative_direction_tests.mjs
+	node --test tests/creative_skills_tests.mjs
 	node --test tests/professional_tools_tests.mjs
 	node --test tests/jianying_enhancements_tests.mjs
 	node --test tests/dependency_runtime_tests.mjs
@@ -34,6 +37,7 @@ check-specialized:
 	node tests/studio_task_api_tests.mjs
 	node tests/dahui_editorial_tests.mjs
 	node tests/dahui_review_tests.mjs
+	node tests/dahui_cover_tests.mjs
 	node tests/audio_fallback_review_tests.mjs
 	node tests/optimization_telemetry_tests.mjs
 	node tests/optimization_observation_tests.mjs

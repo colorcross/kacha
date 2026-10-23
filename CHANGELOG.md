@@ -1,5 +1,30 @@
 # Changelog
 
+## 未发布 · 2026-10-24 深度审查修复
+
+- 修复默认自动方向只产生连续表达的问题；按镜头信号匹配内置方法，显式方法范围和保护区间继续生效。
+- 强调预算先过滤不匹配方向的镜头，避免无效开场候选耗尽预算。
+- 艺术动效桥接支持原生帧序列目录与角色姿势字典，同时验证每帧的项目内路径和冻结身份。
+
+## 未发布 · 开放创作方向 V2
+
+- 新增内容目标、叙事方法、自由艺术方向及执行工具分层，支持自定义方法；工作台视频/内容入口保存到项目。
+- 五套旧风格全部移到显式历史入口；新导演按内容信号推荐方法，不依赖旧外观。
+- 多素材方向写入冻结要求与分镜覆盖检查，实际编排和导演计划保留同一方向。
+- 通用项目取消固定开场秒数、真人出镜和统一留白占比门槛；保留真实片长、素材、语义和当前审阅约束。
+- 官网将五种外观改为表达方法示例，避免把历史效果审计当作新方向质量证明。
+
+
+## 2026-10-23 · Creative skill adapters
+
+- Deep review: preserve authored Design titles, gate OM flash-frame QA, freeze source output folders, validate actual video PTS/display geometry, support WebM frame counting, report failed imports and preflight Python/Node dependencies.
+- Bind final timeline provenance evidence and recheck media/source identities before receipts and candidate writes.
+- Add a unified `creative` entry for local discovery, contracts, queued native rendering, external-output recovery and non-destructive timeline insertion.
+- Integrate huashu-motion check/render/qa, huashu-art-motion lint/audit/spec rendering, huashu-design seek rendering and Lemo readcheck/video rendering.
+- Freeze editable sources and runtime identities; retain audio originals while producing explicitly silent visual assets; verify exact frames, geometry, alpha and decoding.
+- Keep generated evidence separate from factual footage and invalidate old timeline approvals. Technical fixtures cannot enter programme timelines.
+- Add real native smoke fixtures, recovery/composition regressions and dual-install validation. Style directories remain references, not a claim of verified visual quality.
+
 ## 2026-09-12 · Requirement-driven multi-material editing
 
 - Accept local video/image files and folders with natural-language requirements through `start --materials`.

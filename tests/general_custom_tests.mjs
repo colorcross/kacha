@@ -88,6 +88,27 @@ try {
  test('complete generic no-music and no-SFX release passes with one clean shot',()=>{
   const f=fixture();assert.deepEqual(quality(f).errors,[]);assert.equal(f.q.episodeEditorial,undefined);
  });
+ test('generic creative work permits patient openings and no on-screen person with current review',()=>{
+  const f=fixture();
+  assert.equal(f.q.policies.opening.timingMode,'content-led');
+  assert.equal(f.q.policies.opening.promiseBySeconds,null);
+  assert.equal(f.q.policies.firstMinute.openingHookRequired,false);
+  f.q.execution.opening.firstVisibleChangeSeconds=8;
+  f.q.execution.opening.promiseSeconds=25;
+  f.q.execution.firstMinute.humanPresenceRatio=0;
+  f.q.execution.firstMinute.fullScreenTakeoverRatio=1;
+  f.q.execution.firstMinute.breathingRoomRatio=0;
+  Object.assign(f.q.execution.cinematicEditorial.events[0],{mechanism:'custom',sourceType:'disclosed_generated_illustration',methodDescription:'合成纸艺展开空间关系，阅读不足则延长停留'});
+  f.q.execution.cinematicEditorial.auditMetrics=calculateCinematicEditorialMetrics(f.q.execution.cinematicEditorial);
+  const receipt=identity(f.save('creative-review.json',reviewed(f.q,f.candidate,f.timeline,'production')));
+  for(const key of ['representativeNormalSpeed','fullPlayback','deviceListening'])f.q.release[key].evidence=receipt;
+  assert.deepEqual(quality(f).errors,[]);
+  delete f.q.execution.cinematicEditorial.events[0].methodDescription;
+  rejects(quality(f),/methodDescription/);
+  f.q.execution.cinematicEditorial.events[0].methodDescription='合成纸艺展开空间关系，阅读不足则延长停留';
+  f.q.execution.opening.promiseSeconds=31;
+  rejects(quality(f),/execution.opening/);
+ });
  test('generic release binds current project timeline and output',()=>{
   const f=fixture(),p=readJson(f.project);p.plans.timeline.path=path.join(root,'absent.json');p.outputs.finalVideo.path=path.join(root,'absent.mp4');write(f.project,p);
   const r=quality(f);rejects(r,/实际时间线/);rejects(r,/当前交付/);
